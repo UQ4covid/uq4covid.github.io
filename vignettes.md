@@ -28,6 +28,7 @@ Please read the [**guide to contributing vignettes**]({{ site.baseurl }}/vignett
 ## Sensitivity analysis
 
 - [Sensitivity analysis]({{ site.baseurl }}/vignettes/metawards_sa)
+- [Sensitivity analysis]({{ site.baseurl }}/vignettes/cumulative_infections_at_lockdown_sensitivity)
 
 
 ## Emulation
@@ -41,6 +42,9 @@ Please read the [**guide to contributing vignettes**]({{ site.baseurl }}/vignett
 - [Calibrating MetaWards output]({{ site.baseurl }}/vignettes/BinomialCalibration)
   - [Collating data for Calibrating MetaWards output]({{ site.baseurl }}/vignettes/BinomialCalibrationData)
 - [History Matching using linear emulators]({{ site.baseurl }}/vignettes/LMWave1)
+
+
+
 
 
 
