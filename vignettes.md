@@ -28,6 +28,7 @@ Please read the [**guide to contributing vignettes**]({{ site.baseurl }}/vignett
 ## Sensitivity analysis
 
 - [Sensitivity analysis]({{ site.baseurl }}/vignettes/metawards_sa)
+- [Sensitivity analysis]({{ site.baseurl }}/vignettes/cumulative_infections_at_lockdown_sensitivity)
 
 
 ## Emulation
