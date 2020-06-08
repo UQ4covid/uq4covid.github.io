@@ -1,5 +1,6 @@
 ## load libraries
 library(tidyverse)
+library(data.table)
 
 ## function to convert samples to correct format for MetaWards
 convertToMetaWards <- function(pars, repeats) {
@@ -41,4 +42,65 @@ createFingerprint <- function(disease) {
     
     ## return amended data set
     disease
+}
+
+## function to correct runs from MetaWards
+readRuns <- function(main_dir = "raw_outputs", maxday) {
+    
+    ## check inputs
+    checkInput(main_dir, c("vector", "character"), 1)
+    checkInput(maxday, c("vector", "numeric"), 1, int = TRUE, gte = 0)
+    
+    ## read outputs
+    dir <- paste0(main_dir, "/results.csv.bz2")
+    sims <- fread(dir)
+    
+    sims <- sims %>%
+        group_by(fingerprint, `repeat`) %>%
+        nest() %>%
+        mutate(data = map(data, function(x, maxday) {
+            
+            ## complete time points
+            x <- complete(x, day = 0:maxday) %>%
+                select(day, S, E, I, R) %>%
+                mutate(D = 0)
+            
+            ## correct for initial conditions
+            stopifnot((x$I[x$day == 1] + x$R[x$day == 1]) == 0)
+            x$D[x$day == 1] <- x$E[x$day == 2]
+            x$R[x$day == 1] <- x$D[x$day == 1]
+            x$S[x$day == 1] <- x$S[x$day == 2]
+            x <- mutate(x, D = lag(S, default = 0) - S)
+            x$D[x$day == 0] <- 0
+            
+            ## update R and E classes
+            x <- mutate(x, R = R - D) %>%
+                mutate(E = E + D)
+            
+            ## extract INFECTION incidence 
+            x <- rename(x, Einc = D) %>%
+                mutate(Iinc = Einc - E + lag(E, default = 0)) %>%
+                mutate(Rinc = R - lag(R, default = 0))
+            
+            ## generate cumulative counts
+            x[is.na(x)] <- 0
+            x <- mutate(x, Ecum = cumsum(Einc), Icum = cumsum(Iinc), Rcum = cumsum(Rinc))
+            
+            ## simple checks (necessary but not sufficient)
+            stopifnot(all(x$Ecum >= x$Icum))
+            stopifnot(all(x$Icum >= x$Rcum))
+            stopifnot(all(x$Rcum == x$R))
+            
+            ## check counts
+            stopifnot(all(
+                select(x, S, E, I, R) %>%
+                    as.matrix() %>%
+                    apply(1, sum) == (x$S[1] + x$E[1])))
+            x <- select(x, -Rcum) %>%
+                filter(day > 0)
+            x
+        }, maxday = maxday)) %>%
+        unnest(cols = data) %>%
+        ungroup()
+    sims
 }

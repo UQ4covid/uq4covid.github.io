@@ -1,7 +1,7 @@
 ---
 title: "A simple wave 1 HM of MetaWards"
 author: "TJ McKinley"
-date: "29/05/2020"
+date: "08/06/2020"
 output: html_document
 ---
 
@@ -114,16 +114,16 @@ There is also a function to replicate the MetaWards fingerprint, so that runs ca
 disease <- createFingerprint(disease)
 ```
 
-The next stage involves running MetaWards at the design points to produce model runs, which can be downloaded [here](data/LMWave1/results.csv.bz2). We now read these into R and run some checks to match the outputs to the design points:
+The next stage involves running MetaWards at the design points to produce model runs, which can be downloaded [here](data/LMWave1/results.csv.bz2). We now read these into R and run some checks to match the outputs to the design points. This might take a bit of time, since we have to run manual corrections to MetaWards outputs at the moment to extract the correct cumulative counts):
 
 ```{r, include = FALSE}
 ## read in model runs in form: par [as integer, denoting design point], count
-sims <- read_csv(gzfile("data/LMWave1/results.csv.bz2"))
+sims <- readRuns("data/LMWave1", 82)
 ```
 
 ```{r, eval = FALSE}
 ## read in model runs in form: par [as integer, denoting design point], count
-sims <- read_csv(gzfile("results.csv.bz2"))
+sims <- readRuns(".", 82)
 ```
 
 ```{r}
@@ -148,14 +148,9 @@ Now that we know we have a complete set of runs, we can do some post-processing 
 
 ```{r, message = FALSE}
 ## extract cumulative cases at given time
-sims <- select(sims, par, `repeat`, S, E, day) %>%
-    filter(day == 0 | day == time) %>%
-    group_by(par, `repeat`) %>%
-    mutate(cI = lag(S) - S) %>%
-    ungroup() %>%
-    filter(!is.na(cI)) %>%
-    mutate(cI = cI - E) %>%
-    select(par, cI) %>%
+sims <- select(sims, par, `repeat`, cI = Icum, day) %>%
+    filter(day == time) %>%
+    select(-day, -`repeat`) %>%
     arrange(par)
 
 ## plot cumulative cases
