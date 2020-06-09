@@ -1,0 +1,89 @@
+---
+title: "Information on MetaWards"
+author: "TJ McKinley"
+date: "05/06/2020"
+output: html_document
+---
+
+This is a short document (not really a vignette) describing some key aspects of MetaWards that are pertinent to this UQ attempt. 
+
+# Model description
+
+Firstly, the current model looks like:
+
+```{r, echo = FALSE}
+library(DiagrammeR)
+grViz("digraph {
+  
+graph[layout = dot, rankdir = LR]
+
+node [shape = rectangle]
+
+S
+E1 [label = 'E@_{1}']
+E2 [label = 'E@_{2}']
+I1 [label = 'I@_{1}']
+I2 [label = 'I@_{2}']
+R
+
+S -> E1 -> E2 -> I1 -> I2 -> R
+}", height = '100%', width = '100%')
+```
+
+The current prior distributions are:
+\begin{align}
+    \mbox{mean incubation period} &\sim U(4, 6)\\
+    \mbox{mean infectious period} &\sim U(2, 4)\\
+    \mbox{$R_0$} &\sim U(2.5, 4)\\
+    \mbox{lockdown 1 scale} &\sim U(0, 1)\\
+    \mbox{lockdown 2 scale} &\sim U(0, 1)
+\end{align}
+Designs generated in $(0, 1)$ or $(-1, 1)$ spaces can be easily transformed into the spaces defined above and visa-versa. Once this is done, the points on the prior space must be converted to MetaWards `beta` and `progress` parameters. We use the following transformations.
+
+## `beta` parameters
+
+Since $I_1$ and $I_2$ are both infectious states, they have the same $\beta$ (transmission parameter). The states are indexed from 0 in MetaWards, so $\beta_2$ is the transmission parameter from the state $I_1$ and $\beta_3$ from $I_2$. These can be derived from $R_0$ and the mean infectious period as:
+\begin{align}
+    \beta_2 &= \frac{R_0}{\mbox{mean infectious period}}\\
+    \beta_3 &= \beta_2.
+\end{align}
+
+## `progress` parameters
+
+These are slightly trickier, because they are not *rates*, but rather are discrete-time (daily) probabilities of transition for individuals out of each class. MetaWards uses the $E_1$ and $I_1$ classes as placeholders in order to efficiently count *incidence* of new infections and infectives. Individuals automatically stay in the $E_1$ and $I_1$ classes for exactly one day, before progressing automatically to the $E_2$ and $I_2$ classes respectively. Thus:
+\begin{align}
+    \mbox{progress}_0 &= 1\\
+    \mbox{progress}_2 &= 1.
+\end{align}
+(Here $\mbox{progress}_0$ is the progression probability from the $E_1 \to E_2$ class, since progression out of the $S$ class is driven by the $\beta$ terms.) Epidemiologically this has the effect of forcing the incubation period to be *at least one day*. This is adjusted for (a bit) by removing one day from the incubation and infectious periods before calculating the other progress rates. Hence:
+\begin{align}
+    \mbox{progress}_1 &= 1 - \exp\left(-\frac{1}{\mbox{incubation period} - 1}\right)\\
+    \mbox{progress}_3 &= 1 - \exp\left(-\frac{1}{\mbox{infectious period} - 1}\right).
+\end{align}
+Finally, the lockdown parameters scale **[WHAT EXACTLY DO THEY SCALE?]**. These are both probabilities, so don't need any additional transformations.
+
+# Code
+
+A short piece of R code to do the transformations from the *prior* space to the *disease* inputs for MetaWards is:
+
+```{r}
+## function to convert samples to correct format for MetaWards
+convertToMetaWards <- function(pars, repeats) {
+    disease <- tibble(`beta[2]` = pars$r_zero / pars$infectious_time)
+    disease$`beta[3]` <- disease$`beta[2]`
+    disease$`progress[1]` <- 1 - exp(-(1 / (pars$incubation_time - 1)))
+    disease$`progress[2]` <- 1
+    disease$`progress[3]` <- 1 - exp(-(1 / (pars$infectious_time - 1)))
+    disease$`.scale_rate[1]` <- pars$lock_1_restrict
+    disease$`.scale_rate[2]` <- pars$lock_2_release
+    disease$repeats <- repeats
+    disease$par <- pars$par
+    disease
+}
+```
+where `pars` is an $(n \times 5)$ `data.frame` with each row corresponding to a design point, and columns called: `infectious_time`, `incubation_time`, `r_zero`, `lock_1_restrict` and `lock_1_release` (where the latter two are the scalings for full lockdown, and then slight lockdown release). The additional `repeats` argument adds the number of repeats to the matrix in the correct format for MetaWards.
+
+The UQ4Covid tools automatically does this for a given design specified in $(-1, 1)$ space. **[EXAMPLE BELOW]**.
+
+
+
