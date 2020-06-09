@@ -1,7 +1,7 @@
 ---
 title: "Information on MetaWards"
 author: "TJ McKinley"
-date: "05/06/2020"
+date: "09/06/2020"
 output: html_document
 ---
 
@@ -60,9 +60,9 @@ These are slightly trickier, because they are not *rates*, but rather are discre
     \mbox{progress}_1 &= 1 - \exp\left(-\frac{1}{\mbox{incubation period} - 1}\right)\\
     \mbox{progress}_3 &= 1 - \exp\left(-\frac{1}{\mbox{infectious period} - 1}\right).
 \end{align}
-Finally, the lockdown parameters scale **[WHAT EXACTLY DO THEY SCALE?]**. These are both probabilities, so don't need any additional transformations.
+Finally, the lockdown parameters scale the force-of-infection terms (essentially the $\beta$ rates above). These are both probabilities, so don't need any additional transformations.
 
-# Code
+## Code
 
 A short piece of R code to do the transformations from the *prior* space to the *disease* inputs for MetaWards is:
 
@@ -84,6 +84,84 @@ convertToMetaWards <- function(pars, repeats) {
 where `pars` is an $(n \times 5)$ `data.frame` with each row corresponding to a design point, and columns called: `infectious_time`, `incubation_time`, `r_zero`, `lock_1_restrict` and `lock_1_release` (where the latter two are the scalings for full lockdown, and then slight lockdown release). The additional `repeats` argument adds the number of repeats to the matrix in the correct format for MetaWards.
 
 The UQ4Covid tools automatically does this for a given design specified in $(-1, 1)$ space. **[EXAMPLE BELOW]**.
+
+# Extended model description
+
+We ideally want a model that incorporates moves to hospital and ICU. Here each class is split into two components, e.g. $E_1$ and $E_2$. This is so that MetaWards can calulate new movements into each class easily. Individuals progress out of the first of these classes afetr exactly one day with probability 1. This means that the time spent in each $E$, $I$, $A$ or $H$ class is *at least one day*. Here:
+
+* $E$: infected but not infectious;
+* $A$: asymptomatic and infectious;
+* $I$: symptomatic and infectious;
+* $H$: hospitalised and infectious;
+* $R$: recovered and immune;
+* $D$: died.
+
+```{r, echo = FALSE}
+library(DiagrammeR)
+grViz("digraph {
+  
+graph[layout = dot, rankdir = LR]
+
+node [shape = rectangle]
+
+S
+E1 [label = 'E@_{1}']
+E2 [label = 'E@_{2}']
+I1 [label = 'I@_{1}']
+I2 [label = 'I@_{2}']
+A1 [label = 'A@_{1}']
+A2 [label = 'A@_{2}']
+H1 [label = 'H@_{1}']
+H2 [label = 'H@_{2}']
+D
+R
+
+S -> E1 -> E2 -> {A1, I1}
+A1 -> A2 -> R
+I1 -> I2
+I2 -> {H1, D, R}
+H1 -> H2 -> {D, R}
+
+subgraph {
+  rank = same; I1; A1;
+}
+subgraph {
+  rank = same; I2; A2;
+}
+
+}", height = '100%', width = '100%')
+```
+
+Parameters:
+
+* $p_{SE_1}$ driven by $\beta$ parameters, defined by $R_0$ and length of infectious period (see below);
+* $p_{E_1E_2} = 1$ (probability);
+* $p_{E_2A_1} = p_{EA}\left(1 - e^{-\gamma^*_{E}}\right)$ where $\gamma^*_E = \frac{1}{T_E - 1}$ with $T_E$ the mean incubation period;
+* $p_{E_2I_1} = \left(1 - p_{EA}\right)\left(1 - e^{-\gamma^*_{E}}\right)$;
+* $p_{A_1A_2} = 1$ (probability);
+* $p_{A_2R} = 1 - e^{-\gamma^*_I}$ where $\gamma^*_I = \frac{1}{T_I - 1}$ with $T_I$ the mean infectious period;
+* $p_{I_1I_2} = 1$ (probability);
+* $p_{I_2H_1} = p_{IH}\left(1 - e^{-\gamma^*_{I}}\right)$ where $\delta^*_I = \frac{1}{T_I - 1}$ with $T_I$ the mean infectious period;
+* $p_{I_2R} = p_{IR}\left(1 - e^{-\gamma^*_{I}}\right)$;
+* $p_{I_2D} = \left(1 - p_{IH} - p_{IR}\right)\left(1 - e^{-\gamma^*_{I}}\right)$;
+* $p_{H_1H_2} = 1$ (probability);
+* $p_{H_2D} = p_{HD}\left(1 - e^{-\gamma^*_{H}}\right)$ where $\gamma^*_H = \frac{1}{T_H - 1}$ with $T_H$ the mean length of a hospital stay;
+* $p_{H_2R} = \left(1 - p_{HD}\right)\left(1 - e^{-\gamma^*_{H}}\right)$.
+
+Lockdown can be controlled either by constraining movements over a certain distance, or by scaling the $\beta$ parameters. We do the latter at the moment.
+
+The current prior distributions are:
+\begin{align}
+    \mbox{mean incubation period} &\sim U(4, 6)\\
+    \mbox{mean infectious period} &\sim U(2, 4)\\
+    \mbox{$R_0$} &\sim U(2.5, 4)\\
+    \mbox{lockdown 1 scale} &\sim U(0, 1)\\
+    \mbox{lockdown 2 scale} &\sim U(0, 1)
+\end{align}
+
+We need: **prior on length of hospital stay** (perhaps chat to Rob Challen)? We could use $U(0, 1)$ priors on many of the other parameters.
+
+Designs generated in $(0, 1)$ or $(-1, 1)$ spaces can be easily transformed into the spaces defined above and visa-versa. Once this is done, the points on the prior space must be converted to MetaWards `beta` and `progress` parameters. We use the following transformations.
 
 
 

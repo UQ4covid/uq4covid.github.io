@@ -11,7 +11,7 @@
 
 <meta name="author" content="TJ McKinley" />
 
-<meta name="date" content="2020-05-06" />
+<meta name="date" content="2020-09-06" />
 
 <title>Information on MetaWards</title>
 
@@ -1581,7 +1581,7 @@ summary {
 
 <h1 class="title toc-ignore">Information on MetaWards</h1>
 <h4 class="author">TJ McKinley</h4>
-<h4 class="date">05/06/2020</h4>
+<h4 class="date">09/06/2020</h4>
 
 </div>
 
@@ -1590,8 +1590,8 @@ summary {
 <div id="model-description" class="section level1">
 <h1>Model description</h1>
 <p>Firstly, the current model looks like:</p>
-<div id="htmlwidget-d3873930bb486cc0cef8" style="width:100%;height:100%;" class="grViz html-widget"></div>
-<script type="application/json" data-for="htmlwidget-d3873930bb486cc0cef8">{"x":{"diagram":"digraph {\n  \ngraph[layout = dot, rankdir = LR]\n\nnode [shape = rectangle]\n\nS\nE1 [label = <E<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]\nE2 [label = <E<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\nI1 [label = <I<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]\nI2 [label = <I<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\nR\n\nS -> E1 -> E2 -> I1 -> I2 -> R\n}","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
+<div id="htmlwidget-19acb33c9f6ab18aa550" style="width:100%;height:100%;" class="grViz html-widget"></div>
+<script type="application/json" data-for="htmlwidget-19acb33c9f6ab18aa550">{"x":{"diagram":"digraph {\n  \ngraph[layout = dot, rankdir = LR]\n\nnode [shape = rectangle]\n\nS\nE1 [label = <E<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]\nE2 [label = <E<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\nI1 [label = <I<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]\nI2 [label = <I<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\nR\n\nS -> E1 -> E2 -> I1 -> I2 -> R\n}","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
 <p>The current prior distributions are: <span class="math display">\[\begin{align}
     \mbox{mean incubation period} &amp;\sim U(4, 6)\\
     \mbox{mean infectious period} &amp;\sim U(2, 4)\\
@@ -1614,11 +1614,10 @@ summary {
 \end{align}\]</span> (Here <span class="math inline">\(\mbox{progress}_0\)</span> is the progression probability from the <span class="math inline">\(E_1 \to E_2\)</span> class, since progression out of the <span class="math inline">\(S\)</span> class is driven by the <span class="math inline">\(\beta\)</span> terms.) Epidemiologically this has the effect of forcing the incubation period to be <em>at least one day</em>. This is adjusted for (a bit) by removing one day from the incubation and infectious periods before calculating the other progress rates. Hence: <span class="math display">\[\begin{align}
     \mbox{progress}_1 &amp;= 1 - \exp\left(-\frac{1}{\mbox{incubation period} - 1}\right)\\
     \mbox{progress}_3 &amp;= 1 - \exp\left(-\frac{1}{\mbox{infectious period} - 1}\right).
-\end{align}\]</span> Finally, the lockdown parameters scale <strong>[WHAT EXACTLY DO THEY SCALE?]</strong>. These are both probabilities, so don’t need any additional transformations.</p>
+\end{align}\]</span> Finally, the lockdown parameters scale the force-of-infection terms (essentially the <span class="math inline">\(\beta\)</span> rates above). These are both probabilities, so don’t need any additional transformations.</p>
 </div>
-</div>
-<div id="code" class="section level1">
-<h1>Code</h1>
+<div id="code" class="section level2">
+<h2>Code</h2>
 <p>A short piece of R code to do the transformations from the <em>prior</em> space to the <em>disease</em> inputs for MetaWards is:</p>
 <pre class="r"><code>## function to convert samples to correct format for MetaWards
 convertToMetaWards &lt;- function(pars, repeats) {
@@ -1635,6 +1634,47 @@ convertToMetaWards &lt;- function(pars, repeats) {
 }</code></pre>
 <p>where <code>pars</code> is an <span class="math inline">\((n \times 5)\)</span> <code>data.frame</code> with each row corresponding to a design point, and columns called: <code>infectious_time</code>, <code>incubation_time</code>, <code>r_zero</code>, <code>lock_1_restrict</code> and <code>lock_1_release</code> (where the latter two are the scalings for full lockdown, and then slight lockdown release). The additional <code>repeats</code> argument adds the number of repeats to the matrix in the correct format for MetaWards.</p>
 <p>The UQ4Covid tools automatically does this for a given design specified in <span class="math inline">\((-1, 1)\)</span> space. <strong>[EXAMPLE BELOW]</strong>.</p>
+</div>
+</div>
+<div id="extended-model-description" class="section level1">
+<h1>Extended model description</h1>
+<p>We ideally want a model that incorporates moves to hospital and ICU. Here each class is split into two components, e.g. <span class="math inline">\(E_1\)</span> and <span class="math inline">\(E_2\)</span>. This is so that MetaWards can calulate new movements into each class easily. Individuals progress out of the first of these classes afetr exactly one day with probability 1. This means that the time spent in each <span class="math inline">\(E\)</span>, <span class="math inline">\(I\)</span>, <span class="math inline">\(A\)</span> or <span class="math inline">\(H\)</span> class is <em>at least one day</em>. Here:</p>
+<ul>
+<li><span class="math inline">\(E\)</span>: infected but not infectious;</li>
+<li><span class="math inline">\(A\)</span>: asymptomatic and infectious;</li>
+<li><span class="math inline">\(I\)</span>: symptomatic and infectious;</li>
+<li><span class="math inline">\(H\)</span>: hospitalised and infectious;</li>
+<li><span class="math inline">\(R\)</span>: recovered and immune;</li>
+<li><span class="math inline">\(D\)</span>: died.</li>
+</ul>
+<div id="htmlwidget-c386e848cca6a65d4fe5" style="width:100%;height:100%;" class="grViz html-widget"></div>
+<script type="application/json" data-for="htmlwidget-c386e848cca6a65d4fe5">{"x":{"diagram":"digraph {\n  \ngraph[layout = dot, rankdir = LR]\n\nnode [shape = rectangle]\n\nS\nE1 [label = <E<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]\nE2 [label = <E<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\nI1 [label = <I<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]\nI2 [label = <I<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\nA1 [label = <A<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]\nA2 [label = <A<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\nH1 [label = <H<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]\nH2 [label = <H<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\nD\nR\n\nS -> E1 -> E2 -> {A1, I1}\nA1 -> A2 -> R\nI1 -> I2\nI2 -> {H1, D, R}\nH1 -> H2 -> {D, R}\n\nsubgraph {\n  rank = same; I1; A1;\n}\nsubgraph {\n  rank = same; I2; A2;\n}\n\n}","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
+<p>Parameters:</p>
+<ul>
+<li><span class="math inline">\(p_{SE_1}\)</span> driven by <span class="math inline">\(\beta\)</span> parameters, defined by <span class="math inline">\(R_0\)</span> and length of infectious period (see below);</li>
+<li><span class="math inline">\(p_{E_1E_2} = 1\)</span> (probability);</li>
+<li><span class="math inline">\(p_{E_2A_1} = p_{EA}\left(1 - e^{-\gamma^*_{E}}\right)\)</span> where <span class="math inline">\(\gamma^*_E = \frac{1}{T_E - 1}\)</span> with <span class="math inline">\(T_E\)</span> the mean incubation period;</li>
+<li><span class="math inline">\(p_{E_2I_1} = \left(1 - p_{EA}\right)\left(1 - e^{-\gamma^*_{E}}\right)\)</span>;</li>
+<li><span class="math inline">\(p_{A_1A_2} = 1\)</span> (probability);</li>
+<li><span class="math inline">\(p_{A_2R} = 1 - e^{-\gamma^*_I}\)</span> where <span class="math inline">\(\gamma^*_I = \frac{1}{T_I - 1}\)</span> with <span class="math inline">\(T_I\)</span> the mean infectious period;</li>
+<li><span class="math inline">\(p_{I_1I_2} = 1\)</span> (probability);</li>
+<li><span class="math inline">\(p_{I_2H_1} = p_{IH}\left(1 - e^{-\gamma^*_{I}}\right)\)</span> where <span class="math inline">\(\delta^*_I = \frac{1}{T_I - 1}\)</span> with <span class="math inline">\(T_I\)</span> the mean infectious period;</li>
+<li><span class="math inline">\(p_{I_2R} = p_{IR}\left(1 - e^{-\gamma^*_{I}}\right)\)</span>;</li>
+<li><span class="math inline">\(p_{I_2D} = \left(1 - p_{IH} - p_{IR}\right)\left(1 - e^{-\gamma^*_{I}}\right)\)</span>;</li>
+<li><span class="math inline">\(p_{H_1H_2} = 1\)</span> (probability);</li>
+<li><span class="math inline">\(p_{H_2D} = p_{HD}\left(1 - e^{-\gamma^*_{H}}\right)\)</span> where <span class="math inline">\(\gamma^*_H = \frac{1}{T_H - 1}\)</span> with <span class="math inline">\(T_H\)</span> the mean length of a hospital stay;</li>
+<li><span class="math inline">\(p_{H_2R} = \left(1 - p_{HD}\right)\left(1 - e^{-\gamma^*_{H}}\right)\)</span>.</li>
+</ul>
+<p>Lockdown can be controlled either by constraining movements over a certain distance, or by scaling the <span class="math inline">\(\beta\)</span> parameters. We do the latter at the moment.</p>
+<p>The current prior distributions are: <span class="math display">\[\begin{align}
+    \mbox{mean incubation period} &amp;\sim U(4, 6)\\
+    \mbox{mean infectious period} &amp;\sim U(2, 4)\\
+    \mbox{$R_0$} &amp;\sim U(2.5, 4)\\
+    \mbox{lockdown 1 scale} &amp;\sim U(0, 1)\\
+    \mbox{lockdown 2 scale} &amp;\sim U(0, 1)
+\end{align}\]</span></p>
+<p>We need: <strong>prior on length of hospital stay</strong> (perhaps chat to Rob Challen)? We could use <span class="math inline">\(U(0, 1)\)</span> priors on many of the other parameters.</p>
+<p>Designs generated in <span class="math inline">\((0, 1)\)</span> or <span class="math inline">\((-1, 1)\)</span> spaces can be easily transformed into the spaces defined above and visa-versa. Once this is done, the points on the prior space must be converted to MetaWards <code>beta</code> and <code>progress</code> parameters. We use the following transformations.</p>
 </div>
 
 
