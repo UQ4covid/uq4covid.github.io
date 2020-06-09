@@ -1590,15 +1590,15 @@ summary {
 <div id="model-description" class="section level1">
 <h1>Model description</h1>
 <p>Firstly, the current model looks like:</p>
-<div id="htmlwidget-19acb33c9f6ab18aa550" style="width:100%;height:100%;" class="grViz html-widget"></div>
-<script type="application/json" data-for="htmlwidget-19acb33c9f6ab18aa550">{"x":{"diagram":"digraph {\n  \ngraph[layout = dot, rankdir = LR]\n\nnode [shape = rectangle]\n\nS\nE1 [label = <E<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]\nE2 [label = <E<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\nI1 [label = <I<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]\nI2 [label = <I<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\nR\n\nS -> E1 -> E2 -> I1 -> I2 -> R\n}","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
-<p>The current prior distributions are: <span class="math display">\[\begin{align}
+<div id="htmlwidget-6df389fe75059df93228" style="width:100%;height:100%;" class="grViz html-widget"></div>
+<script type="application/json" data-for="htmlwidget-6df389fe75059df93228">{"x":{"diagram":"digraph {\n  \ngraph[layout = dot, rankdir = LR]\n\nnode [shape = rectangle]\n\nS\nE1 [label = <E<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]\nE2 [label = <E<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\nI1 [label = <I<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]\nI2 [label = <I<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\nR\n\nS -> E1 -> E2 -> I1 -> I2 -> R\n}","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
+<p>The current parameter ranges are: <span class="math display">\[\begin{align}
     \mbox{mean incubation period} &amp;\sim U(4, 6)\\
     \mbox{mean infectious period} &amp;\sim U(2, 4)\\
     \mbox{$R_0$} &amp;\sim U(2.5, 4)\\
     \mbox{lockdown 1 scale} &amp;\sim U(0, 1)\\
     \mbox{lockdown 2 scale} &amp;\sim U(0, 1)
-\end{align}\]</span> Designs generated in <span class="math inline">\((0, 1)\)</span> or <span class="math inline">\((-1, 1)\)</span> spaces can be easily transformed into the spaces defined above and visa-versa. Once this is done, the points on the prior space must be converted to MetaWards <code>beta</code> and <code>progress</code> parameters. We use the following transformations.</p>
+\end{align}\]</span> Designs generated in <span class="math inline">\((0, 1)\)</span> or <span class="math inline">\((-1, 1)\)</span> spaces can be easily transformed into the spaces defined above and visa-versa. Once this is done, the points on the input space must be converted to MetaWards <code>beta</code> and <code>progress</code> parameters. We use the following transformations.</p>
 <div id="beta-parameters" class="section level2">
 <h2><code>beta</code> parameters</h2>
 <p>Since <span class="math inline">\(I_1\)</span> and <span class="math inline">\(I_2\)</span> are both infectious states, they have the same <span class="math inline">\(\beta\)</span> (transmission parameter). The states are indexed from 0 in MetaWards, so <span class="math inline">\(\beta_2\)</span> is the transmission parameter from the state <span class="math inline">\(I_1\)</span> and <span class="math inline">\(\beta_3\)</span> from <span class="math inline">\(I_2\)</span>. These can be derived from <span class="math inline">\(R_0\)</span> and the mean infectious period as: <span class="math display">\[\begin{align}
@@ -1618,7 +1618,7 @@ summary {
 </div>
 <div id="code" class="section level2">
 <h2>Code</h2>
-<p>A short piece of R code to do the transformations from the <em>prior</em> space to the <em>disease</em> inputs for MetaWards is:</p>
+<p>A short piece of R code to do the transformations from the <em>input</em> space to the <em>disease</em> inputs for MetaWards is:</p>
 <pre class="r"><code>## function to convert samples to correct format for MetaWards
 convertToMetaWards &lt;- function(pars, repeats) {
     disease &lt;- tibble(`beta[2]` = pars$r_zero / pars$infectious_time)
@@ -1644,11 +1644,12 @@ convertToMetaWards &lt;- function(pars, repeats) {
 <li><span class="math inline">\(A\)</span>: asymptomatic and infectious;</li>
 <li><span class="math inline">\(I\)</span>: symptomatic and infectious;</li>
 <li><span class="math inline">\(H\)</span>: hospitalised and infectious;</li>
+<li><span class="math inline">\(C\)</span>: in critical care (ICU) and infectious;</li>
 <li><span class="math inline">\(R\)</span>: recovered and immune;</li>
 <li><span class="math inline">\(D\)</span>: died.</li>
 </ul>
-<div id="htmlwidget-c386e848cca6a65d4fe5" style="width:100%;height:100%;" class="grViz html-widget"></div>
-<script type="application/json" data-for="htmlwidget-c386e848cca6a65d4fe5">{"x":{"diagram":"digraph {\n  \ngraph[layout = dot, rankdir = LR]\n\nnode [shape = rectangle]\n\nS\nE1 [label = <E<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]\nE2 [label = <E<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\nI1 [label = <I<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]\nI2 [label = <I<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\nA1 [label = <A<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]\nA2 [label = <A<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\nH1 [label = <H<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]\nH2 [label = <H<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\nD\nR\n\nS -> E1 -> E2 -> {A1, I1}\nA1 -> A2 -> R\nI1 -> I2\nI2 -> {H1, D, R}\nH1 -> H2 -> {D, R}\n\nsubgraph {\n  rank = same; I1; A1;\n}\nsubgraph {\n  rank = same; I2; A2;\n}\n\n}","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
+<div id="htmlwidget-5b7e9fb1cd854bbfa3bd" style="width:100%;height:100%;" class="grViz html-widget"></div>
+<script type="application/json" data-for="htmlwidget-5b7e9fb1cd854bbfa3bd">{"x":{"diagram":"digraph {\n  \ngraph[layout = dot, rankdir = LR]\n\nnode [shape = rectangle]\n\nS\nE1 [label = <E<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]\nE2 [label = <E<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\nI1 [label = <I<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]\nI2 [label = <I<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\nA1 [label = <A<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]\nA2 [label = <A<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\nH1 [label = <H<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]\nH2 [label = <H<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\nC1 [label = <C<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]\nC2 [label = <C<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\nD\nR\n\nS -> E1 -> E2 -> {A1, I1}\nA1 -> A2 -> R\nI1 -> I2\nI2 -> {H1, D, R}\nH1 -> H2 -> {C1, D, R}\nC1 -> C2 -> {D, R}\n\nsubgraph {\n  rank = same; I1; A1;\n}\nsubgraph {\n  rank = same; I2; A2;\n}\n\n}","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
 <p>Parameters:</p>
 <ul>
 <li><span class="math inline">\(p_{SE_1}\)</span> driven by <span class="math inline">\(\beta\)</span> parameters, defined by <span class="math inline">\(R_0\)</span> and length of infectious period (see below);</li>
@@ -1662,19 +1663,200 @@ convertToMetaWards &lt;- function(pars, repeats) {
 <li><span class="math inline">\(p_{I_2R} = p_{IR}\left(1 - e^{-\gamma^*_{I}}\right)\)</span>;</li>
 <li><span class="math inline">\(p_{I_2D} = \left(1 - p_{IH} - p_{IR}\right)\left(1 - e^{-\gamma^*_{I}}\right)\)</span>;</li>
 <li><span class="math inline">\(p_{H_1H_2} = 1\)</span> (probability);</li>
-<li><span class="math inline">\(p_{H_2D} = p_{HD}\left(1 - e^{-\gamma^*_{H}}\right)\)</span> where <span class="math inline">\(\gamma^*_H = \frac{1}{T_H - 1}\)</span> with <span class="math inline">\(T_H\)</span> the mean length of a hospital stay;</li>
-<li><span class="math inline">\(p_{H_2R} = \left(1 - p_{HD}\right)\left(1 - e^{-\gamma^*_{H}}\right)\)</span>.</li>
+<li><span class="math inline">\(p_{H_2C_1} = p_{HC}\left(1 - e^{-\gamma^*_{HC}}\right)\)</span> where <span class="math inline">\(\gamma^*_{HC} = \frac{1}{T_H - T_C - 1}\)</span> with <span class="math inline">\(T_H\)</span> the mean length of a hospital stay and <span class="math inline">\(T_C\)</span> is the mean length of time spent in ICU;</li>
+<li><span class="math inline">\(p_{H_2D} = p_{HD}\left(1 - e^{-\gamma^*_{H}}\right)\)</span> where <span class="math inline">\(\gamma^*_H = \frac{1}{T_H - 1}\)</span>;</li>
+<li><span class="math inline">\(p_{H_2R} = \left(1 - p_{HC} - p_{HD}\right)\left(1 - e^{-\gamma^*_{H}}\right)\)</span>;</li>
+<li><span class="math inline">\(p_{C_1C_2} = 1\)</span> (probability);</li>
+<li><span class="math inline">\(p_{C_2D} = p_{CD}\left(1 - e^{-\gamma^*_{C}}\right)\)</span> where <span class="math inline">\(\gamma^*_C = \frac{1}{T_C - 1}\)</span> with <span class="math inline">\(T_C\)</span> is the mean length of time spent in ICU;</li>
+<li><span class="math inline">\(p_{C_2R} = \left(1 - p_{CD}\right)\left(1 - e^{-\gamma^*_{C}}\right)\)</span>.</li>
 </ul>
 <p>Lockdown can be controlled either by constraining movements over a certain distance, or by scaling the <span class="math inline">\(\beta\)</span> parameters. We do the latter at the moment.</p>
-<p>The current prior distributions are: <span class="math display">\[\begin{align}
+<p>The current parameter ranges are: <span class="math display">\[\begin{align}
     \mbox{mean incubation period} &amp;\sim U(4, 6)\\
     \mbox{mean infectious period} &amp;\sim U(2, 4)\\
     \mbox{$R_0$} &amp;\sim U(2.5, 4)\\
     \mbox{lockdown 1 scale} &amp;\sim U(0, 1)\\
     \mbox{lockdown 2 scale} &amp;\sim U(0, 1)
 \end{align}\]</span></p>
-<p>We need: <strong>prior on length of hospital stay</strong> (perhaps chat to Rob Challen)? We could use <span class="math inline">\(U(0, 1)\)</span> priors on many of the other parameters.</p>
-<p>Designs generated in <span class="math inline">\((0, 1)\)</span> or <span class="math inline">\((-1, 1)\)</span> spaces can be easily transformed into the spaces defined above and visa-versa. Once this is done, the points on the prior space must be converted to MetaWards <code>beta</code> and <code>progress</code> parameters. We use the following transformations.</p>
+<p>We need: <strong>ranges for the length of hospital stay</strong> (perhaps chat to Rob Challen)? We could use <span class="math inline">\(U(0, 1)\)</span> ranges on many of the other parameters.</p>
+<p>Designs generated in <span class="math inline">\((0, 1)\)</span> or <span class="math inline">\((-1, 1)\)</span> spaces can be easily transformed into the spaces defined above and visa-versa. Once this is done, the points on the input space must be converted to MetaWards <code>beta</code> and <code>progress</code> parameters.</p>
+<div id="metawards-setup" class="section level2">
+<h2>MetaWards setup</h2>
+<p>I’ve taken the setup below from the <code>development</code> branch of the MetaWards tutorials. I think that to have the different epidemiological pathways we will need different sets of <code>.json</code> files e.g.</p>
+<p><a href="https://metawards.org/versions/devel/tutorial/part07/01_pathways.html#modelling-a-fraction-of-asymptomatic-super-spreaders">https://metawards.org/versions/devel/tutorial/part07/01_pathways.html#modelling-a-fraction-of-asymptomatic-super-spreaders</a></p>
+<p>There are currently seven pathways, which will be described below, but summarised as:</p>
+<ul>
+<li><code>asymp</code>: asymptomatic infections, always recover.</li>
+<li><code>symp_R</code>: symptomatic infections, leading to recovery.</li>
+<li><code>symp_D</code>: symptomatic infections, leading to death.</li>
+<li><code>symp_HR</code>: symptomatic infections, leading to hospital and then recovery.</li>
+<li><code>symp_HD</code>: symptomatic infections, leading to hospital and then death.</li>
+<li><code>symp_HCR</code>: symptomatic infections, leading to hospital, then critical care (ICU) and then recovery.</li>
+<li><code>symp_HCD</code>: symptomatic infections, leading to hospital, then critical care (ICU) and then death.</li>
+</ul>
+<p><strong>[ALL NUMBERS BELOW ARE PLACEHOLDERS. THERE WOULD HAVE TO BE SWEEPS THROUGH THE DIFFERENT SETS OF PARAMETERS <span class="math inline">\(p_{EA}\)</span>, <span class="math inline">\(p_{IR}\)</span> ETC. TO FEED INTO THE <code>demographics.json</code> FILE BELOW. WE NEED TO CHECK WE CAN DO SWEEPS THROUGH THE JSON FILES, ELSE WE’LL HAVE TO DESIGN SOME CUSTOMISED RUN FUNCTIONS TO ACCOMMODATE THIS.]</strong></p>
+<p><strong>The MetaWards design is parameterised slightly differently to my attempt above. Essentially they pre-specify the proportions of individuals will belong to each possible pathway, and then randomly assign individuals to pathways once they’re infected, rather than the conditional approach that I took. They’re mathematically equivalent, but might be easier to parameterise on the MetaWards parameterisation, rather than conbverting between the two.</strong></p>
+<div id="demographics.json" class="section level3">
+<h3><code>demographics.json</code></h3>
+<p>The <code>demographics.json</code> file should look something like:</p>
+<pre><code>{
+  &quot;demographics&quot; : [&quot;asymp&quot;, &quot;symp_R&quot;, &quot;symp_D&quot;, &quot;symp_HR&quot;, &quot;symp_HD&quot;, &quot;symp_HCR&quot;, &quot;symp_HCD&quot;],
+  &quot;work_ratios&quot;  : [ 0.6, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05 ],
+  &quot;play_ratios&quot;  : [ 0.6, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05 ],
+  &quot;diseases&quot;     : [&quot;ncov_asymp&quot;, &quot;ncov_symp_R&quot;, &quot;ncov_symp_D&quot;, &quot;ncov_symp_HR&quot;, &quot;ncov_symp_HCR&quot;, &quot;ncov_symp_HCR&quot;, &quot;ncov_symp_HCD&quot;]
+}</code></pre>
+<p>The ratios are the ratios of individuals that would belong to each pathway.</p>
+</div>
+<div id="pathways-.json-files" class="section level3">
+<h3>Pathways <code>.json</code> files</h3>
+<p>We need different disease <code>.json</code> files for the different pathways.</p>
+<div id="asymp" class="section level4">
+<h4><code>asymp</code></h4>
+<p>The asymptomatic pathway (from above) is:</p>
+<div id="htmlwidget-2903b0f48591930676ad" style="width:100%;height:100%;" class="grViz html-widget"></div>
+<script type="application/json" data-for="htmlwidget-2903b0f48591930676ad">{"x":{"diagram":"digraph {\n  \ngraph[layout = dot, rankdir = LR]\n\nnode [shape = rectangle]\n\nS\nE1 [label = <E<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]\nE2 [label = <E<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\nA1 [label = <A<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]\nA2 [label = <A<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\nR\n\nS -> E1 -> E2 -> A1 -> A2 -> R\n}","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
+<p>Hence we need <code>ncov_asymp.json</code>:</p>
+<pre><code>{ &quot;name&quot;             : &quot;SARS-Cov-2 - asymptomatic pathway&quot;,
+  &quot;version&quot;          : &quot;June 9th 2020&quot;,
+  &quot;author(s)&quot;        : &quot;UQ4COVID Team&quot;,
+  &quot;contact(s)&quot;       : &quot;e-mail...&quot;,
+  &quot;reference(s)&quot;     : &quot;references...&quot;,  
+  &quot;beta&quot;             : [0.0, 0.0, 1.0, 1.0, 0.0],
+  &quot;progress&quot;         : [1.0, 1.0, 1.0, 1.0, 0.0],
+  &quot;too_ill_to_move&quot;  : [0.0, 0.0, 0.0, 0.0, 0.0],
+  &quot;contrib_foi&quot;      : [1.0, 1.0, 1.0, 1.0, 0.0]
+}</code></pre>
+<blockquote>
+<p><strong>Note:</strong> We would want asymptomatics to be less infectious than symptomatics, so could amend <span class="math inline">\(\beta\)</span>, or set <code>contrib_foi</code>?</p>
+</blockquote>
+</div>
+<div id="symp_r" class="section level4">
+<h4><code>symp_R</code></h4>
+<p>The symptomatic/recovered pathway (from above) is:</p>
+<div id="htmlwidget-b95ecd3d73ee6884cde5" style="width:100%;height:100%;" class="grViz html-widget"></div>
+<script type="application/json" data-for="htmlwidget-b95ecd3d73ee6884cde5">{"x":{"diagram":"digraph {\n  \ngraph[layout = dot, rankdir = LR]\n\nnode [shape = rectangle]\n\nS\nE1 [label = <E<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]\nE2 [label = <E<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\nI1 [label = <I<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]\nI2 [label = <I<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\nR\n\nS -> E1 -> E2 -> I1 -> I2 -> R\n}","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
+<p>Hence we need <code>ncov_symp_R.json</code>:</p>
+<pre><code>{ &quot;name&quot;             : &quot;SARS-Cov-2 - symptomatic/recovered pathway&quot;,
+  &quot;version&quot;          : &quot;June 9th 2020&quot;,
+  &quot;author(s)&quot;        : &quot;UQ4COVID Team&quot;,
+  &quot;contact(s)&quot;       : &quot;e-mail...&quot;,
+  &quot;reference(s)&quot;     : &quot;references...&quot;,  
+  &quot;beta&quot;             : [0.0, 0.0, 1.0, 1.0, 0.0],
+  &quot;progress&quot;         : [1.0, 1.0, 1.0, 1.0, 0.0],
+  &quot;too_ill_to_move&quot;  : [0.0, 0.0, 0.0, 0.0, 0.0],
+  &quot;contrib_foi&quot;      : [1.0, 1.0, 1.0, 1.0, 0.0]
+}</code></pre>
+</div>
+<div id="symp_d" class="section level4">
+<h4><code>symp_D</code></h4>
+<p>The symptomatic/dead pathway (from above) is:</p>
+<div id="htmlwidget-9614d8ba3cf16737d46b" style="width:100%;height:100%;" class="grViz html-widget"></div>
+<script type="application/json" data-for="htmlwidget-9614d8ba3cf16737d46b">{"x":{"diagram":"digraph {\n  \ngraph[layout = dot, rankdir = LR]\n\nnode [shape = rectangle]\n\nS\nE1 [label = <E<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]\nE2 [label = <E<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\nI1 [label = <I<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]\nI2 [label = <I<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\nD\n\nS -> E1 -> E2 -> I1 -> I2 -> D\n}","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
+<p>Hence we need <code>ncov_symp_D.json</code>:</p>
+<pre><code>{ &quot;name&quot;             : &quot;SARS-Cov-2 - symptomatic/dead pathway&quot;,
+  &quot;version&quot;          : &quot;June 9th 2020&quot;,
+  &quot;author(s)&quot;        : &quot;UQ4COVID Team&quot;,
+  &quot;contact(s)&quot;       : &quot;e-mail...&quot;,
+  &quot;reference(s)&quot;     : &quot;references...&quot;,  
+  &quot;beta&quot;             : [0.0, 0.0, 1.0, 1.0, 0.0],
+  &quot;progress&quot;         : [1.0, 1.0, 1.0, 1.0, 0.0],
+  &quot;too_ill_to_move&quot;  : [0.0, 0.0, 0.0, 0.0, 0.0],
+  &quot;contrib_foi&quot;      : [1.0, 1.0, 1.0, 1.0, 0.0]
+}</code></pre>
+<blockquote>
+<p><strong>Note</strong>: not quite sure how to differentiate recovereds from dead, usually the latter would not contribute to the population sizes going forward, though the former would. In this case since populations are relatively large it will make little difference, so the <code>symp_R</code> and <code>symp_D</code> pathways would have the same parameters, but would be differentiated as a straightforward way to extract death counts for e.g. calibration.</p>
+</blockquote>
+</div>
+<div id="symp_hr" class="section level4">
+<h4><code>symp_HR</code></h4>
+<p>The symptomatic/hospital/recovered pathway (from above) is:</p>
+<div id="htmlwidget-9f871db6f892ed9f521e" style="width:100%;height:100%;" class="grViz html-widget"></div>
+<script type="application/json" data-for="htmlwidget-9f871db6f892ed9f521e">{"x":{"diagram":"digraph {\n  \ngraph[layout = dot, rankdir = LR]\n\nnode [shape = rectangle]\n\nS\nE1 [label = <E<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]\nE2 [label = <E<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\nI1 [label = <I<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]\nI2 [label = <I<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\nH1 [label = <H<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]\nH2 [label = <H<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\nR\n\nS -> E1 -> E2 -> I1 -> I2 -> H1 -> H2 -> R\n}","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
+<p>Hence we need <code>ncov_symp_HR.json</code>:</p>
+<pre><code>{ &quot;name&quot;             : &quot;SARS-Cov-2 - symptomatic/hospital/recovered pathway&quot;,
+  &quot;version&quot;          : &quot;June 9th 2020&quot;,
+  &quot;author(s)&quot;        : &quot;UQ4COVID Team&quot;,
+  &quot;contact(s)&quot;       : &quot;e-mail...&quot;,
+  &quot;reference(s)&quot;     : &quot;references...&quot;,  
+  &quot;beta&quot;             : [0.0, 0.0, 1.0, 1.0, 1.0, 1.0, 0.0],
+  &quot;progress&quot;         : [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.0],
+  &quot;too_ill_to_move&quot;  : [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+  &quot;contrib_foi&quot;      : [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.0]
+}</code></pre>
+</div>
+<div id="symp_hd" class="section level4">
+<h4><code>symp_HD</code></h4>
+<p>The symptomatic/hospital/death pathway (from above) is:</p>
+<div id="htmlwidget-f1d443143ad4a63cab77" style="width:100%;height:100%;" class="grViz html-widget"></div>
+<script type="application/json" data-for="htmlwidget-f1d443143ad4a63cab77">{"x":{"diagram":"digraph {\n  \ngraph[layout = dot, rankdir = LR]\n\nnode [shape = rectangle]\n\nS\nE1 [label = <E<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]\nE2 [label = <E<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\nI1 [label = <I<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]\nI2 [label = <I<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\nH1 [label = <H<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]\nH2 [label = <H<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\nD\n\nS -> E1 -> E2 -> I1 -> I2 -> H1 -> H2 -> D\n}","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
+<p>Hence we need <code>ncov_symp_HD.json</code>:</p>
+<pre><code>{ &quot;name&quot;             : &quot;SARS-Cov-2 - symptomatic/hospital/dead pathway&quot;,
+  &quot;version&quot;          : &quot;June 9th 2020&quot;,
+  &quot;author(s)&quot;        : &quot;UQ4COVID Team&quot;,
+  &quot;contact(s)&quot;       : &quot;e-mail...&quot;,
+  &quot;reference(s)&quot;     : &quot;references...&quot;,  
+  &quot;beta&quot;             : [0.0, 0.0, 1.0, 1.0, 1.0, 1.0, 0.0],
+  &quot;progress&quot;         : [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.0],
+  &quot;too_ill_to_move&quot;  : [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+  &quot;contrib_foi&quot;      : [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.0]
+}</code></pre>
+<blockquote>
+<p><strong>Note</strong>: see <code>symp_R</code> and <code>symp_D</code> note from earlier.</p>
+</blockquote>
+</div>
+<div id="symp_hcr" class="section level4">
+<h4><code>symp_HCR</code></h4>
+<p>The symptomatic/hospital/ICU/recovered pathway (from above) is:</p>
+<div id="htmlwidget-d2a553446fb8b4cff8d6" style="width:100%;height:100%;" class="grViz html-widget"></div>
+<script type="application/json" data-for="htmlwidget-d2a553446fb8b4cff8d6">{"x":{"diagram":"digraph {\n  \ngraph[layout = dot, rankdir = LR]\n\nnode [shape = rectangle]\n\nS\nE1 [label = <E<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]\nE2 [label = <E<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\nI1 [label = <I<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]\nI2 [label = <I<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\nH1 [label = <H<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]\nH2 [label = <H<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\nC1 [label = <C<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]\nC2 [label = <C<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\nR\n\nS -> E1 -> E2 -> I1 -> I2 -> H1 -> H2 -> C1 -> C2 -> R\n}","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
+<p>Hence we need <code>ncov_symp_HCR.json</code>:</p>
+<pre><code>{ &quot;name&quot;             : &quot;SARS-Cov-2 - symptomatic/hospital/ICU/recovered pathway&quot;,
+  &quot;version&quot;          : &quot;June 9th 2020&quot;,
+  &quot;author(s)&quot;        : &quot;UQ4COVID Team&quot;,
+  &quot;contact(s)&quot;       : &quot;e-mail...&quot;,
+  &quot;reference(s)&quot;     : &quot;references...&quot;,  
+  &quot;beta&quot;             : [0.0, 0.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.0],
+  &quot;progress&quot;         : [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.0],
+  &quot;too_ill_to_move&quot;  : [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+  &quot;contrib_foi&quot;      : [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.0]
+}</code></pre>
+</div>
+<div id="symp_hcd" class="section level4">
+<h4><code>symp_HCD</code></h4>
+<p>The symptomatic/hospital/ICU/dead pathway (from above) is:</p>
+<div id="htmlwidget-a1ec8bf0dfbed16fa646" style="width:100%;height:100%;" class="grViz html-widget"></div>
+<script type="application/json" data-for="htmlwidget-a1ec8bf0dfbed16fa646">{"x":{"diagram":"digraph {\n  \ngraph[layout = dot, rankdir = LR]\n\nnode [shape = rectangle]\n\nS\nE1 [label = <E<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]\nE2 [label = <E<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\nI1 [label = <I<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]\nI2 [label = <I<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\nH1 [label = <H<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]\nH2 [label = <H<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\nC1 [label = <C<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]\nC2 [label = <C<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\nD\n\nS -> E1 -> E2 -> I1 -> I2 -> H1 -> H2 -> C1 -> C2 -> D\n}","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
+<p>Hence we need <code>ncov_symp_HCD.json</code>:</p>
+<pre><code>{ &quot;name&quot;             : &quot;SARS-Cov-2 - symptomatic/hospital/ICU/dead pathway&quot;,
+  &quot;version&quot;          : &quot;June 9th 2020&quot;,
+  &quot;author(s)&quot;        : &quot;UQ4COVID Team&quot;,
+  &quot;contact(s)&quot;       : &quot;e-mail...&quot;,
+  &quot;reference(s)&quot;     : &quot;references...&quot;,  
+  &quot;beta&quot;             : [0.0, 0.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.0],
+  &quot;progress&quot;         : [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.0],
+  &quot;too_ill_to_move&quot;  : [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+  &quot;contrib_foi&quot;      : [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.0]
+}</code></pre>
+<blockquote>
+<p><strong>Note</strong>: see <code>symp_R</code> and <code>symp_D</code> note from earlier.</p>
+</blockquote>
+</div>
+</div>
+<div id="interaction-matrices" class="section level3">
+<h3>Interaction matrices</h3>
+<p><strong>NEED TO FIGURE THIS OUT.</strong></p>
+<p>Set up the <strong>interaction matrix</strong> as e.g. <code>hospitals.py</code>:</p>
+<pre><code>from metawards.mixers import merge_using_matrix
+
+def mix_shield(network, **kwargs):
+    matrix = [ [0.2, 0.1],
+               [0.8, 1.0] ]
+
+    network.demographics.interaction_matrix = matrix
+
+    return [merge_using_matrix]</code></pre>
+</div>
+</div>
 </div>
 
 

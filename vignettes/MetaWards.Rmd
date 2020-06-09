@@ -30,7 +30,7 @@ S -> E1 -> E2 -> I1 -> I2 -> R
 }", height = '100%', width = '100%')
 ```
 
-The current prior distributions are:
+The current parameter ranges are:
 \begin{align}
     \mbox{mean incubation period} &\sim U(4, 6)\\
     \mbox{mean infectious period} &\sim U(2, 4)\\
@@ -38,7 +38,7 @@ The current prior distributions are:
     \mbox{lockdown 1 scale} &\sim U(0, 1)\\
     \mbox{lockdown 2 scale} &\sim U(0, 1)
 \end{align}
-Designs generated in $(0, 1)$ or $(-1, 1)$ spaces can be easily transformed into the spaces defined above and visa-versa. Once this is done, the points on the prior space must be converted to MetaWards `beta` and `progress` parameters. We use the following transformations.
+Designs generated in $(0, 1)$ or $(-1, 1)$ spaces can be easily transformed into the spaces defined above and visa-versa. Once this is done, the points on the input space must be converted to MetaWards `beta` and `progress` parameters. We use the following transformations.
 
 ## `beta` parameters
 
@@ -64,7 +64,7 @@ Finally, the lockdown parameters scale the force-of-infection terms (essentially
 
 ## Code
 
-A short piece of R code to do the transformations from the *prior* space to the *disease* inputs for MetaWards is:
+A short piece of R code to do the transformations from the *input* space to the *disease* inputs for MetaWards is:
 
 ```{r}
 ## function to convert samples to correct format for MetaWards
@@ -93,6 +93,7 @@ We ideally want a model that incorporates moves to hospital and ICU. Here each c
 * $A$: asymptomatic and infectious;
 * $I$: symptomatic and infectious;
 * $H$: hospitalised and infectious;
+* $C$: in critical care (ICU) and infectious;
 * $R$: recovered and immune;
 * $D$: died.
 
@@ -113,6 +114,8 @@ A1 [label = 'A@_{1}']
 A2 [label = 'A@_{2}']
 H1 [label = 'H@_{1}']
 H2 [label = 'H@_{2}']
+C1 [label = 'C@_{1}']
+C2 [label = 'C@_{2}']
 D
 R
 
@@ -120,7 +123,8 @@ S -> E1 -> E2 -> {A1, I1}
 A1 -> A2 -> R
 I1 -> I2
 I2 -> {H1, D, R}
-H1 -> H2 -> {D, R}
+H1 -> H2 -> {C1, D, R}
+C1 -> C2 -> {D, R}
 
 subgraph {
   rank = same; I1; A1;
@@ -145,12 +149,16 @@ Parameters:
 * $p_{I_2R} = p_{IR}\left(1 - e^{-\gamma^*_{I}}\right)$;
 * $p_{I_2D} = \left(1 - p_{IH} - p_{IR}\right)\left(1 - e^{-\gamma^*_{I}}\right)$;
 * $p_{H_1H_2} = 1$ (probability);
-* $p_{H_2D} = p_{HD}\left(1 - e^{-\gamma^*_{H}}\right)$ where $\gamma^*_H = \frac{1}{T_H - 1}$ with $T_H$ the mean length of a hospital stay;
-* $p_{H_2R} = \left(1 - p_{HD}\right)\left(1 - e^{-\gamma^*_{H}}\right)$.
+* $p_{H_2C_1} = p_{HC}\left(1 - e^{-\gamma^*_{HC}}\right)$ where $\gamma^*_{HC} = \frac{1}{T_H - T_C - 1}$ with $T_H$ the mean length of a hospital stay and $T_C$ is the mean length of time spent in ICU;
+* $p_{H_2D} = p_{HD}\left(1 - e^{-\gamma^*_{H}}\right)$ where $\gamma^*_H = \frac{1}{T_H - 1}$;
+* $p_{H_2R} = \left(1 - p_{HC} - p_{HD}\right)\left(1 - e^{-\gamma^*_{H}}\right)$;
+* $p_{C_1C_2} = 1$ (probability);
+* $p_{C_2D} = p_{CD}\left(1 - e^{-\gamma^*_{C}}\right)$ where $\gamma^*_C = \frac{1}{T_C - 1}$ with $T_C$ is the mean length of time spent in ICU;
+* $p_{C_2R} = \left(1 - p_{CD}\right)\left(1 - e^{-\gamma^*_{C}}\right)$.
 
 Lockdown can be controlled either by constraining movements over a certain distance, or by scaling the $\beta$ parameters. We do the latter at the moment.
 
-The current prior distributions are:
+The current parameter ranges are:
 \begin{align}
     \mbox{mean incubation period} &\sim U(4, 6)\\
     \mbox{mean infectious period} &\sim U(2, 4)\\
@@ -159,9 +167,342 @@ The current prior distributions are:
     \mbox{lockdown 2 scale} &\sim U(0, 1)
 \end{align}
 
-We need: **prior on length of hospital stay** (perhaps chat to Rob Challen)? We could use $U(0, 1)$ priors on many of the other parameters.
+We need: **ranges for the length of hospital stay** (perhaps chat to Rob Challen)? We could use $U(0, 1)$ ranges on many of the other parameters.
 
-Designs generated in $(0, 1)$ or $(-1, 1)$ spaces can be easily transformed into the spaces defined above and visa-versa. Once this is done, the points on the prior space must be converted to MetaWards `beta` and `progress` parameters. We use the following transformations.
+Designs generated in $(0, 1)$ or $(-1, 1)$ spaces can be easily transformed into the spaces defined above and visa-versa. Once this is done, the points on the input space must be converted to MetaWards `beta` and `progress` parameters. 
 
+## MetaWards setup
 
+I've taken the setup below from the `development` branch of the MetaWards tutorials. I think that to have the different epidemiological pathways we will need different sets of `.json` files e.g.
 
+[https://metawards.org/versions/devel/tutorial/part07/01_pathways.html#modelling-a-fraction-of-asymptomatic-super-spreaders](https://metawards.org/versions/devel/tutorial/part07/01_pathways.html#modelling-a-fraction-of-asymptomatic-super-spreaders)
+
+There are currently seven pathways, which will be described below, but summarised as:
+
+* `asymp`: asymptomatic infections, always recover.
+* `symp_R`: symptomatic infections, leading to recovery.
+* `symp_D`: symptomatic infections, leading to death.
+* `symp_HR`: symptomatic infections, leading to hospital and then recovery.
+* `symp_HD`: symptomatic infections, leading to hospital and then death.
+* `symp_HCR`: symptomatic infections, leading to hospital, then critical care (ICU) and then recovery.
+* `symp_HCD`: symptomatic infections, leading to hospital, then critical care (ICU) and then death.
+
+**[ALL NUMBERS BELOW ARE PLACEHOLDERS. THERE WOULD HAVE TO BE SWEEPS THROUGH THE DIFFERENT SETS OF PARAMETERS $p_{EA}$, $p_{IR}$ ETC. TO FEED INTO THE `demographics.json` FILE BELOW. WE NEED TO CHECK WE CAN DO SWEEPS THROUGH THE JSON FILES, ELSE WE'LL HAVE TO DESIGN SOME CUSTOMISED RUN FUNCTIONS TO ACCOMMODATE THIS.]**
+
+**The MetaWards design is parameterised slightly differently to my attempt above. Essentially they pre-specify the proportions of individuals will belong to each possible pathway, and then randomly assign individuals to pathways once they're infected, rather than the conditional approach that I took. They're mathematically equivalent, but might be easier to parameterise on the MetaWards parameterisation, rather than conbverting between the two.**
+
+### `demographics.json`
+
+The `demographics.json` file should look something like:
+
+```
+{
+  "demographics" : ["asymp", "symp_R", "symp_D", "symp_HR", "symp_HD", "symp_HCR", "symp_HCD"],
+  "work_ratios"  : [ 0.6, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05 ],
+  "play_ratios"  : [ 0.6, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05 ],
+  "diseases"     : ["ncov_asymp", "ncov_symp_R", "ncov_symp_D", "ncov_symp_HR", "ncov_symp_HCR", "ncov_symp_HCR", "ncov_symp_HCD"]
+}
+```
+
+The ratios are the ratios of individuals that would belong to each pathway.
+
+### Pathways `.json` files
+
+We need different disease `.json` files for the different pathways.
+
+#### `asymp`
+
+The asymptomatic pathway (from above) is:
+
+```{r, echo = FALSE}
+grViz("digraph {
+  
+graph[layout = dot, rankdir = LR]
+
+node [shape = rectangle]
+
+S
+E1 [label = 'E@_{1}']
+E2 [label = 'E@_{2}']
+A1 [label = 'A@_{1}']
+A2 [label = 'A@_{2}']
+R
+
+S -> E1 -> E2 -> A1 -> A2 -> R
+}", height = '100%', width = '100%')
+```
+
+Hence we need `ncov_asymp.json`:
+
+```
+{ "name"             : "SARS-Cov-2 - asymptomatic pathway",
+  "version"          : "June 9th 2020",
+  "author(s)"        : "UQ4COVID Team",
+  "contact(s)"       : "e-mail...",
+  "reference(s)"     : "references...",  
+  "beta"             : [0.0, 0.0, 1.0, 1.0, 0.0],
+  "progress"         : [1.0, 1.0, 1.0, 1.0, 0.0],
+  "too_ill_to_move"  : [0.0, 0.0, 0.0, 0.0, 0.0],
+  "contrib_foi"      : [1.0, 1.0, 1.0, 1.0, 0.0]
+}
+```
+
+> **Note:** We would want asymptomatics to be less infectious than symptomatics, so could amend $\beta$, or set `contrib_foi`?
+
+#### `symp_R`
+
+The symptomatic/recovered pathway (from above) is:
+
+```{r, echo = FALSE}
+grViz("digraph {
+  
+graph[layout = dot, rankdir = LR]
+
+node [shape = rectangle]
+
+S
+E1 [label = 'E@_{1}']
+E2 [label = 'E@_{2}']
+I1 [label = 'I@_{1}']
+I2 [label = 'I@_{2}']
+R
+
+S -> E1 -> E2 -> I1 -> I2 -> R
+}", height = '100%', width = '100%')
+```
+
+Hence we need `ncov_symp_R.json`:
+
+```
+{ "name"             : "SARS-Cov-2 - symptomatic/recovered pathway",
+  "version"          : "June 9th 2020",
+  "author(s)"        : "UQ4COVID Team",
+  "contact(s)"       : "e-mail...",
+  "reference(s)"     : "references...",  
+  "beta"             : [0.0, 0.0, 1.0, 1.0, 0.0],
+  "progress"         : [1.0, 1.0, 1.0, 1.0, 0.0],
+  "too_ill_to_move"  : [0.0, 0.0, 0.0, 0.0, 0.0],
+  "contrib_foi"      : [1.0, 1.0, 1.0, 1.0, 0.0]
+}
+```
+
+#### `symp_D`
+
+The symptomatic/dead pathway (from above) is:
+
+```{r, echo = FALSE}
+grViz("digraph {
+  
+graph[layout = dot, rankdir = LR]
+
+node [shape = rectangle]
+
+S
+E1 [label = 'E@_{1}']
+E2 [label = 'E@_{2}']
+I1 [label = 'I@_{1}']
+I2 [label = 'I@_{2}']
+D
+
+S -> E1 -> E2 -> I1 -> I2 -> D
+}", height = '100%', width = '100%')
+```
+
+Hence we need `ncov_symp_D.json`:
+
+```
+{ "name"             : "SARS-Cov-2 - symptomatic/dead pathway",
+  "version"          : "June 9th 2020",
+  "author(s)"        : "UQ4COVID Team",
+  "contact(s)"       : "e-mail...",
+  "reference(s)"     : "references...",  
+  "beta"             : [0.0, 0.0, 1.0, 1.0, 0.0],
+  "progress"         : [1.0, 1.0, 1.0, 1.0, 0.0],
+  "too_ill_to_move"  : [0.0, 0.0, 0.0, 0.0, 0.0],
+  "contrib_foi"      : [1.0, 1.0, 1.0, 1.0, 0.0]
+}
+```
+
+> **Note**: not quite sure how to differentiate recovereds from dead, usually the latter would not contribute to the population sizes going forward, though the former would. In this case since populations are relatively large it will make little difference, so the `symp_R` and `symp_D` pathways would have the same parameters, but would be differentiated as a straightforward way to extract death counts for e.g. calibration.
+
+#### `symp_HR`
+
+The symptomatic/hospital/recovered pathway (from above) is:
+
+```{r, echo = FALSE}
+grViz("digraph {
+  
+graph[layout = dot, rankdir = LR]
+
+node [shape = rectangle]
+
+S
+E1 [label = 'E@_{1}']
+E2 [label = 'E@_{2}']
+I1 [label = 'I@_{1}']
+I2 [label = 'I@_{2}']
+H1 [label = 'H@_{1}']
+H2 [label = 'H@_{2}']
+R
+
+S -> E1 -> E2 -> I1 -> I2 -> H1 -> H2 -> R
+}", height = '100%', width = '100%')
+```
+
+Hence we need `ncov_symp_HR.json`:
+
+```
+{ "name"             : "SARS-Cov-2 - symptomatic/hospital/recovered pathway",
+  "version"          : "June 9th 2020",
+  "author(s)"        : "UQ4COVID Team",
+  "contact(s)"       : "e-mail...",
+  "reference(s)"     : "references...",  
+  "beta"             : [0.0, 0.0, 1.0, 1.0, 1.0, 1.0, 0.0],
+  "progress"         : [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.0],
+  "too_ill_to_move"  : [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+  "contrib_foi"      : [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.0]
+}
+```
+
+#### `symp_HD`
+
+The symptomatic/hospital/death pathway (from above) is:
+
+```{r, echo = FALSE}
+grViz("digraph {
+  
+graph[layout = dot, rankdir = LR]
+
+node [shape = rectangle]
+
+S
+E1 [label = 'E@_{1}']
+E2 [label = 'E@_{2}']
+I1 [label = 'I@_{1}']
+I2 [label = 'I@_{2}']
+H1 [label = 'H@_{1}']
+H2 [label = 'H@_{2}']
+D
+
+S -> E1 -> E2 -> I1 -> I2 -> H1 -> H2 -> D
+}", height = '100%', width = '100%')
+```
+
+Hence we need `ncov_symp_HD.json`:
+
+```
+{ "name"             : "SARS-Cov-2 - symptomatic/hospital/dead pathway",
+  "version"          : "June 9th 2020",
+  "author(s)"        : "UQ4COVID Team",
+  "contact(s)"       : "e-mail...",
+  "reference(s)"     : "references...",  
+  "beta"             : [0.0, 0.0, 1.0, 1.0, 1.0, 1.0, 0.0],
+  "progress"         : [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.0],
+  "too_ill_to_move"  : [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+  "contrib_foi"      : [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.0]
+}
+```
+
+> **Note**: see `symp_R` and `symp_D` note from earlier.
+
+#### `symp_HCR`
+
+The symptomatic/hospital/ICU/recovered pathway (from above) is:
+
+```{r, echo = FALSE}
+grViz("digraph {
+  
+graph[layout = dot, rankdir = LR]
+
+node [shape = rectangle]
+
+S
+E1 [label = 'E@_{1}']
+E2 [label = 'E@_{2}']
+I1 [label = 'I@_{1}']
+I2 [label = 'I@_{2}']
+H1 [label = 'H@_{1}']
+H2 [label = 'H@_{2}']
+C1 [label = 'C@_{1}']
+C2 [label = 'C@_{2}']
+R
+
+S -> E1 -> E2 -> I1 -> I2 -> H1 -> H2 -> C1 -> C2 -> R
+}", height = '100%', width = '100%')
+```
+
+Hence we need `ncov_symp_HCR.json`:
+
+```
+{ "name"             : "SARS-Cov-2 - symptomatic/hospital/ICU/recovered pathway",
+  "version"          : "June 9th 2020",
+  "author(s)"        : "UQ4COVID Team",
+  "contact(s)"       : "e-mail...",
+  "reference(s)"     : "references...",  
+  "beta"             : [0.0, 0.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.0],
+  "progress"         : [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.0],
+  "too_ill_to_move"  : [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+  "contrib_foi"      : [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.0]
+}
+```
+
+#### `symp_HCD`
+
+The symptomatic/hospital/ICU/dead pathway (from above) is:
+
+```{r, echo = FALSE}
+grViz("digraph {
+  
+graph[layout = dot, rankdir = LR]
+
+node [shape = rectangle]
+
+S
+E1 [label = 'E@_{1}']
+E2 [label = 'E@_{2}']
+I1 [label = 'I@_{1}']
+I2 [label = 'I@_{2}']
+H1 [label = 'H@_{1}']
+H2 [label = 'H@_{2}']
+C1 [label = 'C@_{1}']
+C2 [label = 'C@_{2}']
+D
+
+S -> E1 -> E2 -> I1 -> I2 -> H1 -> H2 -> C1 -> C2 -> D
+}", height = '100%', width = '100%')
+```
+
+Hence we need `ncov_symp_HCD.json`:
+
+```
+{ "name"             : "SARS-Cov-2 - symptomatic/hospital/ICU/dead pathway",
+  "version"          : "June 9th 2020",
+  "author(s)"        : "UQ4COVID Team",
+  "contact(s)"       : "e-mail...",
+  "reference(s)"     : "references...",  
+  "beta"             : [0.0, 0.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.0],
+  "progress"         : [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.0],
+  "too_ill_to_move"  : [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+  "contrib_foi"      : [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.0]
+}
+```
+
+> **Note**: see `symp_R` and `symp_D` note from earlier.
+
+### Interaction matrices
+
+**NEED TO FIGURE THIS OUT.**
+
+Set up the **interaction matrix** as e.g. `hospitals.py`:
+
+```
+from metawards.mixers import merge_using_matrix
+
+def mix_shield(network, **kwargs):
+    matrix = [ [0.2, 0.1],
+               [0.8, 1.0] ]
+
+    network.demographics.interaction_matrix = matrix
+
+    return [merge_using_matrix]
+```
