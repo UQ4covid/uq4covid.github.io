@@ -13,6 +13,9 @@ Please read the [**guide to contributing vignettes**]({{ site.baseurl }}/vignett
 - [Installing and running the MetaWards model]({{ site.baseurl }}/vignettes/metawards_run)
 - [Installing MOGP]({{ site.baseurl }}/vignettes/mogp_install)
 
+## Model structure
+
+- [Current model structures (still evolving)]({{ site.baseurl }}/vignettes/MetaWards)
 
 ## Experimental design
 
