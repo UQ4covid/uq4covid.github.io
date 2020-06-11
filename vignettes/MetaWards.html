@@ -1600,8 +1600,8 @@ summary {
 <li><span class="math inline">\(R\)</span>: recovered and immune;</li>
 <li><span class="math inline">\(D\)</span>: died.</li>
 </ul>
-<div id="htmlwidget-cbce663455b1a0299cbd" style="width:100%;height:100%;" class="grViz html-widget"></div>
-<script type="application/json" data-for="htmlwidget-cbce663455b1a0299cbd">{"x":{"diagram":"digraph {\n  \ngraph[layout = dot, rankdir = LR]\n\nnode [shape = rectangle]\n\nS\nE1 [label = <E<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]\nE2 [label = <E<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\nI1 [label = <I<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]\nI2 [label = <I<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\nA1 [label = <A<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]\nA2 [label = <A<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\nH1 [label = <H<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]\nH2 [label = <H<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\nC1 [label = <C<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]\nC2 [label = <C<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\nD\nR\n\nS -> E1 -> E2 -> {A1, I1}\nA1 -> A2 -> R\nI1 -> I2\nI2 -> {H1, D, R}\nH1 -> H2 -> {C1, D, R}\nC1 -> C2 -> {D, R}\n\nsubgraph {\n  rank = same; I1; A1;\n}\nsubgraph {\n  rank = same; I2; A2;\n}\n\n}","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
+<div id="htmlwidget-9b72bedd8e4d72b2e53e" style="width:100%;height:100%;" class="grViz html-widget"></div>
+<script type="application/json" data-for="htmlwidget-9b72bedd8e4d72b2e53e">{"x":{"diagram":"digraph {\n  \ngraph[layout = dot, rankdir = LR]\n\nnode [shape = rectangle]\n\nS\nE1 [label = <E<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]\nE2 [label = <E<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\nI1 [label = <I<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]\nI2 [label = <I<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\nA1 [label = <A<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]\nA2 [label = <A<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\nH1 [label = <H<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]\nH2 [label = <H<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\nC1 [label = <C<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]\nC2 [label = <C<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\nD\nR\n\nS -> E1 -> E2 -> {A1, I1}\nA1 -> A2 -> R\nI1 -> I2\nI2 -> {H1, D, R}\nH1 -> H2 -> {C1, D, R}\nC1 -> C2 -> {D, R}\n\nsubgraph {\n  rank = same; I1; A1;\n}\nsubgraph {\n  rank = same; I2; A2;\n}\n\n}","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
 <div id="metawards-setup" class="section level2">
 <h2>MetaWards setup</h2>
 <p>The model structure above allows for different progression pathways. MetaWards deals with this by assigning individuals to different “demographics”, where each demographic can be used to represent different progression pathways. There are also <code>mover</code> functions that can be used to move individuals between demographics, and <code>mixer</code> functions that scale the force-of-infection (FOI) terms between the different demographics (explained later). There are currently seven pathways, which will be described below, but can be summarised as:</p>
@@ -1619,7 +1619,7 @@ summary {
   &quot;demographics&quot; : [&quot;genpop&quot;, &quot;asymp&quot;, &quot;hospital&quot;, &quot;critical&quot;],
   &quot;work_ratios&quot;  : [ 1.0, 0.0, 0.0, 0.0 ],
   &quot;play_ratios&quot;  : [ 1.0, 0.0, 0.0, 0.0 ],
-  &quot;diseases&quot;     : [ null, null, null, null ]
+  &quot;diseases&quot;     : [ &quot;ncov&quot;, &quot;ncov&quot;, &quot;ncov&quot;, &quot;ncov&quot; ]
 }</code></pre>
 <p>Individuals in the <code>genpop</code> demographic move through the <span class="math inline">\(SEIR\)</span> and <span class="math inline">\(SEID\)</span> pathways; the <code>asymp</code> demographic moves through the <code>SEAR</code> pathway; some individuals in the <code>genpop</code> demographic can be moved to the <code>hospital</code> demographic, and thus follow the <code>SEIHR</code> and <code>SEIHD</code> pathways; and finally, some individuals in the <code>hospital</code> demographic can be moved to the <code>critical</code> demographic, and thus follow the <code>SEIHCR</code> and <code>SEIHCD</code> pathways.</p>
 <p>We want the proportions stored in <code>work_ratios</code> and <code>play_ratios</code> to be variable parameters in the model. Therefore we want to specify proportions of individuals in each pathway such that <span class="math inline">\(\sum_{i \in \mathcal{P}} p_i = 1\)</span>, where <span class="math inline">\(\mathcal{P} = \{GP, A, H, C\}\)</span>.</p>
@@ -1653,7 +1653,8 @@ summary {
 <div id="disease-.json-file" class="section level3">
 <h3>Disease <code>.json</code> file</h3>
 <p>All pathways have an <span class="math inline">\(SEI(R/D)\)</span> structure, so we can set up an <code>ncov.json</code> file for the overall disease:</p>
-<pre class="js"><code>{ &quot;name&quot;             : &quot;SARS-Cov-2&quot;,
+<pre class="js"><code>{ 
+  &quot;name&quot;             : &quot;SARS-Cov-2&quot;,
   &quot;version&quot;          : &quot;June 11th 2020&quot;,
   &quot;author(s)&quot;        : &quot;UQ4COVID Team&quot;,
   &quot;contact(s)&quot;       : &quot;e-mail...&quot;,
@@ -1672,7 +1673,7 @@ summary {
 <p>We need moving functions to move individuals from <span class="math inline">\(E_2 \to A_1\)</span>, <span class="math inline">\(E_2 \to I_1\)</span>, <span class="math inline">\(I_2 \to H_1\)</span> and <span class="math inline">\(H_2 \to C_1\)</span>, and thus we need a custom <code>move</code> function. Create a file <code>move_pathways.py</code> containing:</p>
 <pre class="python"><code>from metawards.movers import go_stage
 
-def move_pathways(**kwargs):
+def move_pathways(network, **kwargs):
     # extract user defined parameters
     params = network.params
 
@@ -1714,7 +1715,7 @@ def move_pathways(**kwargs):
                                       go_to=&quot;genpop&quot;,
                                       from_stage=3,
                                       to_stage=5,
-                                      fraction=(1.0 - pIH - pIR) / (1.0 - pIH),
+                                      fraction=(1.0 - (pIR / (1.0 - pIH))),
                                       **kwargs)
                                       
     # move (100 * pHC)% of H2 hospital to C1 critical
