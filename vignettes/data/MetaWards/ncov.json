@@ -1,4 +1,5 @@
-{ "name"             : "SARS-Cov-2",
+{ 
+  "name"             : "SARS-Cov-2",
   "version"          : "June 11th 2020",
   "author(s)"        : "UQ4COVID Team",
   "contact(s)"       : "e-mail...",

@@ -231,7 +231,7 @@ convertDesignToInput <- function(design, parRanges, scale = c("zero_one", "negon
 }
 ```
 
-Once we have done this, we need to transform from the *input* space to the *disease* space for MetaWards. A short R function is given below. This requires an `input` data frame, with columns denoting each *input* parameter and rows corresponding to each input points, and a number of `repeats`.
+Once we have done this, we need to transform from the *input* space to the *disease* space for MetaWards. An R function is given below. This requires an `input` data frame, with columns denoting each *input* parameter and rows corresponding to each input points, and a number of `repeats`.
 
 ```{r}
 ## function to convert from input to disease space
@@ -258,6 +258,20 @@ convertInputToDisease <- function(input, repeats) {
     disease$`critical:progress[2]` <- 1
     disease$`critical:progress[3]` <- 1 - exp(-(1 / input$ptC * (input$hospital_time - 1)))
     
+    ## set up probabilities on disease scale
+    disease$`.pEA` <- input$pEA
+    disease$`.pIH` <- input$pIH
+    disease$`.pIR` <- (1 - input$pIH) * input$pIRprime
+    disease$`.pHC` <- input$pHC
+    disease$`.pHR` <- (1 - input$pHC) * input$pHRprime
+    disease$`.pCR` <- input$pCR
+    
+    ## set up scaling for mixing matrix
+    disease$`.GP_A` <- input$scale_asymp
+    
+    ## round disease file (to prevent fingerprint form being too long)
+    disease <- mutate_all(disease, round, digits = 6)
+    
     ## finalise number of repeats
     disease$repeats <- repeats
     
@@ -271,59 +285,6 @@ convertInputToDisease <- function(input, repeats) {
 > **QUESTION**: do we want to set $T_H$ to be a subset of $T_I$, or in addition to $T_I$? How do we specify ranges?
 
 > **QUESTION**: how do we scale FOI from hospital patients to the other populations?
-
-We also need to create a file to scan across the different `mixing` from the same *design* matrix used above. The following R function will do this.
-
-```{r}
-## function to convert input samples to move files
-convertInputToMove <- function(input) {
-  
-    ## ACTUAL CODE WILL HAVE CHECKS ON INPUTS HERE 
-    require(dplyr)
-  
-    ## set up probabilities on disease scale
-    pEA <- input$pEA
-    pIH <- input$pIH
-    pIR <- (1 - pIH) * input$pIRprime
-    pHC <- input$pHC
-    pHR <- (1 - pHC) * input$pHRprime
-    pCR <- input$pCR
-    
-    ## set up scaling for mixing matrix
-    GP_A <- input$scale_asymp
-    
-    ## set up scanning file
-    scan <- tibble(
-      `.pEA` = pEA,
-      `.pIH` = pIH,
-      `.pIR` = pIR,
-      `.pHC` = pHC,
-      `.pHR` = pHR,
-      `.pCR` = pCR,
-      `.GP_A` = GP_A)
-    
-    ## need to append these with information in "lockdown_states.txt"
-    
-    # Normal status
-    scan$`.can_work[0]` <- "True"
-    # Lockdown 1
-    scan$`.can_work[1]`  <- "False"
-    # Lockdown 2
-    scan$`.can_work[2]` <- "True"
-    # Lockdown dates
-    scan$`.lockdown_date_1_year` <- 2020
-    scan$`.lockdown_date_1_month` <- 3
-    scan$`.lockdown_date_1_day` <- 21
-    scan$`.lockdown_date_2_year` <- 2020
-    scan$`.lockdown_date_2_month` <- 5
-    scan$`.lockdown_date_2_day` <- 13
-    # Database control
-    scan$`.deltas` <- "True"
-    
-    ## return scan files
-    scan
-}
-```
 
 As an example of a quick LHS design for five design points and five replicates:
 
@@ -342,24 +303,19 @@ design <- as_tibble(design)
 input <- convertDesignToInput(design, parRanges, "zero_one")
 
 ## convert input to disease
-disease <- convertInputToDisease(input, 5)
-
-## convert input to move
-move <- convertInputToMove(input)
+disease <- convertInputToDisease(input, 2)
 ```
 
 ```{r, eval = FALSE}
 ## write to external files
 dir.create("inputs")
 write.table(disease, "inputs/disease.dat", row.names = FALSE, sep = " ", quote = FALSE)
-write.table(move, "inputs/move_mix.dat", row.names = FALSE, sep = " ", quote = FALSE)
 ```
 
 ```{r, echo = FALSE}
 ## write to external files
 dir.create("data/MetaWards/inputs")
 write.table(disease, "data/MetaWards/inputs/disease.dat", row.names = FALSE, sep = " ", quote = FALSE)
-write.table(move, "data/MetaWards/inputs/move_mix.dat", row.names = FALSE, sep = " ", quote = FALSE)
 ```
 
 > **TODO: might want some form of folder clearup or suchlike?**

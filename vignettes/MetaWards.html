@@ -1600,8 +1600,8 @@ summary {
 <li><span class="math inline">\(R\)</span>: recovered and immune;</li>
 <li><span class="math inline">\(D\)</span>: died.</li>
 </ul>
-<div id="htmlwidget-c0540fe326e4cfc1728b" style="width:100%;height:100%;" class="grViz html-widget"></div>
-<script type="application/json" data-for="htmlwidget-c0540fe326e4cfc1728b">{"x":{"diagram":"digraph {\n  \ngraph[layout = dot, rankdir = LR]\n\nnode [shape = rectangle]\n\nS\nE1 [label = <E<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]\nE2 [label = <E<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\nI1 [label = <I<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]\nI2 [label = <I<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\nA1 [label = <A<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]\nA2 [label = <A<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\nH1 [label = <H<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]\nH2 [label = <H<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\nC1 [label = <C<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]\nC2 [label = <C<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\nD\nR\n\nS -> E1 -> E2 -> {A1, I1}\nA1 -> A2 -> R\nI1 -> I2\nI2 -> {H1, D, R}\nH1 -> H2 -> {C1, D, R}\nC1 -> C2 -> {D, R}\n\nsubgraph {\n  rank = same; I1; A1;\n}\nsubgraph {\n  rank = same; I2; A2;\n}\n\n}","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
+<div id="htmlwidget-cbce663455b1a0299cbd" style="width:100%;height:100%;" class="grViz html-widget"></div>
+<script type="application/json" data-for="htmlwidget-cbce663455b1a0299cbd">{"x":{"diagram":"digraph {\n  \ngraph[layout = dot, rankdir = LR]\n\nnode [shape = rectangle]\n\nS\nE1 [label = <E<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]\nE2 [label = <E<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\nI1 [label = <I<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]\nI2 [label = <I<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\nA1 [label = <A<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]\nA2 [label = <A<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\nH1 [label = <H<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]\nH2 [label = <H<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\nC1 [label = <C<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]\nC2 [label = <C<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\nD\nR\n\nS -> E1 -> E2 -> {A1, I1}\nA1 -> A2 -> R\nI1 -> I2\nI2 -> {H1, D, R}\nH1 -> H2 -> {C1, D, R}\nC1 -> C2 -> {D, R}\n\nsubgraph {\n  rank = same; I1; A1;\n}\nsubgraph {\n  rank = same; I2; A2;\n}\n\n}","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
 <div id="metawards-setup" class="section level2">
 <h2>MetaWards setup</h2>
 <p>The model structure above allows for different progression pathways. MetaWards deals with this by assigning individuals to different “demographics”, where each demographic can be used to represent different progression pathways. There are also <code>mover</code> functions that can be used to move individuals between demographics, and <code>mixer</code> functions that scale the force-of-infection (FOI) terms between the different demographics (explained later). There are currently seven pathways, which will be described below, but can be summarised as:</p>
@@ -1880,7 +1880,7 @@ convertDesignToInput &lt;- function(design, parRanges, scale = c(&quot;zero_one&
     ## return inputs
     input
 }</code></pre>
-<p>Once we have done this, we need to transform from the <em>input</em> space to the <em>disease</em> space for MetaWards. A short R function is given below. This requires an <code>input</code> data frame, with columns denoting each <em>input</em> parameter and rows corresponding to each input points, and a number of <code>repeats</code>.</p>
+<p>Once we have done this, we need to transform from the <em>input</em> space to the <em>disease</em> space for MetaWards. An R function is given below. This requires an <code>input</code> data frame, with columns denoting each <em>input</em> parameter and rows corresponding to each input points, and a number of <code>repeats</code>.</p>
 <pre class="r"><code>## function to convert from input to disease space
 convertInputToDisease &lt;- function(input, repeats) {
   
@@ -1905,6 +1905,20 @@ convertInputToDisease &lt;- function(input, repeats) {
     disease$`critical:progress[2]` &lt;- 1
     disease$`critical:progress[3]` &lt;- 1 - exp(-(1 / input$ptC * (input$hospital_time - 1)))
     
+    ## set up probabilities on disease scale
+    disease$`.pEA` &lt;- input$pEA
+    disease$`.pIH` &lt;- input$pIH
+    disease$`.pIR` &lt;- (1 - input$pIH) * input$pIRprime
+    disease$`.pHC` &lt;- input$pHC
+    disease$`.pHR` &lt;- (1 - input$pHC) * input$pHRprime
+    disease$`.pCR` &lt;- input$pCR
+    
+    ## set up scaling for mixing matrix
+    disease$`.GP_A` &lt;- input$scale_asymp
+    
+    ## round disease file (to prevent fingerprint form being too long)
+    disease &lt;- mutate_all(disease, round, digits = 6)
+    
     ## finalise number of repeats
     disease$repeats &lt;- repeats
     
@@ -1920,55 +1934,6 @@ convertInputToDisease &lt;- function(input, repeats) {
 <blockquote>
 <p><strong>QUESTION</strong>: how do we scale FOI from hospital patients to the other populations?</p>
 </blockquote>
-<p>We also need to create a file to scan across the different <code>mixing</code> from the same <em>design</em> matrix used above. The following R function will do this.</p>
-<pre class="r"><code>## function to convert input samples to move files
-convertInputToMove &lt;- function(input) {
-  
-    ## ACTUAL CODE WILL HAVE CHECKS ON INPUTS HERE 
-    require(dplyr)
-  
-    ## set up probabilities on disease scale
-    pEA &lt;- input$pEA
-    pIH &lt;- input$pIH
-    pIR &lt;- (1 - pIH) * input$pIRprime
-    pHC &lt;- input$pHC
-    pHR &lt;- (1 - pHC) * input$pHRprime
-    pCR &lt;- input$pCR
-    
-    ## set up scaling for mixing matrix
-    GP_A &lt;- input$scale_asymp
-    
-    ## set up scanning file
-    scan &lt;- tibble(
-      `.pEA` = pEA,
-      `.pIH` = pIH,
-      `.pIR` = pIR,
-      `.pHC` = pHC,
-      `.pHR` = pHR,
-      `.pCR` = pCR,
-      `.GP_A` = GP_A)
-    
-    ## need to append these with information in &quot;lockdown_states.txt&quot;
-    
-    # Normal status
-    scan$`.can_work[0]` &lt;- &quot;True&quot;
-    # Lockdown 1
-    scan$`.can_work[1]`  &lt;- &quot;False&quot;
-    # Lockdown 2
-    scan$`.can_work[2]` &lt;- &quot;True&quot;
-    # Lockdown dates
-    scan$`.lockdown_date_1_year` &lt;- 2020
-    scan$`.lockdown_date_1_month` &lt;- 3
-    scan$`.lockdown_date_1_day` &lt;- 21
-    scan$`.lockdown_date_2_year` &lt;- 2020
-    scan$`.lockdown_date_2_month` &lt;- 5
-    scan$`.lockdown_date_2_day` &lt;- 13
-    # Database control
-    scan$`.deltas` &lt;- &quot;True&quot;
-    
-    ## return scan files
-    scan
-}</code></pre>
 <p>As an example of a quick LHS design for five design points and five replicates:</p>
 <pre class="r"><code>## load libraries
 library(lhs)
@@ -1984,14 +1949,10 @@ design &lt;- as_tibble(design)
 input &lt;- convertDesignToInput(design, parRanges, &quot;zero_one&quot;)
 
 ## convert input to disease
-disease &lt;- convertInputToDisease(input, 5)
-
-## convert input to move
-move &lt;- convertInputToMove(input)</code></pre>
+disease &lt;- convertInputToDisease(input, 2)</code></pre>
 <pre class="r"><code>## write to external files
 dir.create(&quot;inputs&quot;)
-write.table(disease, &quot;inputs/disease.dat&quot;, row.names = FALSE, sep = &quot; &quot;, quote = FALSE)
-write.table(move, &quot;inputs/move_mix.dat&quot;, row.names = FALSE, sep = &quot; &quot;, quote = FALSE)</code></pre>
+write.table(disease, &quot;inputs/disease.dat&quot;, row.names = FALSE, sep = &quot; &quot;, quote = FALSE)</code></pre>
 <pre><code>## Warning in dir.create(&quot;data/MetaWards/inputs&quot;): &#39;data/MetaWards/inputs&#39; already
 ## exists</code></pre>
 <blockquote>
