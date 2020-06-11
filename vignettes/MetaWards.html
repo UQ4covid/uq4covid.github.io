@@ -1600,8 +1600,8 @@ summary {
 <li><span class="math inline">\(R\)</span>: recovered and immune;</li>
 <li><span class="math inline">\(D\)</span>: died.</li>
 </ul>
-<div id="htmlwidget-6c1ab898fa05c91a3483" style="width:100%;height:100%;" class="grViz html-widget"></div>
-<script type="application/json" data-for="htmlwidget-6c1ab898fa05c91a3483">{"x":{"diagram":"digraph {\n  \ngraph[layout = dot, rankdir = LR]\n\nnode [shape = rectangle]\n\nS\nE1 [label = <E<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]\nE2 [label = <E<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\nI1 [label = <I<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]\nI2 [label = <I<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\nA1 [label = <A<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]\nA2 [label = <A<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\nH1 [label = <H<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]\nH2 [label = <H<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\nC1 [label = <C<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]\nC2 [label = <C<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\nD\nR\n\nS -> E1 -> E2 -> {A1, I1}\nA1 -> A2 -> R\nI1 -> I2\nI2 -> {H1, D, R}\nH1 -> H2 -> {C1, D, R}\nC1 -> C2 -> {D, R}\n\nsubgraph {\n  rank = same; I1; A1;\n}\nsubgraph {\n  rank = same; I2; A2;\n}\n\n}","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
+<div id="htmlwidget-c0540fe326e4cfc1728b" style="width:100%;height:100%;" class="grViz html-widget"></div>
+<script type="application/json" data-for="htmlwidget-c0540fe326e4cfc1728b">{"x":{"diagram":"digraph {\n  \ngraph[layout = dot, rankdir = LR]\n\nnode [shape = rectangle]\n\nS\nE1 [label = <E<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]\nE2 [label = <E<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\nI1 [label = <I<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]\nI2 [label = <I<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\nA1 [label = <A<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]\nA2 [label = <A<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\nH1 [label = <H<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]\nH2 [label = <H<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\nC1 [label = <C<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]\nC2 [label = <C<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\nD\nR\n\nS -> E1 -> E2 -> {A1, I1}\nA1 -> A2 -> R\nI1 -> I2\nI2 -> {H1, D, R}\nH1 -> H2 -> {C1, D, R}\nC1 -> C2 -> {D, R}\n\nsubgraph {\n  rank = same; I1; A1;\n}\nsubgraph {\n  rank = same; I2; A2;\n}\n\n}","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
 <div id="metawards-setup" class="section level2">
 <h2>MetaWards setup</h2>
 <p>The model structure above allows for different progression pathways. MetaWards deals with this by assigning individuals to different “demographics”, where each demographic can be used to represent different progression pathways. There are also <code>mover</code> functions that can be used to move individuals between demographics, and <code>mixer</code> functions that scale the force-of-infection (FOI) terms between the different demographics (explained later). There are currently seven pathways, which will be described below, but can be summarised as:</p>
@@ -1615,7 +1615,7 @@ summary {
 <li><code>SEIHCD</code>: symptomatic infections, leading to hospital, then critical care (ICU) and then death.</li>
 </ul>
 <p>In practice, we can summarise these through four demographics, and then <code>move</code> functions that conditionally move individuals through the seven pathways. First, we set up the <code>demographics.json</code> file, which should look something like:</p>
-<pre><code>{
+<pre class="js"><code>{
   &quot;demographics&quot; : [&quot;genpop&quot;, &quot;asymp&quot;, &quot;hospital&quot;, &quot;critical&quot;],
   &quot;work_ratios&quot;  : [ 1.0, 0.0, 0.0, 0.0 ],
   &quot;play_ratios&quot;  : [ 1.0, 0.0, 0.0, 0.0 ],
@@ -1652,9 +1652,9 @@ summary {
 </div>
 <div id="disease-.json-file" class="section level3">
 <h3>Disease <code>.json</code> file</h3>
-<p>All pathways have an <span class="math inline">\(SEI(R)\)</span> structure, so we can set up an <code>ncov.json</code> file for the overall disease:</p>
-<pre><code>{ &quot;name&quot;             : &quot;SARS-Cov-2&quot;,
-  &quot;version&quot;          : &quot;June 9th 2020&quot;,
+<p>All pathways have an <span class="math inline">\(SEI(R/D)\)</span> structure, so we can set up an <code>ncov.json</code> file for the overall disease:</p>
+<pre class="js"><code>{ &quot;name&quot;             : &quot;SARS-Cov-2&quot;,
+  &quot;version&quot;          : &quot;June 11th 2020&quot;,
   &quot;author(s)&quot;        : &quot;UQ4COVID Team&quot;,
   &quot;contact(s)&quot;       : &quot;e-mail...&quot;,
   &quot;reference(s)&quot;     : &quot;references...&quot;,  
@@ -1670,7 +1670,7 @@ summary {
 <div id="moving-functions" class="section level3">
 <h3>Moving functions</h3>
 <p>We need moving functions to move individuals from <span class="math inline">\(E_2 \to A_1\)</span>, <span class="math inline">\(E_2 \to I_1\)</span>, <span class="math inline">\(I_2 \to H_1\)</span> and <span class="math inline">\(H_2 \to C_1\)</span>, and thus we need a custom <code>move</code> function. Create a file <code>move_pathways.py</code> containing:</p>
-<pre><code>from metawards.movers import go_stage
+<pre class="python"><code>from metawards.movers import go_stage
 
 def move_pathways(**kwargs):
     # extract user defined parameters
@@ -1763,31 +1763,32 @@ def move_pathways(**kwargs):
 </div>
 <div id="interaction-matrices" class="section level3">
 <h3>Interaction matrices</h3>
-<p>The <strong>interaction matrix</strong> scales the FOI that different demographics have on other demographics. We need to store this in a file called <code>mix_pathways.py</code>:</p>
-<pre><code>from metawards.mixers import merge_using_matrix
+<p>The <strong>interaction matrix</strong> scales the FOI that different demographics have on other demographics. We need to store this in a file called <code>mix_pathways.py</code>. Since most of the classes are already infected, it’s only the first row that has to contain non-zero entries. Here we’ve assumed zero transmission from hospitals to the general population, and used a <code>GP_A</code> parameter to scale the impact of aymptomatics on infection in the general population.</p>
+<pre class="python"><code>from metawards.mixers import merge_using_matrix
 
 def mix_pathways(network, **kwargs):
     params = network.params
 
-    GP_GP = params.user_params[&quot;GP_GP&quot;]
+    # how much FOI to GP population is affected by others
+    GP_GP = 1.0 #params.user_params[&quot;GP_GP&quot;]
     GP_A = params.user_params[&quot;GP_A&quot;]
-    GP_H = params.user_params[&quot;GP_H&quot;]
-    GP_C = params.user_params[&quot;GP_C&quot;]
+    GP_H = 0.0 #params.user_params[&quot;GP_H&quot;]
+    GP_C = 0.0 #params.user_params[&quot;GP_C&quot;]
 
-    A_GP = params.user_params[&quot;A_GP&quot;]
-    A_A = params.user_params[&quot;A_A&quot;]
-    A_H = params.user_params[&quot;A_H&quot;]
-    A_C = params.user_params[&quot;A_C&quot;]
+    A_GP = 0.0 # params.user_params[&quot;A_GP&quot;]
+    A_A = 0.0 # params.user_params[&quot;A_A&quot;]
+    A_H = 0.0 # params.user_params[&quot;A_H&quot;]
+    A_C = 0.0 # params.user_params[&quot;A_C&quot;]
 
-    H_GP = params.user_params[&quot;H_GP&quot;]
-    H_A = params.user_params[&quot;H_A&quot;]
-    H_H = params.user_params[&quot;H_H&quot;]
-    H_C = params.user_params[&quot;H_C&quot;]
+    H_GP = 0.0 # params.user_params[&quot;H_GP&quot;]
+    H_A = 0.0 # params.user_params[&quot;H_A&quot;]
+    H_H = 0.0 # params.user_params[&quot;H_H&quot;]
+    H_C = 0.0 # params.user_params[&quot;H_C&quot;]
 
-    C_GP = params.user_params[&quot;C_GP&quot;]
-    C_A = params.user_params[&quot;C_A&quot;]
-    C_H = params.user_params[&quot;C_H&quot;]
-    C_C = params.user_params[&quot;C_C&quot;]
+    C_GP = 0.0 # params.user_params[&quot;C_GP&quot;]
+    C_A = 0.0 # params.user_params[&quot;C_A&quot;]
+    C_H = 0.0 # params.user_params[&quot;C_H&quot;]
+    C_C = 0.0 # params.user_params[&quot;C_C&quot;]
 
     matrix = [ [GP_GP, GP_A, GP_H, GP_C],
                [A_GP, A_A, A_H, A_C],
@@ -1809,6 +1810,7 @@ def mix_pathways(network, **kwargs):
 <p>The <em>input</em> and <em>design</em> spaces are fairly trivial to convert between, but some more work has to be done to convert between the <em>input</em> space and the <em>disease</em> space.</p>
 <p>The current <em>input</em> parameter ranges are: <span class="math display">\[\begin{align}
     \mbox{$R_0$}&amp;: (2.5, 4)\\
+    \mbox{scale asymptomatics}&amp;: (0, 1)\\
     \mbox{mean incubation period ($T_E$)}&amp;: (4, 6)\\
     \mbox{mean infectious period ($T_I$)}&amp;: (2, 4)\\
     \mbox{mean hospital stay ($T_H$)}&amp;: (4, 12)\\
@@ -1830,6 +1832,7 @@ def mix_pathways(network, **kwargs):
     p_{HR} &amp;= \left(1 - p_{HC}\right) p^\prime_{HR}
 \end{align}\]</span> and thus we have parameter ranges: <span class="math display">\[\begin{align}
     \mbox{$R_0$}&amp;: (2.5, 4)\\
+    \mbox{scale asymptomatics}&amp;: (0, 1)\\
     \mbox{mean incubation period ($T_E$)}&amp;: (4, 6)\\
     \mbox{mean infectious period ($T_I$)}&amp;: (2, 4)\\
     \mbox{mean hospital stay ($T_H$)}&amp;: (4, 12)\\
@@ -1846,11 +1849,11 @@ def mix_pathways(network, **kwargs):
 <p>In R we can set up the <em>input</em> parameter ranges as follows:</p>
 <pre class="r"><code>## set up parameter ranges
 parRanges &lt;- data.frame(
-    parameter = c(&quot;r_zero&quot;, &quot;incubation_time&quot;, &quot;infectious_time&quot;, &quot;hospital_time&quot;,
+    parameter = c(&quot;r_zero&quot;, &quot;scale_asymp&quot;, &quot;incubation_time&quot;, &quot;infectious_time&quot;, &quot;hospital_time&quot;,
                   &quot;ptC&quot;, &quot;lock_1_restrict&quot;, &quot;lock_2_release&quot;,
                   &quot;pEA&quot;, &quot;pIH&quot;, &quot;pIRprime&quot;, &quot;pHC&quot;, &quot;pHRprime&quot;, &quot;pCR&quot;),
-    lower = c(2.5, 4, 2, 4, rep(0, 9)),
-    upper = c(4, 6, 4, 12, rep(1, 9)),
+    lower = c(2.5, 0, 4, 2, 4, rep(0, 9)),
+    upper = c(4, 1, 6, 4, 12, rep(1, 9)),
     stringsAsFactors = FALSE
 )</code></pre>
 <p>Firstly we want a function to convert between the <em>design</em> and <em>input</em> spaces. A short R function to do this is given below. This requires a <code>design</code> data frame, with columns denoting each <em>input</em> parameter in <code>parRanges</code> and rows corresponding to design points, and a <code>parRanges</code> data frame (defined above). We use the <code>scale</code> argument to define whether the design is on the <span class="math inline">\((0, 1)\)</span> (<code>scale = &quot;zero_one&quot;</code>) or <span class="math inline">\((-1, 1)\)</span> (<code>scale = &quot;negone_one&quot;</code>) space.</p>
@@ -1932,6 +1935,9 @@ convertInputToMove &lt;- function(input) {
     pHR &lt;- (1 - pHC) * input$pHRprime
     pCR &lt;- input$pCR
     
+    ## set up scaling for mixing matrix
+    GP_A &lt;- input$scale_asymp
+    
     ## set up scanning file
     scan &lt;- tibble(
       `.pEA` = pEA,
@@ -1939,7 +1945,26 @@ convertInputToMove &lt;- function(input) {
       `.pIR` = pIR,
       `.pHC` = pHC,
       `.pHR` = pHR,
-      `.pCR` = pCR)
+      `.pCR` = pCR,
+      `.GP_A` = GP_A)
+    
+    ## need to append these with information in &quot;lockdown_states.txt&quot;
+    
+    # Normal status
+    scan$`.can_work[0]` &lt;- &quot;True&quot;
+    # Lockdown 1
+    scan$`.can_work[1]`  &lt;- &quot;False&quot;
+    # Lockdown 2
+    scan$`.can_work[2]` &lt;- &quot;True&quot;
+    # Lockdown dates
+    scan$`.lockdown_date_1_year` &lt;- 2020
+    scan$`.lockdown_date_1_month` &lt;- 3
+    scan$`.lockdown_date_1_day` &lt;- 21
+    scan$`.lockdown_date_2_year` &lt;- 2020
+    scan$`.lockdown_date_2_month` &lt;- 5
+    scan$`.lockdown_date_2_day` &lt;- 13
+    # Database control
+    scan$`.deltas` &lt;- &quot;True&quot;
     
     ## return scan files
     scan
@@ -1947,16 +1972,8 @@ convertInputToMove &lt;- function(input) {
 <p>As an example of a quick LHS design for five design points and five replicates:</p>
 <pre class="r"><code>## load libraries
 library(lhs)
-library(dplyr)</code></pre>
-<pre><code>## 
-## Attaching package: &#39;dplyr&#39;</code></pre>
-<pre><code>## The following objects are masked from &#39;package:stats&#39;:
-## 
-##     filter, lag</code></pre>
-<pre><code>## The following objects are masked from &#39;package:base&#39;:
-## 
-##     intersect, setdiff, setequal, union</code></pre>
-<pre class="r"><code>library(tidyr)
+library(dplyr)
+library(tidyr)
 
 ## generate LHS design
 design &lt;- randomLHS(5, nrow(parRanges))
@@ -1970,13 +1987,13 @@ input &lt;- convertDesignToInput(design, parRanges, &quot;zero_one&quot;)
 disease &lt;- convertInputToDisease(input, 5)
 
 ## convert input to move
-move &lt;- convertInputToMove(input)
-
-## write to external files
-dir.create(&quot;inputs&quot;)</code></pre>
-<pre><code>## Warning in dir.create(&quot;inputs&quot;): &#39;inputs&#39; already exists</code></pre>
-<pre class="r"><code>write.csv(disease, &quot;inputs/disease.csv&quot;, row.names = FALSE)
-write.table(move, &quot;inputs/move.dat&quot;, row.names = FALSE, sep = &quot; &quot;)</code></pre>
+move &lt;- convertInputToMove(input)</code></pre>
+<pre class="r"><code>## write to external files
+dir.create(&quot;inputs&quot;)
+write.table(disease, &quot;inputs/disease.dat&quot;, row.names = FALSE, sep = &quot; &quot;, quote = FALSE)
+write.table(move, &quot;inputs/move_mix.dat&quot;, row.names = FALSE, sep = &quot; &quot;, quote = FALSE)</code></pre>
+<pre><code>## Warning in dir.create(&quot;data/MetaWards/inputs&quot;): &#39;data/MetaWards/inputs&#39; already
+## exists</code></pre>
 <blockquote>
 <p><strong>TODO: might want some form of folder clearup or suchlike?</strong></p>
 </blockquote>

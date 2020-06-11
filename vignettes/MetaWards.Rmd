@@ -74,13 +74,8 @@ The model structure above allows for different progression pathways. MetaWards d
 
 In practice, we can summarise these through four demographics, and then `move` functions that conditionally move individuals through the seven pathways. First, we set up the `demographics.json` file, which should look something like:
 
-```
-{
-  "demographics" : ["genpop", "asymp", "hospital", "critical"],
-  "work_ratios"  : [ 1.0, 0.0, 0.0, 0.0 ],
-  "play_ratios"  : [ 1.0, 0.0, 0.0, 0.0 ],
-  "diseases"     : [ null, null, null, null ]
-}
+
+```{js, code = readLines("data/MetaWards/demographics.json"), eval = FALSE}
 ```
 
 Individuals in the `genpop` demographic move through the $SEIR$ and $SEID$ pathways; the `asymp` demographic moves through the `SEAR` pathway; some individuals in the `genpop` demographic can be moved to the `hospital` demographic, and thus follow the `SEIHR` and `SEIHD` pathways; and finally, some individuals in the `hospital` demographic can be moved to the `critical` demographic, and thus follow the `SEIHCR` and `SEIHCD` pathways.
@@ -115,19 +110,9 @@ Lockdown can be controlled either by constraining movements over a certain dista
 
 ### Disease `.json` file
 
-All pathways have an $SEI(R)$ structure, so we can set up an `ncov.json` file for the overall disease:
+All pathways have an $SEI(R/D)$ structure, so we can set up an `ncov.json` file for the overall disease:
 
-```
-{ "name"             : "SARS-Cov-2",
-  "version"          : "June 9th 2020",
-  "author(s)"        : "UQ4COVID Team",
-  "contact(s)"       : "e-mail...",
-  "reference(s)"     : "references...",  
-  "beta"             : [0.0, 0.0, 1.0, 1.0, 0.0, 0.0],
-  "progress"         : [1.0, 1.0, 1.0, 1.0, 0.0, 0.0],
-  "too_ill_to_move"  : [0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
-  "contrib_foi"      : [1.0, 1.0, 1.0, 1.0, 0.0, 0.0]
-}
+```{js, code = readLines("data/MetaWards/ncov.json"), eval = FALSE}
 ```
 
 > **Note:** We would want asymptomatics to be less infectious than symptomatics, so could amend $\beta$, or set `contrib_foi`?
@@ -136,137 +121,14 @@ All pathways have an $SEI(R)$ structure, so we can set up an `ncov.json` file fo
 
 We need moving functions to move individuals from $E_2 \to A_1$, $E_2 \to I_1$, $I_2 \to H_1$ and $H_2 \to C_1$, and thus we need a custom `move` function. Create a file `move_pathways.py` containing:
 
-```
-from metawards.movers import go_stage
-
-def move_pathways(**kwargs):
-    # extract user defined parameters
-    params = network.params
-
-    pEA = params.user_params["pEA"]
-    pIH = params.user_params["pIH"]
-    pIR = params.user_params["pIR"]
-    pHC = params.user_params["pHC"]
-    pHR = params.user_params["pHR"]
-    pCR = params.user_params["pCR"]
-
-    # move (100 * pEA)% of E2 genpop to A1 asymp
-    func1 = lambda **kwargs: go_stage(go_from="genpop",
-                                      go_to="asymp",
-                                      from_stage=1,
-                                      to_stage=2,
-                                      fraction=pEA,
-                                      **kwargs)
-
-    # move A2 asymp to R genpop
-    func2 = lambda **kwargs: go_stage(go_from="asymp",
-                                      go_to="genpop",
-                                      from_stage=3,
-                                      to_stage=4,
-                                      fraction=1.0,
-                                      **kwargs)
-                                      
-    # move (100 * pIH)% of I2 genpop to H1 hospital
-    func3 = lambda **kwargs: go_stage(go_from="genpop",
-                                      go_to="hospital",
-                                      from_stage=3,
-                                      to_stage=2,
-                                      fraction=pIH,
-                                      **kwargs)
-                                      
-    # move (100 * (1 - pIH - pIR))% of I2 genpop to D genpop
-    # (1 - pIH) adjustment is due to ordering of events (so
-    # operates on remainder from move above)
-    func4 = lambda **kwargs: go_stage(go_from="genpop",
-                                      go_to="genpop",
-                                      from_stage=3,
-                                      to_stage=5,
-                                      fraction=(1.0 - pIH - pIR) / (1.0 - pIH),
-                                      **kwargs)
-                                      
-    # move (100 * pHC)% of H2 hospital to C1 critical
-    func5 = lambda **kwargs: go_stage(go_from="hospital",
-                                      go_to="critical",
-                                      from_stage=3,
-                                      to_stage=2,
-                                      fraction=pHC,
-                                      **kwargs)
-                                      
-    # move (100 * pHR)% of H2 hospital to R genpop
-    # (1 - pHC) adjustment is due to ordering of events (so
-    # operates on remainder from move above)
-    func6 = lambda **kwargs: go_stage(go_from="hospital",
-                                      go_to="genpop",
-                                      from_stage=3,
-                                      to_stage=4,
-                                      fraction=pHR / (1 - pHC),
-                                      **kwargs)
-                                      
-    # move remainder of H2 hospital to D genpop
-    func7 = lambda **kwargs: go_stage(go_from="hospital",
-                                      go_to="genpop",
-                                      from_stage=3,
-                                      to_stage=5,
-                                      fraction=1.0,
-                                      **kwargs)
-                                      
-    # move (100 * pCR)% of C2 critical to R genpop
-    func8 = lambda **kwargs: go_stage(go_from="critical",
-                                      go_to="genpop",
-                                      from_stage=3,
-                                      to_stage=4,
-                                      fraction=pCR,
-                                      **kwargs)
-                                      
-    # move remainder of C2 critical to D genpop
-    func9 = lambda **kwargs: go_stage(go_from="critical",
-                                      go_to="genpop",
-                                      from_stage=3,
-                                      to_stage=5,
-                                      fraction=1.0,
-                                      **kwargs)
-
-    return [func1, func2, func3, func4, func5, func6, func7, func8, func9]
+```{python, code = readLines("data/MetaWards/move_pathways.py"), eval = FALSE}
 ```
 
 ### Interaction matrices
 
-The **interaction matrix** scales the FOI that different demographics have on other demographics. We need to store this in a file called `mix_pathways.py`:
+The **interaction matrix** scales the FOI that different demographics have on other demographics. We need to store this in a file called `mix_pathways.py`. Since most of the classes are already infected, it's only the first row that has to contain non-zero entries. Here we've assumed zero transmission from hospitals to the general population, and used a `GP_A` parameter to scale the impact of aymptomatics on infection in the general population.
 
-```
-from metawards.mixers import merge_using_matrix
-
-def mix_pathways(network, **kwargs):
-    params = network.params
-
-    GP_GP = params.user_params["GP_GP"]
-    GP_A = params.user_params["GP_A"]
-    GP_H = params.user_params["GP_H"]
-    GP_C = params.user_params["GP_C"]
-
-    A_GP = params.user_params["A_GP"]
-    A_A = params.user_params["A_A"]
-    A_H = params.user_params["A_H"]
-    A_C = params.user_params["A_C"]
-
-    H_GP = params.user_params["H_GP"]
-    H_A = params.user_params["H_A"]
-    H_H = params.user_params["H_H"]
-    H_C = params.user_params["H_C"]
-
-    C_GP = params.user_params["C_GP"]
-    C_A = params.user_params["C_A"]
-    C_H = params.user_params["C_H"]
-    C_C = params.user_params["C_C"]
-
-    matrix = [ [GP_GP, GP_A, GP_H, GP_C],
-               [A_GP, A_A, A_H, A_C],
-               [H_GP, H_A, H_H, H_C],
-               [C_GP, C_A, C_H, C_C] ]
-
-    network.demographics.interaction_matrix = matrix
-
-    return [merge_using_matrix]
+```{python, code = readLines("data/MetaWards/mix_pathways.py"), eval = FALSE}
 ```
 
 ### Code {#code}
@@ -282,6 +144,7 @@ The *input* and *design* spaces are fairly trivial to convert between, but some 
 The current *input* parameter ranges are:
 \begin{align}
     \mbox{$R_0$}&: (2.5, 4)\\
+    \mbox{scale asymptomatics}&: (0, 1)\\
     \mbox{mean incubation period ($T_E$)}&: (4, 6)\\
     \mbox{mean infectious period ($T_I$)}&: (2, 4)\\
     \mbox{mean hospital stay ($T_H$)}&: (4, 12)\\
@@ -310,6 +173,7 @@ To ensure orthogonality, we could reparameterise such that:
 and thus we have parameter ranges:
 \begin{align}
     \mbox{$R_0$}&: (2.5, 4)\\
+    \mbox{scale asymptomatics}&: (0, 1)\\
     \mbox{mean incubation period ($T_E$)}&: (4, 6)\\
     \mbox{mean infectious period ($T_I$)}&: (2, 4)\\
     \mbox{mean hospital stay ($T_H$)}&: (4, 12)\\
@@ -330,11 +194,11 @@ In R we can set up the *input* parameter ranges as follows:
 ```{r}
 ## set up parameter ranges
 parRanges <- data.frame(
-    parameter = c("r_zero", "incubation_time", "infectious_time", "hospital_time",
+    parameter = c("r_zero", "scale_asymp", "incubation_time", "infectious_time", "hospital_time",
                   "ptC", "lock_1_restrict", "lock_2_release",
                   "pEA", "pIH", "pIRprime", "pHC", "pHRprime", "pCR"),
-    lower = c(2.5, 4, 2, 4, rep(0, 9)),
-    upper = c(4, 6, 4, 12, rep(1, 9)),
+    lower = c(2.5, 0, 4, 2, 4, rep(0, 9)),
+    upper = c(4, 1, 6, 4, 12, rep(1, 9)),
     stringsAsFactors = FALSE
 )
 ```
@@ -425,6 +289,9 @@ convertInputToMove <- function(input) {
     pHR <- (1 - pHC) * input$pHRprime
     pCR <- input$pCR
     
+    ## set up scaling for mixing matrix
+    GP_A <- input$scale_asymp
+    
     ## set up scanning file
     scan <- tibble(
       `.pEA` = pEA,
@@ -432,7 +299,26 @@ convertInputToMove <- function(input) {
       `.pIR` = pIR,
       `.pHC` = pHC,
       `.pHR` = pHR,
-      `.pCR` = pCR)
+      `.pCR` = pCR,
+      `.GP_A` = GP_A)
+    
+    ## need to append these with information in "lockdown_states.txt"
+    
+    # Normal status
+    scan$`.can_work[0]` <- "True"
+    # Lockdown 1
+    scan$`.can_work[1]`  <- "False"
+    # Lockdown 2
+    scan$`.can_work[2]` <- "True"
+    # Lockdown dates
+    scan$`.lockdown_date_1_year` <- 2020
+    scan$`.lockdown_date_1_month` <- 3
+    scan$`.lockdown_date_1_day` <- 21
+    scan$`.lockdown_date_2_year` <- 2020
+    scan$`.lockdown_date_2_month` <- 5
+    scan$`.lockdown_date_2_day` <- 13
+    # Database control
+    scan$`.deltas` <- "True"
     
     ## return scan files
     scan
@@ -441,7 +327,7 @@ convertInputToMove <- function(input) {
 
 As an example of a quick LHS design for five design points and five replicates:
 
-```{r}
+```{r, message = FALSE, warning = FALSE}
 ## load libraries
 library(lhs)
 library(dplyr)
@@ -460,11 +346,20 @@ disease <- convertInputToDisease(input, 5)
 
 ## convert input to move
 move <- convertInputToMove(input)
+```
 
+```{r, eval = FALSE}
 ## write to external files
 dir.create("inputs")
-write.csv(disease, "inputs/disease.csv", row.names = FALSE)
-write.table(move, "inputs/move.dat", row.names = FALSE, sep = " ")
+write.table(disease, "inputs/disease.dat", row.names = FALSE, sep = " ", quote = FALSE)
+write.table(move, "inputs/move_mix.dat", row.names = FALSE, sep = " ", quote = FALSE)
+```
+
+```{r, echo = FALSE}
+## write to external files
+dir.create("data/MetaWards/inputs")
+write.table(disease, "data/MetaWards/inputs/disease.dat", row.names = FALSE, sep = " ", quote = FALSE)
+write.table(move, "data/MetaWards/inputs/move_mix.dat", row.names = FALSE, sep = " ", quote = FALSE)
 ```
 
 > **TODO: might want some form of folder clearup or suchlike?**
