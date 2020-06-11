@@ -1,0 +1,289 @@
+---
+title: "Quantile Kriging Second Experiment: Independent Outputs"
+author: "Evan Baker"
+date: "10/06/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+TL;DR You dont need PCA, and I'm less confident about a quantile kriging emulator than I was before.
+
+Ok, so let's return to the idea of fitting a stochastic emulator to the outputs (namely a Quantile Kriging emulator). Previously we used PCA to reduce the dimensionality of the output, but this does lose some information, which could be essential when it comes to calibration [(see here)](https://www.tandfonline.com/doi/full/10.1080/01621459.2018.1514306).
+
+What we could instead do, is simply fit an independent emulator to each output, and that's what we'll try here. I don't have a working version of mogp for multiple outputs, so I'm using RobustGasp instead, which is also fast enough to do this, but it does assume the same lengthscales for each output, so perhaps mogp is preferable here.
+
+
+## Data
+So first, lets get the data, and all the packages we need.
+The data we use here has 50 individual coordinates, each with 20 replicates.
+There's then a set of 10 valdiation coordinates, again with 20 replicates.
+
+This amount of replication is great for QK, although 50 unique sites is the bare minimum. Perhaps 100 unique sites and 10 replicates would be better?
+
+Again we use the square root transform as well, to ensure positivity when we come to prediction.
+
+```{r data}
+set.seed(12345)
+
+library(RobustGaSP)
+library(lhs)
+library(ggplot2)
+
+
+data = read.csv("data/QuantileKriging_experiment2_Independent/wards_by_day_100.csv", header = TRUE)
+
+#tidy up the data
+data_frame <- as.matrix(data)
+X <- data_frame[,1:5]
+y <- data_frame[,6:ncol(data_frame)]
+y <- sqrt(y) #sqrt transform to ensure positivity
+
+#split into training and testing data
+X_valid <- X[1001:1200,]
+y_valid <- y[1001:1200,]
+X <- X[1:1000,]
+y <- y[1:1000,]
+```
+
+
+## QK emulator
+We then fit QK emulators to this. 
+This involves obtaining empirical quantile estimates from the data, and then treating the quantile elvel as an additional input. We then just fit a GP to this data.
+This is the equivalent of pretending our computer mode actually reuires us input the quantile level we want, and then it spits out a noisy estimate of that.
+
+Converting the data to have the right format actually takes a long time (longer than fitting the emulators), in practice it might be wise to simply save the converted data, rather than re-converting it each time.
+
+
+```{r QK fit}
+#we're going for an evenly spread set of 10 quantiles
+quantiles <- as.numeric(maximinLHS(10,1))
+#obtain X:
+X_q = cbind(unique(X)[rep(1:nrow(unique(X)), length(quantiles)), ], rep(quantiles, each = nrow(unique(X))))
+#obtain y:
+y_q <- matrix(NA, nrow = nrow(X_q), ncol = ncol(y))
+for (row in 1:nrow(X_q)){ #for each X
+  index = which(apply(X, 1, function(x) all.equal(x, X_q[row,1:(ncol(X_q)-1)])) == "TRUE") #which rows are relevant
+  y_q[row, ] <- apply(y[index,], 2, quantile, X_q[row, ncol(X_q)]) #get necesarry quantile 
+}
+
+
+#fit the QK emulator
+library(RobustGaSP)
+model <- ppgasp(design = X_q, response = y_q, nugget.est=T)
+```
+
+
+
+## (wrong) validation
+Ok so now we want to validate the emulator(s), which we can do with the valdiation data.
+The naive approach is to predict the 0.975 and 0.025 quantiles using the emulator(s) and then see how many validaiton points lie within (should be 95%)
+
+```{r bad valid}
+m_pred5=predict(model,cbind(X_valid,0.5))
+m_pred025=predict(model,cbind(X_valid,0.025))
+m_pred975=predict(model,cbind(X_valid,0.975))
+
+#which location?
+loc = 1
+#within?
+within = ((y_valid[,loc]) > m_pred025$mean[,loc]) & ((y_valid[,loc]) < m_pred975$mean[,loc])
+ggplot()+
+  geom_point(aes(x=X_valid[,1], y = m_pred5$mean[,loc]))+
+  geom_errorbar(aes(x=X_valid[,1], ymin = m_pred025$mean[,loc], ymax =m_pred975$mean[,loc] ))+
+  geom_point(aes(x=X_valid[within,1], y = y_valid[within,loc]), colour = "blue")+
+  geom_point(aes(x=X_valid[!within,1], y = y_valid[!within,loc]), colour = "red")+
+  ylab("sqrt(y) (for site 1)")+
+  xlab("x_1")
+```
+
+Although only for 1 location (there are many), this clearly looks very bad, there are many points outside the intervals, and by quite a large margin in some places.
+
+
+## (better) validation
+The problem with the above strategy, is that it ignores the fact that the GP provides uncertainty estimates for the quantiles being predicted. A different strategy for prediction (and one we did before with the PCA analysis example) is to properly account for all the emulator uncertainty via sampling. Treating the input quantile as unknown (we're not interested in it specifically) and sampling values of it uniformly between 0 and 1, we can then make predictions for each (sampling from the GP each time), we obtain a sample prediction distribution for each prediction point (which we can then use to obtain empirical 95% intervals).
+
+
+```{r good valid}
+#for every prediction point:
+M = 1000 #how many samples
+X_pred <- unique(X_valid) #only want to predict for each unique point
+pred_samples <- list()
+for (i in 1:nrow(X_pred)){ #for every pred point
+  #get inputs to emulator to predict (by sampling quantiles and pairing with x):
+  quantiles_pred <- runif(M, 0, 1)
+  X_pred_sample <- cbind(matrix(rep(X_pred[i,],each=M),nrow=M), quantiles_pred)
+  
+  pred = predict(model, X_pred_sample ) #make predictions
+  samples <- matrix(NA, nrow = M, ncol = ncol(y))
+  for (j in 1:ncol(y)){ #then sample from normal (once per sample per output dimension)
+    samples[,j] <- rnorm(M, pred$mean[,j], pred$sd[,j])
+  }
+  pred_samples[[i]] <- samples
+  
+  print(i) #progress meter (need to do this for each pred point)
+
+}
+
+#now obtain validation plots
+
+m_pred5 <- t(sapply(pred_samples, function(x) apply(x, 2, quantile, 0.5))) #get intervals from sample dist
+m_pred975 <- t(sapply(pred_samples, function(x) apply(x, 2, quantile, 0.975)))
+m_pred025 <- t(sapply(pred_samples, function(x) apply(x, 2, quantile, 0.025)))
+
+#we repeat the predictions each 20 times, as the validaiton data is repeated 20 times each
+m_pred5 =matrix(rep(m_pred5,each=20),ncol=ncol(m_pred5))
+m_pred975 =matrix(rep(m_pred975,each=20),ncol=ncol(m_pred975))
+m_pred025 =matrix(rep(m_pred025,each=20),ncol=ncol(m_pred025))
+
+
+#Try Location 1
+loc = 1
+
+#within?
+within = ((y_valid[,loc]) > m_pred025[,loc]) & ((y_valid[,loc]) < m_pred975[,loc])
+
+ggplot()+
+  geom_errorbar(aes(x=X_valid[,1], ymin = m_pred025[,loc], ymax =m_pred975[,loc] ))+
+  geom_point(aes(x=X_valid[within,1], y = y_valid[within,loc]), colour = "blue")+
+  geom_point(aes(x=X_valid[!within,1], y = y_valid[!within,loc]), colour = "red")+
+  geom_point(aes(x=X_valid[,1], y = m_pred5[,loc]))+
+  ylab("sqrt(y) (for site 1)")+
+  xlab("x_1")
+
+
+#and then also check another location
+loc = 5000
+
+#within?
+within = ((y_valid[,loc]) > m_pred025[,loc]) & ((y_valid[,loc]) < m_pred975[,loc])
+
+ggplot()+
+  geom_errorbar(aes(x=X_valid[,1], ymin = m_pred025[,loc], ymax =m_pred975[,loc] ))+
+  geom_point(aes(x=X_valid[within,1], y = y_valid[within,loc]), colour = "blue")+
+  geom_point(aes(x=X_valid[!within,1], y = y_valid[!within,loc]), colour = "red")+
+  geom_point(aes(x=X_valid[,1], y = m_pred5[,loc]))+
+  ylab("sqrt(y) (for site 5000)")+
+  xlab("x_1")
+```
+
+Now including all the epistemic uncertainty (albeit in a computationally taxing way), we have much better predictions.
+It still isnt perfect - the 3rd largest $x_1$ value is particularly concerning, as is the large bias for the $x_1$ just above 0. But these are much better than the previous valdiation results.
+
+
+
+## Prediction
+
+We can then play a little with the emulator.
+Lets only adjust $x_4$, and see what the relationships are, keeping all other inputs as 0.
+
+
+```{r pred}
+#and now lets make a plot where we only adjust one single input parameter
+#now example pred with only first input changing
+library(lhs)
+X_pred <- randomLHS(100,5)
+X_pred[,c(1,2,3,5)] <- 0
+
+
+#predict via sampling
+#for every prediction point:
+M = 1000 #how many samples
+
+pred_samples <- list()
+for (i in 1:nrow(X_pred)){ #for every pred point
+  #get inputs to emulator to predict (by sampling quantiles and pairing with x):
+  quantiles_pred <- runif(M, 0, 1)
+  X_pred_sample <- cbind(matrix(rep(X_pred[i,],each=M),nrow=M), quantiles_pred)
+  
+  pred = predict(model, X_pred_sample ) #make predictions
+  samples <- matrix(NA, nrow = M, ncol = ncol(y))
+  for (j in 1:ncol(y)){ #then sample from normal (once per sample per output dimension)
+    samples[,j] <- rnorm(M, pred$mean[,j], pred$sd[,j])
+  }
+  pred_samples[[i]] <- samples
+}
+
+#now obtain plots
+
+m_pred5 <- t(sapply(pred_samples, function(x) apply(x, 2, quantile, 0.5))) #get intervals from sample dist
+m_pred975 <- t(sapply(pred_samples, function(x) apply(x, 2, quantile, 0.975)))
+m_pred025 <- t(sapply(pred_samples, function(x) apply(x, 2, quantile, 0.025)))
+
+
+#and predict for a few locations
+ggplot()+
+  geom_line(aes(x=X_pred[,4], y=m_pred5[,1]))+
+  geom_line(aes(x=X_pred[,4], y=m_pred025[,1]))+
+  geom_line(aes(x=X_pred[,4], y=m_pred975[,1]))+
+  ylab("y (for site 1)")+
+  xlab("x_4")
+
+ggplot()+
+  geom_line(aes(x=X_pred[,4], y=m_pred5[,2000]))+
+  geom_line(aes(x=X_pred[,4], y=m_pred025[,2000]))+
+  geom_line(aes(x=X_pred[,4], y=m_pred975[,2000]))+
+  ylab("y (for site 2000)")+
+  xlab("x_4")
+
+ggplot()+
+  geom_line(aes(x=X_pred[,4], y=m_pred5[,1111]))+
+  geom_line(aes(x=X_pred[,4], y=m_pred025[,1111]))+
+  geom_line(aes(x=X_pred[,4], y=m_pred975[,1111]))+
+  ylab("y (for site 1111)")+
+  xlab("x_4")
+```
+
+
+We can see here, for some locations theres some degree of skew. For others, it seems fairly symmetric. Whether this is the truth or not depends on whether the emulator is truly accurate. But it does seem like some amount of skew is present, and so a normal assumption might be too weak. But the amount fo skew does seem reasonably small, so perhaps its ok.
+
+
+
+## Real scale
+We can also convert back from the square root transform done previously, and make the same plots.
+
+```{r un-sqrt}
+#we want to convert this back to the real scale (previously everything was on the sqrt scale)
+pred_samples <- lapply(pred_samples, function(x) x^2)
+
+#now obtain plots
+
+m_pred5 <- t(sapply(pred_samples, function(x) apply(x, 2, quantile, 0.5))) #get intervals from sample dist
+m_pred975 <- t(sapply(pred_samples, function(x) apply(x, 2, quantile, 0.975)))
+m_pred025 <- t(sapply(pred_samples, function(x) apply(x, 2, quantile, 0.025)))
+
+
+#and predict for a few locations
+ggplot()+
+  geom_line(aes(x=X_pred[,4], y=m_pred5[,1]))+
+  geom_line(aes(x=X_pred[,4], y=m_pred025[,1]))+
+  geom_line(aes(x=X_pred[,4], y=m_pred975[,1]))+
+  ylab("y (for site 1)")+
+  xlab("x_4")
+
+ggplot()+
+  geom_line(aes(x=X_pred[,4], y=m_pred5[,2000]))+
+  geom_line(aes(x=X_pred[,4], y=m_pred025[,2000]))+
+  geom_line(aes(x=X_pred[,4], y=m_pred975[,2000]))+
+  ylab("y (for site 2000)")+
+  xlab("x_4")
+
+ggplot()+
+  geom_line(aes(x=X_pred[,4], y=m_pred5[,1111]))+
+  geom_line(aes(x=X_pred[,4], y=m_pred025[,1111]))+
+  geom_line(aes(x=X_pred[,4], y=m_pred975[,1111]))+
+  ylab("y (for site 1111)")+
+  xlab("x_4")
+```
+
+Here the shapes are a little different than on the sqrt scale, but not hugely so (we enver get to negative counts on the sqrt scale anyway). 
+
+
+##Thoughts
+
+The QK method seems flexible. It is however computationally expensive, due to the sampling required for prediction. It is also fairly data hungry, needing many replicates at each unique input setting, which reduces how much one can space-fill. It's also not perfect, and there are still obvious emulator flaws from the validaiton.
+
+The results here are also very different to those from last time (using the PCA approach), with the scale of the output data different. I'm not sure if this is because the simulator is different for this data than last time, the different resolution of the output data, or some error in one of the two emulators.
+
+If these concerns are acceptable, the QK approach is probably a good choice for emulation. Otherwise, more standard statistical models would be better (i.e. simply model the simulator output as a binomial distribution with a GP probability say, or a hetGP but the sqrt transform to induce more normality, etc). With stochastic simulators it's almost like we're back to regular statistics.

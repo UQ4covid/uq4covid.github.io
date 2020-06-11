@@ -37,7 +37,8 @@ Please read the [**guide to contributing vignettes**]({{ site.baseurl }}/vignett
 ## Emulation
 
 - [Emulating MetaWards output]({{ site.baseurl }}/vignettes/AdventuresInEmulators)
-- [Quantile Kriging Emulator]({{ site.baseurl }}/vignettes/QuantileKriging_experiment)
+- [Quantile Kriging Emulator (with PCA)]({{ site.baseurl }}/vignettes/QuantileKriging_experiment)
+- [Quantile Kriging Emulator (Independent outputs)]({{ site.baseurl }}/vignettes/QuantileKriging_experiment2_Independent)
 
 
 ## Calibration
