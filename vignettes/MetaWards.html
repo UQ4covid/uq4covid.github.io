@@ -11,7 +11,7 @@
 
 <meta name="author" content="TJ McKinley" />
 
-<meta name="date" content="2020-06-10" />
+<meta name="date" content="2020-06-11" />
 
 <title>Information on MetaWards</title>
 
@@ -1581,7 +1581,7 @@ summary {
 
 <h1 class="title toc-ignore">Information on MetaWards</h1>
 <h4 class="author">TJ McKinley</h4>
-<h4 class="date">10 June 2020</h4>
+<h4 class="date">11 June 2020</h4>
 
 </div>
 
@@ -1600,195 +1600,207 @@ summary {
 <li><span class="math inline">\(R\)</span>: recovered and immune;</li>
 <li><span class="math inline">\(D\)</span>: died.</li>
 </ul>
-<div id="htmlwidget-8cee9755f48693101646" style="width:100%;height:100%;" class="grViz html-widget"></div>
-<script type="application/json" data-for="htmlwidget-8cee9755f48693101646">{"x":{"diagram":"digraph {\n  \ngraph[layout = dot, rankdir = LR]\n\nnode [shape = rectangle]\n\nS\nE1 [label = <E<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]\nE2 [label = <E<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\nI1 [label = <I<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]\nI2 [label = <I<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\nA1 [label = <A<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]\nA2 [label = <A<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\nH1 [label = <H<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]\nH2 [label = <H<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\nC1 [label = <C<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]\nC2 [label = <C<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\nD\nR\n\nS -> E1 -> E2 -> {A1, I1}\nA1 -> A2 -> R\nI1 -> I2\nI2 -> {H1, D, R}\nH1 -> H2 -> {C1, D, R}\nC1 -> C2 -> {D, R}\n\nsubgraph {\n  rank = same; I1; A1;\n}\nsubgraph {\n  rank = same; I2; A2;\n}\n\n}","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
+<div id="htmlwidget-6c1ab898fa05c91a3483" style="width:100%;height:100%;" class="grViz html-widget"></div>
+<script type="application/json" data-for="htmlwidget-6c1ab898fa05c91a3483">{"x":{"diagram":"digraph {\n  \ngraph[layout = dot, rankdir = LR]\n\nnode [shape = rectangle]\n\nS\nE1 [label = <E<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]\nE2 [label = <E<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\nI1 [label = <I<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]\nI2 [label = <I<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\nA1 [label = <A<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]\nA2 [label = <A<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\nH1 [label = <H<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]\nH2 [label = <H<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\nC1 [label = <C<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]\nC2 [label = <C<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\nD\nR\n\nS -> E1 -> E2 -> {A1, I1}\nA1 -> A2 -> R\nI1 -> I2\nI2 -> {H1, D, R}\nH1 -> H2 -> {C1, D, R}\nC1 -> C2 -> {D, R}\n\nsubgraph {\n  rank = same; I1; A1;\n}\nsubgraph {\n  rank = same; I2; A2;\n}\n\n}","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
 <div id="metawards-setup" class="section level2">
 <h2>MetaWards setup</h2>
-<p>The model structure above allows for different progression pathways. MetaWards deals with this by assigning individuals to different “demographics”, where each demographic has a different progression pathway. There are currently seven pathways, which will be described below, but can be summarised as:</p>
+<p>The model structure above allows for different progression pathways. MetaWards deals with this by assigning individuals to different “demographics”, where each demographic can be used to represent different progression pathways. There are also <code>mover</code> functions that can be used to move individuals between demographics, and <code>mixer</code> functions that scale the force-of-infection (FOI) terms between the different demographics (explained later). There are currently seven pathways, which will be described below, but can be summarised as:</p>
 <ul>
-<li><code>A</code>: asymptomatic infections, always recover.</li>
-<li><code>SR</code>: symptomatic infections, leading to recovery.</li>
-<li><code>SD</code>: symptomatic infections, leading to death.</li>
-<li><code>SHR</code>: symptomatic infections, leading to hospital and then recovery.</li>
-<li><code>SHD</code>: symptomatic infections, leading to hospital and then death.</li>
-<li><code>SHCR</code>: symptomatic infections, leading to hospital, then critical care (ICU) and then recovery.</li>
-<li><code>SHCD</code>: symptomatic infections, leading to hospital, then critical care (ICU) and then death.</li>
+<li><code>SEAR</code>: asymptomatic infections, always recover.</li>
+<li><code>SEIR</code>: symptomatic infections, leading to recovery.</li>
+<li><code>SEID</code>: symptomatic infections, leading to death.</li>
+<li><code>SEIHR</code>: symptomatic infections, leading to hospital and then recovery.</li>
+<li><code>SEIHD</code>: symptomatic infections, leading to hospital and then death.</li>
+<li><code>SEIHCR</code>: symptomatic infections, leading to hospital, then critical care (ICU) and then recovery.</li>
+<li><code>SEIHCD</code>: symptomatic infections, leading to hospital, then critical care (ICU) and then death.</li>
 </ul>
-<p>Therefore in MetaWards we can control the probability of individuals progressing through each pathway through the <code>demographics.json</code> file, which should look something like:</p>
+<p>In practice, we can summarise these through four demographics, and then <code>move</code> functions that conditionally move individuals through the seven pathways. First, we set up the <code>demographics.json</code> file, which should look something like:</p>
 <pre><code>{
-  &quot;demographics&quot; : [&quot;A&quot;, &quot;SR&quot;, &quot;SD&quot;, &quot;SHR&quot;, &quot;SHD&quot;, &quot;SHCR&quot;, &quot;SHCD&quot;],
-  &quot;work_ratios&quot;  : [ 0.6, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05 ],
-  &quot;play_ratios&quot;  : [ 0.6, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05 ],
-  &quot;diseases&quot;     : [&quot;ncov_A&quot;, &quot;ncov_SR&quot;, &quot;ncov_SD&quot;, &quot;ncov_SHR&quot;, &quot;ncov_SHCR&quot;, &quot;ncov_SHCR&quot;, &quot;ncov_SHCD&quot;]
+  &quot;demographics&quot; : [&quot;genpop&quot;, &quot;asymp&quot;, &quot;hospital&quot;, &quot;critical&quot;],
+  &quot;work_ratios&quot;  : [ 1.0, 0.0, 0.0, 0.0 ],
+  &quot;play_ratios&quot;  : [ 1.0, 0.0, 0.0, 0.0 ],
+  &quot;diseases&quot;     : [ null, null, null, null ]
 }</code></pre>
-<p>The disease <code>.json</code> files are defined <a href="#pathways">here</a>.</p>
-<p>We want the proportions stored in <code>work_ratios</code> and <code>play_ratios</code> to be variable parameters in the model. Therefore we want to specify proportions of individuals in each pathway such that <span class="math inline">\(\sum_{i \in \mathcal{P}} p_i = 1\)</span>, where <span class="math inline">\(\mathcal{P} = \{A, SR, SD, SHR, SHD, SHCR, SHCD\}\)</span>.</p>
+<p>Individuals in the <code>genpop</code> demographic move through the <span class="math inline">\(SEIR\)</span> and <span class="math inline">\(SEID\)</span> pathways; the <code>asymp</code> demographic moves through the <code>SEAR</code> pathway; some individuals in the <code>genpop</code> demographic can be moved to the <code>hospital</code> demographic, and thus follow the <code>SEIHR</code> and <code>SEIHD</code> pathways; and finally, some individuals in the <code>hospital</code> demographic can be moved to the <code>critical</code> demographic, and thus follow the <code>SEIHCR</code> and <code>SEIHCD</code> pathways.</p>
+<p>We want the proportions stored in <code>work_ratios</code> and <code>play_ratios</code> to be variable parameters in the model. Therefore we want to specify proportions of individuals in each pathway such that <span class="math inline">\(\sum_{i \in \mathcal{P}} p_i = 1\)</span>, where <span class="math inline">\(\mathcal{P} = \{GP, A, H, C\}\)</span>.</p>
 <blockquote>
 <p>Here we assume the same ratios in the <code>work</code> and <code>play</code> populations, but in practice these could be changed.</p>
 </blockquote>
-<p>At the moment we have to create separate <code>demographics.json</code> files for each different parameter set. Code to do this is provided <a href="#code">here</a>.</p>
 <div id="parameters" class="section level3">
 <h3>Parameters</h3>
 <p>Once the demographics have been setup, we can then control progress through the different states as:</p>
 <ul>
 <li><span class="math inline">\(p_{SE_1}\)</span> driven by <span class="math inline">\(\beta\)</span> parameters, defined by <span class="math inline">\(R_0\)</span> and length of infectious period (see <a href="#code">here</a>);</li>
-<li><span class="math inline">\(p_{E_1E_2} = 1\)</span> (probability);</li>
-<li><span class="math inline">\(p_{E_2A_1} = 1 - e^{-\gamma^*_{E}}\)</span> where <span class="math inline">\(\gamma^*_E = \frac{1}{T_E - 1}\)</span> with <span class="math inline">\(T_E\)</span> the mean incubation period;</li>
-<li><span class="math inline">\(p_{E_2I_1} = 1 - e^{-\gamma^*_{E}}\)</span>;</li>
-<li><span class="math inline">\(p_{A_1A_2} = 1\)</span> (probability);</li>
+<li><span class="math inline">\(p_{E_1E_2} = 1\)</span>;</li>
+<li><span class="math inline">\(p_{E_2A_1} = p_{EA}\left(1 - e^{-\gamma^*_{E}}\right)\)</span> where <span class="math inline">\(\gamma^*_E = \frac{1}{T_E - 1}\)</span> with <span class="math inline">\(T_E\)</span> the mean incubation period;</li>
+<li><span class="math inline">\(p_{A_1A_2} = 1\)</span>;</li>
 <li><span class="math inline">\(p_{A_2R} = 1 - e^{-\gamma^*_I}\)</span> where <span class="math inline">\(\gamma^*_I = \frac{1}{T_I - 1}\)</span> with <span class="math inline">\(T_I\)</span> the mean infectious period;</li>
-<li><span class="math inline">\(p_{I_1I_2} = 1\)</span> (probability);</li>
-<li><span class="math inline">\(p_{I_2H_1} = 1 - e^{-\gamma^*_{I}}\)</span> where <span class="math inline">\(\gamma^*_I = \frac{1}{T_I - 1}\)</span> with <span class="math inline">\(T_I\)</span> the mean infectious period;</li>
-<li><span class="math inline">\(p_{I_2R} = 1 - e^{-\gamma^*_{I}}\)</span>;</li>
-<li><span class="math inline">\(p_{I_2D} = 1 - e^{-\gamma^*_{I}}\)</span>;</li>
-<li><span class="math inline">\(p_{H_1H_2} = 1\)</span> (probability);</li>
-<li><span class="math inline">\(p_{H_2C_1} = 1 - e^{-\gamma^*_{HC}}\)</span> where <span class="math inline">\(\gamma^*_{HC} = \frac{1}{T_H - T_C - 1}\)</span> with <span class="math inline">\(T_H\)</span> the mean length of a hospital stay and <span class="math inline">\(T_C\)</span> is the mean length of time spent in ICU;</li>
-<li><span class="math inline">\(p_{H_2D} = 1 - e^{-\gamma^*_{H}}\)</span> where <span class="math inline">\(\gamma^*_H = \frac{1}{T_H - 1}\)</span>;</li>
-<li><span class="math inline">\(p_{H_2R} = 1 - e^{-\gamma^*_{H}}\)</span>;</li>
-<li><span class="math inline">\(p_{C_1C_2} = 1\)</span> (probability);</li>
-<li><span class="math inline">\(p_{C_2D} = 1 - e^{-\gamma^*_{C}}\)</span> where <span class="math inline">\(\gamma^*_C = \frac{1}{T_C - 1}\)</span> with <span class="math inline">\(T_C\)</span> is the mean length of time spent in ICU;</li>
-<li><span class="math inline">\(p_{C_2R} = 1 - e^{-\gamma^*_{C}}\)</span>.</li>
+<li><span class="math inline">\(p_{E_2I_1} = \left(1 - p_{EA}\right)\left(1 - e^{-\gamma^*_{E}}\right)\)</span>;</li>
+<li><span class="math inline">\(p_{I_1I_2} = 1\)</span>;</li>
+<li><span class="math inline">\(p_{I_2H_1} = p_{IH}\left(1 - e^{-\gamma^*_{I}}\right)\)</span> where <span class="math inline">\(\gamma^*_I = \frac{1}{T_I - 1}\)</span>;</li>
+<li><span class="math inline">\(p_{I_2R} = p_{IR}\left(1 - e^{-\gamma^*_{I}}\right)\)</span>;</li>
+<li><span class="math inline">\(p_{I_2D} = \left(1 - p_{IH} - p_{IR}\right)\left(1 - e^{-\gamma^*_{I}}\right)\)</span>;</li>
+<li><span class="math inline">\(p_{H_1H_2} = 1\)</span>;</li>
+<li><span class="math inline">\(p_{H_2C_1} = p_{HC}\left(1 - e^{-\gamma^*_{HC}}\right)\)</span> where <span class="math inline">\(\gamma^*_{HC} = \frac{1}{T_H - T_C - 1}\)</span> with <span class="math inline">\(T_H\)</span> the mean length of a hospital stay and <span class="math inline">\(T_C\)</span> is the mean length of time spent in ICU;</li>
+<li><span class="math inline">\(p_{H_2R} = p_{HR}\left(1 - e^{-\gamma^*_{H}}\right)\)</span> where <span class="math inline">\(\gamma^*_H = \frac{1}{T_H - 1}\)</span>;</li>
+<li><span class="math inline">\(p_{H_2D} = \left(1 - p_{HC} - p_{HR}\right)\left(1 - e^{-\gamma^*_{H}}\right)\)</span>;</li>
+<li><span class="math inline">\(p_{C_1C_2} = 1\)</span>;</li>
+<li><span class="math inline">\(p_{C_2R} = p_{CR}\left(1 - e^{-\gamma^*_{C}}\right)\)</span> where <span class="math inline">\(\gamma^*_C = \frac{1}{T_C - 1}\)</span> with <span class="math inline">\(T_C\)</span> is the mean length of time spent in ICU;</li>
+<li><span class="math inline">\(p_{C_2D} = \left(1 - p_{CR}\right)\left(1 - e^{-\gamma^*_{C}}\right)\)</span>.</li>
 </ul>
 <p>Lockdown can be controlled either by constraining movements over a certain distance, or by scaling the <span class="math inline">\(\beta\)</span> parameters. We do the latter at the moment.</p>
 </div>
-<div id="pathways" class="section level3">
-<h3>Pathways <code>.json</code> files</h3>
-<p>We need different disease <code>.json</code> files for the different pathways.</p>
-<div id="a-pathway" class="section level4">
-<h4><code>A</code> pathway</h4>
-<p>The asymptomatic pathway (from above) is:</p>
-<div id="htmlwidget-4dec6bdb0c2af76d40af" style="width:100%;height:100%;" class="grViz html-widget"></div>
-<script type="application/json" data-for="htmlwidget-4dec6bdb0c2af76d40af">{"x":{"diagram":"digraph {\n  \ngraph[layout = dot, rankdir = LR]\n\nnode [shape = rectangle]\n\nS\nE1 [label = <E<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]\nE2 [label = <E<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\nA1 [label = <A<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]\nA2 [label = <A<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\nR\n\nS -> E1 -> E2 -> A1 -> A2 -> R\n}","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
-<p>Hence we need <code>ncov_A.json</code>:</p>
-<pre><code>{ &quot;name&quot;             : &quot;SARS-Cov-2 - asymptomatic pathway&quot;,
+<div id="disease-.json-file" class="section level3">
+<h3>Disease <code>.json</code> file</h3>
+<p>All pathways have an <span class="math inline">\(SEI(R)\)</span> structure, so we can set up an <code>ncov.json</code> file for the overall disease:</p>
+<pre><code>{ &quot;name&quot;             : &quot;SARS-Cov-2&quot;,
   &quot;version&quot;          : &quot;June 9th 2020&quot;,
   &quot;author(s)&quot;        : &quot;UQ4COVID Team&quot;,
   &quot;contact(s)&quot;       : &quot;e-mail...&quot;,
   &quot;reference(s)&quot;     : &quot;references...&quot;,  
-  &quot;beta&quot;             : [0.0, 0.0, 1.0, 1.0, 0.0],
-  &quot;progress&quot;         : [1.0, 1.0, 1.0, 1.0, 0.0],
-  &quot;too_ill_to_move&quot;  : [0.0, 0.0, 0.0, 0.0, 0.0],
-  &quot;contrib_foi&quot;      : [1.0, 1.0, 1.0, 1.0, 0.0]
+  &quot;beta&quot;             : [0.0, 0.0, 1.0, 1.0, 0.0, 0.0],
+  &quot;progress&quot;         : [1.0, 1.0, 1.0, 1.0, 0.0, 0.0],
+  &quot;too_ill_to_move&quot;  : [0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+  &quot;contrib_foi&quot;      : [1.0, 1.0, 1.0, 1.0, 0.0, 0.0]
 }</code></pre>
 <blockquote>
 <p><strong>Note:</strong> We would want asymptomatics to be less infectious than symptomatics, so could amend <span class="math inline">\(\beta\)</span>, or set <code>contrib_foi</code>?</p>
 </blockquote>
 </div>
-<div id="sr-pathway" class="section level4">
-<h4><code>SR</code> pathway</h4>
-<p>The symptomatic/recovered pathway (from above) is:</p>
-<div id="htmlwidget-ae598e84fce3f033d486" style="width:100%;height:100%;" class="grViz html-widget"></div>
-<script type="application/json" data-for="htmlwidget-ae598e84fce3f033d486">{"x":{"diagram":"digraph {\n  \ngraph[layout = dot, rankdir = LR]\n\nnode [shape = rectangle]\n\nS\nE1 [label = <E<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]\nE2 [label = <E<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\nI1 [label = <I<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]\nI2 [label = <I<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\nR\n\nS -> E1 -> E2 -> I1 -> I2 -> R\n}","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
-<p>Hence we need <code>ncov_SR.json</code>:</p>
-<pre><code>{ &quot;name&quot;             : &quot;SARS-Cov-2 - symptomatic/recovered pathway&quot;,
-  &quot;version&quot;          : &quot;June 9th 2020&quot;,
-  &quot;author(s)&quot;        : &quot;UQ4COVID Team&quot;,
-  &quot;contact(s)&quot;       : &quot;e-mail...&quot;,
-  &quot;reference(s)&quot;     : &quot;references...&quot;,  
-  &quot;beta&quot;             : [0.0, 0.0, 1.0, 1.0, 0.0],
-  &quot;progress&quot;         : [1.0, 1.0, 1.0, 1.0, 0.0],
-  &quot;too_ill_to_move&quot;  : [0.0, 0.0, 0.0, 0.0, 0.0],
-  &quot;contrib_foi&quot;      : [1.0, 1.0, 1.0, 1.0, 0.0]
-}</code></pre>
+<div id="moving-functions" class="section level3">
+<h3>Moving functions</h3>
+<p>We need moving functions to move individuals from <span class="math inline">\(E_2 \to A_1\)</span>, <span class="math inline">\(E_2 \to I_1\)</span>, <span class="math inline">\(I_2 \to H_1\)</span> and <span class="math inline">\(H_2 \to C_1\)</span>, and thus we need a custom <code>move</code> function. Create a file <code>move_pathways.py</code> containing:</p>
+<pre><code>from metawards.movers import go_stage
+
+def move_pathways(**kwargs):
+    # extract user defined parameters
+    params = network.params
+
+    pEA = params.user_params[&quot;pEA&quot;]
+    pIH = params.user_params[&quot;pIH&quot;]
+    pIR = params.user_params[&quot;pIR&quot;]
+    pHC = params.user_params[&quot;pHC&quot;]
+    pHR = params.user_params[&quot;pHR&quot;]
+    pCR = params.user_params[&quot;pCR&quot;]
+
+    # move (100 * pEA)% of E2 genpop to A1 asymp
+    func1 = lambda **kwargs: go_stage(go_from=&quot;genpop&quot;,
+                                      go_to=&quot;asymp&quot;,
+                                      from_stage=1,
+                                      to_stage=2,
+                                      fraction=pEA,
+                                      **kwargs)
+
+    # move A2 asymp to R genpop
+    func2 = lambda **kwargs: go_stage(go_from=&quot;asymp&quot;,
+                                      go_to=&quot;genpop&quot;,
+                                      from_stage=3,
+                                      to_stage=4,
+                                      fraction=1.0,
+                                      **kwargs)
+                                      
+    # move (100 * pIH)% of I2 genpop to H1 hospital
+    func3 = lambda **kwargs: go_stage(go_from=&quot;genpop&quot;,
+                                      go_to=&quot;hospital&quot;,
+                                      from_stage=3,
+                                      to_stage=2,
+                                      fraction=pIH,
+                                      **kwargs)
+                                      
+    # move (100 * (1 - pIH - pIR))% of I2 genpop to D genpop
+    # (1 - pIH) adjustment is due to ordering of events (so
+    # operates on remainder from move above)
+    func4 = lambda **kwargs: go_stage(go_from=&quot;genpop&quot;,
+                                      go_to=&quot;genpop&quot;,
+                                      from_stage=3,
+                                      to_stage=5,
+                                      fraction=(1.0 - pIH - pIR) / (1.0 - pIH),
+                                      **kwargs)
+                                      
+    # move (100 * pHC)% of H2 hospital to C1 critical
+    func5 = lambda **kwargs: go_stage(go_from=&quot;hospital&quot;,
+                                      go_to=&quot;critical&quot;,
+                                      from_stage=3,
+                                      to_stage=2,
+                                      fraction=pHC,
+                                      **kwargs)
+                                      
+    # move (100 * pHR)% of H2 hospital to R genpop
+    # (1 - pHC) adjustment is due to ordering of events (so
+    # operates on remainder from move above)
+    func6 = lambda **kwargs: go_stage(go_from=&quot;hospital&quot;,
+                                      go_to=&quot;genpop&quot;,
+                                      from_stage=3,
+                                      to_stage=4,
+                                      fraction=pHR / (1 - pHC),
+                                      **kwargs)
+                                      
+    # move remainder of H2 hospital to D genpop
+    func7 = lambda **kwargs: go_stage(go_from=&quot;hospital&quot;,
+                                      go_to=&quot;genpop&quot;,
+                                      from_stage=3,
+                                      to_stage=5,
+                                      fraction=1.0,
+                                      **kwargs)
+                                      
+    # move (100 * pCR)% of C2 critical to R genpop
+    func8 = lambda **kwargs: go_stage(go_from=&quot;critical&quot;,
+                                      go_to=&quot;genpop&quot;,
+                                      from_stage=3,
+                                      to_stage=4,
+                                      fraction=pCR,
+                                      **kwargs)
+                                      
+    # move remainder of C2 critical to D genpop
+    func9 = lambda **kwargs: go_stage(go_from=&quot;critical&quot;,
+                                      go_to=&quot;genpop&quot;,
+                                      from_stage=3,
+                                      to_stage=5,
+                                      fraction=1.0,
+                                      **kwargs)
+
+    return [func1, func2, func3, func4, func5, func6, func7, func8, func9]</code></pre>
 </div>
-<div id="sd-pathway" class="section level4">
-<h4><code>SD</code> pathway</h4>
-<p>The symptomatic/dead pathway (from above) is:</p>
-<div id="htmlwidget-e7143fd350b23d058185" style="width:100%;height:100%;" class="grViz html-widget"></div>
-<script type="application/json" data-for="htmlwidget-e7143fd350b23d058185">{"x":{"diagram":"digraph {\n  \ngraph[layout = dot, rankdir = LR]\n\nnode [shape = rectangle]\n\nS\nE1 [label = <E<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]\nE2 [label = <E<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\nI1 [label = <I<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]\nI2 [label = <I<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\nD\n\nS -> E1 -> E2 -> I1 -> I2 -> D\n}","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
-<p>Hence we need <code>ncov_SD.json</code>:</p>
-<pre><code>{ &quot;name&quot;             : &quot;SARS-Cov-2 - symptomatic/dead pathway&quot;,
-  &quot;version&quot;          : &quot;June 9th 2020&quot;,
-  &quot;author(s)&quot;        : &quot;UQ4COVID Team&quot;,
-  &quot;contact(s)&quot;       : &quot;e-mail...&quot;,
-  &quot;reference(s)&quot;     : &quot;references...&quot;,  
-  &quot;beta&quot;             : [0.0, 0.0, 1.0, 1.0, 0.0],
-  &quot;progress&quot;         : [1.0, 1.0, 1.0, 1.0, 0.0],
-  &quot;too_ill_to_move&quot;  : [0.0, 0.0, 0.0, 0.0, 0.0],
-  &quot;contrib_foi&quot;      : [1.0, 1.0, 1.0, 1.0, 0.0]
-}</code></pre>
-<blockquote>
-<p><strong>Note</strong>: not quite sure how to differentiate recovereds from dead, usually the latter would not contribute to the population sizes going forward, though the former would. In this case since populations are relatively large it will make little difference, so the <code>SR</code> and <code>SD</code> pathways would have the same parameters, but would be differentiated as a straightforward way to extract death counts for e.g. calibration.</p>
-</blockquote>
-</div>
-<div id="shr" class="section level4">
-<h4><code>SHR</code></h4>
-<p>The symptomatic/hospital/recovered pathway (from above) is:</p>
-<div id="htmlwidget-413667e7b6c8b98a2e28" style="width:100%;height:100%;" class="grViz html-widget"></div>
-<script type="application/json" data-for="htmlwidget-413667e7b6c8b98a2e28">{"x":{"diagram":"digraph {\n  \ngraph[layout = dot, rankdir = LR]\n\nnode [shape = rectangle]\n\nS\nE1 [label = <E<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]\nE2 [label = <E<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\nI1 [label = <I<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]\nI2 [label = <I<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\nH1 [label = <H<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]\nH2 [label = <H<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\nR\n\nS -> E1 -> E2 -> I1 -> I2 -> H1 -> H2 -> R\n}","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
-<p>Hence we need <code>ncov_SHR.json</code>:</p>
-<pre><code>{ &quot;name&quot;             : &quot;SARS-Cov-2 - symptomatic/hospital/recovered pathway&quot;,
-  &quot;version&quot;          : &quot;June 9th 2020&quot;,
-  &quot;author(s)&quot;        : &quot;UQ4COVID Team&quot;,
-  &quot;contact(s)&quot;       : &quot;e-mail...&quot;,
-  &quot;reference(s)&quot;     : &quot;references...&quot;,  
-  &quot;beta&quot;             : [0.0, 0.0, 1.0, 1.0, 1.0, 1.0, 0.0],
-  &quot;progress&quot;         : [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.0],
-  &quot;too_ill_to_move&quot;  : [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
-  &quot;contrib_foi&quot;      : [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.0]
-}</code></pre>
-</div>
-<div id="shd-pathway" class="section level4">
-<h4><code>SHD</code> pathway</h4>
-<p>The symptomatic/hospital/death pathway (from above) is:</p>
-<div id="htmlwidget-1c9a91870f5ca52f0a95" style="width:100%;height:100%;" class="grViz html-widget"></div>
-<script type="application/json" data-for="htmlwidget-1c9a91870f5ca52f0a95">{"x":{"diagram":"digraph {\n  \ngraph[layout = dot, rankdir = LR]\n\nnode [shape = rectangle]\n\nS\nE1 [label = <E<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]\nE2 [label = <E<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\nI1 [label = <I<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]\nI2 [label = <I<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\nH1 [label = <H<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]\nH2 [label = <H<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\nD\n\nS -> E1 -> E2 -> I1 -> I2 -> H1 -> H2 -> D\n}","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
-<p>Hence we need <code>ncov_SHD.json</code>:</p>
-<pre><code>{ &quot;name&quot;             : &quot;SARS-Cov-2 - symptomatic/hospital/dead pathway&quot;,
-  &quot;version&quot;          : &quot;June 9th 2020&quot;,
-  &quot;author(s)&quot;        : &quot;UQ4COVID Team&quot;,
-  &quot;contact(s)&quot;       : &quot;e-mail...&quot;,
-  &quot;reference(s)&quot;     : &quot;references...&quot;,  
-  &quot;beta&quot;             : [0.0, 0.0, 1.0, 1.0, 1.0, 1.0, 0.0],
-  &quot;progress&quot;         : [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.0],
-  &quot;too_ill_to_move&quot;  : [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
-  &quot;contrib_foi&quot;      : [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.0]
-}</code></pre>
-<blockquote>
-<p><strong>Note</strong>: see <code>SR</code> and <code>SD</code> note from earlier.</p>
-</blockquote>
-</div>
-<div id="shcr-pathway" class="section level4">
-<h4><code>SHCR</code> pathway</h4>
-<p>The symptomatic/hospital/ICU/recovered pathway (from above) is:</p>
-<div id="htmlwidget-6c6b8893d562321a1428" style="width:100%;height:100%;" class="grViz html-widget"></div>
-<script type="application/json" data-for="htmlwidget-6c6b8893d562321a1428">{"x":{"diagram":"digraph {\n  \ngraph[layout = dot, rankdir = LR]\n\nnode [shape = rectangle]\n\nS\nE1 [label = <E<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]\nE2 [label = <E<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\nI1 [label = <I<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]\nI2 [label = <I<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\nH1 [label = <H<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]\nH2 [label = <H<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\nC1 [label = <C<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]\nC2 [label = <C<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\nR\n\nS -> E1 -> E2 -> I1 -> I2 -> H1 -> H2 -> C1 -> C2 -> R\n}","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
-<p>Hence we need <code>ncov_SHCR.json</code>:</p>
-<pre><code>{ &quot;name&quot;             : &quot;SARS-Cov-2 - symptomatic/hospital/ICU/recovered pathway&quot;,
-  &quot;version&quot;          : &quot;June 9th 2020&quot;,
-  &quot;author(s)&quot;        : &quot;UQ4COVID Team&quot;,
-  &quot;contact(s)&quot;       : &quot;e-mail...&quot;,
-  &quot;reference(s)&quot;     : &quot;references...&quot;,  
-  &quot;beta&quot;             : [0.0, 0.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.0],
-  &quot;progress&quot;         : [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.0],
-  &quot;too_ill_to_move&quot;  : [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
-  &quot;contrib_foi&quot;      : [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.0]
-}</code></pre>
-</div>
-<div id="shcd-pathway" class="section level4">
-<h4><code>SHCD</code> pathway</h4>
-<p>The symptomatic/hospital/ICU/dead pathway (from above) is:</p>
-<div id="htmlwidget-80c26c6cbaab585473bf" style="width:100%;height:100%;" class="grViz html-widget"></div>
-<script type="application/json" data-for="htmlwidget-80c26c6cbaab585473bf">{"x":{"diagram":"digraph {\n  \ngraph[layout = dot, rankdir = LR]\n\nnode [shape = rectangle]\n\nS\nE1 [label = <E<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]\nE2 [label = <E<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\nI1 [label = <I<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]\nI2 [label = <I<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\nH1 [label = <H<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]\nH2 [label = <H<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\nC1 [label = <C<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]\nC2 [label = <C<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\nD\n\nS -> E1 -> E2 -> I1 -> I2 -> H1 -> H2 -> C1 -> C2 -> D\n}","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
-<p>Hence we need <code>ncov_SHCD.json</code>:</p>
-<pre><code>{ &quot;name&quot;             : &quot;SARS-Cov-2 - symptomatic/hospital/ICU/dead pathway&quot;,
-  &quot;version&quot;          : &quot;June 9th 2020&quot;,
-  &quot;author(s)&quot;        : &quot;UQ4COVID Team&quot;,
-  &quot;contact(s)&quot;       : &quot;e-mail...&quot;,
-  &quot;reference(s)&quot;     : &quot;references...&quot;,  
-  &quot;beta&quot;             : [0.0, 0.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.0],
-  &quot;progress&quot;         : [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.0],
-  &quot;too_ill_to_move&quot;  : [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
-  &quot;contrib_foi&quot;      : [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.0]
-}</code></pre>
-<blockquote>
-<p><strong>Note</strong>: see <code>SR</code> and <code>SD</code> note from earlier.</p>
-</blockquote>
-</div>
+<div id="interaction-matrices" class="section level3">
+<h3>Interaction matrices</h3>
+<p>The <strong>interaction matrix</strong> scales the FOI that different demographics have on other demographics. We need to store this in a file called <code>mix_pathways.py</code>:</p>
+<pre><code>from metawards.mixers import merge_using_matrix
+
+def mix_pathways(network, **kwargs):
+    params = network.params
+
+    GP_GP = params.user_params[&quot;GP_GP&quot;]
+    GP_A = params.user_params[&quot;GP_A&quot;]
+    GP_H = params.user_params[&quot;GP_H&quot;]
+    GP_C = params.user_params[&quot;GP_C&quot;]
+
+    A_GP = params.user_params[&quot;A_GP&quot;]
+    A_A = params.user_params[&quot;A_A&quot;]
+    A_H = params.user_params[&quot;A_H&quot;]
+    A_C = params.user_params[&quot;A_C&quot;]
+
+    H_GP = params.user_params[&quot;H_GP&quot;]
+    H_A = params.user_params[&quot;H_A&quot;]
+    H_H = params.user_params[&quot;H_H&quot;]
+    H_C = params.user_params[&quot;H_C&quot;]
+
+    C_GP = params.user_params[&quot;C_GP&quot;]
+    C_A = params.user_params[&quot;C_A&quot;]
+    C_H = params.user_params[&quot;C_H&quot;]
+    C_C = params.user_params[&quot;C_C&quot;]
+
+    matrix = [ [GP_GP, GP_A, GP_H, GP_C],
+               [A_GP, A_A, A_H, A_C],
+               [H_GP, H_A, H_H, H_C],
+               [C_GP, C_A, C_H, C_C] ]
+
+    network.demographics.interaction_matrix = matrix
+
+    return [merge_using_matrix]</code></pre>
 </div>
 <div id="code" class="section level3">
 <h3>Code</h3>
-<p>To run designs, we need ways to convert designs to both different <code>demographics.json</code> files, but also <code>disease.csv</code> files containing different parameters to use for different runs. For consistency, we will define three spaces:</p>
+<p>To run designs, we need to generate a <code>disease.csv</code> file containing different parameters to use for different runs. For consistency, we will define three spaces:</p>
 <ul>
 <li><em>input</em> space: this relates to the parameters ranges (defined below);</li>
 <li><em>design</em> space: this will usually be in <span class="math inline">\((0, 1)\)</span> or <span class="math inline">\((-1, 1)\)</span> space;</li>
@@ -1800,28 +1812,23 @@ summary {
     \mbox{mean incubation period ($T_E$)}&amp;: (4, 6)\\
     \mbox{mean infectious period ($T_I$)}&amp;: (2, 4)\\
     \mbox{mean hospital stay ($T_H$)}&amp;: (4, 12)\\
-    \mbox{mean critical care stay ($T_C$)}&amp;: &lt; T_H\\
+    \mbox{proportion of hospital time spent in critical care ($p_{tC}$)}&amp;: (0, 1)\\
     \mbox{lockdown 1 restrict}&amp;: (0, 1)\\
     \mbox{lockdown 2 release}&amp;: (0, 1)\\
-    p_{A}&amp;: (0, 1)\\
-    p_{SR}&amp;: (0, 1)\\
-    p_{SD}&amp;: (0, 1)\\
-    p_{SHR}&amp;: (0, 1)\\
-    p_{SHD}&amp;: (0, 1)\\
-    p_{SHCR}&amp;: (0, 1)\\
-    p_{SHCD}&amp;: (0, 1)\\
-    \mbox{where}~\sum_{i \in \mathcal{P}} p_i &amp;= 1~ \mbox{and}~\mathcal{P} = \{A, SR, SD, SHR, SHD, SHCR, SHCD\}.
-\end{align}\]</span> We need: <strong>ranges for the length of hospital stay</strong> (perhaps chat to Rob Challen)? Current hospital rough guides taken from <a href="https://www.medrxiv.org/content/10.1101/2020.04.23.20076042v1.full.pdf">https://www.medrxiv.org/content/10.1101/2020.04.23.20076042v1.full.pdf</a>. (I’ve stuck in IQR for comparison, but clearly we need to think about this more.)</p>
-<p>To maintain orthogonality, it might be worth re-parameterising such that: <span class="math display">\[\begin{align}
-    p_{A} &amp;= p_{EA}\\
-    p_{SR} &amp;= \left(1 - p_{EA}\right)p_{IR}\\
-    p_{SD} &amp;= \left(1 - p_{EA}\right)\left(1 - p_{IR}\right)p_{ID}\\
-    p_{SHR} &amp;= \left(1 - p_{EA}\right)\left(1 - p_{IR}\right)\left(1 - p_{ID}\right)p_{HR}\\
-    p_{SHD} &amp;= \left(1 - p_{EA}\right)\left(1 - p_{IR}\right)\left(1 - p_{ID}\right)\left(1 - p_{HR}\right)p_{HD}\\
-    p_{SHCD} &amp;= \left(1 - p_{EA}\right)\left(1 - p_{IR}\right)\left(1 - p_{ID}\right)\left(1 - p_{HR}\right)\left(1 - p_{HD}\right).
-\end{align}\]</span> We also have that the time in critical care, <span class="math inline">\(T_C\)</span>, must be less than the time spent in hospital, <span class="math inline">\(T_H\)</span>. Therefore we can also introduce a scaling parameter, <span class="math inline">\(p_{tC}\)</span>, which encodes the proportion of <span class="math inline">\(T_H\)</span> that is spent in critical care, and hence we can re-parameterise such that <span class="math display">\[
+    p_{EA}&amp;: (0, 1)\\
+    p_{IH}&amp;: (0, 1)\\
+    p_{IR}&amp;: (0, 1) \quad \mbox{such that}~\sum_{i \in \{H, R\}} p_{Ii} &lt; 1\\
+    p_{HC}&amp;: (0, 1)\\
+    p_{HR}&amp;: (0, 1) \quad \mbox{such that}~\sum_{i \in \{C, R\}} p_{Hi} &lt; 1\\
+    p_{CR}&amp;: (0, 1)
+\end{align}\]</span> We have that the time in critical care, <span class="math inline">\(T_C\)</span>, must be a proportion of the time spent in hospital, <span class="math inline">\(T_H\)</span>, and thus <span class="math display">\[
     T_C = p_{tC}T_H.
-\]</span> Thus the <em>input</em> parameter ranges become: <span class="math display">\[\begin{align}
+\]</span></p>
+<p>We need: <strong>ranges for the length of hospital stay</strong> (perhaps chat to Rob Challen)? Current hospital rough guides taken from <a href="https://www.medrxiv.org/content/10.1101/2020.04.23.20076042v1.full.pdf">https://www.medrxiv.org/content/10.1101/2020.04.23.20076042v1.full.pdf</a>. (I’ve stuck in IQR for comparison, but clearly we need to think about this more.)</p>
+<p>To ensure orthogonality, we could reparameterise such that: <span class="math display">\[\begin{align}
+    p_{IR} &amp;= \left(1 - p_{IH}\right) p^\prime_{IR}\\
+    p_{HR} &amp;= \left(1 - p_{HC}\right) p^\prime_{HR}
+\end{align}\]</span> and thus we have parameter ranges: <span class="math display">\[\begin{align}
     \mbox{$R_0$}&amp;: (2.5, 4)\\
     \mbox{mean incubation period ($T_E$)}&amp;: (4, 6)\\
     \mbox{mean infectious period ($T_I$)}&amp;: (2, 4)\\
@@ -1830,19 +1837,20 @@ summary {
     \mbox{lockdown 1 restrict}&amp;: (0, 1)\\
     \mbox{lockdown 2 release}&amp;: (0, 1)\\
     p_{EA}&amp;: (0, 1)\\
-    p_{IR}&amp;: (0, 1)\\
-    p_{ID}&amp;: (0, 1)\\
-    p_{HR}&amp;: (0, 1)\\
-    p_{HD}&amp;: (0, 1)
-\end{align}\]</span> Hence we have removed the sum-to-one constraint and the inequality constraint, and allow the parameters to be drawn from a hypercube.</p>
+    p_{IH}&amp;: (0, 1)\\
+    p^\prime_{IR}&amp;: (0, 1)\\
+    p_{HC}&amp;: (0, 1)\\
+    p^\prime_{HR}&amp;: (0, 1)\\
+    p_{CR}&amp;: (0, 1)
+\end{align}\]</span> and this has removed the sum-to-one-constraints.</p>
 <p>In R we can set up the <em>input</em> parameter ranges as follows:</p>
 <pre class="r"><code>## set up parameter ranges
 parRanges &lt;- data.frame(
     parameter = c(&quot;r_zero&quot;, &quot;incubation_time&quot;, &quot;infectious_time&quot;, &quot;hospital_time&quot;,
                   &quot;ptC&quot;, &quot;lock_1_restrict&quot;, &quot;lock_2_release&quot;,
-                  &quot;pEA&quot;, &quot;pIR&quot;, &quot;pID&quot;, &quot;pHR&quot;, &quot;pHD&quot;),
-    lower = c(2.5, 4, 2, 4, rep(0, 8)),
-    upper = c(4, 6, 4, 12, rep(1, 8)),
+                  &quot;pEA&quot;, &quot;pIH&quot;, &quot;pIRprime&quot;, &quot;pHC&quot;, &quot;pHRprime&quot;, &quot;pCR&quot;),
+    lower = c(2.5, 4, 2, 4, rep(0, 9)),
+    upper = c(4, 6, 4, 12, rep(1, 9)),
     stringsAsFactors = FALSE
 )</code></pre>
 <p>Firstly we want a function to convert between the <em>design</em> and <em>input</em> spaces. A short R function to do this is given below. This requires a <code>design</code> data frame, with columns denoting each <em>input</em> parameter in <code>parRanges</code> and rows corresponding to design points, and a <code>parRanges</code> data frame (defined above). We use the <code>scale</code> argument to define whether the design is on the <span class="math inline">\((0, 1)\)</span> (<code>scale = &quot;zero_one&quot;</code>) or <span class="math inline">\((-1, 1)\)</span> (<code>scale = &quot;negone_one&quot;</code>) space.</p>
@@ -1879,32 +1887,20 @@ convertInputToDisease &lt;- function(input, repeats) {
     ## common parameters to all pathways
     disease &lt;- tibble(`beta[2]` = input$r_zero / input$infectious_time)
     disease$`beta[3]` &lt;- disease$`beta[2]`
-    disease$`.scale_rate[1]` &lt;- input$lock_1_restrict
-    disease$`.scale_rate[2]` &lt;- input$lock_2_release
     disease$`progress[0]` &lt;- 1
     disease$`progress[1]` &lt;- 1 - exp(-(1 / (input$incubation_time - 1)))
     disease$`progress[2]` &lt;- 1
     disease$`progress[3]` &lt;- 1 - exp(-(1 / (input$infectious_time - 1)))
+    disease$`.scale_rate[1]` &lt;- input$lock_1_restrict
+    disease$`.scale_rate[2]` &lt;- input$lock_2_release
     
-    ## SHR pathway
-    disease$`SHR:progress[4]` &lt;- 1
-    disease$`SHR:progress[5]` &lt;- 1 - exp(-(1 / (input$hospital_time - 1)))
+    ## hospital progression
+    disease$`hospital:progress[2]` &lt;- 1
+    disease$`hospital:progress[3]` &lt;- 1 - exp(-(1 / (input$hospital_time - 1)))
     
-    ## SHD pathway
-    disease$`SHD:progress[4]` &lt;- 1
-    disease$`SHD:progress[5]` &lt;- 1 - exp(-(1 / (input$hospital_time - 1)))
-    
-    ## SHCR pathway
-    disease$`SHCR:progress[4]` &lt;- 1
-    disease$`SHCR:progress[5]` &lt;- 1 - exp(-(1 / ((1 - input$ptC) * (input$hospital_time - 2))))
-    disease$`SHCR:progress[6]` &lt;- 1
-    disease$`SHCR:progress[7]` &lt;- 1 - exp(-(1 / (input$ptC * (input$hospital_time - 2))))
-    
-    ## SHCD pathway
-    disease$`SHCD:progress[4]` &lt;- 1
-    disease$`SHCD:progress[5]` &lt;- 1 - exp(-(1 / ((1 - input$ptC) * (input$hospital_time - 2))))
-    disease$`SHCD:progress[6]` &lt;- 1
-    disease$`SHCD:progress[7]` &lt;- 1 - exp(-(1 / (input$ptC * (input$hospital_time - 2))))
+    ## critical care progression
+    disease$`critical:progress[2]` &lt;- 1
+    disease$`critical:progress[3]` &lt;- 1 - exp(-(1 / input$ptC * (input$hospital_time - 1)))
     
     ## finalise number of repeats
     disease$repeats &lt;- repeats
@@ -1921,39 +1917,32 @@ convertInputToDisease &lt;- function(input, repeats) {
 <blockquote>
 <p><strong>QUESTION</strong>: how do we scale FOI from hospital patients to the other populations?</p>
 </blockquote>
-<p>We also need to create different <code>demographics.json</code> files from the same <em>design</em> matrix used above. The following R function will do this.</p>
-<pre class="r"><code>## function to convert input samples to demographics.json files for MetaWards
-convertInputToJSON &lt;- function(input) {
+<p>We also need to create a file to scan across the different <code>mixing</code> from the same <em>design</em> matrix used above. The following R function will do this.</p>
+<pre class="r"><code>## function to convert input samples to move files
+convertInputToMove &lt;- function(input) {
   
     ## ACTUAL CODE WILL HAVE CHECKS ON INPUTS HERE 
     require(dplyr)
   
     ## set up probabilities on disease scale
-    pA &lt;- input$pEA
-    pSR &lt;- (1 - input$pEA) * input$pIR
-    pSD &lt;- (1 - input$pEA) * (1 - input$pIR) * input$pID
-    pSHR &lt;- (1 - input$pEA) * (1 - input$pIR) * (1 - input$pID) * input$pHR
-    pSHD &lt;- (1 - input$pEA) * (1 - input$pIR) * (1 - input$pID) * (1 - input$pHR) * input$pHD
-    pSHCD &lt;- (1 - input$pEA) * (1 - input$pIR) * (1 - input$pID) * (1 - input$pHR) * (1 - input$pHD)
+    pEA &lt;- input$pEA
+    pIH &lt;- input$pIH
+    pIR &lt;- (1 - pIH) * input$pIRprime
+    pHC &lt;- input$pHC
+    pHR &lt;- (1 - pHC) * input$pHRprime
+    pCR &lt;- input$pCR
     
-    ## check they sum to one
-    stopifnot(all.equal(apply(cbind(pA, pSR, pSD, pSHR, pSHD, pSHCD), 1, sum), rep(1, nrow(input))))
+    ## set up scanning file
+    scan &lt;- tibble(
+      `.pEA` = pEA,
+      `.pIH` = pIH,
+      `.pIR` = pIR,
+      `.pHC` = pHC,
+      `.pHR` = pHR,
+      `.pCR` = pCR)
     
-    ## collapse to characters
-    path_probs &lt;- apply(cbind(pA, pSR, pSD, pSHR, pSHD, pSHCD), 1, paste, collapse = &quot;, &quot;)
-    
-    ## set up demographics
-    demographics &lt;- lapply(path_probs, function(x) {
-      c(&quot;{&quot;,
-        &quot; \&quot;demographics\&quot; : [\&quot;A\&quot;, \&quot;SR\&quot;, \&quot;SD\&quot;, \&quot;SHR\&quot;, \&quot;SHD\&quot;, \&quot;SHCR\&quot;, \&quot;SHCD\&quot;],&quot;,
-        paste0(&quot; \&quot;work_ratios\&quot;  : [ &quot;, x, &quot; ],&quot;),
-        paste0(&quot; \&quot;play_ratios\&quot;  : [ &quot;, x, &quot; ],&quot;),
-        &quot; \&quot;diseases\&quot;     : [\&quot;ncov_A\&quot;, \&quot;ncov_SR\&quot;, \&quot;ncov_SD\&quot;, \&quot;ncov_SHR\&quot;, \&quot;ncov_SHCR\&quot;, \&quot;ncov_SHCR\&quot;, \&quot;ncov_SHCD\&quot;]&quot;,
-      &quot;}&quot;)
-    })
-    
-    ## return demographics files
-    demographics
+    ## return scan files
+    scan
 }</code></pre>
 <p>As an example of a quick LHS design for five design points and five replicates:</p>
 <pre class="r"><code>## load libraries
@@ -1980,110 +1969,17 @@ input &lt;- convertDesignToInput(design, parRanges, &quot;zero_one&quot;)
 ## convert input to disease
 disease &lt;- convertInputToDisease(input, 5)
 
-## convert JSON files
-json &lt;- convertInputToJSON(input)
+## convert input to move
+move &lt;- convertInputToMove(input)
 
 ## write to external files
 dir.create(&quot;inputs&quot;)</code></pre>
 <pre><code>## Warning in dir.create(&quot;inputs&quot;): &#39;inputs&#39; already exists</code></pre>
 <pre class="r"><code>write.csv(disease, &quot;inputs/disease.csv&quot;, row.names = FALSE)
-lapply(1:length(json), function(i, json) {
-    writeLines(json[[i]], paste0(&quot;inputs/demographics_&quot;, i, &quot;.json&quot;))
-}, json = json)</code></pre>
-<pre><code>## [[1]]
-## NULL
-## 
-## [[2]]
-## NULL
-## 
-## [[3]]
-## NULL
-## 
-## [[4]]
-## NULL
-## 
-## [[5]]
-## NULL</code></pre>
+write.table(move, &quot;inputs/move.dat&quot;, row.names = FALSE, sep = &quot; &quot;)</code></pre>
 <blockquote>
 <p><strong>TODO: might want some form of folder clearup or suchlike?</strong></p>
 </blockquote>
-</div>
-<div id="interaction-matrices" class="section level3">
-<h3>Interaction matrices</h3>
-<p>The <strong>interaction matrix</strong> scales the FOI that different demographics have on other demographics. The form below gives full control over all the mixing parameters. However, if we make some assumptions about the key scaling we wish to apply, we can simplify this (see below). We need to store this in a file called <code>pathways.py</code>.</p>
-<p>The complete version of <code>pathways.py</code> would contain:</p>
-<pre><code>from metawards.mixers import merge_using_matrix
-
-def mix_pathways(network, **kwargs):
-    params = network.params
-
-    A_A = params.user_params[&quot;A_A&quot;]
-    A_SR = params.user_params[&quot;A_SR&quot;]
-    A_SD = params.user_params[&quot;A_SD&quot;]
-    A_SHR = params.user_params[&quot;A_SHR&quot;]
-    A_SHD = params.user_params[&quot;A_SHD&quot;]
-    A_SHCR = params.user_params[&quot;A_SHCR&quot;]
-    A_SHCD = params.user_params[&quot;A_SHCD&quot;]
-    
-    SR_A = params.user_params[&quot;SR_A&quot;]
-    SR_SR = params.user_params[&quot;SR_SR&quot;]
-    SR_SD = params.user_params[&quot;SR_SD&quot;]
-    SR_SHR = params.user_params[&quot;SR_SHR&quot;]
-    SR_SHD = params.user_params[&quot;SR_SHD&quot;]
-    SR_SHCR = params.user_params[&quot;SR_SHCR&quot;]
-    SR_SHCD = params.user_params[&quot;SR_SHCD&quot;]
-    
-    SD_A = params.user_params[&quot;SD_A&quot;]
-    SD_SR = params.user_params[&quot;SD_SR&quot;]
-    SD_SD = params.user_params[&quot;SD_SD&quot;]
-    SD_SHR = params.user_params[&quot;SD_SHR&quot;]
-    SD_SHD = params.user_params[&quot;SD_SHD&quot;]
-    SD_SHCR = params.user_params[&quot;SD_SHCR&quot;]
-    SD_SHCD = params.user_params[&quot;SD_SHCD&quot;]
-    
-    SHR_A = params.user_params[&quot;SHR_A&quot;]
-    SHR_SR = params.user_params[&quot;SHR_SR&quot;]
-    SHR_SD = params.user_params[&quot;SHR_SD&quot;]
-    SHR_SHR = params.user_params[&quot;SHR_SHR&quot;]
-    SHR_SHD = params.user_params[&quot;SHR_SHD&quot;]
-    SHR_SHCR = params.user_params[&quot;SHR_SHCR&quot;]
-    SHR_SHCD = params.user_params[&quot;SHR_SHCD&quot;]
-    
-    SHD_A = params.user_params[&quot;SHD_A&quot;]
-    SHD_SR = params.user_params[&quot;SHD_SR&quot;]
-    SHD_SD = params.user_params[&quot;SHD_SD&quot;]
-    SHD_SHR = params.user_params[&quot;SHD_SHR&quot;]
-    SHD_SHD = params.user_params[&quot;SHD_SHD&quot;]
-    SHD_SHCR = params.user_params[&quot;SHD_SHCR&quot;]
-    SHD_SHCD = params.user_params[&quot;SHD_SHCD&quot;]
-    
-    SHCR_A = params.user_params[&quot;SHCR_A&quot;]
-    SHCR_SR = params.user_params[&quot;SHCR_SR&quot;]
-    SHCR_SD = params.user_params[&quot;SHCR_SD&quot;]
-    SHCR_SHR = params.user_params[&quot;SHCR_SHR&quot;]
-    SHCR_SHD = params.user_params[&quot;SHCR_SHD&quot;]
-    SHCR_SHCR = params.user_params[&quot;SHCR_SHCR&quot;]
-    SHCR_SHCD = params.user_params[&quot;SHCR_SHCD&quot;]
-    
-    SHCD_A = params.user_params[&quot;SHCD_A&quot;]
-    SHCD_SR = params.user_params[&quot;SHCD_SR&quot;]
-    SHCD_SD = params.user_params[&quot;SHCD_SD&quot;]
-    SHCD_SHR = params.user_params[&quot;SHCD_SHR&quot;]
-    SHCD_SHD = params.user_params[&quot;SHCD_SHD&quot;]
-    SHCD_SHCR = params.user_params[&quot;SHCD_SHCR&quot;]
-    SHCD_SHCD = params.user_params[&quot;SHCD_SHCD&quot;]
-
-    matrix = [ [A_A , A_SR, A_SD, A_SHR, A_SHD, A_SHCR, A_SHCD],
-               [SR_A , SR_SR, SR_SD, SR_SHR, SR_SHD, SR_SHCR, SR_SHCD],
-               [SD_A , SD_SR, SD_SD, SD_SHR, SD_SHD, SD_SHCR, SD_SHCD],
-               [SHR_A , SHR_SR, SHR_SD, SHR_SHR, SHR_SHD, SHR_SHCR, SHR_SHCD],
-               [SHD_A , SHD_SR, SHD_SD, SHD_SHR, SHD_SHD, SHD_SHCR, SHD_SHCD],
-               [SHCR_A , SHCR_SR, SHCR_SD, SHCR_SHR, SHCR_SHD, SHCR_SHCR, SHCR_SHCD],
-               [SHCD_A , SHCD_SR, SHCD_SD, SHCD_SHR, SHCD_SHD, SHCD_SHCR, SHCD_SHCD] ]
-
-    network.demographics.interaction_matrix = matrix
-
-    return [merge_using_matrix]</code></pre>
 </div>
 </div>
 </div>

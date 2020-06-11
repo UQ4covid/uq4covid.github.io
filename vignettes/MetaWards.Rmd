@@ -62,345 +62,216 @@ subgraph {
 
 ## MetaWards setup
 
-The model structure above allows for different progression pathways. MetaWards deals with this by assigning individuals to different "demographics", where each demographic has a different progression pathway. There are currently seven pathways, which will be described below, but can be summarised as:
+The model structure above allows for different progression pathways. MetaWards deals with this by assigning individuals to different "demographics", where each demographic can be used to represent different progression pathways. There are also `mover` functions that can be used to move individuals between demographics, and `mixer` functions that scale the force-of-infection (FOI) terms between the different demographics (explained later). There are currently seven pathways, which will be described below, but can be summarised as:
 
-* `A`: asymptomatic infections, always recover.
-* `SR`: symptomatic infections, leading to recovery.
-* `SD`: symptomatic infections, leading to death.
-* `SHR`: symptomatic infections, leading to hospital and then recovery.
-* `SHD`: symptomatic infections, leading to hospital and then death.
-* `SHCR`: symptomatic infections, leading to hospital, then critical care (ICU) and then recovery.
-* `SHCD`: symptomatic infections, leading to hospital, then critical care (ICU) and then death.
+* `SEAR`: asymptomatic infections, always recover.
+* `SEIR`: symptomatic infections, leading to recovery.
+* `SEID`: symptomatic infections, leading to death.
+* `SEIHR`: symptomatic infections, leading to hospital and then recovery.
+* `SEIHD`: symptomatic infections, leading to hospital and then death.
+* `SEIHCR`: symptomatic infections, leading to hospital, then critical care (ICU) and then recovery.
+* `SEIHCD`: symptomatic infections, leading to hospital, then critical care (ICU) and then death.
 
-Therefore in MetaWards we can control the probability of individuals progressing through each pathway through the `demographics.json` file, which should look something like:
+In practice, we can summarise these through four demographics, and then `move` functions that conditionally move individuals through the seven pathways. First, we set up the `demographics.json` file, which should look something like:
 
 ```
 {
-  "demographics" : ["A", "SR", "SD", "SHR", "SHD", "SHCR", "SHCD"],
-  "work_ratios"  : [ 0.6, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05 ],
-  "play_ratios"  : [ 0.6, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05 ],
-  "diseases"     : ["ncov_A", "ncov_SR", "ncov_SD", "ncov_SHR", "ncov_SHCR", "ncov_SHCR", "ncov_SHCD"]
+  "demographics" : ["genpop", "asymp", "hospital", "critical"],
+  "work_ratios"  : [ 1.0, 0.0, 0.0, 0.0 ],
+  "play_ratios"  : [ 1.0, 0.0, 0.0, 0.0 ],
+  "diseases"     : [ null, null, null, null ]
 }
 ```
 
-The disease `.json` files are defined [here](#pathways).
+Individuals in the `genpop` demographic move through the $SEIR$ and $SEID$ pathways; the `asymp` demographic moves through the `SEAR` pathway; some individuals in the `genpop` demographic can be moved to the `hospital` demographic, and thus follow the `SEIHR` and `SEIHD` pathways; and finally, some individuals in the `hospital` demographic can be moved to the `critical` demographic, and thus follow the `SEIHCR` and `SEIHCD` pathways.
 
-We want the proportions stored in `work_ratios` and `play_ratios` to be variable parameters in the model. Therefore we want to specify proportions of individuals in each pathway such that $\sum_{i \in \mathcal{P}} p_i = 1$, where $\mathcal{P} = \{A, SR, SD, SHR, SHD, SHCR, SHCD\}$.
+We want the proportions stored in `work_ratios` and `play_ratios` to be variable parameters in the model. Therefore we want to specify proportions of individuals in each pathway such that $\sum_{i \in \mathcal{P}} p_i = 1$, where $\mathcal{P} = \{GP, A, H, C\}$.
 
 > Here we assume the same ratios in the `work` and `play` populations, but in practice these could be changed.
-
-At the moment we have to create separate `demographics.json` files for each different parameter set. Code to do this is provided [here](#code).
 
 ### Parameters
 
 Once the demographics have been setup, we can then control progress through the different states as:
 
 * $p_{SE_1}$ driven by $\beta$ parameters, defined by $R_0$ and length of infectious period (see [here](#code));
-* $p_{E_1E_2} = 1$ (probability);
-* $p_{E_2A_1} = 1 - e^{-\gamma^*_{E}}$ where $\gamma^*_E = \frac{1}{T_E - 1}$ with $T_E$ the mean incubation period;
-* $p_{E_2I_1} = 1 - e^{-\gamma^*_{E}}$;
-* $p_{A_1A_2} = 1$ (probability);
+* $p_{E_1E_2} = 1$;
+* $p_{E_2A_1} = p_{EA}\left(1 - e^{-\gamma^*_{E}}\right)$ where $\gamma^*_E = \frac{1}{T_E - 1}$ with $T_E$ the mean incubation period;
+* $p_{A_1A_2} = 1$;
 * $p_{A_2R} = 1 - e^{-\gamma^*_I}$ where $\gamma^*_I = \frac{1}{T_I - 1}$ with $T_I$ the mean infectious period;
-* $p_{I_1I_2} = 1$ (probability);
-* $p_{I_2H_1} = 1 - e^{-\gamma^*_{I}}$ where $\gamma^*_I = \frac{1}{T_I - 1}$ with $T_I$ the mean infectious period;
-* $p_{I_2R} = 1 - e^{-\gamma^*_{I}}$;
-* $p_{I_2D} = 1 - e^{-\gamma^*_{I}}$;
-* $p_{H_1H_2} = 1$ (probability);
-* $p_{H_2C_1} = 1 - e^{-\gamma^*_{HC}}$ where $\gamma^*_{HC} = \frac{1}{T_H - T_C - 1}$ with $T_H$ the mean length of a hospital stay and $T_C$ is the mean length of time spent in ICU;
-* $p_{H_2D} = 1 - e^{-\gamma^*_{H}}$ where $\gamma^*_H = \frac{1}{T_H - 1}$;
-* $p_{H_2R} = 1 - e^{-\gamma^*_{H}}$;
-* $p_{C_1C_2} = 1$ (probability);
-* $p_{C_2D} = 1 - e^{-\gamma^*_{C}}$ where $\gamma^*_C = \frac{1}{T_C - 1}$ with $T_C$ is the mean length of time spent in ICU;
-* $p_{C_2R} = 1 - e^{-\gamma^*_{C}}$.
+* $p_{E_2I_1} = \left(1 - p_{EA}\right)\left(1 - e^{-\gamma^*_{E}}\right)$;
+* $p_{I_1I_2} = 1$;
+* $p_{I_2H_1} = p_{IH}\left(1 - e^{-\gamma^*_{I}}\right)$ where $\gamma^*_I = \frac{1}{T_I - 1}$;
+* $p_{I_2R} = p_{IR}\left(1 - e^{-\gamma^*_{I}}\right)$;
+* $p_{I_2D} = \left(1 - p_{IH} - p_{IR}\right)\left(1 - e^{-\gamma^*_{I}}\right)$;
+* $p_{H_1H_2} = 1$;
+* $p_{H_2C_1} = p_{HC}\left(1 - e^{-\gamma^*_{HC}}\right)$ where $\gamma^*_{HC} = \frac{1}{T_H - T_C - 1}$ with $T_H$ the mean length of a hospital stay and $T_C$ is the mean length of time spent in ICU;
+* $p_{H_2R} = p_{HR}\left(1 - e^{-\gamma^*_{H}}\right)$ where $\gamma^*_H = \frac{1}{T_H - 1}$;
+* $p_{H_2D} = \left(1 - p_{HC} - p_{HR}\right)\left(1 - e^{-\gamma^*_{H}}\right)$;
+* $p_{C_1C_2} = 1$;
+* $p_{C_2R} = p_{CR}\left(1 - e^{-\gamma^*_{C}}\right)$ where $\gamma^*_C = \frac{1}{T_C - 1}$ with $T_C$ is the mean length of time spent in ICU;
+* $p_{C_2D} = \left(1 - p_{CR}\right)\left(1 - e^{-\gamma^*_{C}}\right)$.
 
 Lockdown can be controlled either by constraining movements over a certain distance, or by scaling the $\beta$ parameters. We do the latter at the moment.
 
-### Pathways `.json` files {#pathways}
+### Disease `.json` file
 
-We need different disease `.json` files for the different pathways.
-
-#### `A` pathway
-
-The asymptomatic pathway (from above) is:
-
-```{r, echo = FALSE}
-grViz("digraph {
-  
-graph[layout = dot, rankdir = LR]
-
-node [shape = rectangle]
-
-S
-E1 [label = 'E@_{1}']
-E2 [label = 'E@_{2}']
-A1 [label = 'A@_{1}']
-A2 [label = 'A@_{2}']
-R
-
-S -> E1 -> E2 -> A1 -> A2 -> R
-}", height = '100%', width = '100%')
-```
-
-Hence we need `ncov_A.json`:
+All pathways have an $SEI(R)$ structure, so we can set up an `ncov.json` file for the overall disease:
 
 ```
-{ "name"             : "SARS-Cov-2 - asymptomatic pathway",
+{ "name"             : "SARS-Cov-2",
   "version"          : "June 9th 2020",
   "author(s)"        : "UQ4COVID Team",
   "contact(s)"       : "e-mail...",
   "reference(s)"     : "references...",  
-  "beta"             : [0.0, 0.0, 1.0, 1.0, 0.0],
-  "progress"         : [1.0, 1.0, 1.0, 1.0, 0.0],
-  "too_ill_to_move"  : [0.0, 0.0, 0.0, 0.0, 0.0],
-  "contrib_foi"      : [1.0, 1.0, 1.0, 1.0, 0.0]
+  "beta"             : [0.0, 0.0, 1.0, 1.0, 0.0, 0.0],
+  "progress"         : [1.0, 1.0, 1.0, 1.0, 0.0, 0.0],
+  "too_ill_to_move"  : [0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+  "contrib_foi"      : [1.0, 1.0, 1.0, 1.0, 0.0, 0.0]
 }
 ```
 
 > **Note:** We would want asymptomatics to be less infectious than symptomatics, so could amend $\beta$, or set `contrib_foi`?
 
-#### `SR` pathway
+### Moving functions
 
-The symptomatic/recovered pathway (from above) is:
-
-```{r, echo = FALSE}
-grViz("digraph {
-  
-graph[layout = dot, rankdir = LR]
-
-node [shape = rectangle]
-
-S
-E1 [label = 'E@_{1}']
-E2 [label = 'E@_{2}']
-I1 [label = 'I@_{1}']
-I2 [label = 'I@_{2}']
-R
-
-S -> E1 -> E2 -> I1 -> I2 -> R
-}", height = '100%', width = '100%')
-```
-
-Hence we need `ncov_SR.json`:
+We need moving functions to move individuals from $E_2 \to A_1$, $E_2 \to I_1$, $I_2 \to H_1$ and $H_2 \to C_1$, and thus we need a custom `move` function. Create a file `move_pathways.py` containing:
 
 ```
-{ "name"             : "SARS-Cov-2 - symptomatic/recovered pathway",
-  "version"          : "June 9th 2020",
-  "author(s)"        : "UQ4COVID Team",
-  "contact(s)"       : "e-mail...",
-  "reference(s)"     : "references...",  
-  "beta"             : [0.0, 0.0, 1.0, 1.0, 0.0],
-  "progress"         : [1.0, 1.0, 1.0, 1.0, 0.0],
-  "too_ill_to_move"  : [0.0, 0.0, 0.0, 0.0, 0.0],
-  "contrib_foi"      : [1.0, 1.0, 1.0, 1.0, 0.0]
-}
+from metawards.movers import go_stage
+
+def move_pathways(**kwargs):
+    # extract user defined parameters
+    params = network.params
+
+    pEA = params.user_params["pEA"]
+    pIH = params.user_params["pIH"]
+    pIR = params.user_params["pIR"]
+    pHC = params.user_params["pHC"]
+    pHR = params.user_params["pHR"]
+    pCR = params.user_params["pCR"]
+
+    # move (100 * pEA)% of E2 genpop to A1 asymp
+    func1 = lambda **kwargs: go_stage(go_from="genpop",
+                                      go_to="asymp",
+                                      from_stage=1,
+                                      to_stage=2,
+                                      fraction=pEA,
+                                      **kwargs)
+
+    # move A2 asymp to R genpop
+    func2 = lambda **kwargs: go_stage(go_from="asymp",
+                                      go_to="genpop",
+                                      from_stage=3,
+                                      to_stage=4,
+                                      fraction=1.0,
+                                      **kwargs)
+                                      
+    # move (100 * pIH)% of I2 genpop to H1 hospital
+    func3 = lambda **kwargs: go_stage(go_from="genpop",
+                                      go_to="hospital",
+                                      from_stage=3,
+                                      to_stage=2,
+                                      fraction=pIH,
+                                      **kwargs)
+                                      
+    # move (100 * (1 - pIH - pIR))% of I2 genpop to D genpop
+    # (1 - pIH) adjustment is due to ordering of events (so
+    # operates on remainder from move above)
+    func4 = lambda **kwargs: go_stage(go_from="genpop",
+                                      go_to="genpop",
+                                      from_stage=3,
+                                      to_stage=5,
+                                      fraction=(1.0 - pIH - pIR) / (1.0 - pIH),
+                                      **kwargs)
+                                      
+    # move (100 * pHC)% of H2 hospital to C1 critical
+    func5 = lambda **kwargs: go_stage(go_from="hospital",
+                                      go_to="critical",
+                                      from_stage=3,
+                                      to_stage=2,
+                                      fraction=pHC,
+                                      **kwargs)
+                                      
+    # move (100 * pHR)% of H2 hospital to R genpop
+    # (1 - pHC) adjustment is due to ordering of events (so
+    # operates on remainder from move above)
+    func6 = lambda **kwargs: go_stage(go_from="hospital",
+                                      go_to="genpop",
+                                      from_stage=3,
+                                      to_stage=4,
+                                      fraction=pHR / (1 - pHC),
+                                      **kwargs)
+                                      
+    # move remainder of H2 hospital to D genpop
+    func7 = lambda **kwargs: go_stage(go_from="hospital",
+                                      go_to="genpop",
+                                      from_stage=3,
+                                      to_stage=5,
+                                      fraction=1.0,
+                                      **kwargs)
+                                      
+    # move (100 * pCR)% of C2 critical to R genpop
+    func8 = lambda **kwargs: go_stage(go_from="critical",
+                                      go_to="genpop",
+                                      from_stage=3,
+                                      to_stage=4,
+                                      fraction=pCR,
+                                      **kwargs)
+                                      
+    # move remainder of C2 critical to D genpop
+    func9 = lambda **kwargs: go_stage(go_from="critical",
+                                      go_to="genpop",
+                                      from_stage=3,
+                                      to_stage=5,
+                                      fraction=1.0,
+                                      **kwargs)
+
+    return [func1, func2, func3, func4, func5, func6, func7, func8, func9]
 ```
 
-#### `SD` pathway
+### Interaction matrices
 
-The symptomatic/dead pathway (from above) is:
-
-```{r, echo = FALSE}
-grViz("digraph {
-  
-graph[layout = dot, rankdir = LR]
-
-node [shape = rectangle]
-
-S
-E1 [label = 'E@_{1}']
-E2 [label = 'E@_{2}']
-I1 [label = 'I@_{1}']
-I2 [label = 'I@_{2}']
-D
-
-S -> E1 -> E2 -> I1 -> I2 -> D
-}", height = '100%', width = '100%')
-```
-
-Hence we need `ncov_SD.json`:
+The **interaction matrix** scales the FOI that different demographics have on other demographics. We need to store this in a file called `mix_pathways.py`:
 
 ```
-{ "name"             : "SARS-Cov-2 - symptomatic/dead pathway",
-  "version"          : "June 9th 2020",
-  "author(s)"        : "UQ4COVID Team",
-  "contact(s)"       : "e-mail...",
-  "reference(s)"     : "references...",  
-  "beta"             : [0.0, 0.0, 1.0, 1.0, 0.0],
-  "progress"         : [1.0, 1.0, 1.0, 1.0, 0.0],
-  "too_ill_to_move"  : [0.0, 0.0, 0.0, 0.0, 0.0],
-  "contrib_foi"      : [1.0, 1.0, 1.0, 1.0, 0.0]
-}
+from metawards.mixers import merge_using_matrix
+
+def mix_pathways(network, **kwargs):
+    params = network.params
+
+    GP_GP = params.user_params["GP_GP"]
+    GP_A = params.user_params["GP_A"]
+    GP_H = params.user_params["GP_H"]
+    GP_C = params.user_params["GP_C"]
+
+    A_GP = params.user_params["A_GP"]
+    A_A = params.user_params["A_A"]
+    A_H = params.user_params["A_H"]
+    A_C = params.user_params["A_C"]
+
+    H_GP = params.user_params["H_GP"]
+    H_A = params.user_params["H_A"]
+    H_H = params.user_params["H_H"]
+    H_C = params.user_params["H_C"]
+
+    C_GP = params.user_params["C_GP"]
+    C_A = params.user_params["C_A"]
+    C_H = params.user_params["C_H"]
+    C_C = params.user_params["C_C"]
+
+    matrix = [ [GP_GP, GP_A, GP_H, GP_C],
+               [A_GP, A_A, A_H, A_C],
+               [H_GP, H_A, H_H, H_C],
+               [C_GP, C_A, C_H, C_C] ]
+
+    network.demographics.interaction_matrix = matrix
+
+    return [merge_using_matrix]
 ```
-
-> **Note**: not quite sure how to differentiate recovereds from dead, usually the latter would not contribute to the population sizes going forward, though the former would. In this case since populations are relatively large it will make little difference, so the `SR` and `SD` pathways would have the same parameters, but would be differentiated as a straightforward way to extract death counts for e.g. calibration.
-
-#### `SHR`
-
-The symptomatic/hospital/recovered pathway (from above) is:
-
-```{r, echo = FALSE}
-grViz("digraph {
-  
-graph[layout = dot, rankdir = LR]
-
-node [shape = rectangle]
-
-S
-E1 [label = 'E@_{1}']
-E2 [label = 'E@_{2}']
-I1 [label = 'I@_{1}']
-I2 [label = 'I@_{2}']
-H1 [label = 'H@_{1}']
-H2 [label = 'H@_{2}']
-R
-
-S -> E1 -> E2 -> I1 -> I2 -> H1 -> H2 -> R
-}", height = '100%', width = '100%')
-```
-
-Hence we need `ncov_SHR.json`:
-
-```
-{ "name"             : "SARS-Cov-2 - symptomatic/hospital/recovered pathway",
-  "version"          : "June 9th 2020",
-  "author(s)"        : "UQ4COVID Team",
-  "contact(s)"       : "e-mail...",
-  "reference(s)"     : "references...",  
-  "beta"             : [0.0, 0.0, 1.0, 1.0, 1.0, 1.0, 0.0],
-  "progress"         : [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.0],
-  "too_ill_to_move"  : [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
-  "contrib_foi"      : [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.0]
-}
-```
-
-#### `SHD` pathway
-
-The symptomatic/hospital/death pathway (from above) is:
-
-```{r, echo = FALSE}
-grViz("digraph {
-  
-graph[layout = dot, rankdir = LR]
-
-node [shape = rectangle]
-
-S
-E1 [label = 'E@_{1}']
-E2 [label = 'E@_{2}']
-I1 [label = 'I@_{1}']
-I2 [label = 'I@_{2}']
-H1 [label = 'H@_{1}']
-H2 [label = 'H@_{2}']
-D
-
-S -> E1 -> E2 -> I1 -> I2 -> H1 -> H2 -> D
-}", height = '100%', width = '100%')
-```
-
-Hence we need `ncov_SHD.json`:
-
-```
-{ "name"             : "SARS-Cov-2 - symptomatic/hospital/dead pathway",
-  "version"          : "June 9th 2020",
-  "author(s)"        : "UQ4COVID Team",
-  "contact(s)"       : "e-mail...",
-  "reference(s)"     : "references...",  
-  "beta"             : [0.0, 0.0, 1.0, 1.0, 1.0, 1.0, 0.0],
-  "progress"         : [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.0],
-  "too_ill_to_move"  : [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
-  "contrib_foi"      : [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.0]
-}
-```
-
-> **Note**: see `SR` and `SD` note from earlier.
-
-#### `SHCR` pathway
-
-The symptomatic/hospital/ICU/recovered pathway (from above) is:
-
-```{r, echo = FALSE}
-grViz("digraph {
-  
-graph[layout = dot, rankdir = LR]
-
-node [shape = rectangle]
-
-S
-E1 [label = 'E@_{1}']
-E2 [label = 'E@_{2}']
-I1 [label = 'I@_{1}']
-I2 [label = 'I@_{2}']
-H1 [label = 'H@_{1}']
-H2 [label = 'H@_{2}']
-C1 [label = 'C@_{1}']
-C2 [label = 'C@_{2}']
-R
-
-S -> E1 -> E2 -> I1 -> I2 -> H1 -> H2 -> C1 -> C2 -> R
-}", height = '100%', width = '100%')
-```
-
-Hence we need `ncov_SHCR.json`:
-
-```
-{ "name"             : "SARS-Cov-2 - symptomatic/hospital/ICU/recovered pathway",
-  "version"          : "June 9th 2020",
-  "author(s)"        : "UQ4COVID Team",
-  "contact(s)"       : "e-mail...",
-  "reference(s)"     : "references...",  
-  "beta"             : [0.0, 0.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.0],
-  "progress"         : [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.0],
-  "too_ill_to_move"  : [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
-  "contrib_foi"      : [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.0]
-}
-```
-
-#### `SHCD` pathway
-
-The symptomatic/hospital/ICU/dead pathway (from above) is:
-
-```{r, echo = FALSE}
-grViz("digraph {
-  
-graph[layout = dot, rankdir = LR]
-
-node [shape = rectangle]
-
-S
-E1 [label = 'E@_{1}']
-E2 [label = 'E@_{2}']
-I1 [label = 'I@_{1}']
-I2 [label = 'I@_{2}']
-H1 [label = 'H@_{1}']
-H2 [label = 'H@_{2}']
-C1 [label = 'C@_{1}']
-C2 [label = 'C@_{2}']
-D
-
-S -> E1 -> E2 -> I1 -> I2 -> H1 -> H2 -> C1 -> C2 -> D
-}", height = '100%', width = '100%')
-```
-
-Hence we need `ncov_SHCD.json`:
-
-```
-{ "name"             : "SARS-Cov-2 - symptomatic/hospital/ICU/dead pathway",
-  "version"          : "June 9th 2020",
-  "author(s)"        : "UQ4COVID Team",
-  "contact(s)"       : "e-mail...",
-  "reference(s)"     : "references...",  
-  "beta"             : [0.0, 0.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.0],
-  "progress"         : [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.0],
-  "too_ill_to_move"  : [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
-  "contrib_foi"      : [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.0]
-}
-```
-
-> **Note**: see `SR` and `SD` note from earlier.
 
 ### Code {#code}
 
-To run designs, we need ways to convert designs to both different `demographics.json` files, but also `disease.csv` files containing different parameters to use for different runs. For consistency, we will define three spaces:
+To run designs, we need to generate a `disease.csv` file containing different parameters to use for different runs. For consistency, we will define three spaces:
 
 * *input* space: this relates to the parameters ranges (defined below);
 * *design* space: this will usually be in $(0, 1)$ or $(-1, 1)$ space;
@@ -414,34 +285,29 @@ The current *input* parameter ranges are:
     \mbox{mean incubation period ($T_E$)}&: (4, 6)\\
     \mbox{mean infectious period ($T_I$)}&: (2, 4)\\
     \mbox{mean hospital stay ($T_H$)}&: (4, 12)\\
-    \mbox{mean critical care stay ($T_C$)}&: < T_H\\
+    \mbox{proportion of hospital time spent in critical care ($p_{tC}$)}&: (0, 1)\\
     \mbox{lockdown 1 restrict}&: (0, 1)\\
     \mbox{lockdown 2 release}&: (0, 1)\\
-    p_{A}&: (0, 1)\\
-    p_{SR}&: (0, 1)\\
-    p_{SD}&: (0, 1)\\
-    p_{SHR}&: (0, 1)\\
-    p_{SHD}&: (0, 1)\\
-    p_{SHCR}&: (0, 1)\\
-    p_{SHCD}&: (0, 1)\\
-    \mbox{where}~\sum_{i \in \mathcal{P}} p_i &= 1~ \mbox{and}~\mathcal{P} = \{A, SR, SD, SHR, SHD, SHCR, SHCD\}.
+    p_{EA}&: (0, 1)\\
+    p_{IH}&: (0, 1)\\
+    p_{IR}&: (0, 1) \quad \mbox{such that}~\sum_{i \in \{H, R\}} p_{Ii} < 1\\
+    p_{HC}&: (0, 1)\\
+    p_{HR}&: (0, 1) \quad \mbox{such that}~\sum_{i \in \{C, R\}} p_{Hi} < 1\\
+    p_{CR}&: (0, 1)
 \end{align}
-We need: **ranges for the length of hospital stay** (perhaps chat to Rob Challen)? Current hospital rough guides taken from [https://www.medrxiv.org/content/10.1101/2020.04.23.20076042v1.full.pdf](https://www.medrxiv.org/content/10.1101/2020.04.23.20076042v1.full.pdf). (I've stuck in IQR for comparison, but clearly we need to think about this more.)
-
-To maintain orthogonality, it might be worth re-parameterising such that:
-\begin{align}
-    p_{A} &= p_{EA}\\
-    p_{SR} &= \left(1 - p_{EA}\right)p_{IR}\\
-    p_{SD} &= \left(1 - p_{EA}\right)\left(1 - p_{IR}\right)p_{ID}\\
-    p_{SHR} &= \left(1 - p_{EA}\right)\left(1 - p_{IR}\right)\left(1 - p_{ID}\right)p_{HR}\\
-    p_{SHD} &= \left(1 - p_{EA}\right)\left(1 - p_{IR}\right)\left(1 - p_{ID}\right)\left(1 - p_{HR}\right)p_{HD}\\
-    p_{SHCD} &= \left(1 - p_{EA}\right)\left(1 - p_{IR}\right)\left(1 - p_{ID}\right)\left(1 - p_{HR}\right)\left(1 - p_{HD}\right).
-\end{align}
-We also have that the time in critical care, $T_C$, must be less than the time spent in hospital, $T_H$. Therefore we can also introduce a scaling parameter, $p_{tC}$, which encodes the proportion of $T_H$ that is spent in critical care, and hence we can re-parameterise such that
+We have that the time in critical care, $T_C$, must be a proportion of the time spent in hospital, $T_H$, and thus
 $$
     T_C = p_{tC}T_H.
 $$
-Thus the *input* parameter ranges become:
+
+We need: **ranges for the length of hospital stay** (perhaps chat to Rob Challen)? Current hospital rough guides taken from [https://www.medrxiv.org/content/10.1101/2020.04.23.20076042v1.full.pdf](https://www.medrxiv.org/content/10.1101/2020.04.23.20076042v1.full.pdf). (I've stuck in IQR for comparison, but clearly we need to think about this more.)
+
+To ensure orthogonality, we could reparameterise such that:
+\begin{align}
+    p_{IR} &= \left(1 - p_{IH}\right) p^\prime_{IR}\\
+    p_{HR} &= \left(1 - p_{HC}\right) p^\prime_{HR}
+\end{align}
+and thus we have parameter ranges:
 \begin{align}
     \mbox{$R_0$}&: (2.5, 4)\\
     \mbox{mean incubation period ($T_E$)}&: (4, 6)\\
@@ -451,12 +317,13 @@ Thus the *input* parameter ranges become:
     \mbox{lockdown 1 restrict}&: (0, 1)\\
     \mbox{lockdown 2 release}&: (0, 1)\\
     p_{EA}&: (0, 1)\\
-    p_{IR}&: (0, 1)\\
-    p_{ID}&: (0, 1)\\
-    p_{HR}&: (0, 1)\\
-    p_{HD}&: (0, 1)
+    p_{IH}&: (0, 1)\\
+    p^\prime_{IR}&: (0, 1)\\
+    p_{HC}&: (0, 1)\\
+    p^\prime_{HR}&: (0, 1)\\
+    p_{CR}&: (0, 1)
 \end{align}
-Hence we have removed the sum-to-one constraint and the inequality constraint, and allow the parameters to be drawn from a hypercube.
+and this has removed the sum-to-one-constraints.
 
 In R we can set up the *input* parameter ranges as follows:
 
@@ -465,9 +332,9 @@ In R we can set up the *input* parameter ranges as follows:
 parRanges <- data.frame(
     parameter = c("r_zero", "incubation_time", "infectious_time", "hospital_time",
                   "ptC", "lock_1_restrict", "lock_2_release",
-                  "pEA", "pIR", "pID", "pHR", "pHD"),
-    lower = c(2.5, 4, 2, 4, rep(0, 8)),
-    upper = c(4, 6, 4, 12, rep(1, 8)),
+                  "pEA", "pIH", "pIRprime", "pHC", "pHRprime", "pCR"),
+    lower = c(2.5, 4, 2, 4, rep(0, 9)),
+    upper = c(4, 6, 4, 12, rep(1, 9)),
     stringsAsFactors = FALSE
 )
 ```
@@ -512,32 +379,20 @@ convertInputToDisease <- function(input, repeats) {
     ## common parameters to all pathways
     disease <- tibble(`beta[2]` = input$r_zero / input$infectious_time)
     disease$`beta[3]` <- disease$`beta[2]`
-    disease$`.scale_rate[1]` <- input$lock_1_restrict
-    disease$`.scale_rate[2]` <- input$lock_2_release
     disease$`progress[0]` <- 1
     disease$`progress[1]` <- 1 - exp(-(1 / (input$incubation_time - 1)))
     disease$`progress[2]` <- 1
     disease$`progress[3]` <- 1 - exp(-(1 / (input$infectious_time - 1)))
+    disease$`.scale_rate[1]` <- input$lock_1_restrict
+    disease$`.scale_rate[2]` <- input$lock_2_release
     
-    ## SHR pathway
-    disease$`SHR:progress[4]` <- 1
-    disease$`SHR:progress[5]` <- 1 - exp(-(1 / (input$hospital_time - 1)))
+    ## hospital progression
+    disease$`hospital:progress[2]` <- 1
+    disease$`hospital:progress[3]` <- 1 - exp(-(1 / (input$hospital_time - 1)))
     
-    ## SHD pathway
-    disease$`SHD:progress[4]` <- 1
-    disease$`SHD:progress[5]` <- 1 - exp(-(1 / (input$hospital_time - 1)))
-    
-    ## SHCR pathway
-    disease$`SHCR:progress[4]` <- 1
-    disease$`SHCR:progress[5]` <- 1 - exp(-(1 / ((1 - input$ptC) * (input$hospital_time - 2))))
-    disease$`SHCR:progress[6]` <- 1
-    disease$`SHCR:progress[7]` <- 1 - exp(-(1 / (input$ptC * (input$hospital_time - 2))))
-    
-    ## SHCD pathway
-    disease$`SHCD:progress[4]` <- 1
-    disease$`SHCD:progress[5]` <- 1 - exp(-(1 / ((1 - input$ptC) * (input$hospital_time - 2))))
-    disease$`SHCD:progress[6]` <- 1
-    disease$`SHCD:progress[7]` <- 1 - exp(-(1 / (input$ptC * (input$hospital_time - 2))))
+    ## critical care progression
+    disease$`critical:progress[2]` <- 1
+    disease$`critical:progress[3]` <- 1 - exp(-(1 / input$ptC * (input$hospital_time - 1)))
     
     ## finalise number of repeats
     disease$repeats <- repeats
@@ -553,41 +408,34 @@ convertInputToDisease <- function(input, repeats) {
 
 > **QUESTION**: how do we scale FOI from hospital patients to the other populations?
 
-We also need to create different `demographics.json` files from the same *design* matrix used above. The following R function will do this.
+We also need to create a file to scan across the different `mixing` from the same *design* matrix used above. The following R function will do this.
 
 ```{r}
-## function to convert input samples to demographics.json files for MetaWards
-convertInputToJSON <- function(input) {
+## function to convert input samples to move files
+convertInputToMove <- function(input) {
   
     ## ACTUAL CODE WILL HAVE CHECKS ON INPUTS HERE 
     require(dplyr)
   
     ## set up probabilities on disease scale
-    pA <- input$pEA
-    pSR <- (1 - input$pEA) * input$pIR
-    pSD <- (1 - input$pEA) * (1 - input$pIR) * input$pID
-    pSHR <- (1 - input$pEA) * (1 - input$pIR) * (1 - input$pID) * input$pHR
-    pSHD <- (1 - input$pEA) * (1 - input$pIR) * (1 - input$pID) * (1 - input$pHR) * input$pHD
-    pSHCD <- (1 - input$pEA) * (1 - input$pIR) * (1 - input$pID) * (1 - input$pHR) * (1 - input$pHD)
+    pEA <- input$pEA
+    pIH <- input$pIH
+    pIR <- (1 - pIH) * input$pIRprime
+    pHC <- input$pHC
+    pHR <- (1 - pHC) * input$pHRprime
+    pCR <- input$pCR
     
-    ## check they sum to one
-    stopifnot(all.equal(apply(cbind(pA, pSR, pSD, pSHR, pSHD, pSHCD), 1, sum), rep(1, nrow(input))))
+    ## set up scanning file
+    scan <- tibble(
+      `.pEA` = pEA,
+      `.pIH` = pIH,
+      `.pIR` = pIR,
+      `.pHC` = pHC,
+      `.pHR` = pHR,
+      `.pCR` = pCR)
     
-    ## collapse to characters
-    path_probs <- apply(cbind(pA, pSR, pSD, pSHR, pSHD, pSHCD), 1, paste, collapse = ", ")
-    
-    ## set up demographics
-    demographics <- lapply(path_probs, function(x) {
-      c("{",
-        " \"demographics\" : [\"A\", \"SR\", \"SD\", \"SHR\", \"SHD\", \"SHCR\", \"SHCD\"],",
-        paste0(" \"work_ratios\"  : [ ", x, " ],"),
-        paste0(" \"play_ratios\"  : [ ", x, " ],"),
-        " \"diseases\"     : [\"ncov_A\", \"ncov_SR\", \"ncov_SD\", \"ncov_SHR\", \"ncov_SHCR\", \"ncov_SHCR\", \"ncov_SHCD\"]",
-      "}")
-    })
-    
-    ## return demographics files
-    demographics
+    ## return scan files
+    scan
 }
 ```
 
@@ -610,98 +458,16 @@ input <- convertDesignToInput(design, parRanges, "zero_one")
 ## convert input to disease
 disease <- convertInputToDisease(input, 5)
 
-## convert JSON files
-json <- convertInputToJSON(input)
+## convert input to move
+move <- convertInputToMove(input)
 
 ## write to external files
 dir.create("inputs")
 write.csv(disease, "inputs/disease.csv", row.names = FALSE)
-lapply(1:length(json), function(i, json) {
-    writeLines(json[[i]], paste0("inputs/demographics_", i, ".json"))
-}, json = json)
+write.table(move, "inputs/move.dat", row.names = FALSE, sep = " ")
 ```
 
 > **TODO: might want some form of folder clearup or suchlike?**
 
 
-### Interaction matrices
-
-The **interaction matrix** scales the FOI that different demographics have on other demographics. The form below gives full control over all the mixing parameters. However, if we make some assumptions about the key scaling we wish to apply, we can simplify this (see below). We need to store this in a file called `pathways.py`. 
-
-The complete version of `pathways.py` would contain:
-
-```
-from metawards.mixers import merge_using_matrix
-
-def mix_pathways(network, **kwargs):
-    params = network.params
-
-    A_A = params.user_params["A_A"]
-    A_SR = params.user_params["A_SR"]
-    A_SD = params.user_params["A_SD"]
-    A_SHR = params.user_params["A_SHR"]
-    A_SHD = params.user_params["A_SHD"]
-    A_SHCR = params.user_params["A_SHCR"]
-    A_SHCD = params.user_params["A_SHCD"]
-    
-    SR_A = params.user_params["SR_A"]
-    SR_SR = params.user_params["SR_SR"]
-    SR_SD = params.user_params["SR_SD"]
-    SR_SHR = params.user_params["SR_SHR"]
-    SR_SHD = params.user_params["SR_SHD"]
-    SR_SHCR = params.user_params["SR_SHCR"]
-    SR_SHCD = params.user_params["SR_SHCD"]
-    
-    SD_A = params.user_params["SD_A"]
-    SD_SR = params.user_params["SD_SR"]
-    SD_SD = params.user_params["SD_SD"]
-    SD_SHR = params.user_params["SD_SHR"]
-    SD_SHD = params.user_params["SD_SHD"]
-    SD_SHCR = params.user_params["SD_SHCR"]
-    SD_SHCD = params.user_params["SD_SHCD"]
-    
-    SHR_A = params.user_params["SHR_A"]
-    SHR_SR = params.user_params["SHR_SR"]
-    SHR_SD = params.user_params["SHR_SD"]
-    SHR_SHR = params.user_params["SHR_SHR"]
-    SHR_SHD = params.user_params["SHR_SHD"]
-    SHR_SHCR = params.user_params["SHR_SHCR"]
-    SHR_SHCD = params.user_params["SHR_SHCD"]
-    
-    SHD_A = params.user_params["SHD_A"]
-    SHD_SR = params.user_params["SHD_SR"]
-    SHD_SD = params.user_params["SHD_SD"]
-    SHD_SHR = params.user_params["SHD_SHR"]
-    SHD_SHD = params.user_params["SHD_SHD"]
-    SHD_SHCR = params.user_params["SHD_SHCR"]
-    SHD_SHCD = params.user_params["SHD_SHCD"]
-    
-    SHCR_A = params.user_params["SHCR_A"]
-    SHCR_SR = params.user_params["SHCR_SR"]
-    SHCR_SD = params.user_params["SHCR_SD"]
-    SHCR_SHR = params.user_params["SHCR_SHR"]
-    SHCR_SHD = params.user_params["SHCR_SHD"]
-    SHCR_SHCR = params.user_params["SHCR_SHCR"]
-    SHCR_SHCD = params.user_params["SHCR_SHCD"]
-    
-    SHCD_A = params.user_params["SHCD_A"]
-    SHCD_SR = params.user_params["SHCD_SR"]
-    SHCD_SD = params.user_params["SHCD_SD"]
-    SHCD_SHR = params.user_params["SHCD_SHR"]
-    SHCD_SHD = params.user_params["SHCD_SHD"]
-    SHCD_SHCR = params.user_params["SHCD_SHCR"]
-    SHCD_SHCD = params.user_params["SHCD_SHCD"]
-
-    matrix = [ [A_A , A_SR, A_SD, A_SHR, A_SHD, A_SHCR, A_SHCD],
-               [SR_A , SR_SR, SR_SD, SR_SHR, SR_SHD, SR_SHCR, SR_SHCD],
-               [SD_A , SD_SR, SD_SD, SD_SHR, SD_SHD, SD_SHCR, SD_SHCD],
-               [SHR_A , SHR_SR, SHR_SD, SHR_SHR, SHR_SHD, SHR_SHCR, SHR_SHCD],
-               [SHD_A , SHD_SR, SHD_SD, SHD_SHR, SHD_SHD, SHD_SHCR, SHD_SHCD],
-               [SHCR_A , SHCR_SR, SHCR_SD, SHCR_SHR, SHCR_SHD, SHCR_SHCR, SHCR_SHCD],
-               [SHCD_A , SHCD_SR, SHCD_SD, SHCD_SHR, SHCD_SHD, SHCD_SHCR, SHCD_SHCD] ]
-
-    network.demographics.interaction_matrix = matrix
-
-    return [merge_using_matrix]
-```
 
