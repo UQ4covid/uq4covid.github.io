@@ -1,6 +1,6 @@
 from metawards.movers import go_stage
 
-def move_pathways(**kwargs):
+def move_pathways(network, **kwargs):
     # extract user defined parameters
     params = network.params
 
@@ -42,7 +42,7 @@ def move_pathways(**kwargs):
                                       go_to="genpop",
                                       from_stage=3,
                                       to_stage=5,
-                                      fraction=(1.0 - pIH - pIR) / (1.0 - pIH),
+                                      fraction=(1.0 - (pIR / (1.0 - pIH))),
                                       **kwargs)
                                       
     # move (100 * pHC)% of H2 hospital to C1 critical
