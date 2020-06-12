@@ -2,3 +2,7 @@ _site
 .jekyll-cache
 tmp
 vignettes/_knitr_cache
+
+vignettes/data/MetaWards/inputs/
+vignettes/data/MetaWards/raw_outputs/
+

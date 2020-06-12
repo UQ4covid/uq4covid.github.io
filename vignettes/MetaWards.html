@@ -11,7 +11,7 @@
 
 <meta name="author" content="TJ McKinley" />
 
-<meta name="date" content="2020-09-06" />
+<meta name="date" content="2020-06-11" />
 
 <title>Information on MetaWards</title>
 
@@ -1581,7 +1581,7 @@ summary {
 
 <h1 class="title toc-ignore">Information on MetaWards</h1>
 <h4 class="author">TJ McKinley</h4>
-<h4 class="date">09/06/2020</h4>
+<h4 class="date">11 June 2020</h4>
 
 </div>
 
@@ -1590,56 +1590,7 @@ summary {
 <p><strong>THIS IS NOT COMPLETED YET, BUT GIVES SOME IDEAS ABOUT HOW THE MODEL IS EVOLVING.</strong></p>
 <div id="model-description" class="section level1">
 <h1>Model description</h1>
-<p>Firstly, the current model looks like:</p>
-<div id="htmlwidget-62213d0278dfce26de57" style="width:100%;height:100%;" class="grViz html-widget"></div>
-<script type="application/json" data-for="htmlwidget-62213d0278dfce26de57">{"x":{"diagram":"digraph {\n  \ngraph[layout = dot, rankdir = LR]\n\nnode [shape = rectangle]\n\nS\nE1 [label = <E<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]\nE2 [label = <E<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\nI1 [label = <I<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]\nI2 [label = <I<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\nR\n\nS -> E1 -> E2 -> I1 -> I2 -> R\n}","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
-<p>The current parameter ranges are: <span class="math display">\[\begin{align}
-    \mbox{mean incubation period} &amp;\sim U(4, 6)\\
-    \mbox{mean infectious period} &amp;\sim U(2, 4)\\
-    \mbox{$R_0$} &amp;\sim U(2.5, 4)\\
-    \mbox{lockdown 1 scale} &amp;\sim U(0, 1)\\
-    \mbox{lockdown 2 scale} &amp;\sim U(0, 1)
-\end{align}\]</span> Designs generated in <span class="math inline">\((0, 1)\)</span> or <span class="math inline">\((-1, 1)\)</span> spaces can be easily transformed into the spaces defined above and visa-versa. Once this is done, the points on the input space must be converted to MetaWards <code>beta</code> and <code>progress</code> parameters. We use the following transformations.</p>
-<div id="beta-parameters" class="section level2">
-<h2><code>beta</code> parameters</h2>
-<p>Since <span class="math inline">\(I_1\)</span> and <span class="math inline">\(I_2\)</span> are both infectious states, they have the same <span class="math inline">\(\beta\)</span> (transmission parameter). The states are indexed from 0 in MetaWards, so <span class="math inline">\(\beta_2\)</span> is the transmission parameter from the state <span class="math inline">\(I_1\)</span> and <span class="math inline">\(\beta_3\)</span> from <span class="math inline">\(I_2\)</span>. These can be derived from <span class="math inline">\(R_0\)</span> and the mean infectious period as: <span class="math display">\[\begin{align}
-    \beta_2 &amp;= \frac{R_0}{\mbox{mean infectious period}}\\
-    \beta_3 &amp;= \beta_2.
-\end{align}\]</span></p>
-</div>
-<div id="progress-parameters" class="section level2">
-<h2><code>progress</code> parameters</h2>
-<p>These are slightly trickier, because they are not <em>rates</em>, but rather are discrete-time (daily) probabilities of transition for individuals out of each class. MetaWards uses the <span class="math inline">\(E_1\)</span> and <span class="math inline">\(I_1\)</span> classes as placeholders in order to efficiently count <em>incidence</em> of new infections and infectives. Individuals automatically stay in the <span class="math inline">\(E_1\)</span> and <span class="math inline">\(I_1\)</span> classes for exactly one day, before progressing automatically to the <span class="math inline">\(E_2\)</span> and <span class="math inline">\(I_2\)</span> classes respectively. Thus: <span class="math display">\[\begin{align}
-    \mbox{progress}_0 &amp;= 1\\
-    \mbox{progress}_2 &amp;= 1.
-\end{align}\]</span> (Here <span class="math inline">\(\mbox{progress}_0\)</span> is the progression probability from the <span class="math inline">\(E_1 \to E_2\)</span> class, since progression out of the <span class="math inline">\(S\)</span> class is driven by the <span class="math inline">\(\beta\)</span> terms.) Epidemiologically this has the effect of forcing the incubation period to be <em>at least one day</em>. This is adjusted for (a bit) by removing one day from the incubation and infectious periods before calculating the other progress rates. Hence: <span class="math display">\[\begin{align}
-    \mbox{progress}_1 &amp;= 1 - \exp\left(-\frac{1}{\mbox{incubation period} - 1}\right)\\
-    \mbox{progress}_3 &amp;= 1 - \exp\left(-\frac{1}{\mbox{infectious period} - 1}\right).
-\end{align}\]</span> Finally, the lockdown parameters scale the force-of-infection terms (essentially the <span class="math inline">\(\beta\)</span> rates above). These are both probabilities, so don’t need any additional transformations.</p>
-</div>
-<div id="code" class="section level2">
-<h2>Code</h2>
-<p>A short piece of R code to do the transformations from the <em>input</em> space to the <em>disease</em> inputs for MetaWards is:</p>
-<pre class="r"><code>## function to convert samples to correct format for MetaWards
-convertToMetaWards &lt;- function(pars, repeats) {
-    disease &lt;- tibble(`beta[2]` = pars$r_zero / pars$infectious_time)
-    disease$`beta[3]` &lt;- disease$`beta[2]`
-    disease$`progress[1]` &lt;- 1 - exp(-(1 / (pars$incubation_time - 1)))
-    disease$`progress[2]` &lt;- 1
-    disease$`progress[3]` &lt;- 1 - exp(-(1 / (pars$infectious_time - 1)))
-    disease$`.scale_rate[1]` &lt;- pars$lock_1_restrict
-    disease$`.scale_rate[2]` &lt;- pars$lock_2_release
-    disease$repeats &lt;- repeats
-    disease$par &lt;- pars$par
-    disease
-}</code></pre>
-<p>where <code>pars</code> is an <span class="math inline">\((n \times 5)\)</span> <code>data.frame</code> with each row corresponding to a design point, and columns called: <code>infectious_time</code>, <code>incubation_time</code>, <code>r_zero</code>, <code>lock_1_restrict</code> and <code>lock_1_release</code> (where the latter two are the scalings for full lockdown, and then slight lockdown release). The additional <code>repeats</code> argument adds the number of repeats to the matrix in the correct format for MetaWards.</p>
-<p>The UQ4Covid tools automatically does this for a given design specified in <span class="math inline">\((-1, 1)\)</span> space. <strong>[EXAMPLE BELOW]</strong>.</p>
-</div>
-</div>
-<div id="extended-model-description" class="section level1">
-<h1>Extended model description</h1>
-<p>We ideally want a model that incorporates moves to hospital and ICU. Here each class is split into two components, e.g. <span class="math inline">\(E_1\)</span> and <span class="math inline">\(E_2\)</span>. This is so that MetaWards can calulate new movements into each class easily. Individuals progress out of the first of these classes afetr exactly one day with probability 1. This means that the time spent in each <span class="math inline">\(E\)</span>, <span class="math inline">\(I\)</span>, <span class="math inline">\(A\)</span> or <span class="math inline">\(H\)</span> class is <em>at least one day</em>. Here:</p>
+<p>We ideally want a model that incorporates moves to hospital and ICU. Here each class is split into two components, e.g. <span class="math inline">\(E_1\)</span> and <span class="math inline">\(E_2\)</span>. This is so that MetaWards can calulate new movements into each class easily. Individuals progress out of the first of these classes after exactly one day with probability 1. This means that the time spent in each <span class="math inline">\(E\)</span>, <span class="math inline">\(I\)</span>, <span class="math inline">\(A\)</span> or <span class="math inline">\(H\)</span> class is <em>at least one day</em>. Here:</p>
 <ul>
 <li><span class="math inline">\(E\)</span>: infected but not infectious;</li>
 <li><span class="math inline">\(A\)</span>: asymptomatic and infectious;</li>
@@ -1649,213 +1600,365 @@ convertToMetaWards &lt;- function(pars, repeats) {
 <li><span class="math inline">\(R\)</span>: recovered and immune;</li>
 <li><span class="math inline">\(D\)</span>: died.</li>
 </ul>
-<div id="htmlwidget-81e79e5c2c02d3f900de" style="width:100%;height:100%;" class="grViz html-widget"></div>
-<script type="application/json" data-for="htmlwidget-81e79e5c2c02d3f900de">{"x":{"diagram":"digraph {\n  \ngraph[layout = dot, rankdir = LR]\n\nnode [shape = rectangle]\n\nS\nE1 [label = <E<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]\nE2 [label = <E<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\nI1 [label = <I<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]\nI2 [label = <I<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\nA1 [label = <A<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]\nA2 [label = <A<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\nH1 [label = <H<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]\nH2 [label = <H<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\nC1 [label = <C<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]\nC2 [label = <C<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\nD\nR\n\nS -> E1 -> E2 -> {A1, I1}\nA1 -> A2 -> R\nI1 -> I2\nI2 -> {H1, D, R}\nH1 -> H2 -> {C1, D, R}\nC1 -> C2 -> {D, R}\n\nsubgraph {\n  rank = same; I1; A1;\n}\nsubgraph {\n  rank = same; I2; A2;\n}\n\n}","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
-<p>Parameters:</p>
-<ul>
-<li><span class="math inline">\(p_{SE_1}\)</span> driven by <span class="math inline">\(\beta\)</span> parameters, defined by <span class="math inline">\(R_0\)</span> and length of infectious period (see below);</li>
-<li><span class="math inline">\(p_{E_1E_2} = 1\)</span> (probability);</li>
-<li><span class="math inline">\(p_{E_2A_1} = p_{EA}\left(1 - e^{-\gamma^*_{E}}\right)\)</span> where <span class="math inline">\(\gamma^*_E = \frac{1}{T_E - 1}\)</span> with <span class="math inline">\(T_E\)</span> the mean incubation period;</li>
-<li><span class="math inline">\(p_{E_2I_1} = \left(1 - p_{EA}\right)\left(1 - e^{-\gamma^*_{E}}\right)\)</span>;</li>
-<li><span class="math inline">\(p_{A_1A_2} = 1\)</span> (probability);</li>
-<li><span class="math inline">\(p_{A_2R} = 1 - e^{-\gamma^*_I}\)</span> where <span class="math inline">\(\gamma^*_I = \frac{1}{T_I - 1}\)</span> with <span class="math inline">\(T_I\)</span> the mean infectious period;</li>
-<li><span class="math inline">\(p_{I_1I_2} = 1\)</span> (probability);</li>
-<li><span class="math inline">\(p_{I_2H_1} = p_{IH}\left(1 - e^{-\gamma^*_{I}}\right)\)</span> where <span class="math inline">\(\delta^*_I = \frac{1}{T_I - 1}\)</span> with <span class="math inline">\(T_I\)</span> the mean infectious period;</li>
-<li><span class="math inline">\(p_{I_2R} = p_{IR}\left(1 - e^{-\gamma^*_{I}}\right)\)</span>;</li>
-<li><span class="math inline">\(p_{I_2D} = \left(1 - p_{IH} - p_{IR}\right)\left(1 - e^{-\gamma^*_{I}}\right)\)</span>;</li>
-<li><span class="math inline">\(p_{H_1H_2} = 1\)</span> (probability);</li>
-<li><span class="math inline">\(p_{H_2C_1} = p_{HC}\left(1 - e^{-\gamma^*_{HC}}\right)\)</span> where <span class="math inline">\(\gamma^*_{HC} = \frac{1}{T_H - T_C - 1}\)</span> with <span class="math inline">\(T_H\)</span> the mean length of a hospital stay and <span class="math inline">\(T_C\)</span> is the mean length of time spent in ICU;</li>
-<li><span class="math inline">\(p_{H_2D} = p_{HD}\left(1 - e^{-\gamma^*_{H}}\right)\)</span> where <span class="math inline">\(\gamma^*_H = \frac{1}{T_H - 1}\)</span>;</li>
-<li><span class="math inline">\(p_{H_2R} = \left(1 - p_{HC} - p_{HD}\right)\left(1 - e^{-\gamma^*_{H}}\right)\)</span>;</li>
-<li><span class="math inline">\(p_{C_1C_2} = 1\)</span> (probability);</li>
-<li><span class="math inline">\(p_{C_2D} = p_{CD}\left(1 - e^{-\gamma^*_{C}}\right)\)</span> where <span class="math inline">\(\gamma^*_C = \frac{1}{T_C - 1}\)</span> with <span class="math inline">\(T_C\)</span> is the mean length of time spent in ICU;</li>
-<li><span class="math inline">\(p_{C_2R} = \left(1 - p_{CD}\right)\left(1 - e^{-\gamma^*_{C}}\right)\)</span>.</li>
-</ul>
-<p>Lockdown can be controlled either by constraining movements over a certain distance, or by scaling the <span class="math inline">\(\beta\)</span> parameters. We do the latter at the moment.</p>
-<p>The current parameter ranges are: <span class="math display">\[\begin{align}
-    \mbox{mean incubation period} &amp;\sim U(4, 6)\\
-    \mbox{mean infectious period} &amp;\sim U(2, 4)\\
-    \mbox{$R_0$} &amp;\sim U(2.5, 4)\\
-    \mbox{lockdown 1 scale} &amp;\sim U(0, 1)\\
-    \mbox{lockdown 2 scale} &amp;\sim U(0, 1)
-\end{align}\]</span></p>
-<p>We need: <strong>ranges for the length of hospital stay</strong> (perhaps chat to Rob Challen)? We could use <span class="math inline">\(U(0, 1)\)</span> ranges on many of the other parameters.</p>
-<p>Designs generated in <span class="math inline">\((0, 1)\)</span> or <span class="math inline">\((-1, 1)\)</span> spaces can be easily transformed into the spaces defined above and visa-versa. Once this is done, the points on the input space must be converted to MetaWards <code>beta</code> and <code>progress</code> parameters.</p>
+<div id="htmlwidget-9b72bedd8e4d72b2e53e" style="width:100%;height:100%;" class="grViz html-widget"></div>
+<script type="application/json" data-for="htmlwidget-9b72bedd8e4d72b2e53e">{"x":{"diagram":"digraph {\n  \ngraph[layout = dot, rankdir = LR]\n\nnode [shape = rectangle]\n\nS\nE1 [label = <E<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]\nE2 [label = <E<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\nI1 [label = <I<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]\nI2 [label = <I<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\nA1 [label = <A<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]\nA2 [label = <A<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\nH1 [label = <H<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]\nH2 [label = <H<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\nC1 [label = <C<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]\nC2 [label = <C<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\nD\nR\n\nS -> E1 -> E2 -> {A1, I1}\nA1 -> A2 -> R\nI1 -> I2\nI2 -> {H1, D, R}\nH1 -> H2 -> {C1, D, R}\nC1 -> C2 -> {D, R}\n\nsubgraph {\n  rank = same; I1; A1;\n}\nsubgraph {\n  rank = same; I2; A2;\n}\n\n}","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
 <div id="metawards-setup" class="section level2">
 <h2>MetaWards setup</h2>
-<p>I’ve taken the setup below from the <code>development</code> branch of the MetaWards tutorials. I think that to have the different epidemiological pathways we will need different sets of <code>.json</code> files e.g.</p>
-<p><a href="https://metawards.org/versions/devel/tutorial/part07/01_pathways.html#modelling-a-fraction-of-asymptomatic-super-spreaders">https://metawards.org/versions/devel/tutorial/part07/01_pathways.html#modelling-a-fraction-of-asymptomatic-super-spreaders</a></p>
-<p>There are currently seven pathways, which will be described below, but summarised as:</p>
+<p>The model structure above allows for different progression pathways. MetaWards deals with this by assigning individuals to different “demographics”, where each demographic can be used to represent different progression pathways. There are also <code>mover</code> functions that can be used to move individuals between demographics, and <code>mixer</code> functions that scale the force-of-infection (FOI) terms between the different demographics (explained later). There are currently seven pathways, which will be described below, but can be summarised as:</p>
 <ul>
-<li><code>asymp</code>: asymptomatic infections, always recover.</li>
-<li><code>symp_R</code>: symptomatic infections, leading to recovery.</li>
-<li><code>symp_D</code>: symptomatic infections, leading to death.</li>
-<li><code>symp_HR</code>: symptomatic infections, leading to hospital and then recovery.</li>
-<li><code>symp_HD</code>: symptomatic infections, leading to hospital and then death.</li>
-<li><code>symp_HCR</code>: symptomatic infections, leading to hospital, then critical care (ICU) and then recovery.</li>
-<li><code>symp_HCD</code>: symptomatic infections, leading to hospital, then critical care (ICU) and then death.</li>
+<li><code>SEAR</code>: asymptomatic infections, always recover.</li>
+<li><code>SEIR</code>: symptomatic infections, leading to recovery.</li>
+<li><code>SEID</code>: symptomatic infections, leading to death.</li>
+<li><code>SEIHR</code>: symptomatic infections, leading to hospital and then recovery.</li>
+<li><code>SEIHD</code>: symptomatic infections, leading to hospital and then death.</li>
+<li><code>SEIHCR</code>: symptomatic infections, leading to hospital, then critical care (ICU) and then recovery.</li>
+<li><code>SEIHCD</code>: symptomatic infections, leading to hospital, then critical care (ICU) and then death.</li>
 </ul>
-<p><strong>[ALL NUMBERS BELOW ARE PLACEHOLDERS. THERE WOULD HAVE TO BE SWEEPS THROUGH THE DIFFERENT SETS OF PARAMETERS <span class="math inline">\(p_{EA}\)</span>, <span class="math inline">\(p_{IR}\)</span> ETC. TO FEED INTO THE <code>demographics.json</code> FILE BELOW. WE NEED TO CHECK WE CAN DO SWEEPS THROUGH THE JSON FILES, ELSE WE’LL HAVE TO DESIGN SOME CUSTOMISED RUN FUNCTIONS TO ACCOMMODATE THIS.]</strong></p>
-<p><strong>The MetaWards design is parameterised slightly differently to my attempt above. Essentially they pre-specify the proportions of individuals will belong to each possible pathway, and then randomly assign individuals to pathways once they’re infected, rather than the conditional approach that I took. They’re mathematically equivalent, but might be easier to parameterise on the MetaWards parameterisation, rather than conbverting between the two.</strong></p>
-<div id="demographics.json" class="section level3">
-<h3><code>demographics.json</code></h3>
-<p>The <code>demographics.json</code> file should look something like:</p>
-<pre><code>{
-  &quot;demographics&quot; : [&quot;asymp&quot;, &quot;symp_R&quot;, &quot;symp_D&quot;, &quot;symp_HR&quot;, &quot;symp_HD&quot;, &quot;symp_HCR&quot;, &quot;symp_HCD&quot;],
-  &quot;work_ratios&quot;  : [ 0.6, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05 ],
-  &quot;play_ratios&quot;  : [ 0.6, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05 ],
-  &quot;diseases&quot;     : [&quot;ncov_asymp&quot;, &quot;ncov_symp_R&quot;, &quot;ncov_symp_D&quot;, &quot;ncov_symp_HR&quot;, &quot;ncov_symp_HCR&quot;, &quot;ncov_symp_HCR&quot;, &quot;ncov_symp_HCD&quot;]
+<p>In practice, we can summarise these through four demographics, and then <code>move</code> functions that conditionally move individuals through the seven pathways. First, we set up the <code>demographics.json</code> file, which should look something like:</p>
+<pre class="js"><code>{
+  &quot;demographics&quot; : [&quot;genpop&quot;, &quot;asymp&quot;, &quot;hospital&quot;, &quot;critical&quot;],
+  &quot;work_ratios&quot;  : [ 1.0, 0.0, 0.0, 0.0 ],
+  &quot;play_ratios&quot;  : [ 1.0, 0.0, 0.0, 0.0 ],
+  &quot;diseases&quot;     : [ &quot;ncov&quot;, &quot;ncov&quot;, &quot;ncov&quot;, &quot;ncov&quot; ]
 }</code></pre>
-<p>The ratios are the ratios of individuals that would belong to each pathway.</p>
+<p>Individuals in the <code>genpop</code> demographic move through the <span class="math inline">\(SEIR\)</span> and <span class="math inline">\(SEID\)</span> pathways; the <code>asymp</code> demographic moves through the <code>SEAR</code> pathway; some individuals in the <code>genpop</code> demographic can be moved to the <code>hospital</code> demographic, and thus follow the <code>SEIHR</code> and <code>SEIHD</code> pathways; and finally, some individuals in the <code>hospital</code> demographic can be moved to the <code>critical</code> demographic, and thus follow the <code>SEIHCR</code> and <code>SEIHCD</code> pathways.</p>
+<p>We want the proportions stored in <code>work_ratios</code> and <code>play_ratios</code> to be variable parameters in the model. Therefore we want to specify proportions of individuals in each pathway such that <span class="math inline">\(\sum_{i \in \mathcal{P}} p_i = 1\)</span>, where <span class="math inline">\(\mathcal{P} = \{GP, A, H, C\}\)</span>.</p>
+<blockquote>
+<p>Here we assume the same ratios in the <code>work</code> and <code>play</code> populations, but in practice these could be changed.</p>
+</blockquote>
+<div id="parameters" class="section level3">
+<h3>Parameters</h3>
+<p>Once the demographics have been setup, we can then control progress through the different states as:</p>
+<ul>
+<li><span class="math inline">\(p_{SE_1}\)</span> driven by <span class="math inline">\(\beta\)</span> parameters, defined by <span class="math inline">\(R_0\)</span> and length of infectious period (see <a href="#code">here</a>);</li>
+<li><span class="math inline">\(p_{E_1E_2} = 1\)</span>;</li>
+<li><span class="math inline">\(p_{E_2A_1} = p_{EA}\left(1 - e^{-\gamma^*_{E}}\right)\)</span> where <span class="math inline">\(\gamma^*_E = \frac{1}{T_E - 1}\)</span> with <span class="math inline">\(T_E\)</span> the mean incubation period;</li>
+<li><span class="math inline">\(p_{A_1A_2} = 1\)</span>;</li>
+<li><span class="math inline">\(p_{A_2R} = 1 - e^{-\gamma^*_I}\)</span> where <span class="math inline">\(\gamma^*_I = \frac{1}{T_I - 1}\)</span> with <span class="math inline">\(T_I\)</span> the mean infectious period;</li>
+<li><span class="math inline">\(p_{E_2I_1} = \left(1 - p_{EA}\right)\left(1 - e^{-\gamma^*_{E}}\right)\)</span>;</li>
+<li><span class="math inline">\(p_{I_1I_2} = 1\)</span>;</li>
+<li><span class="math inline">\(p_{I_2H_1} = p_{IH}\left(1 - e^{-\gamma^*_{I}}\right)\)</span> where <span class="math inline">\(\gamma^*_I = \frac{1}{T_I - 1}\)</span>;</li>
+<li><span class="math inline">\(p_{I_2R} = p_{IR}\left(1 - e^{-\gamma^*_{I}}\right)\)</span>;</li>
+<li><span class="math inline">\(p_{I_2D} = \left(1 - p_{IH} - p_{IR}\right)\left(1 - e^{-\gamma^*_{I}}\right)\)</span>;</li>
+<li><span class="math inline">\(p_{H_1H_2} = 1\)</span>;</li>
+<li><span class="math inline">\(p_{H_2C_1} = p_{HC}\left(1 - e^{-\gamma^*_{HC}}\right)\)</span> where <span class="math inline">\(\gamma^*_{HC} = \frac{1}{T_H - T_C - 1}\)</span> with <span class="math inline">\(T_H\)</span> the mean length of a hospital stay and <span class="math inline">\(T_C\)</span> is the mean length of time spent in ICU;</li>
+<li><span class="math inline">\(p_{H_2R} = p_{HR}\left(1 - e^{-\gamma^*_{H}}\right)\)</span> where <span class="math inline">\(\gamma^*_H = \frac{1}{T_H - 1}\)</span>;</li>
+<li><span class="math inline">\(p_{H_2D} = \left(1 - p_{HC} - p_{HR}\right)\left(1 - e^{-\gamma^*_{H}}\right)\)</span>;</li>
+<li><span class="math inline">\(p_{C_1C_2} = 1\)</span>;</li>
+<li><span class="math inline">\(p_{C_2R} = p_{CR}\left(1 - e^{-\gamma^*_{C}}\right)\)</span> where <span class="math inline">\(\gamma^*_C = \frac{1}{T_C - 1}\)</span> with <span class="math inline">\(T_C\)</span> is the mean length of time spent in ICU;</li>
+<li><span class="math inline">\(p_{C_2D} = \left(1 - p_{CR}\right)\left(1 - e^{-\gamma^*_{C}}\right)\)</span>.</li>
+</ul>
+<p>Lockdown can be controlled either by constraining movements over a certain distance, or by scaling the <span class="math inline">\(\beta\)</span> parameters. We do the latter at the moment.</p>
 </div>
-<div id="pathways-.json-files" class="section level3">
-<h3>Pathways <code>.json</code> files</h3>
-<p>We need different disease <code>.json</code> files for the different pathways.</p>
-<div id="asymp" class="section level4">
-<h4><code>asymp</code></h4>
-<p>The asymptomatic pathway (from above) is:</p>
-<div id="htmlwidget-d22f0c707b4aac3b9c16" style="width:100%;height:100%;" class="grViz html-widget"></div>
-<script type="application/json" data-for="htmlwidget-d22f0c707b4aac3b9c16">{"x":{"diagram":"digraph {\n  \ngraph[layout = dot, rankdir = LR]\n\nnode [shape = rectangle]\n\nS\nE1 [label = <E<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]\nE2 [label = <E<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\nA1 [label = <A<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]\nA2 [label = <A<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\nR\n\nS -> E1 -> E2 -> A1 -> A2 -> R\n}","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
-<p>Hence we need <code>ncov_asymp.json</code>:</p>
-<pre><code>{ &quot;name&quot;             : &quot;SARS-Cov-2 - asymptomatic pathway&quot;,
-  &quot;version&quot;          : &quot;June 9th 2020&quot;,
+<div id="disease-.json-file" class="section level3">
+<h3>Disease <code>.json</code> file</h3>
+<p>All pathways have an <span class="math inline">\(SEI(R/D)\)</span> structure, so we can set up an <code>ncov.json</code> file for the overall disease:</p>
+<pre class="js"><code>{ 
+  &quot;name&quot;             : &quot;SARS-Cov-2&quot;,
+  &quot;version&quot;          : &quot;June 11th 2020&quot;,
   &quot;author(s)&quot;        : &quot;UQ4COVID Team&quot;,
   &quot;contact(s)&quot;       : &quot;e-mail...&quot;,
   &quot;reference(s)&quot;     : &quot;references...&quot;,  
-  &quot;beta&quot;             : [0.0, 0.0, 1.0, 1.0, 0.0],
-  &quot;progress&quot;         : [1.0, 1.0, 1.0, 1.0, 0.0],
-  &quot;too_ill_to_move&quot;  : [0.0, 0.0, 0.0, 0.0, 0.0],
-  &quot;contrib_foi&quot;      : [1.0, 1.0, 1.0, 1.0, 0.0]
+  &quot;beta&quot;             : [0.0, 0.0, 1.0, 1.0, 0.0, 0.0],
+  &quot;progress&quot;         : [1.0, 1.0, 1.0, 1.0, 0.0, 0.0],
+  &quot;too_ill_to_move&quot;  : [0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+  &quot;contrib_foi&quot;      : [1.0, 1.0, 1.0, 1.0, 0.0, 0.0]
 }</code></pre>
 <blockquote>
 <p><strong>Note:</strong> We would want asymptomatics to be less infectious than symptomatics, so could amend <span class="math inline">\(\beta\)</span>, or set <code>contrib_foi</code>?</p>
 </blockquote>
 </div>
-<div id="symp_r" class="section level4">
-<h4><code>symp_R</code></h4>
-<p>The symptomatic/recovered pathway (from above) is:</p>
-<div id="htmlwidget-b7ea0bb45f75f558612c" style="width:100%;height:100%;" class="grViz html-widget"></div>
-<script type="application/json" data-for="htmlwidget-b7ea0bb45f75f558612c">{"x":{"diagram":"digraph {\n  \ngraph[layout = dot, rankdir = LR]\n\nnode [shape = rectangle]\n\nS\nE1 [label = <E<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]\nE2 [label = <E<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\nI1 [label = <I<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]\nI2 [label = <I<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\nR\n\nS -> E1 -> E2 -> I1 -> I2 -> R\n}","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
-<p>Hence we need <code>ncov_symp_R.json</code>:</p>
-<pre><code>{ &quot;name&quot;             : &quot;SARS-Cov-2 - symptomatic/recovered pathway&quot;,
-  &quot;version&quot;          : &quot;June 9th 2020&quot;,
-  &quot;author(s)&quot;        : &quot;UQ4COVID Team&quot;,
-  &quot;contact(s)&quot;       : &quot;e-mail...&quot;,
-  &quot;reference(s)&quot;     : &quot;references...&quot;,  
-  &quot;beta&quot;             : [0.0, 0.0, 1.0, 1.0, 0.0],
-  &quot;progress&quot;         : [1.0, 1.0, 1.0, 1.0, 0.0],
-  &quot;too_ill_to_move&quot;  : [0.0, 0.0, 0.0, 0.0, 0.0],
-  &quot;contrib_foi&quot;      : [1.0, 1.0, 1.0, 1.0, 0.0]
-}</code></pre>
-</div>
-<div id="symp_d" class="section level4">
-<h4><code>symp_D</code></h4>
-<p>The symptomatic/dead pathway (from above) is:</p>
-<div id="htmlwidget-b064707cc1626bfddd7f" style="width:100%;height:100%;" class="grViz html-widget"></div>
-<script type="application/json" data-for="htmlwidget-b064707cc1626bfddd7f">{"x":{"diagram":"digraph {\n  \ngraph[layout = dot, rankdir = LR]\n\nnode [shape = rectangle]\n\nS\nE1 [label = <E<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]\nE2 [label = <E<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\nI1 [label = <I<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]\nI2 [label = <I<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\nD\n\nS -> E1 -> E2 -> I1 -> I2 -> D\n}","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
-<p>Hence we need <code>ncov_symp_D.json</code>:</p>
-<pre><code>{ &quot;name&quot;             : &quot;SARS-Cov-2 - symptomatic/dead pathway&quot;,
-  &quot;version&quot;          : &quot;June 9th 2020&quot;,
-  &quot;author(s)&quot;        : &quot;UQ4COVID Team&quot;,
-  &quot;contact(s)&quot;       : &quot;e-mail...&quot;,
-  &quot;reference(s)&quot;     : &quot;references...&quot;,  
-  &quot;beta&quot;             : [0.0, 0.0, 1.0, 1.0, 0.0],
-  &quot;progress&quot;         : [1.0, 1.0, 1.0, 1.0, 0.0],
-  &quot;too_ill_to_move&quot;  : [0.0, 0.0, 0.0, 0.0, 0.0],
-  &quot;contrib_foi&quot;      : [1.0, 1.0, 1.0, 1.0, 0.0]
-}</code></pre>
-<blockquote>
-<p><strong>Note</strong>: not quite sure how to differentiate recovereds from dead, usually the latter would not contribute to the population sizes going forward, though the former would. In this case since populations are relatively large it will make little difference, so the <code>symp_R</code> and <code>symp_D</code> pathways would have the same parameters, but would be differentiated as a straightforward way to extract death counts for e.g. calibration.</p>
-</blockquote>
-</div>
-<div id="symp_hr" class="section level4">
-<h4><code>symp_HR</code></h4>
-<p>The symptomatic/hospital/recovered pathway (from above) is:</p>
-<div id="htmlwidget-795a043be1da620e03db" style="width:100%;height:100%;" class="grViz html-widget"></div>
-<script type="application/json" data-for="htmlwidget-795a043be1da620e03db">{"x":{"diagram":"digraph {\n  \ngraph[layout = dot, rankdir = LR]\n\nnode [shape = rectangle]\n\nS\nE1 [label = <E<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]\nE2 [label = <E<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\nI1 [label = <I<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]\nI2 [label = <I<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\nH1 [label = <H<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]\nH2 [label = <H<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\nR\n\nS -> E1 -> E2 -> I1 -> I2 -> H1 -> H2 -> R\n}","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
-<p>Hence we need <code>ncov_symp_HR.json</code>:</p>
-<pre><code>{ &quot;name&quot;             : &quot;SARS-Cov-2 - symptomatic/hospital/recovered pathway&quot;,
-  &quot;version&quot;          : &quot;June 9th 2020&quot;,
-  &quot;author(s)&quot;        : &quot;UQ4COVID Team&quot;,
-  &quot;contact(s)&quot;       : &quot;e-mail...&quot;,
-  &quot;reference(s)&quot;     : &quot;references...&quot;,  
-  &quot;beta&quot;             : [0.0, 0.0, 1.0, 1.0, 1.0, 1.0, 0.0],
-  &quot;progress&quot;         : [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.0],
-  &quot;too_ill_to_move&quot;  : [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
-  &quot;contrib_foi&quot;      : [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.0]
-}</code></pre>
-</div>
-<div id="symp_hd" class="section level4">
-<h4><code>symp_HD</code></h4>
-<p>The symptomatic/hospital/death pathway (from above) is:</p>
-<div id="htmlwidget-438f7dc78f97c8f6708a" style="width:100%;height:100%;" class="grViz html-widget"></div>
-<script type="application/json" data-for="htmlwidget-438f7dc78f97c8f6708a">{"x":{"diagram":"digraph {\n  \ngraph[layout = dot, rankdir = LR]\n\nnode [shape = rectangle]\n\nS\nE1 [label = <E<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]\nE2 [label = <E<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\nI1 [label = <I<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]\nI2 [label = <I<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\nH1 [label = <H<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]\nH2 [label = <H<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\nD\n\nS -> E1 -> E2 -> I1 -> I2 -> H1 -> H2 -> D\n}","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
-<p>Hence we need <code>ncov_symp_HD.json</code>:</p>
-<pre><code>{ &quot;name&quot;             : &quot;SARS-Cov-2 - symptomatic/hospital/dead pathway&quot;,
-  &quot;version&quot;          : &quot;June 9th 2020&quot;,
-  &quot;author(s)&quot;        : &quot;UQ4COVID Team&quot;,
-  &quot;contact(s)&quot;       : &quot;e-mail...&quot;,
-  &quot;reference(s)&quot;     : &quot;references...&quot;,  
-  &quot;beta&quot;             : [0.0, 0.0, 1.0, 1.0, 1.0, 1.0, 0.0],
-  &quot;progress&quot;         : [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.0],
-  &quot;too_ill_to_move&quot;  : [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
-  &quot;contrib_foi&quot;      : [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.0]
-}</code></pre>
-<blockquote>
-<p><strong>Note</strong>: see <code>symp_R</code> and <code>symp_D</code> note from earlier.</p>
-</blockquote>
-</div>
-<div id="symp_hcr" class="section level4">
-<h4><code>symp_HCR</code></h4>
-<p>The symptomatic/hospital/ICU/recovered pathway (from above) is:</p>
-<div id="htmlwidget-85ad40fdd1aead7a0d07" style="width:100%;height:100%;" class="grViz html-widget"></div>
-<script type="application/json" data-for="htmlwidget-85ad40fdd1aead7a0d07">{"x":{"diagram":"digraph {\n  \ngraph[layout = dot, rankdir = LR]\n\nnode [shape = rectangle]\n\nS\nE1 [label = <E<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]\nE2 [label = <E<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\nI1 [label = <I<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]\nI2 [label = <I<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\nH1 [label = <H<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]\nH2 [label = <H<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\nC1 [label = <C<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]\nC2 [label = <C<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\nR\n\nS -> E1 -> E2 -> I1 -> I2 -> H1 -> H2 -> C1 -> C2 -> R\n}","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
-<p>Hence we need <code>ncov_symp_HCR.json</code>:</p>
-<pre><code>{ &quot;name&quot;             : &quot;SARS-Cov-2 - symptomatic/hospital/ICU/recovered pathway&quot;,
-  &quot;version&quot;          : &quot;June 9th 2020&quot;,
-  &quot;author(s)&quot;        : &quot;UQ4COVID Team&quot;,
-  &quot;contact(s)&quot;       : &quot;e-mail...&quot;,
-  &quot;reference(s)&quot;     : &quot;references...&quot;,  
-  &quot;beta&quot;             : [0.0, 0.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.0],
-  &quot;progress&quot;         : [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.0],
-  &quot;too_ill_to_move&quot;  : [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
-  &quot;contrib_foi&quot;      : [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.0]
-}</code></pre>
-</div>
-<div id="symp_hcd" class="section level4">
-<h4><code>symp_HCD</code></h4>
-<p>The symptomatic/hospital/ICU/dead pathway (from above) is:</p>
-<div id="htmlwidget-2782341e08e49b145edb" style="width:100%;height:100%;" class="grViz html-widget"></div>
-<script type="application/json" data-for="htmlwidget-2782341e08e49b145edb">{"x":{"diagram":"digraph {\n  \ngraph[layout = dot, rankdir = LR]\n\nnode [shape = rectangle]\n\nS\nE1 [label = <E<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]\nE2 [label = <E<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\nI1 [label = <I<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]\nI2 [label = <I<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\nH1 [label = <H<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]\nH2 [label = <H<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\nC1 [label = <C<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]\nC2 [label = <C<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\nD\n\nS -> E1 -> E2 -> I1 -> I2 -> H1 -> H2 -> C1 -> C2 -> D\n}","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
-<p>Hence we need <code>ncov_symp_HCD.json</code>:</p>
-<pre><code>{ &quot;name&quot;             : &quot;SARS-Cov-2 - symptomatic/hospital/ICU/dead pathway&quot;,
-  &quot;version&quot;          : &quot;June 9th 2020&quot;,
-  &quot;author(s)&quot;        : &quot;UQ4COVID Team&quot;,
-  &quot;contact(s)&quot;       : &quot;e-mail...&quot;,
-  &quot;reference(s)&quot;     : &quot;references...&quot;,  
-  &quot;beta&quot;             : [0.0, 0.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.0],
-  &quot;progress&quot;         : [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.0],
-  &quot;too_ill_to_move&quot;  : [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
-  &quot;contrib_foi&quot;      : [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.0]
-}</code></pre>
-<blockquote>
-<p><strong>Note</strong>: see <code>symp_R</code> and <code>symp_D</code> note from earlier.</p>
-</blockquote>
-</div>
+<div id="moving-functions" class="section level3">
+<h3>Moving functions</h3>
+<p>We need moving functions to move individuals from <span class="math inline">\(E_2 \to A_1\)</span>, <span class="math inline">\(E_2 \to I_1\)</span>, <span class="math inline">\(I_2 \to H_1\)</span> and <span class="math inline">\(H_2 \to C_1\)</span>, and thus we need a custom <code>move</code> function. Create a file <code>move_pathways.py</code> containing:</p>
+<pre class="python"><code>from metawards.movers import go_stage
+
+def move_pathways(network, **kwargs):
+    # extract user defined parameters
+    params = network.params
+
+    pEA = params.user_params[&quot;pEA&quot;]
+    pIH = params.user_params[&quot;pIH&quot;]
+    pIR = params.user_params[&quot;pIR&quot;]
+    pHC = params.user_params[&quot;pHC&quot;]
+    pHR = params.user_params[&quot;pHR&quot;]
+    pCR = params.user_params[&quot;pCR&quot;]
+
+    # move (100 * pEA)% of E2 genpop to A1 asymp
+    func1 = lambda **kwargs: go_stage(go_from=&quot;genpop&quot;,
+                                      go_to=&quot;asymp&quot;,
+                                      from_stage=1,
+                                      to_stage=2,
+                                      fraction=pEA,
+                                      **kwargs)
+
+    # move A2 asymp to R genpop
+    func2 = lambda **kwargs: go_stage(go_from=&quot;asymp&quot;,
+                                      go_to=&quot;genpop&quot;,
+                                      from_stage=3,
+                                      to_stage=4,
+                                      fraction=1.0,
+                                      **kwargs)
+                                      
+    # move (100 * pIH)% of I2 genpop to H1 hospital
+    func3 = lambda **kwargs: go_stage(go_from=&quot;genpop&quot;,
+                                      go_to=&quot;hospital&quot;,
+                                      from_stage=3,
+                                      to_stage=2,
+                                      fraction=pIH,
+                                      **kwargs)
+                                      
+    # move (100 * (1 - pIH - pIR))% of I2 genpop to D genpop
+    # (1 - pIH) adjustment is due to ordering of events (so
+    # operates on remainder from move above)
+    func4 = lambda **kwargs: go_stage(go_from=&quot;genpop&quot;,
+                                      go_to=&quot;genpop&quot;,
+                                      from_stage=3,
+                                      to_stage=5,
+                                      fraction=(1.0 - (pIR / (1.0 - pIH))),
+                                      **kwargs)
+                                      
+    # move (100 * pHC)% of H2 hospital to C1 critical
+    func5 = lambda **kwargs: go_stage(go_from=&quot;hospital&quot;,
+                                      go_to=&quot;critical&quot;,
+                                      from_stage=3,
+                                      to_stage=2,
+                                      fraction=pHC,
+                                      **kwargs)
+                                      
+    # move (100 * pHR)% of H2 hospital to R genpop
+    # (1 - pHC) adjustment is due to ordering of events (so
+    # operates on remainder from move above)
+    func6 = lambda **kwargs: go_stage(go_from=&quot;hospital&quot;,
+                                      go_to=&quot;genpop&quot;,
+                                      from_stage=3,
+                                      to_stage=4,
+                                      fraction=pHR / (1 - pHC),
+                                      **kwargs)
+                                      
+    # move remainder of H2 hospital to D genpop
+    func7 = lambda **kwargs: go_stage(go_from=&quot;hospital&quot;,
+                                      go_to=&quot;genpop&quot;,
+                                      from_stage=3,
+                                      to_stage=5,
+                                      fraction=1.0,
+                                      **kwargs)
+                                      
+    # move (100 * pCR)% of C2 critical to R genpop
+    func8 = lambda **kwargs: go_stage(go_from=&quot;critical&quot;,
+                                      go_to=&quot;genpop&quot;,
+                                      from_stage=3,
+                                      to_stage=4,
+                                      fraction=pCR,
+                                      **kwargs)
+                                      
+    # move remainder of C2 critical to D genpop
+    func9 = lambda **kwargs: go_stage(go_from=&quot;critical&quot;,
+                                      go_to=&quot;genpop&quot;,
+                                      from_stage=3,
+                                      to_stage=5,
+                                      fraction=1.0,
+                                      **kwargs)
+
+    return [func1, func2, func3, func4, func5, func6, func7, func8, func9]</code></pre>
 </div>
 <div id="interaction-matrices" class="section level3">
 <h3>Interaction matrices</h3>
-<p><strong>NEED TO FIGURE THIS OUT.</strong></p>
-<p>Set up the <strong>interaction matrix</strong> as e.g. <code>hospitals.py</code>:</p>
-<pre><code>from metawards.mixers import merge_using_matrix
+<p>The <strong>interaction matrix</strong> scales the FOI that different demographics have on other demographics. We need to store this in a file called <code>mix_pathways.py</code>. Since most of the classes are already infected, it’s only the first row that has to contain non-zero entries. Here we’ve assumed zero transmission from hospitals to the general population, and used a <code>GP_A</code> parameter to scale the impact of aymptomatics on infection in the general population.</p>
+<pre class="python"><code>from metawards.mixers import merge_using_matrix
 
-def mix_shield(network, **kwargs):
-    matrix = [ [0.2, 0.1],
-               [0.8, 1.0] ]
+def mix_pathways(network, **kwargs):
+    params = network.params
+
+    # how much FOI to GP population is affected by others
+    GP_GP = 1.0 #params.user_params[&quot;GP_GP&quot;]
+    GP_A = params.user_params[&quot;GP_A&quot;]
+    GP_H = 0.0 #params.user_params[&quot;GP_H&quot;]
+    GP_C = 0.0 #params.user_params[&quot;GP_C&quot;]
+
+    A_GP = 0.0 # params.user_params[&quot;A_GP&quot;]
+    A_A = 0.0 # params.user_params[&quot;A_A&quot;]
+    A_H = 0.0 # params.user_params[&quot;A_H&quot;]
+    A_C = 0.0 # params.user_params[&quot;A_C&quot;]
+
+    H_GP = 0.0 # params.user_params[&quot;H_GP&quot;]
+    H_A = 0.0 # params.user_params[&quot;H_A&quot;]
+    H_H = 0.0 # params.user_params[&quot;H_H&quot;]
+    H_C = 0.0 # params.user_params[&quot;H_C&quot;]
+
+    C_GP = 0.0 # params.user_params[&quot;C_GP&quot;]
+    C_A = 0.0 # params.user_params[&quot;C_A&quot;]
+    C_H = 0.0 # params.user_params[&quot;C_H&quot;]
+    C_C = 0.0 # params.user_params[&quot;C_C&quot;]
+
+    matrix = [ [GP_GP, GP_A, GP_H, GP_C],
+               [A_GP, A_A, A_H, A_C],
+               [H_GP, H_A, H_H, H_C],
+               [C_GP, C_A, C_H, C_C] ]
 
     network.demographics.interaction_matrix = matrix
 
     return [merge_using_matrix]</code></pre>
+</div>
+<div id="code" class="section level3">
+<h3>Code</h3>
+<p>To run designs, we need to generate a <code>disease.csv</code> file containing different parameters to use for different runs. For consistency, we will define three spaces:</p>
+<ul>
+<li><em>input</em> space: this relates to the parameters ranges (defined below);</li>
+<li><em>design</em> space: this will usually be in <span class="math inline">\((0, 1)\)</span> or <span class="math inline">\((-1, 1)\)</span> space;</li>
+<li><em>disease</em> space: this relates to parameters that are fed into MetaWards.</li>
+</ul>
+<p>The <em>input</em> and <em>design</em> spaces are fairly trivial to convert between, but some more work has to be done to convert between the <em>input</em> space and the <em>disease</em> space.</p>
+<p>The current <em>input</em> parameter ranges are: <span class="math display">\[\begin{align}
+    \mbox{$R_0$}&amp;: (2.5, 4)\\
+    \mbox{scale asymptomatics}&amp;: (0, 1)\\
+    \mbox{mean incubation period ($T_E$)}&amp;: (4, 6)\\
+    \mbox{mean infectious period ($T_I$)}&amp;: (2, 4)\\
+    \mbox{mean hospital stay ($T_H$)}&amp;: (4, 12)\\
+    \mbox{proportion of hospital time spent in critical care ($p_{tC}$)}&amp;: (0, 1)\\
+    \mbox{lockdown 1 restrict}&amp;: (0, 1)\\
+    \mbox{lockdown 2 release}&amp;: (0, 1)\\
+    p_{EA}&amp;: (0, 1)\\
+    p_{IH}&amp;: (0, 1)\\
+    p_{IR}&amp;: (0, 1) \quad \mbox{such that}~\sum_{i \in \{H, R\}} p_{Ii} &lt; 1\\
+    p_{HC}&amp;: (0, 1)\\
+    p_{HR}&amp;: (0, 1) \quad \mbox{such that}~\sum_{i \in \{C, R\}} p_{Hi} &lt; 1\\
+    p_{CR}&amp;: (0, 1)
+\end{align}\]</span> We have that the time in critical care, <span class="math inline">\(T_C\)</span>, must be a proportion of the time spent in hospital, <span class="math inline">\(T_H\)</span>, and thus <span class="math display">\[
+    T_C = p_{tC}T_H.
+\]</span></p>
+<p>We need: <strong>ranges for the length of hospital stay</strong> (perhaps chat to Rob Challen)? Current hospital rough guides taken from <a href="https://www.medrxiv.org/content/10.1101/2020.04.23.20076042v1.full.pdf">https://www.medrxiv.org/content/10.1101/2020.04.23.20076042v1.full.pdf</a>. (I’ve stuck in IQR for comparison, but clearly we need to think about this more.)</p>
+<p>To ensure orthogonality, we could reparameterise such that: <span class="math display">\[\begin{align}
+    p_{IR} &amp;= \left(1 - p_{IH}\right) p^\prime_{IR}\\
+    p_{HR} &amp;= \left(1 - p_{HC}\right) p^\prime_{HR}
+\end{align}\]</span> and thus we have parameter ranges: <span class="math display">\[\begin{align}
+    \mbox{$R_0$}&amp;: (2.5, 4)\\
+    \mbox{scale asymptomatics}&amp;: (0, 1)\\
+    \mbox{mean incubation period ($T_E$)}&amp;: (4, 6)\\
+    \mbox{mean infectious period ($T_I$)}&amp;: (2, 4)\\
+    \mbox{mean hospital stay ($T_H$)}&amp;: (4, 12)\\
+    \mbox{proportion of hospital time spent in critical care ($p_{tC}$)}&amp;: (0, 1)\\
+    \mbox{lockdown 1 restrict}&amp;: (0, 1)\\
+    \mbox{lockdown 2 release}&amp;: (0, 1)\\
+    p_{EA}&amp;: (0, 1)\\
+    p_{IH}&amp;: (0, 1)\\
+    p^\prime_{IR}&amp;: (0, 1)\\
+    p_{HC}&amp;: (0, 1)\\
+    p^\prime_{HR}&amp;: (0, 1)\\
+    p_{CR}&amp;: (0, 1)
+\end{align}\]</span> and this has removed the sum-to-one-constraints.</p>
+<p>In R we can set up the <em>input</em> parameter ranges as follows:</p>
+<pre class="r"><code>## set up parameter ranges
+parRanges &lt;- data.frame(
+    parameter = c(&quot;r_zero&quot;, &quot;scale_asymp&quot;, &quot;incubation_time&quot;, &quot;infectious_time&quot;, &quot;hospital_time&quot;,
+                  &quot;ptC&quot;, &quot;lock_1_restrict&quot;, &quot;lock_2_release&quot;,
+                  &quot;pEA&quot;, &quot;pIH&quot;, &quot;pIRprime&quot;, &quot;pHC&quot;, &quot;pHRprime&quot;, &quot;pCR&quot;),
+    lower = c(2.5, 0, 4, 2, 4, rep(0, 9)),
+    upper = c(4, 1, 6, 4, 12, rep(1, 9)),
+    stringsAsFactors = FALSE
+)</code></pre>
+<p>Firstly we want a function to convert between the <em>design</em> and <em>input</em> spaces. A short R function to do this is given below. This requires a <code>design</code> data frame, with columns denoting each <em>input</em> parameter in <code>parRanges</code> and rows corresponding to design points, and a <code>parRanges</code> data frame (defined above). We use the <code>scale</code> argument to define whether the design is on the <span class="math inline">\((0, 1)\)</span> (<code>scale = &quot;zero_one&quot;</code>) or <span class="math inline">\((-1, 1)\)</span> (<code>scale = &quot;negone_one&quot;</code>) space.</p>
+<pre class="r"><code>## function to convert from design to input space
+convertDesignToInput &lt;- function(design, parRanges, scale = c(&quot;zero_one&quot;, &quot;negone_one&quot;)) {
+  
+    ## ACTUAL CODE WILL HAVE CHECKS ON INPUTS HERE 
+    require(dplyr)
+    require(tidyr)
+  
+    ## convert from design space to input space
+    input &lt;- mutate(design, ind = 1:n()) %&gt;%
+        gather(parameter, value, -ind) %&gt;%
+        left_join(parRanges, by = &quot;parameter&quot;)
+    if(scale[1] == &quot;negone_one&quot;) {
+        input &lt;- mutate(input, value = value / 2 + 1)
+    }
+    input &lt;- mutate(input, value = value * (upper - lower) + lower) %&gt;%
+        dplyr::select(ind, parameter, value) %&gt;%
+        spread(parameter, value) %&gt;%
+        arrange(ind) %&gt;%
+        dplyr::select(-ind)
+    
+    ## return inputs
+    input
+}</code></pre>
+<p>Once we have done this, we need to transform from the <em>input</em> space to the <em>disease</em> space for MetaWards. An R function is given below. This requires an <code>input</code> data frame, with columns denoting each <em>input</em> parameter and rows corresponding to each input points, and a number of <code>repeats</code>.</p>
+<pre class="r"><code>## function to convert from input to disease space
+convertInputToDisease &lt;- function(input, repeats) {
+  
+    ## ACTUAL CODE WILL HAVE CHECKS ON INPUTS HERE 
+    require(dplyr)
+    
+    ## common parameters to all pathways
+    disease &lt;- tibble(`beta[2]` = input$r_zero / input$infectious_time)
+    disease$`beta[3]` &lt;- disease$`beta[2]`
+    disease$`progress[0]` &lt;- 1
+    disease$`progress[1]` &lt;- 1 - exp(-(1 / (input$incubation_time - 1)))
+    disease$`progress[2]` &lt;- 1
+    disease$`progress[3]` &lt;- 1 - exp(-(1 / (input$infectious_time - 1)))
+    disease$`.scale_rate[1]` &lt;- input$lock_1_restrict
+    disease$`.scale_rate[2]` &lt;- input$lock_2_release
+    
+    ## hospital progression
+    disease$`hospital:progress[2]` &lt;- 1
+    disease$`hospital:progress[3]` &lt;- 1 - exp(-(1 / (input$hospital_time - 1)))
+    
+    ## critical care progression
+    disease$`critical:progress[2]` &lt;- 1
+    disease$`critical:progress[3]` &lt;- 1 - exp(-(1 / input$ptC * (input$hospital_time - 1)))
+    
+    ## set up probabilities on disease scale
+    disease$`.pEA` &lt;- input$pEA
+    disease$`.pIH` &lt;- input$pIH
+    disease$`.pIR` &lt;- (1 - input$pIH) * input$pIRprime
+    disease$`.pHC` &lt;- input$pHC
+    disease$`.pHR` &lt;- (1 - input$pHC) * input$pHRprime
+    disease$`.pCR` &lt;- input$pCR
+    
+    ## set up scaling for mixing matrix
+    disease$`.GP_A` &lt;- input$scale_asymp
+    
+    ## round disease file (to prevent fingerprint form being too long)
+    disease &lt;- mutate_all(disease, round, digits = 6)
+    
+    ## finalise number of repeats
+    disease$repeats &lt;- repeats
+    
+    ## return disease file
+    disease
+}</code></pre>
+<blockquote>
+<p><strong>TODO: add attenuated infection rate for asymptomatics.</strong></p>
+</blockquote>
+<blockquote>
+<p><strong>QUESTION</strong>: do we want to set <span class="math inline">\(T_H\)</span> to be a subset of <span class="math inline">\(T_I\)</span>, or in addition to <span class="math inline">\(T_I\)</span>? How do we specify ranges?</p>
+</blockquote>
+<blockquote>
+<p><strong>QUESTION</strong>: how do we scale FOI from hospital patients to the other populations?</p>
+</blockquote>
+<p>As an example of a quick LHS design for five design points and five replicates:</p>
+<pre class="r"><code>## load libraries
+library(lhs)
+library(dplyr)
+library(tidyr)
+
+## generate LHS design
+design &lt;- randomLHS(5, nrow(parRanges))
+colnames(design) &lt;- parRanges$parameter
+design &lt;- as_tibble(design)
+
+## convert to input space
+input &lt;- convertDesignToInput(design, parRanges, &quot;zero_one&quot;)
+
+## convert input to disease
+disease &lt;- convertInputToDisease(input, 2)</code></pre>
+<pre class="r"><code>## write to external files
+dir.create(&quot;inputs&quot;)
+write.table(disease, &quot;inputs/disease.dat&quot;, row.names = FALSE, sep = &quot; &quot;, quote = FALSE)</code></pre>
+<pre><code>## Warning in dir.create(&quot;data/MetaWards/inputs&quot;): &#39;data/MetaWards/inputs&#39; already
+## exists</code></pre>
+<blockquote>
+<p><strong>TODO: might want some form of folder clearup or suchlike?</strong></p>
+</blockquote>
 </div>
 </div>
 </div>
