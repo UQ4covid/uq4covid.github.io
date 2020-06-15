@@ -24,41 +24,85 @@ We ideally want a model that incorporates moves to hospital and ICU. Here each c
 ```{r, echo = FALSE}
 library(DiagrammeR)
 grViz("digraph {
-  
-graph[layout = dot, rankdir = LR]
-
-node [shape = rectangle]
-
-S
-E1 [label = 'E@_{1}']
-E2 [label = 'E@_{2}']
-I1 [label = 'I@_{1}']
-I2 [label = 'I@_{2}']
-A1 [label = 'A@_{1}']
-A2 [label = 'A@_{2}']
-H1 [label = 'H@_{1}']
-H2 [label = 'H@_{2}']
-C1 [label = 'C@_{1}']
-C2 [label = 'C@_{2}']
-D
-R
-
-S -> E1 -> E2 -> {A1, I1}
-A1 -> A2 -> R
-I1 -> I2
-I2 -> {H1, D, R}
-H1 -> H2 -> {C1, D, R}
-C1 -> C2 -> {D, R}
-
-subgraph {
-  rank = same; I1; A1;
-}
-subgraph {
-  rank = same; I2; A2;
-}
-
+    graph[layout = dot, rankdir = LR]
+    node [shape = rectangle]
+    
+    S
+    E1 [label = 'E@_{1}']
+    E2 [label = 'E@_{2}']
+    I1 [label = 'I@_{1}']
+    I2 [label = 'I@_{2}']
+    A1 [label = 'A@_{1}']
+    A2 [label = 'A@_{2}']
+    H1 [label = 'H@_{1}']
+    H2 [label = 'H@_{2}']
+    C1 [label = 'C@_{1}']
+    C2 [label = 'C@_{2}']
+    D
+    R
+    St00 [style = 'invis']
+    St0 [label = 'Stage 0']
+    St1 [label = 'Stage 1']
+    St2 [label = 'Stage 2']
+    St3 [label = 'Stage 3']
+    St4 [label = 'Stage 4']
+    St5 [label = 'Stage 5']
+    genpop [label = 'Gen. Pop.']
+    hospital [label = 'Hospital Patient']
+    critical [label = 'Critical Care']
+    asymp [label = 'Asymptomatics']
+    
+    St00 -> St0 -> St1 -> St2 -> St3 -> St4 -> St5 [style = 'invis']
+    S -> E1 -> E2 -> I1 -> I2
+    I2 -> R
+    I2 -> D [weight = 0]
+    I2 -> H1
+    H1 -> H2 -> C1
+    H2 -> D [weight = 0]
+    H2 -> R [weight = 0]
+    C1 -> C2 -> R [weight = 0]
+    C2 -> D [weight = 0]
+    R -> D [style = 'invis']
+    E2 -> A1 [weight = 0]
+    A1 -> A2 
+    A2 -> R [weight = 0]
+    genpop -> S [style = 'invis']
+    hospital -> H1 [style = 'invis']
+    critical -> C1[style = 'invis']
+    asymp -> A1 [style = 'invis']
+    subgraph {
+      rank = same; St00; genpop; hospital; critical; asymp;
+    }
+    subgraph {
+      rank = same; E1; St0;
+    }
+    subgraph {
+      rank = same; E2; St1;
+    }
+    subgraph cluster {
+      subgraph {
+        rank = same; I1; H1; C1; A1; St2;
+      }
+      subgraph {
+        rank = same; I2; H2; C2; A2; St3;
+      }
+      style = filled;
+      color = lightgrey;
+      label = 'Infectious Classes'
+    }
+    subgraph {
+      rank = same; D; St5;
+    }
+    
 }", height = '100%', width = '100%')
 ```
+
+Possible extensions:
+
+* Superspreaders / supershedders.
+* Amends to structure to allow for branching earlier in infection process.
+* Hospital workers as additional demographic.
+* Make $D$ a separate demographic.
 
 ## MetaWards setup
 
@@ -119,14 +163,14 @@ All pathways have an $SEI(R/D)$ structure, so we can set up an `ncov.json` file 
 
 ### Moving functions
 
-We need moving functions to move individuals from $E_2 \to A_1$, $E_2 \to I_1$, $I_2 \to H_1$ and $H_2 \to C_1$, and thus we need a custom `move` function. Create a file `move_pathways.py` containing:
+By default, individuals move through classes in their demographic in order. This is highlighted in the schematic above, where moves on the same horizontal level are the defaults. Hence, to move individuals between demographics we need to set up a custom `move` function to define non-default moves. These non-default moves are $E_2 \to A_1$, $A_2 \to R$, $I_2 \to H_1$, $I_2 to D$, $H_2 \to C_1$, $H_2 \to R$, $H_2 \to D$, $C_2 \to R$ and $C_2 \to D$. We can prevent movements from $R \to D$ by setting the corresponding progress probability to zero. Create a file `move_pathways.py` containing:
 
 ```{python, code = readLines("data/MetaWards/move_pathways.py"), eval = FALSE}
 ```
 
 ### Interaction matrices
 
-The **interaction matrix** scales the FOI that different demographics have on other demographics. We need to store this in a file called `mix_pathways.py`. Since most of the classes are already infected, it's only the first row that has to contain non-zero entries. Here we've assumed zero transmission from hospitals to the general population, and used a `GP_A` parameter to scale the impact of aymptomatics on infection in the general population.
+The **interaction matrix** scales the FOI that different demographics have on other demographics. We need to store this in a file called `mix_pathways.py`. Since most of the classes are already infected, it's only the first row that has to contain non-zero entries. Here the `GP_A`, `GP_H` and `GP_C` parameters scale the impact of aymptomatics, hospital cases and critical care cases on the force-of-infection to the general population. All demographics other than `genpop` are already infected, so have no further force-of-infection acting on them, and thus the other parameters can be set to zero. These parameters are all $> 0$.
 
 ```{python, code = readLines("data/MetaWards/mix_pathways.py"), eval = FALSE}
 ```
@@ -148,7 +192,7 @@ The current *input* parameter ranges are:
     \mbox{mean incubation period ($T_E$)}&: (4, 6)\\
     \mbox{mean infectious period ($T_I$)}&: (2, 4)\\
     \mbox{mean hospital stay ($T_H$)}&: (4, 12)\\
-    \mbox{proportion of hospital time spent in critical care ($p_{tC}$)}&: (0, 1)\\
+    \mbox{mean stay in critical care ($T_C$)}&: (?????)\\
     \mbox{lockdown 1 restrict}&: (0, 1)\\
     \mbox{lockdown 2 release}&: (0, 1)\\
     p_{EA}&: (0, 1)\\
@@ -156,12 +200,12 @@ The current *input* parameter ranges are:
     p_{IR}&: (0, 1) \quad \mbox{such that}~\sum_{i \in \{H, R\}} p_{Ii} < 1\\
     p_{HC}&: (0, 1)\\
     p_{HR}&: (0, 1) \quad \mbox{such that}~\sum_{i \in \{C, R\}} p_{Hi} < 1\\
-    p_{CR}&: (0, 1)
+    p_{CR}&: (0, 1)\\
+    \beta^S_{A \to GP}&: (0, 1)\\
+    \beta^S_{H \to GP}&: (0, 1)\\
+    \beta^S_{C \to GP}&: (0, 1)
 \end{align}
-We have that the time in critical care, $T_C$, must be a proportion of the time spent in hospital, $T_H$, and thus
-$$
-    T_C = p_{tC}T_H.
-$$
+(The $\beta^S_{C \to GP}$ type parameters are the scaling rates used in the interaction matrix.)
 
 We need: **ranges for the length of hospital stay** (perhaps chat to Rob Challen)? Current hospital rough guides taken from [https://www.medrxiv.org/content/10.1101/2020.04.23.20076042v1.full.pdf](https://www.medrxiv.org/content/10.1101/2020.04.23.20076042v1.full.pdf). (I've stuck in IQR for comparison, but clearly we need to think about this more.)
 
@@ -177,7 +221,7 @@ and thus we have parameter ranges:
     \mbox{mean incubation period ($T_E$)}&: (4, 6)\\
     \mbox{mean infectious period ($T_I$)}&: (2, 4)\\
     \mbox{mean hospital stay ($T_H$)}&: (4, 12)\\
-    \mbox{proportion of hospital time spent in critical care ($p_{tC}$)}&: (0, 1)\\
+    \mbox{mean time in critical care ($T_C$)}&: (????)\\
     \mbox{lockdown 1 restrict}&: (0, 1)\\
     \mbox{lockdown 2 release}&: (0, 1)\\
     p_{EA}&: (0, 1)\\
@@ -185,7 +229,10 @@ and thus we have parameter ranges:
     p^\prime_{IR}&: (0, 1)\\
     p_{HC}&: (0, 1)\\
     p^\prime_{HR}&: (0, 1)\\
-    p_{CR}&: (0, 1)
+    p_{CR}&: (0, 1)\\
+    \beta^S_{A \to GP}&: (0, 1)\\
+    \beta^S_{H \to GP}&: (0, 1)\\
+    \beta^S_{C \to GP}&: (0, 1)
 \end{align}
 and this has removed the sum-to-one-constraints.
 
@@ -194,11 +241,12 @@ In R we can set up the *input* parameter ranges as follows:
 ```{r}
 ## set up parameter ranges
 parRanges <- data.frame(
-    parameter = c("r_zero", "scale_asymp", "incubation_time", "infectious_time", "hospital_time",
-                  "ptC", "lock_1_restrict", "lock_2_release",
-                  "pEA", "pIH", "pIRprime", "pHC", "pHRprime", "pCR"),
-    lower = c(2.5, 0, 4, 2, 4, rep(0, 9)),
-    upper = c(4, 1, 6, 4, 12, rep(1, 9)),
+    parameter = c("r_zero", "incubation_time", "infectious_time", "hospital_time",
+                  "critical_time", "lock_1_restrict", "lock_2_release",
+                  "pEA", "pIH", "pIRprime", "pHC", "pHRprime", "pCR", 
+                  "GP_A", "GP_H", "GP_C"),
+    lower = c(2.5, 4, 2, 4, 4, rep(0, 11)),
+    upper = c(4, 6, 4, 12, 12, rep(1, 11)),
     stringsAsFactors = FALSE
 )
 ```

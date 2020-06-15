@@ -46,7 +46,7 @@ convertInputToDisease <- function(input, repeats) {
     
     ## critical care progression
     disease$`critical:progress[2]` <- 1
-    disease$`critical:progress[3]` <- 1 - exp(-(1 / input$ptC * (input$hospital_time - 1)))
+    disease$`critical:progress[3]` <- 1 - exp(-(1 / (input$critical_time - 1)))
     
     ## set up probabilities on disease scale
     disease$`.pEA` <- input$pEA
@@ -57,7 +57,9 @@ convertInputToDisease <- function(input, repeats) {
     disease$`.pCR` <- input$pCR
     
     ## set up scaling for mixing matrix
-    disease$`.GP_A` <- input$scale_asymp
+    disease$`.GP_A` <- input$GP_A
+    disease$`.GP_H` <- input$GP_H
+    disease$`.GP_C` <- input$GP_C
     
     ## round disease file (to prevent fingerprint form being too long)
     disease <- mutate_all(disease, round, digits = 6)
