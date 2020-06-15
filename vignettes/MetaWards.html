@@ -11,7 +11,7 @@
 
 <meta name="author" content="TJ McKinley" />
 
-<meta name="date" content="2020-06-11" />
+<meta name="date" content="2020-06-12" />
 
 <title>Information on MetaWards</title>
 
@@ -1581,7 +1581,7 @@ summary {
 
 <h1 class="title toc-ignore">Information on MetaWards</h1>
 <h4 class="author">TJ McKinley</h4>
-<h4 class="date">11 June 2020</h4>
+<h4 class="date">12 June 2020</h4>
 
 </div>
 
@@ -1600,8 +1600,8 @@ summary {
 <li><span class="math inline">\(R\)</span>: recovered and immune;</li>
 <li><span class="math inline">\(D\)</span>: died.</li>
 </ul>
-<div id="htmlwidget-9b72bedd8e4d72b2e53e" style="width:100%;height:100%;" class="grViz html-widget"></div>
-<script type="application/json" data-for="htmlwidget-9b72bedd8e4d72b2e53e">{"x":{"diagram":"digraph {\n  \ngraph[layout = dot, rankdir = LR]\n\nnode [shape = rectangle]\n\nS\nE1 [label = <E<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]\nE2 [label = <E<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\nI1 [label = <I<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]\nI2 [label = <I<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\nA1 [label = <A<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]\nA2 [label = <A<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\nH1 [label = <H<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]\nH2 [label = <H<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\nC1 [label = <C<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]\nC2 [label = <C<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\nD\nR\n\nS -> E1 -> E2 -> {A1, I1}\nA1 -> A2 -> R\nI1 -> I2\nI2 -> {H1, D, R}\nH1 -> H2 -> {C1, D, R}\nC1 -> C2 -> {D, R}\n\nsubgraph {\n  rank = same; I1; A1;\n}\nsubgraph {\n  rank = same; I2; A2;\n}\n\n}","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
+<div id="htmlwidget-edb08b6159d4a0f234f7" style="width:100%;height:100%;" class="grViz html-widget"></div>
+<script type="application/json" data-for="htmlwidget-edb08b6159d4a0f234f7">{"x":{"diagram":"digraph {\n  \ngraph[layout = dot, rankdir = LR]\n\nnode [shape = rectangle]\n\nS\nE1 [label = <E<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]\nE2 [label = <E<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\nI1 [label = <I<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]\nI2 [label = <I<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\nA1 [label = <A<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]\nA2 [label = <A<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\nH1 [label = <H<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]\nH2 [label = <H<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\nC1 [label = <C<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]\nC2 [label = <C<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\nD\nR\n\nS -> E1 -> E2 -> {A1, I1}\nA1 -> A2 -> R\nI1 -> I2\nI2 -> {H1, D, R}\nH1 -> H2 -> {C1, D, R}\nC1 -> C2 -> {D, R}\n\nsubgraph {\n  rank = same; I1; A1;\n}\nsubgraph {\n  rank = same; I2; A2;\n}\n\n}","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
 <div id="metawards-setup" class="section level2">
 <h2>MetaWards setup</h2>
 <p>The model structure above allows for different progression pathways. MetaWards deals with this by assigning individuals to different “demographics”, where each demographic can be used to represent different progression pathways. There are also <code>mover</code> functions that can be used to move individuals between demographics, and <code>mixer</code> functions that scale the force-of-infection (FOI) terms between the different demographics (explained later). There are currently seven pathways, which will be described below, but can be summarised as:</p>
@@ -1895,8 +1895,8 @@ convertInputToDisease &lt;- function(input, repeats) {
     disease$`progress[1]` &lt;- 1 - exp(-(1 / (input$incubation_time - 1)))
     disease$`progress[2]` &lt;- 1
     disease$`progress[3]` &lt;- 1 - exp(-(1 / (input$infectious_time - 1)))
-    disease$`.scale_rate[1]` &lt;- input$lock_1_restrict
-    disease$`.scale_rate[2]` &lt;- input$lock_2_release
+    disease$`.lock_1_restrict` &lt;- input$lock_1_restrict
+    disease$`.lock_2_release` &lt;- input$lock_2_release
     
     ## hospital progression
     disease$`hospital:progress[2]` &lt;- 1
@@ -1941,6 +1941,19 @@ library(lhs)
 library(dplyr)
 library(tidyr)
 
+## source dataTools
+source(&quot;dataTools.R&quot;)
+
+## set up parameter ranges
+parRanges &lt;- data.frame(
+    parameter = c(&quot;r_zero&quot;, &quot;scale_asymp&quot;, &quot;incubation_time&quot;, &quot;infectious_time&quot;, &quot;hospital_time&quot;,
+                  &quot;ptC&quot;, &quot;lock_1_restrict&quot;, &quot;lock_2_release&quot;,
+                  &quot;pEA&quot;, &quot;pIH&quot;, &quot;pIRprime&quot;, &quot;pHC&quot;, &quot;pHRprime&quot;, &quot;pCR&quot;),
+    lower = c(2.5, 0, 4, 2, 4, rep(0, 9)),
+    upper = c(4, 1, 6, 4, 12, rep(1, 9)),
+    stringsAsFactors = FALSE
+)
+
 ## generate LHS design
 design &lt;- randomLHS(5, nrow(parRanges))
 colnames(design) &lt;- parRanges$parameter
@@ -1950,12 +1963,11 @@ design &lt;- as_tibble(design)
 input &lt;- convertDesignToInput(design, parRanges, &quot;zero_one&quot;)
 
 ## convert input to disease
-disease &lt;- convertInputToDisease(input, 2)</code></pre>
-<pre class="r"><code>## write to external files
+disease &lt;- convertInputToDisease(input, 2)
+
+## write to external files
 dir.create(&quot;inputs&quot;)
 write.table(disease, &quot;inputs/disease.dat&quot;, row.names = FALSE, sep = &quot; &quot;, quote = FALSE)</code></pre>
-<pre><code>## Warning in dir.create(&quot;data/MetaWards/inputs&quot;): &#39;data/MetaWards/inputs&#39; already
-## exists</code></pre>
 <blockquote>
 <p><strong>TODO: might want some form of folder clearup or suchlike?</strong></p>
 </blockquote>

@@ -205,79 +205,18 @@ parRanges <- data.frame(
 
 Firstly we want a function to convert between the *design* and *input* spaces. A short R function to do this is given below. This requires a `design` data frame, with columns denoting each *input* parameter in `parRanges` and rows corresponding to design points, and a `parRanges` data frame (defined above). We use the `scale` argument to define whether the design is on the $(0, 1)$ (`scale = "zero_one"`) or $(-1, 1)$ (`scale = "negone_one"`) space.
 
-```{r}
-## function to convert from design to input space
-convertDesignToInput <- function(design, parRanges, scale = c("zero_one", "negone_one")) {
-  
-    ## ACTUAL CODE WILL HAVE CHECKS ON INPUTS HERE 
-    require(dplyr)
-    require(tidyr)
-  
-    ## convert from design space to input space
-    input <- mutate(design, ind = 1:n()) %>%
-        gather(parameter, value, -ind) %>%
-        left_join(parRanges, by = "parameter")
-    if(scale[1] == "negone_one") {
-        input <- mutate(input, value = value / 2 + 1)
-    }
-    input <- mutate(input, value = value * (upper - lower) + lower) %>%
-        dplyr::select(ind, parameter, value) %>%
-        spread(parameter, value) %>%
-        arrange(ind) %>%
-        dplyr::select(-ind)
-    
-    ## return inputs
-    input
-}
+```{r, echo = FALSE}
+library(knitr)
+read_chunk("data/MetaWards/dataTools.R")
+```
+
+```{r, convertDesignToInput}
 ```
 
 Once we have done this, we need to transform from the *input* space to the *disease* space for MetaWards. An R function is given below. This requires an `input` data frame, with columns denoting each *input* parameter and rows corresponding to each input points, and a number of `repeats`.
 
-```{r}
-## function to convert from input to disease space
-convertInputToDisease <- function(input, repeats) {
-  
-    ## ACTUAL CODE WILL HAVE CHECKS ON INPUTS HERE 
-    require(dplyr)
-    
-    ## common parameters to all pathways
-    disease <- tibble(`beta[2]` = input$r_zero / input$infectious_time)
-    disease$`beta[3]` <- disease$`beta[2]`
-    disease$`progress[0]` <- 1
-    disease$`progress[1]` <- 1 - exp(-(1 / (input$incubation_time - 1)))
-    disease$`progress[2]` <- 1
-    disease$`progress[3]` <- 1 - exp(-(1 / (input$infectious_time - 1)))
-    disease$`.scale_rate[1]` <- input$lock_1_restrict
-    disease$`.scale_rate[2]` <- input$lock_2_release
-    
-    ## hospital progression
-    disease$`hospital:progress[2]` <- 1
-    disease$`hospital:progress[3]` <- 1 - exp(-(1 / (input$hospital_time - 1)))
-    
-    ## critical care progression
-    disease$`critical:progress[2]` <- 1
-    disease$`critical:progress[3]` <- 1 - exp(-(1 / input$ptC * (input$hospital_time - 1)))
-    
-    ## set up probabilities on disease scale
-    disease$`.pEA` <- input$pEA
-    disease$`.pIH` <- input$pIH
-    disease$`.pIR` <- (1 - input$pIH) * input$pIRprime
-    disease$`.pHC` <- input$pHC
-    disease$`.pHR` <- (1 - input$pHC) * input$pHRprime
-    disease$`.pCR` <- input$pCR
-    
-    ## set up scaling for mixing matrix
-    disease$`.GP_A` <- input$scale_asymp
-    
-    ## round disease file (to prevent fingerprint form being too long)
-    disease <- mutate_all(disease, round, digits = 6)
-    
-    ## finalise number of repeats
-    disease$repeats <- repeats
-    
-    ## return disease file
-    disease
-}
+
+```{r, convertInputToDisease}
 ```
 
 > **TODO: add attenuated infection rate for asymptomatics.**
@@ -288,34 +227,14 @@ convertInputToDisease <- function(input, repeats) {
 
 As an example of a quick LHS design for five design points and five replicates:
 
-```{r, message = FALSE, warning = FALSE}
-## load libraries
-library(lhs)
-library(dplyr)
-library(tidyr)
-
-## generate LHS design
-design <- randomLHS(5, nrow(parRanges))
-colnames(design) <- parRanges$parameter
-design <- as_tibble(design)
-
-## convert to input space
-input <- convertDesignToInput(design, parRanges, "zero_one")
-
-## convert input to disease
-disease <- convertInputToDisease(input, 2)
+```{r, code = readLines("data/MetaWards/convertDesign.R"), eval = FALSE}
 ```
 
-```{r, eval = FALSE}
-## write to external files
-dir.create("inputs")
-write.table(disease, "inputs/disease.dat", row.names = FALSE, sep = " ", quote = FALSE)
-```
-
-```{r, echo = FALSE}
-## write to external files
-dir.create("data/MetaWards/inputs")
-write.table(disease, "data/MetaWards/inputs/disease.dat", row.names = FALSE, sep = " ", quote = FALSE)
+```{r, echo = FALSE, message = FALSE, warning = FALSE}
+tempdir <- getwd()
+setwd("./data/MetaWards/")
+source("convertDesign.R")
+setwd(tempdir)
 ```
 
 > **TODO: might want some form of folder clearup or suchlike?**
