@@ -6,8 +6,8 @@ def mix_pathways(network, **kwargs):
     # how much FOI to GP population is affected by others
     GP_GP = 1.0 #params.user_params["GP_GP"]
     GP_A = params.user_params["GP_A"]
-    GP_H = 0.0 #params.user_params["GP_H"]
-    GP_C = 0.0 #params.user_params["GP_C"]
+    GP_H = params.user_params["GP_H"]
+    GP_C = params.user_params["GP_C"]
 
     A_GP = 0.0 # params.user_params["A_GP"]
     A_A = 0.0 # params.user_params["A_A"]
