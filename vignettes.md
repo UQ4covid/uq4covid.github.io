@@ -39,6 +39,7 @@ Please read the [**guide to contributing vignettes**]({{ site.baseurl }}/vignett
 - [Emulating MetaWards output]({{ site.baseurl }}/vignettes/AdventuresInEmulators)
 - [Quantile Kriging Emulator (with PCA)]({{ site.baseurl }}/vignettes/QuantileKriging_experiment)
 - [Quantile Kriging Emulator (Independent outputs)]({{ site.baseurl }}/vignettes/QuantileKriging_experiment2_Independent)
+- [Quantile Emulation with MOGP]({{ site.baseurl }}/vignettes/Quantile_Emulation_MOGP)
 
 
 ## Calibration
