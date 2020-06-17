@@ -1,0 +1,219 @@
+---
+title: "Quantile Kriging with MOGP"
+author: "Danny Williamson"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+The purpose of this vignette is to demonstrate the use of MOGP for quantile kriging and, in particular, how to use it for prediction. I also explain why sampling for quantile kriging prediction is necessary.
+
+First, as ususal, I will set a pointer to `mogp_emulator` and source the right files from our R implementation `ExeterUQ_MOGP`. See [here](https://bayesexeter.github.io/ExeterUQ_MOGP/) for more information.
+
+```{r, eval=FALSE}
+mogp_dir <- "~/Dropbox/BayesExeter/mogp_emulator"
+setwd("~/Dropbox/BayesExeter/ExeterUQ_MOGP")
+source("~/Dropbox/BayesExeter/ExeterUQ_MOGP/BuildEmulator/BuildEmulator.R")
+```
+
+```{r, include=FALSE}
+mogp_dir <- "~/Dropbox/BayesExeter/mogp_emulator"
+setwd("~/Dropbox/BayesExeter/ExeterUQ_MOGP")
+source("~/Dropbox/BayesExeter/ExeterUQ_MOGP/BuildEmulator/BuildEmulator.R")
+```
+
+Load the data and some libraries for data manipulation.
+```{r, eval=FALSE}
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(readr)
+data <- read_csv("data/Quantile_Emulation_MOGP/lads_by_day_cumulative_79.csv")
+```
+
+```{r, include=FALSE}
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(readr)
+data <- read_csv("data/Quantile_Emulation_MOGP/lads_by_day_cumulative_79.csv")
+```
+
+I extract the data names and then perform some manipulation so that there are no unusual characters in the variable strings.
+```{r}
+tnames <- names(data)[-c(1:5)]
+tnames[1:5]
+```
+<p><details><summary>Click here to see the string collapsing</summary>
+```{r big_code_chunk}
+for(i in 1:length(tnames)){
+  tsplit <- strsplit(tnames[i],split=" ")[[1]]
+  if(length(tsplit)>1)
+    tnames[i] <- paste(tsplit,collapse = "")
+}
+for(i in 1:length(tnames)){
+  tsplit <- strsplit(tnames[i],split="-")[[1]]
+  if(length(tsplit)>1)
+    tnames[i] <- paste(tsplit,collapse = "")
+}
+for(i in 1:length(tnames)){
+  tsplit <- strsplit(tnames[i],split=",")[[1]]
+  if(length(tsplit)>1)
+    tnames[i] <- paste(tsplit,collapse = "")
+}
+for(i in 1:length(tnames)){
+  tsplit <- strsplit(tnames[i],split="'")[[1]]
+  if(length(tsplit)>1)
+    tnames[i] <- paste(tsplit,collapse = "")
+}
+```
+</details></p>
+
+Now let's divide the data into inputs and outputs
+```{r}
+data_frame <- as.matrix(data)
+X <- data_frame[,1:5]
+y <- data_frame[,7:ncol(data_frame)]
+```
+
+This step is controversial and square roots the data to ensure all output is positive. There are other approaches here that might be better. A major issue is that we do have $0$ infections in a lot of spots, and so we might need a model that uses that idea. This vignette is focussed on getting a quantile emulator working with mogp.
+```{r}
+y <- sqrt(y)
+```
+
+Let's split into training and testing data
+```{r}
+X_valid <- X[126:200,]
+y_valid <- y[126:200,]
+X <- X[1:125,]
+y <- y[1:125,]
+```
+
+<p> <details><summary>The following function (`QK_data(X,y)`) extracts the quantiles for every output, it's a bit long so click here to see it (it's a slight adaptation of Evan's code).</summary>
+```{r big_code_chunk2}
+QK_data <- function(X, y){
+  full_output <- as.matrix(y)
+  output_dim <- ncol(full_output)
+  quantile_dfs <- list()
+  y1 <- full_output[,1]
+  quantile_df <- data.frame(X = X, y1 = y1)
+  quantile_df <-  quantile_df %>% group_by_at(vars(names(quantile_df)[1:(length(X[1,]))])) %>% summarise("0.025" = quantile(y1, 0.025), "0.25" = quantile(y1, 0.25), "0.5" = quantile(y1, 0.5), "0.75" = quantile(y1, 0.75), "0.975" = quantile(y1, 0.975))
+  final_df <-  quantile_df %>% gather(Quantile, y1, "0.025":"0.975")
+  names(final_df)[ncol(final_df)] <- tnames[1]
+  for(i in 2:ncol(full_output)){
+    y1 <- full_output[,i]
+    quantile_df <- data.frame(X = X, y1 = y1)
+    quantile_df <-  quantile_df %>% group_by_at(vars(names(quantile_df)[1:(length(X[1,]))])) %>% summarise("0.025" = quantile(y1, 0.025), "0.25" = quantile(y1, 0.25), "0.5" = quantile(y1, 0.5), "0.75" = quantile(y1, 0.75), "0.975" = quantile(y1, 0.975))
+    quantile_df <- quantile_df %>% gather(Quantile, y1, "0.025":"0.975")
+    final_df <- merge(final_df, quantile_df)
+    names(final_df)[ncol(final_df)] <- tnames[i]
+  }
+final_df
+}
+```
+</details></p>
+
+Run the function to obtain the quantile data and ensure the format is right for `ExeterUQ_MOGP`.
+```{r, eval=TRUE}
+final_df <- QK_data(X,y)
+Noise <- rnorm(nrow(final_df),0,0.4)
+tData <- cbind(final_df[,1:6],Noise,final_df[,7:ncol(final_df)])
+tData$Quantile <- as.numeric(tData$Quantile)
+```
+
+Now we fit all of the emulators. This function takes approximately 2 minutes on my laptop. Currently this will be unavailable for windows users due to the hyperthreading, but a fix is being worked on for this.
+```{r, eval=FALSE}
+MetaEmulatorsAll <- BuildNewEmulators(tData, HowManyEmulators = ncol(tData)-7, meanFun = "linear", kernel = "Matern52",additionalVariables = names(tData)[1:6])
+```
+```{r, include=FALSE}
+MetaEmulatorsAll <- BuildNewEmulators(tData, HowManyEmulators = ncol(tData)-7, meanFun = "linear", kernel = "Matern52",additionalVariables = names(tData)[1:6])
+```
+
+The following function is long but is kind of the point of the vignette, so I will show it. The idea is to use the parallel predictive speed to draw quantile samples for the whole UK at the same time. Before we get into it, a little bit of theory will explain why we need this sampling step. 
+
+Let the output of Metawards for a given input vector $x$ be $Y(x)$. Dropping $x$ for notational convenience (just imagine it's there throughout), the pdf of $Y$ is $f(y)$ and is unknown. Let $q$ be a quanitle of $Y$ then our emulator is effectively $$Y\mid q \sim \mathrm{GP}(m(q), V(q))$$ and so we have $f(y\mid q)$ and more importantly we can sample from it. The standard marginalisation trick, $$f(y) = \int_{-\infty}^{\infty}f(y,q)dq = \int_{-\infty}^{\infty}f_Y(y\mid q)f_Q(q)dq,$$ so that, we can integrate $q$ using Monte Carlo by sampling from $f_Q(q)$. <details><summary>Click here for details if this is unclear.</summary> If we sample from $f(y,q)$ and only keep the $y$ samples, we have a valid sample from $f(y)$. It is this trick that makes much of MCMC work. Here, if we can sample from $f_Q(q)$, then we can plug the $q$ samples into our GP, draw a sample from that ($f(y\mid q)$) and the Metawards realisation alone is a sample from $f(y)$.</details>
+
+Carrying on, the actual values of the quantiles are values of the cdf $F(y)$! So $f_Q(q) = 1$ (we learn this in my Bayesian course, see the clickable below), and we can sample $q$ from $\mathrm{Unif}(0,1)$. <p><details><summary>Why does the cdf have a uniform distribution?</summary> It's a calculation every 3rd year Bayesian knows by heart! Let $W = F(Y)$, then the CDF of random quantity $W$ is \begin{align*}
+P(W\leq w) &= P(F(X)\leq w)\\
+&= P(F^{-1}F(X)\leq F^{-1}(w)) \\
+&= P(X\leq F^{-1}(w)) = FF^{-1}(w) = w.
+\end{align*}
+So $f(w) = \frac{dF}{dw} = 1$ and $W \sim \mathrm{Unif}(0,1).$
+</details></p>
+
+So to obtain samples from the distribution of $Y$ we need to sample the quantiles and then sample the conditional GP. This function uses to parallel optimisation features of MOGP to obtain the samples efficiently for `Design`, a given prediction design and use those to obtain desired quantiles.
+
+```{r}
+QuantilePrediction <- function(Design, mogp, numSamples=1000, 
+                               Quantiles = c(0.05,0.25,0.5,0.75,0.95)){
+  #'@param Design The design matrix where predictions are required.
+  #'@param mogp An mogp emulator
+  #'@param numSamples how many quantile samples are used for each Design.
+  #'@param Quantiles Which quantiles of the samples to return. 
+  N <- dim(Design)[1]
+  tsamples <- runif(numSamples*N) #Quantile samples
+  mogpDesign <- cbind(repmat(Design, numSamples,1),tsamples) #Expanding design to do all in one parallel prediction
+  names(mogpDesign)[dim(mogpDesign)[2]] <- "Quantile"
+  tpreds <- mogp$mogp$predict(mogpDesign, deriv=FALSE) #Emulator predictions in 1 shot. Coming GPU features will make these even more efficient.
+  Draws <- sapply(1:mogp$mogp$n_emulators, function(k) rnorm(length(tsamples), mean = tpreds$mean[k,], sd= sqrt(tpreds$unc[k,]))) #For each GP mean and variance, draw a single realisation $Y$.
+  #Trick now we have fast samples, is combining correctly and remembering there is a multi-wards issue!
+  QuantNames <- names(quantile(runif(100),probs=Quantiles))
+  Output <- array(NA, dim=c(N,length(Quantiles),mogp$mogp$n_emulators),dimnames=list(NULL,QuantNames,tnames[1:mogp$mogp$n_emulators]))#Assuming building the first few emulators otherwise ward names will be wrong.
+  IndexSequence <- seq(from=0, by=numSamples, length.out = N)
+  for(i in 1:N){
+    Output[i,,] <- apply(Draws[IndexSequence+i,],2,quantile, probs=Quantiles)
+  }
+  Output #Note there may be a tidy efficient way to do this combination
+}
+```
+
+
+Note that the function produces a 3D array with dimensions $N\times Q \times M$ where $N$ is the number of new prediction locations, $Q$ is the number of quantiles returned and $M$ is the number of outputs or wards.
+
+Calling the function to predict the validation set
+```{r, eval=TRUE}
+APred <- QuantilePrediction(X_valid, mogp=MetaEmulatorsAll, numSamples = 1000)
+```
+
+We can once again produce predictions for the validation set. I will do this for the local authorities in the South West.
+
+```{r, eval=TRUE}
+NewNames <- c("BathandNorthEastSomerset", "BristolCityof", "Cornwall", "EastDevon", "EastDorset", "Exeter", "IslesofScilly", "MidDevon", "NorthDevon", "Plymouth", "SouthHams", "SouthSomerset", "Torbay", "WestDevon", "WestDorset", "WestSomerset")
+SouthWestPred <- APred[,,which(dimnames(APred)[[3]] %in% NewNames)]
+SouthWestValid <- y_valid[,which(dimnames(APred)[[3]] %in% NewNames)]
+SouthWestPred <- SouthWestPred^2 #Undoing the sqrt
+SouthWestValid <- SouthWestValid^2 #Undoing the sqrt
+```
+
+A tidy solution would mean this part of the code would not be so clunky. Here is a plotting function to look at the emulator performance for any input and local authority:
+```{r}
+PlotLocalAuthority <- function(which.la=1, which.x=1){
+  Valid <- SouthWestValid[,which.la] >= SouthWestPred[,1,which.la] & SouthWestValid[,which.la] <=   SouthWestPred[,5,which.la]
+  ggplot()+
+    geom_point(aes(x=X_valid[,which.x], y= SouthWestPred[,3,which.la]))+
+    geom_errorbar(aes(x=X_valid[,which.x], ymin = SouthWestPred[,1,which.la],ymax=SouthWestPred[,5,which.la]))+
+    geom_point(aes(x=X_valid[Valid,which.x], y = SouthWestValid[Valid,which.la]), colour = "blue")+
+    geom_point(aes(x=X_valid[!Valid,which.x], y = SouthWestValid[!Valid,which.la]), colour = "red")+
+    ylab("Infections")+
+    xlab(names(tData)[which.x])+
+    ggtitle(NewNames[which.la])
+}
+```
+
+Now plotting the validation sets across the Southwest:
+```{r, eval=TRUE}
+for(i in 1:length(NewNames)){
+  print(PlotLocalAuthority(i,3))
+}
+```
+
+Of course the performance here is questionable as the data only has 5 repeats per run. We should therefore not expect to have actually emulated the quantiles. More repeats will unlock whether this analysis is feasible.
+
+## Where next?
+
+- Run more repeats and repeat the analysis.
+- A tidy solution to storing the prediction quantiles for easy plotting. Can anyone help?
+- Revisit the square root idea.
+- Calibration (when the new ensembles arrive.)
