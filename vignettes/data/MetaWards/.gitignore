@@ -1,0 +1,6 @@
+__pycache__
+tests/*.Rout
+tests/raw_outputs
+tests/disease.dat
+
+

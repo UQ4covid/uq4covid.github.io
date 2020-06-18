@@ -15,7 +15,7 @@ Please read the [**guide to contributing vignettes**]({{ site.baseurl }}/vignett
 
 ## Model structure
 
-- [Current model structures (still evolving)]({{ site.baseurl }}/vignettes/MetaWards)
+- [Current model structures (still evolving)]({{ site.baseurl }}/vignettes/data/MetaWards/vignette/MetaWards)
 
 ## Experimental design
 
