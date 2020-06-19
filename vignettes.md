@@ -8,14 +8,15 @@ layout: default
 
 Please read the [**guide to contributing vignettes**]({{ site.baseurl }}/vignettes/guide-to-posting-vignettes).
 
-## Installation
+## Installation of basic tools
 
 - [Installing and running the MetaWards model]({{ site.baseurl }}/vignettes/metawards_run)
 - [Installing MOGP]({{ site.baseurl }}/vignettes/mogp_install)
 
-## Model structure
+## The UQ4Covid Model structure
 
-- [Current model structures (still evolving)]({{ site.baseurl }}/vignettes/data/MetaWards/vignette/MetaWards)
+- [Model structure (still evolving)]({{ site.baseurl }}/vignettes/data/MetaWards/vignette/MetaWards) - TJ McKinley
+- [Running your own ensembles]({{ site.baseurl }}/vignettes/RunningForDummies) - Danny Williamson
 
 ## Experimental design
 
