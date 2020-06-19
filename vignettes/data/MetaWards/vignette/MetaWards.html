@@ -11,7 +11,7 @@
 
 <meta name="author" content="TJ McKinley" />
 
-<meta name="date" content="2020-06-15" />
+<meta name="date" content="2020-06-18" />
 
 <title>Information on MetaWards</title>
 
@@ -189,6 +189,66 @@ window.buildTabsets = function(tocID) {
   });
 };
 
+</script>
+<script>
+window.initializeCodeFolding = function(show) {
+
+  // handlers for show-all and hide all
+  $("#rmd-show-all-code").click(function() {
+    $('div.r-code-collapse').each(function() {
+      $(this).collapse('show');
+    });
+  });
+  $("#rmd-hide-all-code").click(function() {
+    $('div.r-code-collapse').each(function() {
+      $(this).collapse('hide');
+    });
+  });
+
+  // index for unique code element ids
+  var currentIndex = 1;
+
+  // select all R code blocks
+  var rCodeBlocks = $('pre.r, pre.python, pre.bash, pre.sql, pre.cpp, pre.stan, pre.julia');
+  rCodeBlocks.each(function() {
+
+    // create a collapsable div to wrap the code in
+    var div = $('<div class="collapse r-code-collapse"></div>');
+    if (show || $(this)[0].classList.contains('fold-show'))
+      div.addClass('in');
+    var id = 'rcode-643E0F36' + currentIndex++;
+    div.attr('id', id);
+    $(this).before(div);
+    $(this).detach().appendTo(div);
+
+    // add a show code button right above
+    var showCodeText = $('<span>' + (show ? 'Hide' : 'Code') + '</span>');
+    var showCodeButton = $('<button type="button" class="btn btn-default btn-xs code-folding-btn pull-right"></button>');
+    showCodeButton.append(showCodeText);
+    showCodeButton
+        .attr('data-toggle', 'collapse')
+        .attr('data-target', '#' + id)
+        .attr('aria-expanded', show)
+        .attr('aria-controls', id);
+
+    var buttonRow = $('<div class="row"></div>');
+    var buttonCol = $('<div class="col-md-12"></div>');
+
+    buttonCol.append(showCodeButton);
+    buttonRow.append(buttonCol);
+
+    div.before(buttonRow);
+
+    // update state of button on show/hide
+    div.on('hidden.bs.collapse', function () {
+      showCodeText.text('Code');
+    });
+    div.on('show.bs.collapse', function () {
+      showCodeText.text('Hide');
+    });
+  });
+
+}
 </script>
 <style type="text/css">.hljs-literal {
 color: #990073;
@@ -1561,6 +1621,9 @@ summary {
 </style>
 
 <!-- code folding -->
+<style type="text/css">
+.code-folding-btn { margin-bottom: 4px; }
+</style>
 
 
 
@@ -1577,20 +1640,28 @@ summary {
 
 <div class="fluid-row" id="header">
 
+<div class="btn-group pull-right">
+<button type="button" class="btn btn-default btn-xs dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><span>Code</span> <span class="caret"></span></button>
+<ul class="dropdown-menu" style="min-width: 50px;">
+<li><a id="rmd-show-all-code" href="#">Show All Code</a></li>
+<li><a id="rmd-hide-all-code" href="#">Hide All Code</a></li>
+</ul>
+</div>
+
 
 
 <h1 class="title toc-ignore">Information on MetaWards</h1>
 <h4 class="author">TJ McKinley</h4>
-<h4 class="date">15 June 2020</h4>
+<h4 class="date">18 June 2020</h4>
 
 </div>
 
 
 <p>This is a short document (not really a vignette) describing some key aspects of MetaWards that are pertinent to this UQ attempt.</p>
-<p><strong>THIS IS NOT COMPLETED YET, BUT GIVES SOME IDEAS ABOUT HOW THE MODEL IS EVOLVING.</strong></p>
-<div id="model-description" class="section level1">
+<p><strong>All model files can be downloaded from <a href="../metawards.zip">here</a>.</strong></p>
+<div id="model" class="section level1">
 <h1>Model description</h1>
-<p>We ideally want a model that incorporates moves to hospital and ICU. Here each class is split into two components, e.g. <span class="math inline">\(E_1\)</span> and <span class="math inline">\(E_2\)</span>. This is so that MetaWards can calulate new movements into each class easily. Individuals progress out of the first of these classes after exactly one day with probability 1. This means that the time spent in each <span class="math inline">\(E\)</span>, <span class="math inline">\(I\)</span>, <span class="math inline">\(A\)</span> or <span class="math inline">\(H\)</span> class is <em>at least one day</em>. Here:</p>
+<p>We ideally want a model that incorporates moves to hospital and ICU. Here each class is split into two components, e.g. <span class="math inline">\(E_1\)</span> and <span class="math inline">\(E_2\)</span>. This is so that MetaWards can calculate new movements into each class easily, but are otherwise epidemiologically identical. Here:</p>
 <ul>
 <li><span class="math inline">\(E\)</span>: infected but not infectious;</li>
 <li><span class="math inline">\(A\)</span>: asymptomatic and infectious;</li>
@@ -1600,17 +1671,11 @@ summary {
 <li><span class="math inline">\(R\)</span>: recovered and immune;</li>
 <li><span class="math inline">\(D\)</span>: died.</li>
 </ul>
-<div id="htmlwidget-06deabcc66fe0c220027" style="width:100%;height:100%;" class="grViz html-widget"></div>
-<script type="application/json" data-for="htmlwidget-06deabcc66fe0c220027">{"x":{"diagram":"digraph {\n    graph[layout = dot, rankdir = LR]\n    node [shape = rectangle]\n    \n    S\n    E1 [label = <E<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]\n    E2 [label = <E<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\n    I1 [label = <I<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]\n    I2 [label = <I<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\n    A1 [label = <A<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]\n    A2 [label = <A<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\n    H1 [label = <H<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]\n    H2 [label = <H<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\n    C1 [label = <C<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]\n    C2 [label = <C<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\n    D\n    R\n    St00 [style = \"invis\"]\n    St0 [label = \"Stage 0\"]\n    St1 [label = \"Stage 1\"]\n    St2 [label = \"Stage 2\"]\n    St3 [label = \"Stage 3\"]\n    St4 [label = \"Stage 4\"]\n    St5 [label = \"Stage 5\"]\n    genpop [label = \"Gen. Pop.\"]\n    hospital [label = \"Hospital Patient\"]\n    critical [label = \"Critical Care\"]\n    asymp [label = \"Asymptomatics\"]\n    \n    St00 -> St0 -> St1 -> St2 -> St3 -> St4 -> St5 [style = \"invis\"]\n    S -> E1 -> E2 -> I1 -> I2\n    I2 -> R\n    I2 -> D [weight = 0]\n    I2 -> H1\n    H1 -> H2 -> C1\n    H2 -> D [weight = 0]\n    H2 -> R [weight = 0]\n    C1 -> C2 -> R [weight = 0]\n    C2 -> D [weight = 0]\n    R -> D [style = \"invis\"]\n    E2 -> A1 [weight = 0]\n    A1 -> A2 \n    A2 -> R [weight = 0]\n    genpop -> S [style = \"invis\"]\n    hospital -> H1 [style = \"invis\"]\n    critical -> C1[style = \"invis\"]\n    asymp -> A1 [style = \"invis\"]\n    subgraph {\n      rank = same; St00; genpop; hospital; critical; asymp;\n    }\n    subgraph {\n      rank = same; E1; St0;\n    }\n    subgraph {\n      rank = same; E2; St1;\n    }\n    subgraph cluster {\n      subgraph {\n        rank = same; I1; H1; C1; A1; St2;\n      }\n      subgraph {\n        rank = same; I2; H2; C2; A2; St3;\n      }\n      style = filled;\n      color = lightgrey;\n      label = \"Infectious Classes\"\n    }\n    subgraph {\n      rank = same; D; St5;\n    }\n    \n}","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
-<p>Possible extensions:</p>
-<ul>
-<li>Superspreaders / supershedders.</li>
-<li>Amends to structure to allow for branching earlier in infection process.</li>
-<li>Hospital workers as additional demographic.</li>
-<li>Make <span class="math inline">\(D\)</span> a separate demographic.</li>
-</ul>
-<div id="metawards-setup" class="section level2">
-<h2>MetaWards setup</h2>
+<div id="htmlwidget-10884d85d0df393a97dd" style="width:100%;height:100%;" class="grViz html-widget"></div>
+<script type="application/json" data-for="htmlwidget-10884d85d0df393a97dd">{"x":{"diagram":"digraph {\n    graph[layout = dot, rankdir = LR]\n    node [shape = rectangle]\n    \n    S\n    E1 [label = <E<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]; E2 [label = <E<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\n    I1 [label = <I<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]; I2 [label = <I<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\n    A1 [label = <A<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]; A2 [label = <A<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\n    H1 [label = <H<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]; H2 [label = <H<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\n    C1 [label = <C<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]; C2 [label = <C<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\n    DI [label = <D<FONT POINT-SIZE=\"8\"><SUB>I<\/SUB><\/FONT>>]; DH [label = <D<FONT POINT-SIZE=\"8\"><SUB>H<\/SUB><\/FONT>>]; DC [label = <D<FONT POINT-SIZE=\"8\"><SUB>C<\/SUB><\/FONT>>]\n    RI [label = <R<FONT POINT-SIZE=\"8\"><SUB>I<\/SUB><\/FONT>>]; RH [label = <R<FONT POINT-SIZE=\"8\"><SUB>H<\/SUB><\/FONT>>]; RC [label = <R<FONT POINT-SIZE=\"8\"><SUB>C<\/SUB><\/FONT>>]; RA [label = <R<FONT POINT-SIZE=\"8\"><SUB>A<\/SUB><\/FONT>>]\n    St00 [style = \"invis\"]; St0 [label = \"Stage 0\"]; St1 [label = \"Stage 1\"]; \n    St2 [label = \"Stage 2\"]; St3 [label = \"Stage 3\"]; St4 [label = \"Stage 4\"]; St5 [label = \"Stage 5\"]\n    genpop [label = \"Gen. Pop.\"]\n    hospital [label = \"Hospital Patient\"]\n    critical [label = \"Critical Care\"]\n    asymp [label = \"Asymptomatics\"]\n    \n    St00 -> St0 -> St1 -> St2 -> St3 -> St4 -> St5 [style = \"invis\"]\n    S -> E1 -> E2 -> I1 -> I2 \n    I2 -> RI\n    I2 -> DI [weight = 0]\n    I2 -> H1 -> H2 -> C1 -> C2 \n    C2 -> RC \n    C2 -> DC [weight = 0]\n    H2 -> RH \n    H2 -> DH [weight = 0] \n    RI -> DI [style = \"invis\"]\n    RH -> DH [style = \"invis\"]\n    RC -> DC [style = \"invis\"]\n    E2 -> A1 [weight = 0]\n    A1 -> A2 -> RA \n    genpop -> S [style = \"invis\"]\n    hospital -> H1 [style = \"invis\"]\n    critical -> C1[style = \"invis\"]\n    asymp -> A1 [style = \"invis\"]\n    subgraph {\n      rank = same; St00; genpop; hospital; critical; asymp;\n    }\n    subgraph {\n      rank = same; E1; St0;\n    }\n    subgraph {\n      rank = same; E2; St1;\n    }\n    subgraph cluster {\n      subgraph {\n        rank = same; I1; H1; C1; A1; St2;\n      }\n      subgraph {\n        rank = same; I2; H2; C2; A2; St3;\n      }\n      style = filled;\n      color = lightgrey;\n      label = \"Infectious Classes\"\n    }\n    subgraph {\n      rank = same; RA, RI, RC; RH; St4;\n    }\n    subgraph {\n      rank = same; DI; DH; DC; St5;\n    }\n    \n}","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
+</div>
+<div id="metawards-setup" class="section level1">
+<h1>MetaWards setup</h1>
 <p>The model structure above allows for different progression pathways. MetaWards deals with this by assigning individuals to different “demographics”, where each demographic can be used to represent different progression pathways. There are also <code>mover</code> functions that can be used to move individuals between demographics, and <code>mixer</code> functions that scale the force-of-infection (FOI) terms between the different demographics (explained later). There are currently seven pathways, which will be described below, but can be summarised as:</p>
 <ul>
 <li><code>SEAR</code>: asymptomatic infections, always recover.</li>
@@ -1633,32 +1698,32 @@ summary {
 <blockquote>
 <p>Here we assume the same ratios in the <code>work</code> and <code>play</code> populations, but in practice these could be changed.</p>
 </blockquote>
-<div id="parameters" class="section level3">
-<h3>Parameters</h3>
+<div id="parameters" class="section level2">
+<h2>Parameters</h2>
 <p>Once the demographics have been setup, we can then control progress through the different states as:</p>
 <ul>
 <li><span class="math inline">\(p_{SE_1}\)</span> driven by <span class="math inline">\(\beta\)</span> parameters, defined by <span class="math inline">\(R_0\)</span> and length of infectious period (see <a href="#code">here</a>);</li>
 <li><span class="math inline">\(p_{E_1E_2} = 1\)</span>;</li>
-<li><span class="math inline">\(p_{E_2A_1} = p_{EA}\left(1 - e^{-\gamma^*_{E}}\right)\)</span> where <span class="math inline">\(\gamma^*_E = \frac{1}{T_E - 1}\)</span> with <span class="math inline">\(T_E\)</span> the mean incubation period;</li>
+<li><span class="math inline">\(p_{E_2A_1} = p_{EA}\left(1 - e^{-\gamma_{E}}\right)\)</span> where <span class="math inline">\(\gamma_E = \frac{1}{T_E}\)</span> with <span class="math inline">\(T_E\)</span> the mean incubation period;</li>
+<li><span class="math inline">\(p_{E_2I_1} = \left(1 - p_{EA}\right)\left(1 - e^{-\gamma_{E}}\right)\)</span>;</li>
 <li><span class="math inline">\(p_{A_1A_2} = 1\)</span>;</li>
-<li><span class="math inline">\(p_{A_2R} = 1 - e^{-\gamma^*_I}\)</span> where <span class="math inline">\(\gamma^*_I = \frac{1}{T_I - 1}\)</span> with <span class="math inline">\(T_I\)</span> the mean infectious period;</li>
-<li><span class="math inline">\(p_{E_2I_1} = \left(1 - p_{EA}\right)\left(1 - e^{-\gamma^*_{E}}\right)\)</span>;</li>
+<li><span class="math inline">\(p_{A_2R} = 1 - e^{-\gamma_I}\)</span> where <span class="math inline">\(\gamma_I = \frac{1}{T_I}\)</span> with <span class="math inline">\(T_I\)</span> the mean infectious period;</li>
 <li><span class="math inline">\(p_{I_1I_2} = 1\)</span>;</li>
-<li><span class="math inline">\(p_{I_2H_1} = p_{IH}\left(1 - e^{-\gamma^*_{I}}\right)\)</span> where <span class="math inline">\(\gamma^*_I = \frac{1}{T_I - 1}\)</span>;</li>
-<li><span class="math inline">\(p_{I_2R} = p_{IR}\left(1 - e^{-\gamma^*_{I}}\right)\)</span>;</li>
-<li><span class="math inline">\(p_{I_2D} = \left(1 - p_{IH} - p_{IR}\right)\left(1 - e^{-\gamma^*_{I}}\right)\)</span>;</li>
+<li><span class="math inline">\(p_{I_2H_1} = p_{IH}\left(1 - e^{-\gamma_{I}}\right)\)</span>;</li>
+<li><span class="math inline">\(p_{I_2R} = p_{IR}\left(1 - e^{-\gamma_{I}}\right)\)</span>;</li>
+<li><span class="math inline">\(p_{I_2D} = \left(1 - p_{IH} - p_{IR}\right)\left(1 - e^{-\gamma_{I}}\right)\)</span>;</li>
 <li><span class="math inline">\(p_{H_1H_2} = 1\)</span>;</li>
-<li><span class="math inline">\(p_{H_2C_1} = p_{HC}\left(1 - e^{-\gamma^*_{HC}}\right)\)</span> where <span class="math inline">\(\gamma^*_{HC} = \frac{1}{T_H - T_C - 1}\)</span> with <span class="math inline">\(T_H\)</span> the mean length of a hospital stay and <span class="math inline">\(T_C\)</span> is the mean length of time spent in ICU;</li>
-<li><span class="math inline">\(p_{H_2R} = p_{HR}\left(1 - e^{-\gamma^*_{H}}\right)\)</span> where <span class="math inline">\(\gamma^*_H = \frac{1}{T_H - 1}\)</span>;</li>
-<li><span class="math inline">\(p_{H_2D} = \left(1 - p_{HC} - p_{HR}\right)\left(1 - e^{-\gamma^*_{H}}\right)\)</span>;</li>
+<li><span class="math inline">\(p_{H_2C_1} = p_{HC}\left(1 - e^{-\gamma_{H}}\right)\)</span> where <span class="math inline">\(\gamma_{H} = \frac{1}{T_H}\)</span> with <span class="math inline">\(T_H\)</span> the mean length of a hospital stay;</li>
+<li><span class="math inline">\(p_{H_2R} = p_{HR}\left(1 - e^{-\gamma_{H}}\right)\)</span>;</li>
+<li><span class="math inline">\(p_{H_2D} = \left(1 - p_{HC} - p_{HR}\right)\left(1 - e^{-\gamma_{H}}\right)\)</span>;</li>
 <li><span class="math inline">\(p_{C_1C_2} = 1\)</span>;</li>
-<li><span class="math inline">\(p_{C_2R} = p_{CR}\left(1 - e^{-\gamma^*_{C}}\right)\)</span> where <span class="math inline">\(\gamma^*_C = \frac{1}{T_C - 1}\)</span> with <span class="math inline">\(T_C\)</span> is the mean length of time spent in ICU;</li>
-<li><span class="math inline">\(p_{C_2D} = \left(1 - p_{CR}\right)\left(1 - e^{-\gamma^*_{C}}\right)\)</span>.</li>
+<li><span class="math inline">\(p_{C_2R} = p_{CR}\left(1 - e^{-\gamma_{C}}\right)\)</span> where <span class="math inline">\(\gamma_C = \frac{1}{T_C}\)</span> with <span class="math inline">\(T_C\)</span> is the mean length of time spent in ICU;</li>
+<li><span class="math inline">\(p_{C_2D} = \left(1 - p_{CR}\right)\left(1 - e^{-\gamma_{C}}\right)\)</span>.</li>
 </ul>
 <p>Lockdown can be controlled either by constraining movements over a certain distance, or by scaling the <span class="math inline">\(\beta\)</span> parameters. We do the latter at the moment.</p>
 </div>
-<div id="disease-.json-file" class="section level3">
-<h3>Disease <code>.json</code> file</h3>
+<div id="diseasefile" class="section level2">
+<h2>Disease <code>.json</code> file</h2>
 <p>All pathways have an <span class="math inline">\(SEI(R/D)\)</span> structure, so we can set up an <code>ncov.json</code> file for the overall disease:</p>
 <pre class="js"><code>{ 
   &quot;name&quot;             : &quot;SARS-Cov-2&quot;,
@@ -1667,110 +1732,269 @@ summary {
   &quot;contact(s)&quot;       : &quot;e-mail...&quot;,
   &quot;reference(s)&quot;     : &quot;references...&quot;,  
   &quot;beta&quot;             : [0.0, 0.0, 1.0, 1.0, 0.0, 0.0],
-  &quot;progress&quot;         : [1.0, 1.0, 1.0, 1.0, 0.0, 0.0],
+  &quot;progress&quot;         : [0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
   &quot;too_ill_to_move&quot;  : [0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
   &quot;contrib_foi&quot;      : [1.0, 1.0, 1.0, 1.0, 0.0, 0.0]
 }</code></pre>
-<blockquote>
-<p><strong>Note:</strong> We would want asymptomatics to be less infectious than symptomatics, so could amend <span class="math inline">\(\beta\)</span>, or set <code>contrib_foi</code>?</p>
-</blockquote>
+<p>We will discuss these choices in more detail in the subsequent sections, in particular the role of the <code>beta</code> parameters in the next section. Note that the <code>progress</code> parameters are all set to zero here, since all movements will be controlled via the custom <code>mover</code> function.</p>
 </div>
-<div id="moving-functions" class="section level3">
+<div id="controlling-movements" class="section level2">
+<h2>Controlling movements</h2>
+<p>MetaWards has a specific structure in terms of how it progresses movements between the stages. To get the correct splits between the pathways specified <a href="#model">above</a> we do all non-infection movements through a custom <code>mover</code> function specified <a href="#mover">below</a>. Note that the <span class="math inline">\(X_1\)</span>-type states (e.g. <span class="math inline">\(E_1\)</span>, <span class="math inline">\(I_1\)</span>, <span class="math inline">\(H_1\)</span> and <span class="math inline">\(C_1\)</span>) are dummy states that allow us to monitor <em>new moves into each class at each day</em>. Note that in the <code>ncov.json</code> file specified <a href="#diseasefile">above</a>, we set all <code>progress</code> parameters to be 0. Thus, all transition probabilities other than new infections are driven by user-defined parameters that are passed to the <code>mover</code> function.</p>
+<p>All this effort is so that we can monitor the counts and ensure the correct transitions, and depends on the order in which the events happen. For example, imagine that on day <span class="math inline">\(t\)</span> we get an infection at the end of the day, so a move from <span class="math inline">\(S \to E_1\)</span>. Then the <strong>recorded counts</strong> for <span class="math inline">\(E_1\)</span> contain the new infections. Then, at the beginning of day <span class="math inline">\(t + 1\)</span>, these individuals will be automatically moved from <span class="math inline">\(E_1 \to E_2\)</span> by the mover function, which subsequently operates using the probabilities <a href="#parameters">above</a> to ensure the correct proportion of individuals progress into the <span class="math inline">\(I_1\)</span> or <span class="math inline">\(A_1\)</span> classes. The <code>mover</code> function applies movements in order, and so it is important to get the order correct. In particular we need to reverse the order of the stage movements (e.g. do movements out of the <span class="math inline">\(C\)</span> demographic <em>before</em> movements out of the <span class="math inline">\(H\)</span> demographic). This is to ensure that individuals move from <span class="math inline">\(H_2 \to C_1\)</span> say, can’t then immediately move out of <span class="math inline">\(C_1\)</span>. However, <em>within</em> each stage, we need to do <span class="math inline">\(X_1 \to X_2\)</span> moves first so that these individuals can progress out of <span class="math inline">\(X_2\)</span> subsequently (since the <span class="math inline">\(X_1\)</span> stages are simply dummy stages used for counting).</p>
+<div id="mover" class="section level3">
 <h3>Moving functions</h3>
-<p>By default, individuals move through classes in their demographic in order. This is highlighted in the schematic above, where moves on the same horizontal level are the defaults. Hence, to move individuals between demographics we need to set up a custom <code>move</code> function to define non-default moves. These non-default moves are <span class="math inline">\(E_2 \to A_1\)</span>, <span class="math inline">\(A_2 \to R\)</span>, <span class="math inline">\(I_2 \to H_1\)</span>, <span class="math inline">\(I_2 to D\)</span>, <span class="math inline">\(H_2 \to C_1\)</span>, <span class="math inline">\(H_2 \to R\)</span>, <span class="math inline">\(H_2 \to D\)</span>, <span class="math inline">\(C_2 \to R\)</span> and <span class="math inline">\(C_2 \to D\)</span>. We can prevent movements from <span class="math inline">\(R \to D\)</span> by setting the corresponding progress probability to zero. Create a file <code>move_pathways.py</code> containing:</p>
+<p>The implement the above ideas, create a file <code>move_pathways.py</code> containing the code below (hidden for brevity, but can be toggled on).</p>
 <pre class="python"><code>from metawards.movers import go_stage
 
 def move_pathways(network, **kwargs):
+
     # extract user defined parameters
     params = network.params
 
+    ## moves out of E class
+    pE = params.user_params[&quot;pE&quot;]
     pEA = params.user_params[&quot;pEA&quot;]
+    
+    ## moves out of A class
+    pA = params.user_params[&quot;pA&quot;]
+    
+    ## moves out of I class
+    pI = params.user_params[&quot;pI&quot;]
     pIH = params.user_params[&quot;pIH&quot;]
     pIR = params.user_params[&quot;pIR&quot;]
+    
+    ## moves out of H class
+    pH = params.user_params[&quot;pH&quot;]
     pHC = params.user_params[&quot;pHC&quot;]
     pHR = params.user_params[&quot;pHR&quot;]
+    
+    ## moves out of C class
+    pC = params.user_params[&quot;pC&quot;]
     pCR = params.user_params[&quot;pCR&quot;]
-
-    # move (100 * pEA)% of E2 genpop to A1 asymp
-    func1 = lambda **kwargs: go_stage(go_from=&quot;genpop&quot;,
-                                      go_to=&quot;asymp&quot;,
-                                      from_stage=1,
-                                      to_stage=2,
-                                      fraction=pEA,
-                                      **kwargs)
-
-    # move A2 asymp to R genpop
-    func2 = lambda **kwargs: go_stage(go_from=&quot;asymp&quot;,
-                                      go_to=&quot;genpop&quot;,
+        
+    func = []
+    
+    ## movers in reverse order through the stages to ensure correct mapping
+    
+    #######################################################
+    #########              C1 MOVES               #########
+    #######################################################
+    
+    ## move C1 critical to C2 critical
+    func.append(lambda **kwargs: go_stage(go_from=&quot;critical&quot;,
+                                      go_to=&quot;critical&quot;,
+                                      from_stage=2,
+                                      to_stage=3,
+                                      fraction=1.0,
+                                      **kwargs))
+    
+    #######################################################
+    #########              C2 MOVES               #########
+    #######################################################
+                                      
+    ## move C2 critical to R critical
+    tpCR = pC * pCR
+    func.append(lambda **kwargs: go_stage(go_from=&quot;critical&quot;,
+                                      go_to=&quot;critical&quot;,
                                       from_stage=3,
                                       to_stage=4,
-                                      fraction=1.0,
-                                      **kwargs)
+                                      fraction=tpCR,
+                                      **kwargs))
                                       
-    # move (100 * pIH)% of I2 genpop to H1 hospital
-    func3 = lambda **kwargs: go_stage(go_from=&quot;genpop&quot;,
-                                      go_to=&quot;hospital&quot;,
-                                      from_stage=3,
-                                      to_stage=2,
-                                      fraction=pIH,
-                                      **kwargs)
-                                      
-    # move (100 * (1 - pIH - pIR))% of I2 genpop to D genpop
-    # (1 - pIH) adjustment is due to ordering of events (so
-    # operates on remainder from move above)
-    func4 = lambda **kwargs: go_stage(go_from=&quot;genpop&quot;,
-                                      go_to=&quot;genpop&quot;,
+    ## move C2 critical to D critical
+    ## (denominator adjustment is due to operating on remainder
+    ## as described in the vignette, also includes correction
+    ## in case of rounding error)
+    tpCD = pC * (1.0 - pCR) / (1.0 - tpCR)
+    tpCD = 1.0 if tpCD &gt; 1.0 else tpCD
+    tpCD = 0.0 if tpCD &lt; 0.0 else tpCD
+    func.append(lambda **kwargs: go_stage(go_from=&quot;critical&quot;,
+                                      go_to=&quot;critical&quot;,
                                       from_stage=3,
                                       to_stage=5,
-                                      fraction=(1.0 - (pIR / (1.0 - pIH))),
-                                      **kwargs)
+                                      fraction=tpCD,
+                                      **kwargs))
                                       
-    # move (100 * pHC)% of H2 hospital to C1 critical
-    func5 = lambda **kwargs: go_stage(go_from=&quot;hospital&quot;,
+    #######################################################
+    #########              H1 MOVES               #########
+    #######################################################
+    
+    ## move H1 hospital to H2 hospital
+    func.append(lambda **kwargs: go_stage(go_from=&quot;hospital&quot;,
+                                      go_to=&quot;hospital&quot;,
+                                      from_stage=2,
+                                      to_stage=3,
+                                      fraction=1.0,
+                                      **kwargs))
+                                      
+    #######################################################
+    #########              H2 MOVES               #########
+    #######################################################
+    
+    ## move H2 hospital to C1 critical
+    tpHC = pH * pHC
+    func.append(lambda **kwargs: go_stage(go_from=&quot;hospital&quot;,
                                       go_to=&quot;critical&quot;,
                                       from_stage=3,
                                       to_stage=2,
-                                      fraction=pHC,
-                                      **kwargs)
+                                      fraction=tpHC,
+                                      **kwargs))
                                       
-    # move (100 * pHR)% of H2 hospital to R genpop
-    # (1 - pHC) adjustment is due to ordering of events (so
-    # operates on remainder from move above)
-    func6 = lambda **kwargs: go_stage(go_from=&quot;hospital&quot;,
-                                      go_to=&quot;genpop&quot;,
+    ## move H2 hospital to R hospital
+    ## (denominator adjustment is due to operating on remainder
+    ## as described in the vignette, also includes correction
+    ## in case of rounding error)
+    tpHR = pH * pHR / (1.0 - tpHC)
+    tpHR = 1.0 if tpHR &gt; 1.0 else tpHR
+    tpHR = 0.0 if tpHR &lt; 0.0 else tpHR
+    func.append(lambda **kwargs: go_stage(go_from=&quot;hospital&quot;,
+                                      go_to=&quot;hospital&quot;,
                                       from_stage=3,
                                       to_stage=4,
-                                      fraction=pHR / (1 - pHC),
-                                      **kwargs)
+                                      fraction=tpHR,
+                                      **kwargs))
                                       
-    # move remainder of H2 hospital to D genpop
-    func7 = lambda **kwargs: go_stage(go_from=&quot;hospital&quot;,
-                                      go_to=&quot;genpop&quot;,
+    ## move H2 hospital to D hospital
+    ## (denominator adjustment is due to operating on remainder
+    ## as described in the vignette, also includes correction
+    ## in case of rounding error)
+    tpHD = pH * (1.0 - pHC - pHR) / (1.0 - pH * (pHC + pHR))
+    tpHD = 1.0 if tpHD &gt; 1.0 else tpHD
+    tpHD = 0.0 if tpHD &lt; 0.0 else tpHD
+    func.append(lambda **kwargs: go_stage(go_from=&quot;hospital&quot;,
+                                      go_to=&quot;hospital&quot;,
                                       from_stage=3,
                                       to_stage=5,
-                                      fraction=1.0,
-                                      **kwargs)
+                                      fraction=tpHD,
+                                      **kwargs))
                                       
-    # move (100 * pCR)% of C2 critical to R genpop
-    func8 = lambda **kwargs: go_stage(go_from=&quot;critical&quot;,
+    #######################################################
+    #########              I1 MOVES               #########
+    #######################################################
+    
+    ## move I1 genpop to I2 genpop
+    func.append(lambda **kwargs: go_stage(go_from=&quot;genpop&quot;,
                                       go_to=&quot;genpop&quot;,
-                                      from_stage=3,
-                                      to_stage=4,
-                                      fraction=pCR,
-                                      **kwargs)
-                                      
-    # move remainder of C2 critical to D genpop
-    func9 = lambda **kwargs: go_stage(go_from=&quot;critical&quot;,
-                                      go_to=&quot;genpop&quot;,
-                                      from_stage=3,
-                                      to_stage=5,
+                                      from_stage=2,
+                                      to_stage=3,
                                       fraction=1.0,
-                                      **kwargs)
+                                      **kwargs))
+    
+    #######################################################
+    #########              I2 MOVES               #########
+    #######################################################
 
-    return [func1, func2, func3, func4, func5, func6, func7, func8, func9]</code></pre>
+    ## move I2 genpop to H1 hospital
+    tpIH = pI * pIH
+    func.append(lambda **kwargs: go_stage(go_from=&quot;genpop&quot;,
+                                      go_to=&quot;hospital&quot;,
+                                      from_stage=3,
+                                      to_stage=2,
+                                      fraction=tpIH,
+                                      **kwargs))
+
+    ## move I2 genpop to R genpop
+    ## (denominator adjustment is due to operating on remainder
+    ## as described in the vignette, also includes correction
+    ## in case of rounding error)
+    tpIR = pI * pIR / (1.0 - tpIH)
+    tpIR = 1.0 if tpIR &gt; 1.0 else tpIR
+    tpIR = 0.0 if tpIR &lt; 0.0 else tpIR
+    func.append(lambda **kwargs: go_stage(go_from=&quot;genpop&quot;,
+                                      go_to=&quot;genpop&quot;,
+                                      from_stage=3,
+                                      to_stage=4,
+                                      fraction=tpIR,
+                                      **kwargs))
+
+    ## move I2 genpop to D genpop
+    ## (denominator adjustment is due to operating on remainder
+    ## as described in the vignette, also includes correction
+    ## in case of rounding error)
+    tpID = pI * (1 - pIH - pIR) / (1.0 - pI * (pIH + pIR))
+    tpID = 1.0 if tpID &gt; 1.0 else tpID
+    tpID = 0.0 if tpID &lt; 0.0 else tpID
+    func.append(lambda **kwargs: go_stage(go_from=&quot;genpop&quot;,
+                                      go_to=&quot;genpop&quot;,
+                                      from_stage=3,
+                                      to_stage=5,
+                                      fraction=tpID,
+                                      **kwargs))
+                                      
+    #######################################################
+    #########              A1 MOVES               #########
+    #######################################################
+    
+    ## move A1 asymp to A2 asymp
+    func.append(lambda **kwargs: go_stage(go_from=&quot;asymp&quot;,
+                                      go_to=&quot;asymp&quot;,
+                                      from_stage=2,
+                                      to_stage=3,
+                                      fraction=1.0,
+                                      **kwargs))
+    
+    #######################################################
+    #########              A2 MOVES                #########
+    #######################################################
+
+    ## move A2 asymp to R asymp
+    tpAR = pA
+    func.append(lambda **kwargs: go_stage(go_from=&quot;asymp&quot;,
+                                      go_to=&quot;asymp&quot;,
+                                      from_stage=3,
+                                      to_stage=4,
+                                      fraction=tpAR,
+                                      **kwargs))
+                                      
+    #######################################################
+    #########              E1 MOVES               #########
+    #######################################################
+                                      
+    ## move E1 genpop to E2 genpop
+    func.append(lambda **kwargs: go_stage(go_from=&quot;genpop&quot;,
+                                      go_to=&quot;genpop&quot;,
+                                      from_stage=0,
+                                      to_stage=1,
+                                      fraction=1.0,
+                                      **kwargs))
+    
+    #######################################################
+    #########              E2 MOVES               #########
+    #######################################################
+
+    ## move E2 genpop to A1 asymp
+    tpEA = pE * pEA
+    func.append(lambda **kwargs: go_stage(go_from=&quot;genpop&quot;,
+                                      go_to=&quot;asymp&quot;,
+                                      from_stage=1,
+                                      to_stage=2,
+                                      fraction=tpEA,
+                                      **kwargs))
+
+    ## move E2 genpop to I1 genpop
+    ## (denominator adjustment is due to operating on remainder
+    ## as described in the vignette, also includes correction
+    ## in case of rounding error)
+    tpEI = pE * (1.0 - pEA) / (1.0 - tpEA)
+    tpEI = 1.0 if tpEI &gt; 1.0 else tpEI
+    tpEI = 0.0 if tpEI &lt; 0.0 else tpEI
+    func.append(lambda **kwargs: go_stage(go_from=&quot;genpop&quot;,
+                                      go_to=&quot;genpop&quot;,
+                                      from_stage=1,
+                                      to_stage=2,
+                                      fraction=tpEI,
+                                      **kwargs))
+
+    return func</code></pre>
+<blockquote>
+<p><strong>Additional note</strong>: The functions in the <code>mover</code> file operate in turn. Therefore the movement probabilities <a href="#parameters">above</a> must be altered between each function, in order to get the correct proportions moved. For example, consider that we have <span class="math inline">\(n\)</span> individuals in the <span class="math inline">\(I_2\)</span> class and we want to move a proportion <span class="math inline">\(p_Ip_{IH}\)</span> from <span class="math inline">\(I_2 \to H_1\)</span>, a proportion <span class="math inline">\(p_Ip_{IR}\)</span> from <span class="math inline">\(I_2 \to R_I\)</span>, and a proportion <span class="math inline">\(p_I\left(1 - p_{IH} - p_{IR}\right)\)</span> from <span class="math inline">\(I_2 \to D_I\)</span>, where <span class="math inline">\(p_I = 1 - e^{-\gamma_I}\)</span>.</p>
+<p>In this case the first <code>mover</code> function takes a random binomial sample from the <span class="math inline">\(n\)</span> individuals with probability <span class="math inline">\(p_Ip_{IH}\)</span> as requested, resulting in <span class="math inline">\(n_{IH}\)</span> moves. However, the second <code>mover</code> function now operates on the <span class="math inline">\(n - n_{IH}\)</span> individuals, so we need to adjust the sampling probabilities to adjust for this. Hence the second <code>mover</code> function needs to sample from the <span class="math inline">\(n - n_{IH}\)</span> individuals with probability <span class="math inline">\(\frac{p_Ip_{IR}}{1 - p_Ip_{IH}}\)</span> in order to generate the correct proportions of moves that we would expect, resulting in <span class="math inline">\(n_{IR}\)</span> moves. Similarly, the third <code>mover</code> function now operates on the <span class="math inline">\(n - n_{IH} - n_{IR}\)</span> remaining individuals, and thus we would need to adjust the sampling probability to <span class="math inline">\(\frac{p_I\left(1 - p_{IH} - p_{IR}\right)}{1 - p_I\left(p_{IH} + p_{IR}\right)}\)</span>. The remaining individuals remain in <span class="math inline">\(I_2\)</span>.</p>
+</blockquote>
 </div>
-<div id="interaction-matrices" class="section level3">
-<h3>Interaction matrices</h3>
+</div>
+<div id="interaction-matrices" class="section level2">
+<h2>Interaction matrices</h2>
 <p>The <strong>interaction matrix</strong> scales the FOI that different demographics have on other demographics. We need to store this in a file called <code>mix_pathways.py</code>. Since most of the classes are already infected, it’s only the first row that has to contain non-zero entries. Here the <code>GP_A</code>, <code>GP_H</code> and <code>GP_C</code> parameters scale the impact of aymptomatics, hospital cases and critical care cases on the force-of-infection to the general population. All demographics other than <code>genpop</code> are already infected, so have no further force-of-infection acting on them, and thus the other parameters can be set to zero. These parameters are all <span class="math inline">\(&gt; 0\)</span>.</p>
 <pre class="python"><code>from metawards.mixers import merge_using_matrix
 
@@ -1778,37 +2002,22 @@ def mix_pathways(network, **kwargs):
     params = network.params
 
     # how much FOI to GP population is affected by others
-    GP_GP = 1.0 #params.user_params[&quot;GP_GP&quot;]
+    GP_GP = 1.0 
     GP_A = params.user_params[&quot;GP_A&quot;]
     GP_H = params.user_params[&quot;GP_H&quot;]
     GP_C = params.user_params[&quot;GP_C&quot;]
 
-    A_GP = 0.0 # params.user_params[&quot;A_GP&quot;]
-    A_A = 0.0 # params.user_params[&quot;A_A&quot;]
-    A_H = 0.0 # params.user_params[&quot;A_H&quot;]
-    A_C = 0.0 # params.user_params[&quot;A_C&quot;]
-
-    H_GP = 0.0 # params.user_params[&quot;H_GP&quot;]
-    H_A = 0.0 # params.user_params[&quot;H_A&quot;]
-    H_H = 0.0 # params.user_params[&quot;H_H&quot;]
-    H_C = 0.0 # params.user_params[&quot;H_C&quot;]
-
-    C_GP = 0.0 # params.user_params[&quot;C_GP&quot;]
-    C_A = 0.0 # params.user_params[&quot;C_A&quot;]
-    C_H = 0.0 # params.user_params[&quot;C_H&quot;]
-    C_C = 0.0 # params.user_params[&quot;C_C&quot;]
-
     matrix = [ [GP_GP, GP_A, GP_H, GP_C],
-               [A_GP, A_A, A_H, A_C],
-               [H_GP, H_A, H_H, H_C],
-               [C_GP, C_A, C_H, C_C] ]
+               [0.0, 0.0, 0.0, 0.0],
+               [0.0, 0.0, 0.0, 0.0],
+               [0.0, 0.0, 0.0, 0.0] ]
 
     network.demographics.interaction_matrix = matrix
 
     return [merge_using_matrix]</code></pre>
 </div>
-<div id="code" class="section level3">
-<h3>Code</h3>
+<div id="code" class="section level2">
+<h2>Code</h2>
 <p>To run designs, we need to generate a <code>disease.csv</code> file containing different parameters to use for different runs. For consistency, we will define three spaces:</p>
 <ul>
 <li><em>input</em> space: this relates to the parameters ranges (defined below);</li>
@@ -1869,23 +2078,25 @@ parRanges &lt;- data.frame(
     upper = c(4, 6, 4, 12, 12, rep(1, 11)),
     stringsAsFactors = FALSE
 )</code></pre>
-<p>Firstly we want a function to convert between the <em>design</em> and <em>input</em> spaces. A short R function to do this is given below. This requires a <code>design</code> data frame, with columns denoting each <em>input</em> parameter in <code>parRanges</code> and rows corresponding to design points, and a <code>parRanges</code> data frame (defined above). We use the <code>scale</code> argument to define whether the design is on the <span class="math inline">\((0, 1)\)</span> (<code>scale = &quot;zero_one&quot;</code>) or <span class="math inline">\((-1, 1)\)</span> (<code>scale = &quot;negone_one&quot;</code>) space.</p>
+<p>Firstly we want a function to convert between the <em>design</em> and <em>input</em> spaces. A short R function called <code>convertDesignToInput()</code> which does this is given below. This requires a <code>design</code> data frame with columns denoting each <em>input</em> parameter in <code>parRanges</code> and rows corresponding to design points. There should be an additional column called <code>output</code> that defines a unique identifier for each design point, and a column called <code>repeats</code> that contains the number of repeats for each design point. The <code>convertDesignToInput()</code> function also requires the <code>parRanges</code> data frame (defined above). We use the <code>scale</code> argument to define whether the design is on the <span class="math inline">\((0, 1)\)</span> (<code>scale = &quot;zero_one&quot;</code>) or <span class="math inline">\((-1, 1)\)</span> (<code>scale = &quot;negone_one&quot;</code>) space.</p>
+<blockquote>
+<p><strong>Note</strong>: this function converts the probabilities correctly for the <code>mover</code> defined <a href="#mover">above</a>.</p>
+</blockquote>
 <pre class="r"><code>## function to convert from design to input space
 convertDesignToInput &lt;- function(design, parRanges, scale = c(&quot;zero_one&quot;, &quot;negone_one&quot;)) {
   
-    ## ACTUAL CODE WILL HAVE CHECKS ON INPUTS HERE 
     require(dplyr)
     require(tidyr)
   
     ## convert from design space to input space
     input &lt;- mutate(design, ind = 1:n()) %&gt;%
-        gather(parameter, value, -ind) %&gt;%
+        gather(parameter, value, -output, -ind, -repeats) %&gt;%
         left_join(parRanges, by = &quot;parameter&quot;)
     if(scale[1] == &quot;negone_one&quot;) {
         input &lt;- mutate(input, value = value / 2 + 1)
     }
     input &lt;- mutate(input, value = value * (upper - lower) + lower) %&gt;%
-        dplyr::select(ind, parameter, value) %&gt;%
+        dplyr::select(ind, output, repeats, parameter, value) %&gt;%
         spread(parameter, value) %&gt;%
         arrange(ind) %&gt;%
         dplyr::select(-ind)
@@ -1893,70 +2104,71 @@ convertDesignToInput &lt;- function(design, parRanges, scale = c(&quot;zero_one&
     ## return inputs
     input
 }</code></pre>
-<p>Once we have done this, we need to transform from the <em>input</em> space to the <em>disease</em> space for MetaWards. An R function is given below. This requires an <code>input</code> data frame, with columns denoting each <em>input</em> parameter and rows corresponding to each input points, and a number of <code>repeats</code>.</p>
+<p>Once we have done this, we need to transform from the <em>input</em> space to the <em>disease</em> space for MetaWards. An R function is given below. This requires an <code>input</code> data frame, with columns denoting each <em>input</em> parameter and rows corresponding to each input points, a number of <code>repeats</code> and a column of unique identifiers (<code>output</code>).</p>
 <pre class="r"><code>## function to convert from input to disease space
-convertInputToDisease &lt;- function(input, repeats) {
-  
-    ## ACTUAL CODE WILL HAVE CHECKS ON INPUTS HERE 
+convertInputToDisease &lt;- function(input) {
+   
     require(dplyr)
     
     ## common parameters to all pathways
     disease &lt;- tibble(`beta[2]` = input$r_zero / input$infectious_time)
     disease$`beta[3]` &lt;- disease$`beta[2]`
-    disease$`progress[0]` &lt;- 1
-    disease$`progress[1]` &lt;- 1 - exp(-(1 / (input$incubation_time - 1)))
-    disease$`progress[2]` &lt;- 1
-    disease$`progress[3]` &lt;- 1 - exp(-(1 / (input$infectious_time - 1)))
-    disease$`.lock_1_restrict` &lt;- input$lock_1_restrict
-    disease$`.lock_2_release` &lt;- input$lock_2_release
     
-    ## hospital progression
-    disease$`hospital:progress[2]` &lt;- 1
-    disease$`hospital:progress[3]` &lt;- 1 - exp(-(1 / (input$hospital_time - 1)))
-    
-    ## critical care progression
-    disease$`critical:progress[2]` &lt;- 1
-    disease$`critical:progress[3]` &lt;- 1 - exp(-(1 / (input$critical_time - 1)))
-    
-    ## set up probabilities on disease scale
+    ## progressions out of the E class
+    ## (adjusting in the way described in the vignette for
+    ## order of movers)
+    disease$`.pE` &lt;- 1 - exp(-1 / input$incubation_time)
     disease$`.pEA` &lt;- input$pEA
+    
+    ## progressions out of the A class
+    disease$`.pA` &lt;- 1 - exp(-1 / input$infectious_time)
+    
+    ## progressions out of the I class
+    ## (adjusting in the way described in the vignette for
+    ## order of movers)
+    disease$`.pI` &lt;- 1 - exp(-1 / input$infectious_time)
     disease$`.pIH` &lt;- input$pIH
     disease$`.pIR` &lt;- (1 - input$pIH) * input$pIRprime
+    
+    ## progressions out of the H class
+    ## (adjusting in the way described in the vignette for
+    ## order of movers)
+    disease$`.pH` &lt;- 1 - exp(-1 / input$hospital_time)
     disease$`.pHC` &lt;- input$pHC
     disease$`.pHR` &lt;- (1 - input$pHC) * input$pHRprime
+    
+    ## progressions out of the C class
+    ## (adjusting in the way described in the vignette for
+    ## order of movers)
+    disease$`.pC` &lt;- 1 - exp(-1 / input$critical_time)
     disease$`.pCR` &lt;- input$pCR
+    
+    ## lockdown scalings
+    disease$`.lock_1_restrict` &lt;- input$lock_1_restrict
+    disease$`.lock_2_release` &lt;- input$lock_2_release
     
     ## set up scaling for mixing matrix
     disease$`.GP_A` &lt;- input$GP_A
     disease$`.GP_H` &lt;- input$GP_H
     disease$`.GP_C` &lt;- input$GP_C
     
-    ## round disease file (to prevent fingerprint form being too long)
-    disease &lt;- mutate_all(disease, round, digits = 6)
-    
     ## finalise number of repeats
-    disease$repeats &lt;- repeats
+    disease$repeats &lt;- input$repeats
+    
+    ## copy hash for each input
+    disease$output &lt;- input$output
     
     ## return disease file
     disease
 }</code></pre>
-<blockquote>
-<p><strong>TODO: add attenuated infection rate for asymptomatics.</strong></p>
-</blockquote>
-<blockquote>
-<p><strong>QUESTION</strong>: do we want to set <span class="math inline">\(T_H\)</span> to be a subset of <span class="math inline">\(T_I\)</span>, or in addition to <span class="math inline">\(T_I\)</span>? How do we specify ranges?</p>
-</blockquote>
-<blockquote>
-<p><strong>QUESTION</strong>: how do we scale FOI from hospital patients to the other populations?</p>
-</blockquote>
-<p>As an example of a quick LHS design for five design points and five replicates:</p>
+<p>Also in <code>dataTools.R</code> is a function <code>ensembleIDGen()</code> that creates unique IDs for each design point. So an example of a quick LHS design for five design points and five replicates is:</p>
 <pre class="r"><code>## load libraries
 library(lhs)
 library(dplyr)
 library(tidyr)
 
 ## source dataTools
-source(&quot;dataTools.R&quot;)
+source(&quot;R_tools/dataTools.R&quot;)
 
 ## set up parameter ranges
 parRanges &lt;- data.frame(
@@ -1975,20 +2187,121 @@ design &lt;- randomLHS(5, nrow(parRanges))
 colnames(design) &lt;- parRanges$parameter
 design &lt;- as_tibble(design)
 
+## add unique hash identifier
+## (at the moment don&#39;t use &quot;a0&quot; type ensembleID, because MetaWards
+## parses to dates)
+design$output &lt;- ensembleIDGen(ensembleID = &quot;Ens0&quot;, nrow(design))
+design$repeats &lt;- 2
+
 ## convert to input space
 input &lt;- convertDesignToInput(design, parRanges, &quot;zero_one&quot;)
 
 ## convert input to disease
-disease &lt;- convertInputToDisease(input, 2)
+disease &lt;- convertInputToDisease(input)
 
 ## write to external files
-dir.create(&quot;inputs&quot;)
-write.table(disease, &quot;inputs/disease.dat&quot;, row.names = FALSE, sep = &quot; &quot;, quote = FALSE)</code></pre>
+dir.create(&quot;inputs&quot;, showWarnings = FALSE)
+
+## write text file for MetaWards
+write.table(disease, &quot;inputs/disease.dat&quot;, row.names = FALSE, sep = &quot; &quot;, quote = FALSE)
+
+## save inputs for data for post-simulation runs
+saveRDS(design, &quot;inputs/design.rds&quot;)
+saveRDS(parRanges, &quot;inputs/parRanges.rds&quot;)</code></pre>
+<p>This produces a file <code>inputs/disease.dat</code> that can be passed to MetaWards to run the model. The <code>runscript.sh</code> batch file provides the command line instructions needed to the model using these inputs. This is written for Linux, and should be able to be run directly from the downloaded folder. If you don’t run Linux, then the file should give you an idea of how to run the model on your own system.</p>
+<p>Once the design has been run, the <code>extractOutputs.R</code> file provides some code to extract some summary measures from the outputs. At the current time this relies on some OS-specific code, in order to unzip the compressed SQL database files, which also makes the process slow. Hopefully this will be sorted with a better solution in the future, but it gives you some ideas about what can be done.</p>
+<p>The outputs from MetaWards are stored in an SQL database, which can be queried through any SQLite client. The <code>dplyr</code> package (or more specifically the <code>dbplyr</code> package) provides some useful R tools for querying SQL databases using <code>tidyverse</code>-type notation. Some examples are in the <code>extractOutputs.R</code> file, and more details can be found <a href="https://cran.r-project.org/web/packages/dbplyr/vignettes/dbplyr.html">here</a>.</p>
+<pre class="r"><code>## R script to query database
+library(dplyr)
+library(purrr)
+library(stringr)
+library(ggplot2)
+
+## may also need to install RSQLite library
+## e.g. install.packages(&quot;RSQLite&quot;)
+
+## read in inputs
+design &lt;- readRDS(&quot;inputs/design.rds&quot;)
+parRanges &lt;- readRDS(&quot;inputs/parRanges.rds&quot;)
+
+## read in simulations for each input
+## this involves unzipping the DB files
+## which is done on the command line at the moment
+## need a better solution going forwards
+
+## the commands below do not pull down from the database
+## until you run the &#39;collect()&#39; function, but it allows
+## you to use &#39;tidyverse&#39;-esque notation, which it converts
+## to SQL behind the scenes if you&#39;re not used to SQL
+## see e.g. https://cran.r-project.org/web/packages/dbplyr/vignettes/dbplyr.html
+
+## here we are going to extract cumulative hospital counts
+## at day 100
+
+## extract data
+cH &lt;- map2(design$output, design$repeats, function(hash, reps) {
+    
+    ## generate output hashes
+    hashes &lt;- map_chr(1:reps, function(i, hash) {
+        paste0(hash, ifelse(i &gt; 1, paste0(&quot;x&quot;, str_pad(i, 3, pad = &quot;0&quot;)), &quot;&quot;))
+    }, hash = hash)
+    
+    ## run through hashes and extract runs
+    output &lt;- map(hashes, function(hash) {
+        ## create path
+        path &lt;- paste0(&quot;raw_outputs/&quot;, hash, &quot;/stages.db&quot;)
+        
+        ## unzip DB
+        system(paste0(&quot;bzip2 -dk &quot;, path, &quot;.bz2&quot;))
+        
+        ## establish connection
+        con &lt;- DBI::dbConnect(RSQLite::SQLite(), path)
+        
+        ## stage_2 in the hospital demographic contains the new incidence
+        hospital &lt;- tbl(con, &quot;hospital_totals&quot;)
+        hosp_db &lt;- filter(hospital, day &lt;= 100) %&gt;%
+            select(ward, stage_2) %&gt;%
+            group_by(ward) %&gt;%
+            summarise(cH = sum(stage_2))
+        ## collect outcome of query
+        hosp &lt;- collect(hosp_db)
+        
+        ## disconnect from DB
+        DBI::dbDisconnect(con)
+        
+        ## remove DB
+        ## using gio trash just in case anything goes wrong
+        system(paste0(&quot;gio trash &quot;, path))
+        
+        ## return counts by ward
+        hosp
+    })
+    names(output) &lt;- hashes
+    output &lt;- bind_rows(output, .id = &quot;output&quot;)
+    
+    ## remove replicate indexes
+    output &lt;- mutate(output, replicate = as.numeric(factor(output))) %&gt;%
+        mutate(output = str_replace(output, &quot;x[:digit:]+$&quot;, &quot;&quot;))
+    stopifnot(length(unique(output$output)) == 1)
+    print(paste0(hashes, &quot;: Finished&quot;))
+    output
+})
+cH &lt;- bind_rows(cH)
+
+## now you can join the design file to the outputs
+## via the &#39;output&#39; indicator
+
+## for brevity let&#39;s sum hospital cases over all wards
+## and then join to the design file for plotting
+sims &lt;- group_by(cH, output, replicate) %&gt;%
+    summarise(cH = sum(cH)) %&gt;%
+    ungroup() %&gt;%
+    inner_join(design, by = &quot;output&quot;) 
+
+## plot R0 against sims
+ggplot(sims, aes(x = r_zero, y = cH, colour = output)) +
+    geom_point()</code></pre>
 <pre><code>## [1] &quot;NEED TO GET RANGES FIGURED OUT, THIS IS A TEST&quot;</code></pre>
-<blockquote>
-<p><strong>TODO: might want some form of folder clearup or suchlike?</strong></p>
-</blockquote>
-</div>
 </div>
 </div>
 
@@ -2025,6 +2338,11 @@ $(document).ready(function () {
 </script>
 
 <!-- code folding -->
+<script>
+$(document).ready(function () {
+  window.initializeCodeFolding("show" === "show");
+});
+</script>
 
 
 <!-- dynamically load mathjax for compatibility with self-contained -->

@@ -4,7 +4,7 @@ library(dplyr)
 library(tidyr)
 
 ## source dataTools
-source("dataTools.R")
+source("R_tools/dataTools.R")
 
 ## set up parameter ranges
 parRanges <- data.frame(
@@ -23,13 +23,24 @@ design <- randomLHS(5, nrow(parRanges))
 colnames(design) <- parRanges$parameter
 design <- as_tibble(design)
 
+## add unique hash identifier
+## (at the moment don't use "a0" type ensembleID, because MetaWards
+## parses to dates)
+design$output <- ensembleIDGen(ensembleID = "Ens0", nrow(design))
+design$repeats <- 2
+
 ## convert to input space
 input <- convertDesignToInput(design, parRanges, "zero_one")
 
 ## convert input to disease
-disease <- convertInputToDisease(input, 2)
+disease <- convertInputToDisease(input)
 
 ## write to external files
-dir.create("inputs")
+dir.create("inputs", showWarnings = FALSE)
+
+## write text file for MetaWards
 write.table(disease, "inputs/disease.dat", row.names = FALSE, sep = " ", quote = FALSE)
 
+## save inputs for data for post-simulation runs
+saveRDS(design, "inputs/design.rds")
+saveRDS(parRanges, "inputs/parRanges.rds")
