@@ -10,8 +10,8 @@ Please read the [**guide to contributing vignettes**]({{ site.baseurl }}/vignett
 
 ## Installation of basic tools
 
-- [Installing and running the MetaWards model]({{ site.baseurl }}/vignettes/metawards_run)
-- [Installing MOGP]({{ site.baseurl }}/vignettes/mogp_install)
+- [Installing and running the MetaWards model]({{ site.baseurl }}/vignettes/metawards_run) - Stefan Siegert
+- [Installing MOGP]({{ site.baseurl }}/vignettes/mogp_install) - Stefan Siegert
 
 ## The UQ4Covid Model structure
 
@@ -20,34 +20,34 @@ Please read the [**guide to contributing vignettes**]({{ site.baseurl }}/vignett
 
 ## Experimental design
 
-- [Experimental design]({{ site.baseurl }}/vignettes/metawards_design)
-- [k-Extended LHC experimental design]({{ site.baseurl }}/vignettes/metawards_kextendedLHC)
+- [Experimental design (defunct)]({{ site.baseurl }}/vignettes/metawards_design) 
+- [k-Extended LHC experimental design]({{ site.baseurl }}/vignettes/metawards_kextendedLHC) - Danny Williamson
 
 
 ## Visualisation
 
-- [Visualise output]({{ site.baseurl }}/vignettes/metawards_plot)
+- [Visualise output]({{ site.baseurl }}/vignettes/metawards_plot) - Stefan Siegert
 
 
 ## Sensitivity analysis
 
-- [Sensitivity analysis]({{ site.baseurl }}/vignettes/metawards_sa)
-- [Sensitivity analysis]({{ site.baseurl }}/vignettes/cumulative_infections_at_lockdown_sensitivity)
+- [An Early Sensitivity analysis]({{ site.baseurl }}/vignettes/metawards_sa) - Doug McNeall
+- [Cumulative Cases at Lockdown]({{ site.baseurl }}/vignettes/cumulative_infections_at_lockdown_sensitivity) - Doug McNeall
 
 
 ## Emulation
 
-- [Emulating MetaWards output]({{ site.baseurl }}/vignettes/AdventuresInEmulators)
-- [Quantile Kriging Emulator (with PCA)]({{ site.baseurl }}/vignettes/QuantileKriging_experiment)
-- [Quantile Kriging Emulator (Independent outputs)]({{ site.baseurl }}/vignettes/QuantileKriging_experiment2_Independent)
-- [Quantile Emulation with MOGP]({{ site.baseurl }}/vignettes/Quantile_Emulation_MOGP)
+- [Early Emulation of MetaWards output]({{ site.baseurl }}/vignettes/AdventuresInEmulators) - Danny Williamson
+- [Quantile Kriging Emulator (with PCA)]({{ site.baseurl }}/vignettes/QuantileKriging_experiment) - Evan Baker
+- [Quantile Kriging Emulator (Independent outputs)]({{ site.baseurl }}/vignettes/QuantileKriging_experiment2_Independent) - Evan Baker
+- [Quantile Emulation with MOGP]({{ site.baseurl }}/vignettes/Quantile_Emulation_MOGP) - Danny Williamson
 
 
 ## Calibration
 
-- [Calibrating MetaWards output]({{ site.baseurl }}/vignettes/BinomialCalibration)
-  - [Collating data for Calibrating MetaWards output]({{ site.baseurl }}/vignettes/BinomialCalibrationData)
-- [History Matching using linear emulators]({{ site.baseurl }}/vignettes/LMWave1)
+- [Calibrating MetaWards output]({{ site.baseurl }}/vignettes/BinomialCalibration) - Ben Youngman
+  - [Collating data for Calibrating MetaWards output]({{ site.baseurl }}/vignettes/BinomialCalibrationData) - Ben Youngman
+- [History Matching using linear emulators]({{ site.baseurl }}/vignettes/LMWave1) - TJ McKinley
 
 
 
