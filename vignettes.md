@@ -15,8 +15,7 @@ Please read the [**guide to contributing vignettes**]({{ site.baseurl }}/vignett
 
 ## The UQ4Covid Model structure
 
-- [Model structure (still evolving)]({{ site.baseurl }}/vignettes/data/MetaWards/vignette/MetaWards) - TJ McKinley
-- [Running your own ensembles]({{ site.baseurl }}/vignettes/RunningForDummies) - Danny Williamson
+- [Model structure and running your own ensembles]({{ site.baseurl }}/vignettes/data/MetaWards/vignette/MetaWards) - TJ McKinley and Danny Williamson
 
 ## Experimental design
 
