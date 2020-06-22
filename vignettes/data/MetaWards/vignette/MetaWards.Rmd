@@ -17,18 +17,8 @@ knitr::opts_chunk$set(echo = TRUE)
 
 This vignette contains all the details about the current UQ4Covid MetaWards implementation. It consists of various sections that can be accessed through the tabs below:
 
-* **Quick Start Guide**: contains instructions about how to install and run this version of MetaWards.
-* **Model Description**: A short guide to the model inputs and outputs.
-* MetaWards setup: A more detailed guide to the ins-and-outs of the model structure, and details of the implementation.
+* [**Quick Start Guide**](./RunningForDummies.html): contains instructions about how to install and run this version of MetaWards.
+* [**Model Description**](./ModelDescription.html): A short guide to the model inputs and outputs.
+* [MetaWards setup](./MetaWardsModel.html): A more detailed guide to the ins-and-outs of the model structure, and details of the implementation.
 
 **All necessary files can be downloaded from [here](../metawards.zip).**
-
-
-```{r child = 'RunningForDummies.Rmd'}
-```
-
-```{r child = 'ModelDescription.Rmd'}
-```
-
-```{r child = 'MetaWardsModel.Rmd'}
-```

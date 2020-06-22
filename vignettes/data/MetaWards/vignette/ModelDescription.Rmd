@@ -1,4 +1,13 @@
-## Model Description {#modelS}
+---  
+title: Model Description
+author: "TJ McKinley"
+date: "`r format(Sys.time(), '%d %B %Y')`"
+output: 
+  html_document:
+    code_folding: show
+    highlight: zenburn
+    css: css/main.css
+---
 
 The basic model structure is:
 
@@ -67,7 +76,7 @@ grViz("digraph simpmod {
 }", height = '100%', width = '100%')
 ```
 
-### MetaWards setup
+## MetaWards setup
 
 The model structure above allows for different progression pathways. MetaWards deals with this by assigning individuals to different "demographics", where each demographic can be used to represent different progression pathways. There are currently seven pathways, which will be described below, which can be summarised as:
 
@@ -81,7 +90,7 @@ The model structure above allows for different progression pathways. MetaWards d
 
 Individuals in the `genpop` demographic move through the $SEIR$ and $SEID$ pathways; the `asymp` demographic moves through the `SEAR` pathway; some individuals in the `genpop` demographic can be moved to the `hospital` demographic, and thus follow the `SEIHR` and `SEIHD` pathways; and finally, some individuals in the `hospital` demographic can be moved to the `critical` demographic, and thus follow the `SEIHCR` and `SEIHCD` pathways.
 
-### Parameters {#parametersS}
+## Parameters {#parametersS}
 
 Movements through the different states are governed by key parameters:
 
@@ -100,11 +109,11 @@ Movements through the different states are governed by key parameters:
 
 Lockdown can be controlled either by constraining movements over a certain distance, or by scaling the $\beta$ parameters. We do the latter at the moment.
 
-### Interaction matrices
+## Interaction matrices
 
 The **interaction matrix** scales the force-of-infection (FOI) that different demographics have on other demographics. We have three free parameters here: $\beta^S_{A \to GP}$, $\beta^S_{H \to GP}$ and $\beta^S_{C \to GP}$ which scale the impact of aymptomatics, hospital cases and critical care cases on the FOI to the general population. 
 
-### Input parameters {#inputS}
+## Input parameters {#inputS}
 
 To run designs, we need to generate a `disease.csv` file containing different parameters to use for different runs. For consistency, we will define three spaces:
 
@@ -137,7 +146,7 @@ and thus we have parameter ranges:
     \beta^S_{C \to GP}&: (0, 1).
 \end{align}
 
-### Outputs {#outputS}
+## Outputs {#outputS}
 
 The outputs from MetaWards are stored in an SQL database, which can be queried through any SQLite client. Each model run produces a file called `stages.db.bz2`, which is a compressed database containing the outputs. To access this you will first have to unzip it. I do this on the command line e.g.
 

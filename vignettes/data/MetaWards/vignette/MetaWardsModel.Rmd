@@ -1,4 +1,13 @@
-## MetaWards Model Structure {#model}
+---  
+title: Model Structure in MetaWards
+author: "TJ McKinley"
+date: "`r format(Sys.time(), '%d %B %Y')`"
+output: 
+  html_document:
+    code_folding: show
+    highlight: zenburn
+    css: css/main.css
+---
 
 > **In order to get the model structure and outputs described previously, we have to play a few tricks in MetaWards. The detail below corresponds to how we have implemented the current model, and requires additional stages to ensure we get the correct transitions and outputs.**
 
@@ -81,7 +90,7 @@ grViz("digraph model {
 }", height = '100%', width = '100%')
 ```
 
-### MetaWards setup
+## MetaWards setup
 
 The model structure above allows for different progression pathways. MetaWards deals with this by assigning individuals to different "demographics", where each demographic can be used to represent different progression pathways. There are also `mover` functions that can be used to move individuals between demographics, and `mixer` functions that scale the force-of-infection (FOI) terms between the different demographics (explained later). There are currently seven pathways, which will be described below, but can be summarised as:
 
@@ -105,7 +114,7 @@ We need to specify initial proportions of individuals in each pathway such that 
 
 > Here we assume the same ratios in the `work` and `play` populations, but in practice these could be changed.
 
-### Parameters {#parameters}
+## Parameters {#parameters}
 
 Once the demographics have been setup, we can then control progress through the different states as:
 
@@ -129,7 +138,7 @@ Once the demographics have been setup, we can then control progress through the 
 
 Lockdown can be controlled either by constraining movements over a certain distance, or by scaling the $\beta$ parameters. We do the latter at the moment. The moves of the type $p_{X_1X_2} = 1$ are tricks to enable us to get the correct counts (see [below](#movements) for more details).
 
-### Disease `.json` file {#diseasefile}
+## Disease `.json` file {#diseasefile}
 
 All pathways have an $SEI(R/D)$ structure, so we can set up an `ncov.json` file for the overall disease:
 
@@ -138,15 +147,15 @@ All pathways have an $SEI(R/D)$ structure, so we can set up an `ncov.json` file 
 
 We will discuss these choices in more detail in the subsequent sections, in particular the role of the `beta` parameters in the next section. Note that the `progress` parameters are all set to zero here, since all movements will be controlled via the custom `mover` function.
 
-### Controlling movements {#movements}
+## Controlling movements {#movements}
 
-MetaWards has a specific structure in terms of how it progresses movements between the stages. To get the correct splits between the pathways specified [above](#model) we do all non-infection movements through a custom `mover` function specified [below](#mover). Note that the $X_1$-type states (e.g. $E_1$, $I_1$, $H_1$ and $C_1$) are dummy states that allow us to monitor *new moves into each class at each day*. Note that in the `ncov.json` file specified [above](#diseasefile), we set all `progress` parameters to be 0. Thus, all transition probabilities other than new infections are driven by user-defined parameters that are passed to the `mover` function.
+MetaWards has a specific structure in terms of how it progresses movements between the stages. To get the correct splits between the pathways specified above we do all non-infection movements through a custom `mover` function specified [below](#mover). Note that the $X_1$-type states (e.g. $E_1$, $I_1$, $H_1$ and $C_1$) are dummy states that allow us to monitor *new moves into each class at each day*. Note that in the `ncov.json` file specified [above](#diseasefile), we set all `progress` parameters to be 0. Thus, all transition probabilities other than new infections are driven by user-defined parameters that are passed to the `mover` function.
 
 All this effort is so that we can monitor the counts and ensure the correct transitions, and depends on the order in which the events happen. For example, imagine that on day $t$ we get an infection at the end of the day, so a move from $S \to E_1$. Then the **recorded counts** for $E_1$ contain the new infections. Then, at the beginning of day $t + 1$, these individuals will be automatically moved from $E_1 \to E_2$ by the mover function, which subsequently operates using the probabilities [above](#parameters) to ensure the correct proportion of individuals progress into the $I_1$ or $A_1$ classes. The `mover` function applies movements in order, and so it is important to get the order correct. In particular we need to reverse the order of the stage movements (e.g. do movements out of the $C$ demographic *before* movements out of the $H$ demographic). This is to ensure that individuals move from $H_2 \to C_1$ say, can't then immediately move out of $C_1$. However, *within* each stage, we need to do $X_1 \to X_2$ moves first so that these individuals can progress out of $X_2$ subsequently (since the $X_1$ stages are simply dummy stages used for counting).
 
 > **Note**: remember that $X_1$ and $X_2$ are tricks here. We want $X_1$ to record the number of **new movements into** class $X$, and $X_2$ to record the **number of individuals in** class $X$. At the moment, moves into $X_1$ on day $t$ say are not currently included in $X_2$. Epidemiologically these are treated OK, since the [`mover`](#mover) below accounts for the transitions correctly. However, we want the outputs for the $X_2$ type classes to be the **number of individuals** in that class on each day. As such, we use a custom [`extractor`](#extractor) function that adds $X_1$ to $X_2$ at the end, so that $X_1$ corresponds to **new movements into** the $X$ class, and $X_2$ is the **number** of individuals in the $X$ class.
 
-#### Moving functions {#mover}
+### Moving functions {#mover}
 
 The implement the above ideas, create a file `move_pathways.py` containing the code below (hidden for brevity, but can be toggled on).
 
@@ -157,14 +166,14 @@ The implement the above ideas, create a file `move_pathways.py` containing the c
 > 
 > In this case the first `mover` function takes a random binomial sample from the $n$ individuals with probability $p_Ip_{IH}$ as requested, resulting in $n_{IH}$ moves. However, the second `mover` function now operates on the $n - n_{IH}$ individuals, so we need to adjust the sampling probabilities to adjust for this. Hence the second `mover` function needs to sample from the $n - n_{IH}$ individuals with probability $\frac{p_Ip_{IR}}{1 - p_Ip_{IH}}$ in order to generate the correct proportions of moves that we would expect, resulting in $n_{IR}$ moves. Similarly, the third `mover` function now operates on the $n - n_{IH} - n_{IR}$ remaining individuals, and thus we would need to adjust the sampling probability to $\frac{p_I\left(1 - p_{IH} - p_{IR}\right)}{1 - p_I\left(p_{IH} + p_{IR}\right)}$. The remaining individuals remain in $I_2$.
 
-### Interaction matrices
+## Interaction matrices
 
 The **interaction matrix** scales the FOI that different demographics have on other demographics. We need to store this in a file called `mix_pathways.py`. Since most of the classes are already infected, it's only the first row that has to contain non-zero entries. Here the `GP_A`, `GP_H` and `GP_C` parameters scale the impact of aymptomatics, hospital cases and critical care cases on the force-of-infection to the general population. All demographics other than `genpop` are already infected, so have no further force-of-infection acting on them, and thus the other parameters can be set to zero. These parameters are all $> 0$.
 
 ```{python, code = readLines("../model_code/mix_pathways.py"), eval = FALSE}
 ```
 
-### Lockdown
+## Lockdown
 
 Chris Fenton wrote a neat custom `iterator` function, that models lockdown by scaling the FOI terms for different time period,s that represent different stages of interventions. The custom iterator is:
 
@@ -176,7 +185,7 @@ This requires an additional input file containing the dates of the different sta
 ```{python, code = readLines("../model_code/lockdown_states.txt"), eval = FALSE}
 ```
 
-### Extractor {#extractor}
+## Extractor {#extractor}
 
 We also have a custom `extractor` function, that saves the outputs as a compressed SQL database called `stages.db.bz2`. This is important since the outputs are very large (all classes across all days and all wards, for multiple replicates of each design point). The database contains four tables:
 
@@ -203,7 +212,7 @@ The other demographics (`asymp`, `hospital` and `critical`) have the same struct
 ```{python, code = readLines("../model_code/ward_extractor.py"), eval = FALSE}
 ```
 
-### Input and output code {#code}
+## Input and output code {#code}
 
 To run designs, we need to generate a `disease.csv` file containing different parameters to use for different runs. For consistency, we will define three spaces:
 
