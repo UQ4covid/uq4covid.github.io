@@ -198,7 +198,10 @@ For the `genpop` demographic, these correspond to:
 * `stage_4`: current removals on each day (i.e. number of individuals in $R$)
 * `stage_5`: current deaths on each day (i.e. number of individuals in $D$)
 
-The other demographics (`asymp`, `hospital` and `critical`) have the same structure, but with `stage_0` and `stage_1` **always 0** (since new infections are always in `genpop`), and `stage_2` and `stage_3` correspond to the new and current numbers in either the $A$, $H$ or $C$ classes according to the demographic (refer to the model structure [here](#modelS)).
+The other demographics (`asymp`, `hospital` and `critical`) have the same structure, but with `stage_0` and `stage_1` **always 0** (since new infections are always in `genpop`), and `stage_2` and `stage_3` correspond to the new and current numbers in either the $A$, $H$ or $C$ classes according to the demographic.
+
+```{python, code = readLines("../model_code/ward_extractor.py"), eval = FALSE}
+```
 
 ### Input and output code {#code}
 

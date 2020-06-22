@@ -1887,8 +1887,8 @@ summary {
 <li><span class="math inline">\(R\)</span>: recovered and immune;</li>
 <li><span class="math inline">\(D\)</span>: died.</li>
 </ul>
-<div id="htmlwidget-b57cbea712fe91be9bd1" style="width:100%;height:100%;" class="grViz html-widget"></div>
-<script type="application/json" data-for="htmlwidget-b57cbea712fe91be9bd1">{"x":{"diagram":"digraph simpmod {\n    graph[layout = dot, rankdir = LR]\n    node [shape = rectangle]\n    \n    S\n    E [label = \"E\"];\n    I [label = \"I\"]; \n    A [label = \"A\"]; \n    H [label = \"H\"]; \n    C [label = \"C\"]; \n    DI [label = <D<FONT POINT-SIZE=\"8\"><SUB>I<\/SUB><\/FONT>>]; DH [label = <D<FONT POINT-SIZE=\"8\"><SUB>H<\/SUB><\/FONT>>]; DC [label = <D<FONT POINT-SIZE=\"8\"><SUB>C<\/SUB><\/FONT>>]\n    RI [label = <R<FONT POINT-SIZE=\"8\"><SUB>I<\/SUB><\/FONT>>]; RH [label = <R<FONT POINT-SIZE=\"8\"><SUB>H<\/SUB><\/FONT>>]; RC [label = <R<FONT POINT-SIZE=\"8\"><SUB>C<\/SUB><\/FONT>>]; RA [label = <R<FONT POINT-SIZE=\"8\"><SUB>A<\/SUB><\/FONT>>]\n    genpop [label = \"Gen. Pop.\"]\n    hospital [label = \"Hospital Patient\"]\n    critical [label = \"Critical Care\"]\n    asymp [label = \"Asymptomatics\"]\n    \n    S -> E -> I\n    I -> RI\n    I -> DI [weight = 0]\n    I -> H -> C\n    C -> RC \n    C -> DC [weight = 0]\n    H -> RH \n    H -> DH [weight = 0] \n    RI -> DI [style = \"invis\"]\n    RH -> DH [style = \"invis\"]\n    RC -> DC [style = \"invis\"]\n    E -> A [weight = 0]\n    A -> RA \n    genpop -> S [style = \"invis\"]\n    hospital -> H [style = \"invis\"]\n    critical -> C [style = \"invis\"]\n    asymp -> A [style = \"invis\"]\n    subgraph {\n      rank = same; asymp -> genpop -> hospital -> critical [style = \"invis\"]\n    }\n    subgraph cluster {\n      subgraph {\n        rank = same; A -> I -> H -> C [style = \"invis\"]\n      }\n      style = filled;\n      color = lightgrey;\n      label = \"Infectious Classes\"\n    }\n    subgraph {\n      rank = same; RA, RI, RC; RH;\n    }\n    subgraph {\n      rank = same; DI; DH; DC;\n    }\n    \n}","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
+<div id="htmlwidget-ad7e8b5764453b7a7e07" style="width:100%;height:100%;" class="grViz html-widget"></div>
+<script type="application/json" data-for="htmlwidget-ad7e8b5764453b7a7e07">{"x":{"diagram":"digraph simpmod {\n    graph[layout = dot, rankdir = LR]\n    node [shape = rectangle]\n    \n    S\n    E [label = \"E\"];\n    I [label = \"I\"]; \n    A [label = \"A\"]; \n    H [label = \"H\"]; \n    C [label = \"C\"]; \n    DI [label = <D<FONT POINT-SIZE=\"8\"><SUB>I<\/SUB><\/FONT>>]; DH [label = <D<FONT POINT-SIZE=\"8\"><SUB>H<\/SUB><\/FONT>>]; DC [label = <D<FONT POINT-SIZE=\"8\"><SUB>C<\/SUB><\/FONT>>]\n    RI [label = <R<FONT POINT-SIZE=\"8\"><SUB>I<\/SUB><\/FONT>>]; RH [label = <R<FONT POINT-SIZE=\"8\"><SUB>H<\/SUB><\/FONT>>]; RC [label = <R<FONT POINT-SIZE=\"8\"><SUB>C<\/SUB><\/FONT>>]; RA [label = <R<FONT POINT-SIZE=\"8\"><SUB>A<\/SUB><\/FONT>>]\n    genpop [label = \"Gen. Pop.\"]\n    hospital [label = \"Hospital Patient\"]\n    critical [label = \"Critical Care\"]\n    asymp [label = \"Asymptomatics\"]\n    \n    S -> E -> I\n    I -> RI\n    I -> DI [weight = 0]\n    I -> H -> C\n    C -> RC \n    C -> DC [weight = 0]\n    H -> RH \n    H -> DH [weight = 0] \n    RI -> DI [style = \"invis\"]\n    RH -> DH [style = \"invis\"]\n    RC -> DC [style = \"invis\"]\n    E -> A [weight = 0]\n    A -> RA \n    genpop -> S [style = \"invis\"]\n    hospital -> H [style = \"invis\"]\n    critical -> C [style = \"invis\"]\n    asymp -> A [style = \"invis\"]\n    subgraph {\n      rank = same; asymp -> genpop -> hospital -> critical [style = \"invis\"]\n    }\n    subgraph cluster {\n      subgraph {\n        rank = same; A -> I -> H -> C [style = \"invis\"]\n      }\n      style = filled;\n      color = lightgrey;\n      label = \"Infectious Classes\"\n    }\n    subgraph {\n      rank = same; RA, RI, RC; RH;\n    }\n    subgraph {\n      rank = same; DI; DH; DC;\n    }\n    \n}","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
 <div id="metawards-setup" class="section level3">
 <h3>MetaWards setup</h3>
 <p>The model structure above allows for different progression pathways. MetaWards deals with this by assigning individuals to different “demographics”, where each demographic can be used to represent different progression pathways. There are currently seven pathways, which will be described below, which can be summarised as:</p>
@@ -2031,8 +2031,8 @@ summary {
 <li><span class="math inline">\(R\)</span>: recovered and immune;</li>
 <li><span class="math inline">\(D\)</span>: died.</li>
 </ul>
-<div id="htmlwidget-b7c98e47b66b71731c84" style="width:100%;height:100%;" class="grViz html-widget"></div>
-<script type="application/json" data-for="htmlwidget-b7c98e47b66b71731c84">{"x":{"diagram":"digraph model {\n    graph[layout = dot, rankdir = LR]\n    node [shape = rectangle]\n    \n    S\n    E1 [label = <E<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]; E2 [label = <E<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\n    I1 [label = <I<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]; I2 [label = <I<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\n    A1 [label = <A<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]; A2 [label = <A<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\n    H1 [label = <H<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]; H2 [label = <H<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\n    C1 [label = <C<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]; C2 [label = <C<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\n    DI [label = <D<FONT POINT-SIZE=\"8\"><SUB>I<\/SUB><\/FONT>>]; DH [label = <D<FONT POINT-SIZE=\"8\"><SUB>H<\/SUB><\/FONT>>]; DC [label = <D<FONT POINT-SIZE=\"8\"><SUB>C<\/SUB><\/FONT>>]\n    RI [label = <R<FONT POINT-SIZE=\"8\"><SUB>I<\/SUB><\/FONT>>]; RH [label = <R<FONT POINT-SIZE=\"8\"><SUB>H<\/SUB><\/FONT>>]; RC [label = <R<FONT POINT-SIZE=\"8\"><SUB>C<\/SUB><\/FONT>>]; RA [label = <R<FONT POINT-SIZE=\"8\"><SUB>A<\/SUB><\/FONT>>]\n    St00 [style = \"invis\"]; St0 [label = \"Stage 0\"]; St1 [label = \"Stage 1\"]; \n    St2 [label = \"Stage 2\"]; St3 [label = \"Stage 3\"]; St4 [label = \"Stage 4\"]; St5 [label = \"Stage 5\"]\n    genpop [label = \"Gen. Pop.\"]\n    hospital [label = \"Hospital Patient\"]\n    critical [label = \"Critical Care\"]\n    asymp [label = \"Asymptomatics\"]\n    \n    St00 -> St0 -> St1 -> St2 -> St3 -> St4 -> St5 [style = \"invis\"]\n    S -> E1 -> E2 -> I1 -> I2 \n    I2 -> RI\n    I2 -> DI [weight = 0]\n    I2 -> H1 -> H2 -> C1 -> C2 \n    C2 -> RC \n    C2 -> DC [weight = 0]\n    H2 -> RH \n    H2 -> DH [weight = 0] \n    RI -> DI [style = \"invis\"]\n    RH -> DH [style = \"invis\"]\n    RC -> DC [style = \"invis\"]\n    E2 -> A1 [weight = 0]\n    A1 -> A2 -> RA \n    genpop -> S [style = \"invis\"]\n    hospital -> H1 [style = \"invis\"]\n    critical -> C1[style = \"invis\"]\n    asymp -> A1 [style = \"invis\"]\n    subgraph {\n      rank = same; St00; genpop; hospital; critical; asymp;\n    }\n    subgraph {\n      rank = same; E1; St0;\n    }\n    subgraph {\n      rank = same; E2; St1;\n    }\n    subgraph cluster {\n      subgraph {\n        rank = same; I1; H1; C1; A1; St2;\n      }\n      subgraph {\n        rank = same; I2; H2; C2; A2; St3;\n      }\n      style = filled;\n      color = lightgrey;\n      label = \"Infectious Classes\"\n    }\n    subgraph {\n      rank = same; RA, RI, RC; RH; St4;\n    }\n    subgraph {\n      rank = same; DI; DH; DC; St5;\n    }\n    \n}","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
+<div id="htmlwidget-38e988fd916a3ce3e9ae" style="width:100%;height:100%;" class="grViz html-widget"></div>
+<script type="application/json" data-for="htmlwidget-38e988fd916a3ce3e9ae">{"x":{"diagram":"digraph model {\n    graph[layout = dot, rankdir = LR]\n    node [shape = rectangle]\n    \n    S\n    E1 [label = <E<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]; E2 [label = <E<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\n    I1 [label = <I<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]; I2 [label = <I<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\n    A1 [label = <A<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]; A2 [label = <A<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\n    H1 [label = <H<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]; H2 [label = <H<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\n    C1 [label = <C<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]; C2 [label = <C<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\n    DI [label = <D<FONT POINT-SIZE=\"8\"><SUB>I<\/SUB><\/FONT>>]; DH [label = <D<FONT POINT-SIZE=\"8\"><SUB>H<\/SUB><\/FONT>>]; DC [label = <D<FONT POINT-SIZE=\"8\"><SUB>C<\/SUB><\/FONT>>]\n    RI [label = <R<FONT POINT-SIZE=\"8\"><SUB>I<\/SUB><\/FONT>>]; RH [label = <R<FONT POINT-SIZE=\"8\"><SUB>H<\/SUB><\/FONT>>]; RC [label = <R<FONT POINT-SIZE=\"8\"><SUB>C<\/SUB><\/FONT>>]; RA [label = <R<FONT POINT-SIZE=\"8\"><SUB>A<\/SUB><\/FONT>>]\n    St00 [style = \"invis\"]; St0 [label = \"Stage 0\"]; St1 [label = \"Stage 1\"]; \n    St2 [label = \"Stage 2\"]; St3 [label = \"Stage 3\"]; St4 [label = \"Stage 4\"]; St5 [label = \"Stage 5\"]\n    genpop [label = \"Gen. Pop.\"]\n    hospital [label = \"Hospital Patient\"]\n    critical [label = \"Critical Care\"]\n    asymp [label = \"Asymptomatics\"]\n    \n    St00 -> St0 -> St1 -> St2 -> St3 -> St4 -> St5 [style = \"invis\"]\n    S -> E1 -> E2 -> I1 -> I2 \n    I2 -> RI\n    I2 -> DI [weight = 0]\n    I2 -> H1 -> H2 -> C1 -> C2 \n    C2 -> RC \n    C2 -> DC [weight = 0]\n    H2 -> RH \n    H2 -> DH [weight = 0] \n    RI -> DI [style = \"invis\"]\n    RH -> DH [style = \"invis\"]\n    RC -> DC [style = \"invis\"]\n    E2 -> A1 [weight = 0]\n    A1 -> A2 -> RA \n    genpop -> S [style = \"invis\"]\n    hospital -> H1 [style = \"invis\"]\n    critical -> C1[style = \"invis\"]\n    asymp -> A1 [style = \"invis\"]\n    subgraph {\n      rank = same; St00; genpop; hospital; critical; asymp;\n    }\n    subgraph {\n      rank = same; E1; St0;\n    }\n    subgraph {\n      rank = same; E2; St1;\n    }\n    subgraph cluster {\n      subgraph {\n        rank = same; I1; H1; C1; A1; St2;\n      }\n      subgraph {\n        rank = same; I2; H2; C2; A2; St3;\n      }\n      style = filled;\n      color = lightgrey;\n      label = \"Infectious Classes\"\n    }\n    subgraph {\n      rank = same; RA, RI, RC; RH; St4;\n    }\n    subgraph {\n      rank = same; DI; DH; DC; St5;\n    }\n    \n}","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
 <div id="metawards-setup-1" class="section level3">
 <h3>MetaWards setup</h3>
 <p>The model structure above allows for different progression pathways. MetaWards deals with this by assigning individuals to different “demographics”, where each demographic can be used to represent different progression pathways. There are also <code>mover</code> functions that can be used to move individuals between demographics, and <code>mixer</code> functions that scale the force-of-infection (FOI) terms between the different demographics (explained later). There are currently seven pathways, which will be described below, but can be summarised as:</p>
@@ -2494,7 +2494,70 @@ summary {
 <li><code>stage_4</code>: current removals on each day (i.e. number of individuals in <span class="math inline">\(R\)</span>)</li>
 <li><code>stage_5</code>: current deaths on each day (i.e. number of individuals in <span class="math inline">\(D\)</span>)</li>
 </ul>
-<p>The other demographics (<code>asymp</code>, <code>hospital</code> and <code>critical</code>) have the same structure, but with <code>stage_0</code> and <code>stage_1</code> <strong>always 0</strong> (since new infections are always in <code>genpop</code>), and <code>stage_2</code> and <code>stage_3</code> correspond to the new and current numbers in either the <span class="math inline">\(A\)</span>, <span class="math inline">\(H\)</span> or <span class="math inline">\(C\)</span> classes according to the demographic (refer to the model structure <a href="#modelS">here</a>).</p>
+<p>The other demographics (<code>asymp</code>, <code>hospital</code> and <code>critical</code>) have the same structure, but with <code>stage_0</code> and <code>stage_1</code> <strong>always 0</strong> (since new infections are always in <code>genpop</code>), and <code>stage_2</code> and <code>stage_3</code> correspond to the new and current numbers in either the <span class="math inline">\(A\)</span>, <span class="math inline">\(H\)</span> or <span class="math inline">\(C\)</span> classes according to the demographic.</p>
+<div class="sourceCode" id="cb21"><pre class="sourceCode python"><code class="sourceCode python"><a class="sourceLine" id="cb21-1" title="1"><span class="im">from</span> metawards.extractors <span class="im">import</span> extract_default</a>
+<a class="sourceLine" id="cb21-2" title="2"><span class="im">from</span> metawards <span class="im">import</span> Networks, OutputFiles, Population, Workspace</a>
+<a class="sourceLine" id="cb21-3" title="3"><span class="im">from</span> metawards.utils <span class="im">import</span> Console</a>
+<a class="sourceLine" id="cb21-4" title="4"></a>
+<a class="sourceLine" id="cb21-5" title="5"><span class="kw">def</span> create_tables(network: Networks):</a>
+<a class="sourceLine" id="cb21-6" title="6">    <span class="co"># return a function that creates the tables</span></a>
+<a class="sourceLine" id="cb21-7" title="7">    <span class="co"># for the specified number of disease classes</span></a>
+<a class="sourceLine" id="cb21-8" title="8"></a>
+<a class="sourceLine" id="cb21-9" title="9">    <span class="kw">def</span> initialise(conn):</a>
+<a class="sourceLine" id="cb21-10" title="10">        <span class="co"># create tables for the values for each demographic... - put all your initialisation code here</span></a>
+<a class="sourceLine" id="cb21-11" title="11">        c <span class="op">=</span> conn.cursor()</a>
+<a class="sourceLine" id="cb21-12" title="12"></a>
+<a class="sourceLine" id="cb21-13" title="13">        <span class="cf">for</span> i, subnet <span class="kw">in</span> <span class="bu">enumerate</span>(network.subnets):</a>
+<a class="sourceLine" id="cb21-14" title="14">            name <span class="op">=</span> subnet.name</a>
+<a class="sourceLine" id="cb21-15" title="15">            N_INF_CLASSES <span class="op">=</span> subnet.params.disease_params.N_INF_CLASSES()</a>
+<a class="sourceLine" id="cb21-16" title="16"></a>
+<a class="sourceLine" id="cb21-17" title="17">            values <span class="op">=</span> <span class="st">&quot;,&quot;</span>.join([<span class="ss">f&quot;stage_</span><span class="sc">{i}</span><span class="ss"> int&quot;</span> <span class="cf">for</span> i <span class="kw">in</span> <span class="bu">range</span>(<span class="dv">0</span>, N_INF_CLASSES)])</a>
+<a class="sourceLine" id="cb21-18" title="18">            c.execute(<span class="ss">f&quot;create table </span><span class="sc">{</span>name<span class="sc">}</span><span class="ss">_totals(day int, ward int, </span><span class="sc">{</span>values<span class="sc">}</span><span class="ss">)&quot;</span>)</a>
+<a class="sourceLine" id="cb21-19" title="19"></a>
+<a class="sourceLine" id="cb21-20" title="20">        conn.commit()</a>
+<a class="sourceLine" id="cb21-21" title="21"></a>
+<a class="sourceLine" id="cb21-22" title="22">    <span class="cf">return</span> initialise</a>
+<a class="sourceLine" id="cb21-23" title="23"></a>
+<a class="sourceLine" id="cb21-24" title="24"></a>
+<a class="sourceLine" id="cb21-25" title="25"><span class="kw">def</span> output_db(population: Population, network: Networks,</a>
+<a class="sourceLine" id="cb21-26" title="26">              workspace: Workspace, output_dir: OutputFiles, <span class="op">**</span>kwargs):</a>
+<a class="sourceLine" id="cb21-27" title="27"></a>
+<a class="sourceLine" id="cb21-28" title="28">    Console.<span class="bu">print</span>(<span class="ss">f&quot;Calling output_db for a </span><span class="sc">{</span>network<span class="sc">.</span>__class__<span class="sc">}</span><span class="ss"> object&quot;</span>)</a>
+<a class="sourceLine" id="cb21-29" title="29"></a>
+<a class="sourceLine" id="cb21-30" title="30">    <span class="co"># open a database to hold the data - call the &#39;create_tables&#39;</span></a>
+<a class="sourceLine" id="cb21-31" title="31">    <span class="co"># function on this database when it is first opened</span></a>
+<a class="sourceLine" id="cb21-32" title="32">    conn <span class="op">=</span> output_dir.open_db(<span class="st">&quot;stages.db&quot;</span>,</a>
+<a class="sourceLine" id="cb21-33" title="33">                              initialise<span class="op">=</span>create_tables(network))</a>
+<a class="sourceLine" id="cb21-34" title="34"></a>
+<a class="sourceLine" id="cb21-35" title="35">    c <span class="op">=</span> conn.cursor()</a>
+<a class="sourceLine" id="cb21-36" title="36"></a>
+<a class="sourceLine" id="cb21-37" title="37">    <span class="co"># get each demographics data</span></a>
+<a class="sourceLine" id="cb21-38" title="38">    <span class="cf">for</span> i, subnet <span class="kw">in</span> <span class="bu">enumerate</span>(network.subnets):</a>
+<a class="sourceLine" id="cb21-39" title="39">        name <span class="op">=</span> subnet.name</a>
+<a class="sourceLine" id="cb21-40" title="40"></a>
+<a class="sourceLine" id="cb21-41" title="41">        ward_inf_tot <span class="op">=</span> workspace.subspaces[i].ward_inf_tot</a>
+<a class="sourceLine" id="cb21-42" title="42"></a>
+<a class="sourceLine" id="cb21-43" title="43">        N_INF_CLASSES <span class="op">=</span> workspace.subspaces[i].n_inf_classes</a>
+<a class="sourceLine" id="cb21-44" title="44"></a>
+<a class="sourceLine" id="cb21-45" title="45">        <span class="cf">for</span> k <span class="kw">in</span> <span class="bu">range</span>(<span class="dv">1</span>, workspace.subspaces[i].nnodes<span class="op">+</span><span class="dv">1</span>):</a>
+<a class="sourceLine" id="cb21-46" title="46">            vals <span class="op">=</span> [population.day, k]</a>
+<a class="sourceLine" id="cb21-47" title="47">            <span class="cf">for</span> j <span class="kw">in</span> <span class="bu">range</span>(<span class="dv">0</span>, N_INF_CLASSES):</a>
+<a class="sourceLine" id="cb21-48" title="48">                <span class="cf">if</span> j <span class="op">==</span> <span class="dv">1</span> <span class="kw">or</span> j <span class="op">==</span> <span class="dv">3</span>:</a>
+<a class="sourceLine" id="cb21-49" title="49">                    vals.append(ward_inf_tot[j <span class="op">-</span> <span class="dv">1</span>][k] <span class="op">+</span> ward_inf_tot[j][k])</a>
+<a class="sourceLine" id="cb21-50" title="50">                <span class="cf">else</span>:</a>
+<a class="sourceLine" id="cb21-51" title="51">                    vals.append(ward_inf_tot[j][k])</a>
+<a class="sourceLine" id="cb21-52" title="52"></a>
+<a class="sourceLine" id="cb21-53" title="53">            vals_str <span class="op">=</span> <span class="st">&quot;,&quot;</span>.join([<span class="bu">str</span>(v) <span class="cf">for</span> v <span class="kw">in</span> vals])</a>
+<a class="sourceLine" id="cb21-54" title="54"></a>
+<a class="sourceLine" id="cb21-55" title="55">            c.execute(<span class="ss">f&quot;insert into </span><span class="sc">{</span>name<span class="sc">}</span><span class="ss">_totals VALUES (</span><span class="sc">{</span>vals_str<span class="sc">}</span><span class="ss">)&quot;</span>)</a>
+<a class="sourceLine" id="cb21-56" title="56"></a>
+<a class="sourceLine" id="cb21-57" title="57">    conn.commit()</a>
+<a class="sourceLine" id="cb21-58" title="58"></a>
+<a class="sourceLine" id="cb21-59" title="59"></a>
+<a class="sourceLine" id="cb21-60" title="60"><span class="kw">def</span> extract_db(<span class="op">**</span>kwargs):</a>
+<a class="sourceLine" id="cb21-61" title="61">    funcs <span class="op">=</span> []</a>
+<a class="sourceLine" id="cb21-62" title="62">    funcs.append(output_db)</a>
+<a class="sourceLine" id="cb21-63" title="63">    <span class="cf">return</span> funcs</a></code></pre></div>
 </div>
 <div id="code" class="section level3">
 <h3>Input and output code</h3>
@@ -2546,176 +2609,176 @@ summary {
     \beta^S_{C \to GP}&amp;: (0, 1)
 \end{align}\]</span> and this has removed the sum-to-one-constraints.</p>
 <p>In R we can set up the <em>input</em> parameter ranges as follows:</p>
-<div class="sourceCode" id="cb21"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb21-1" title="1"><span class="co">## set up parameter ranges</span></a>
-<a class="sourceLine" id="cb21-2" title="2">parRanges &lt;-<span class="st"> </span><span class="kw">data.frame</span>(</a>
-<a class="sourceLine" id="cb21-3" title="3">    <span class="dt">parameter =</span> <span class="kw">c</span>(<span class="st">&quot;r_zero&quot;</span>, <span class="st">&quot;incubation_time&quot;</span>, <span class="st">&quot;infectious_time&quot;</span>, <span class="st">&quot;hospital_time&quot;</span>,</a>
-<a class="sourceLine" id="cb21-4" title="4">                  <span class="st">&quot;critical_time&quot;</span>, <span class="st">&quot;lock_1_restrict&quot;</span>, <span class="st">&quot;lock_2_release&quot;</span>,</a>
-<a class="sourceLine" id="cb21-5" title="5">                  <span class="st">&quot;pEA&quot;</span>, <span class="st">&quot;pIH&quot;</span>, <span class="st">&quot;pIRprime&quot;</span>, <span class="st">&quot;pHC&quot;</span>, <span class="st">&quot;pHRprime&quot;</span>, <span class="st">&quot;pCR&quot;</span>, </a>
-<a class="sourceLine" id="cb21-6" title="6">                  <span class="st">&quot;GP_A&quot;</span>, <span class="st">&quot;GP_H&quot;</span>, <span class="st">&quot;GP_C&quot;</span>),</a>
-<a class="sourceLine" id="cb21-7" title="7">    <span class="dt">lower =</span> <span class="kw">c</span>(<span class="fl">2.5</span>, <span class="dv">4</span>, <span class="dv">2</span>, <span class="dv">4</span>, <span class="dv">4</span>, <span class="kw">rep</span>(<span class="dv">0</span>, <span class="dv">11</span>)),</a>
-<a class="sourceLine" id="cb21-8" title="8">    <span class="dt">upper =</span> <span class="kw">c</span>(<span class="dv">4</span>, <span class="dv">6</span>, <span class="dv">4</span>, <span class="dv">12</span>, <span class="dv">12</span>, <span class="kw">rep</span>(<span class="dv">1</span>, <span class="dv">11</span>)),</a>
-<a class="sourceLine" id="cb21-9" title="9">    <span class="dt">stringsAsFactors =</span> <span class="ot">FALSE</span></a>
-<a class="sourceLine" id="cb21-10" title="10">)</a></code></pre></div>
+<div class="sourceCode" id="cb22"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb22-1" title="1"><span class="co">## set up parameter ranges</span></a>
+<a class="sourceLine" id="cb22-2" title="2">parRanges &lt;-<span class="st"> </span><span class="kw">data.frame</span>(</a>
+<a class="sourceLine" id="cb22-3" title="3">    <span class="dt">parameter =</span> <span class="kw">c</span>(<span class="st">&quot;r_zero&quot;</span>, <span class="st">&quot;incubation_time&quot;</span>, <span class="st">&quot;infectious_time&quot;</span>, <span class="st">&quot;hospital_time&quot;</span>,</a>
+<a class="sourceLine" id="cb22-4" title="4">                  <span class="st">&quot;critical_time&quot;</span>, <span class="st">&quot;lock_1_restrict&quot;</span>, <span class="st">&quot;lock_2_release&quot;</span>,</a>
+<a class="sourceLine" id="cb22-5" title="5">                  <span class="st">&quot;pEA&quot;</span>, <span class="st">&quot;pIH&quot;</span>, <span class="st">&quot;pIRprime&quot;</span>, <span class="st">&quot;pHC&quot;</span>, <span class="st">&quot;pHRprime&quot;</span>, <span class="st">&quot;pCR&quot;</span>, </a>
+<a class="sourceLine" id="cb22-6" title="6">                  <span class="st">&quot;GP_A&quot;</span>, <span class="st">&quot;GP_H&quot;</span>, <span class="st">&quot;GP_C&quot;</span>),</a>
+<a class="sourceLine" id="cb22-7" title="7">    <span class="dt">lower =</span> <span class="kw">c</span>(<span class="fl">2.5</span>, <span class="dv">4</span>, <span class="dv">2</span>, <span class="dv">4</span>, <span class="dv">4</span>, <span class="kw">rep</span>(<span class="dv">0</span>, <span class="dv">11</span>)),</a>
+<a class="sourceLine" id="cb22-8" title="8">    <span class="dt">upper =</span> <span class="kw">c</span>(<span class="dv">4</span>, <span class="dv">6</span>, <span class="dv">4</span>, <span class="dv">12</span>, <span class="dv">12</span>, <span class="kw">rep</span>(<span class="dv">1</span>, <span class="dv">11</span>)),</a>
+<a class="sourceLine" id="cb22-9" title="9">    <span class="dt">stringsAsFactors =</span> <span class="ot">FALSE</span></a>
+<a class="sourceLine" id="cb22-10" title="10">)</a></code></pre></div>
 <p>Firstly we want a function to convert between the <em>design</em> and <em>input</em> spaces. A short R function called <code>convertDesignToInput()</code> which does this is given below. This requires a <code>design</code> data frame with columns denoting each <em>input</em> parameter in <code>parRanges</code> and rows corresponding to design points. There should be an additional column called <code>output</code> that defines a unique identifier for each design point, and a column called <code>repeats</code> that contains the number of repeats for each design point. The <code>convertDesignToInput()</code> function also requires the <code>parRanges</code> data frame (defined above). We use the <code>scale</code> argument to define whether the design is on the <span class="math inline">\((0, 1)\)</span> (<code>scale = &quot;zero_one&quot;</code>) or <span class="math inline">\((-1, 1)\)</span> (<code>scale = &quot;negone_one&quot;</code>) space.</p>
 <blockquote>
 <p><strong>Note</strong>: this function converts the probabilities correctly for the <code>mover</code> defined <a href="#mover">above</a>.</p>
 </blockquote>
-<div class="sourceCode" id="cb22"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb22-1" title="1"><span class="co">## function to convert from design to input space</span></a>
-<a class="sourceLine" id="cb22-2" title="2">convertDesignToInput &lt;-<span class="st"> </span><span class="cf">function</span>(design, parRanges, <span class="dt">scale =</span> <span class="kw">c</span>(<span class="st">&quot;zero_one&quot;</span>, <span class="st">&quot;negone_one&quot;</span>)) {</a>
-<a class="sourceLine" id="cb22-3" title="3">  </a>
-<a class="sourceLine" id="cb22-4" title="4">    <span class="kw">require</span>(dplyr)</a>
-<a class="sourceLine" id="cb22-5" title="5">    <span class="kw">require</span>(tidyr)</a>
-<a class="sourceLine" id="cb22-6" title="6">  </a>
-<a class="sourceLine" id="cb22-7" title="7">    <span class="co">## convert from design space to input space</span></a>
-<a class="sourceLine" id="cb22-8" title="8">    input &lt;-<span class="st"> </span><span class="kw">mutate</span>(design, <span class="dt">ind =</span> <span class="dv">1</span><span class="op">:</span><span class="kw">n</span>()) <span class="op">%&gt;%</span></a>
-<a class="sourceLine" id="cb22-9" title="9"><span class="st">        </span><span class="kw">gather</span>(parameter, value, <span class="op">-</span>output, <span class="op">-</span>ind, <span class="op">-</span>repeats) <span class="op">%&gt;%</span></a>
-<a class="sourceLine" id="cb22-10" title="10"><span class="st">        </span><span class="kw">left_join</span>(parRanges, <span class="dt">by =</span> <span class="st">&quot;parameter&quot;</span>)</a>
-<a class="sourceLine" id="cb22-11" title="11">    <span class="cf">if</span>(scale[<span class="dv">1</span>] <span class="op">==</span><span class="st"> &quot;negone_one&quot;</span>) {</a>
-<a class="sourceLine" id="cb22-12" title="12">        input &lt;-<span class="st"> </span><span class="kw">mutate</span>(input, <span class="dt">value =</span> value <span class="op">/</span><span class="st"> </span><span class="dv">2</span> <span class="op">+</span><span class="st"> </span><span class="dv">1</span>)</a>
-<a class="sourceLine" id="cb22-13" title="13">    }</a>
-<a class="sourceLine" id="cb22-14" title="14">    input &lt;-<span class="st"> </span><span class="kw">mutate</span>(input, <span class="dt">value =</span> value <span class="op">*</span><span class="st"> </span>(upper <span class="op">-</span><span class="st"> </span>lower) <span class="op">+</span><span class="st"> </span>lower) <span class="op">%&gt;%</span></a>
-<a class="sourceLine" id="cb22-15" title="15"><span class="st">        </span>dplyr<span class="op">::</span><span class="kw">select</span>(ind, output, repeats, parameter, value) <span class="op">%&gt;%</span></a>
-<a class="sourceLine" id="cb22-16" title="16"><span class="st">        </span><span class="kw">spread</span>(parameter, value) <span class="op">%&gt;%</span></a>
-<a class="sourceLine" id="cb22-17" title="17"><span class="st">        </span><span class="kw">arrange</span>(ind) <span class="op">%&gt;%</span></a>
-<a class="sourceLine" id="cb22-18" title="18"><span class="st">        </span>dplyr<span class="op">::</span><span class="kw">select</span>(<span class="op">-</span>ind)</a>
-<a class="sourceLine" id="cb22-19" title="19">    </a>
-<a class="sourceLine" id="cb22-20" title="20">    <span class="co">## return inputs</span></a>
-<a class="sourceLine" id="cb22-21" title="21">    input</a>
-<a class="sourceLine" id="cb22-22" title="22">}</a></code></pre></div>
-<p>Once we have done this, we need to transform from the <em>input</em> space to the <em>disease</em> space for MetaWards. An R function is given below. This requires an <code>input</code> data frame, with columns denoting each <em>input</em> parameter and rows corresponding to each input points, a number of <code>repeats</code> and a column of unique identifiers (<code>output</code>).</p>
-<div class="sourceCode" id="cb23"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb23-1" title="1"><span class="co">## function to convert from input to disease space</span></a>
-<a class="sourceLine" id="cb23-2" title="2">convertInputToDisease &lt;-<span class="st"> </span><span class="cf">function</span>(input) {</a>
-<a class="sourceLine" id="cb23-3" title="3">   </a>
+<div class="sourceCode" id="cb23"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb23-1" title="1"><span class="co">## function to convert from design to input space</span></a>
+<a class="sourceLine" id="cb23-2" title="2">convertDesignToInput &lt;-<span class="st"> </span><span class="cf">function</span>(design, parRanges, <span class="dt">scale =</span> <span class="kw">c</span>(<span class="st">&quot;zero_one&quot;</span>, <span class="st">&quot;negone_one&quot;</span>)) {</a>
+<a class="sourceLine" id="cb23-3" title="3">  </a>
 <a class="sourceLine" id="cb23-4" title="4">    <span class="kw">require</span>(dplyr)</a>
-<a class="sourceLine" id="cb23-5" title="5">    </a>
-<a class="sourceLine" id="cb23-6" title="6">    <span class="co">## common parameters to all pathways</span></a>
-<a class="sourceLine" id="cb23-7" title="7">    disease &lt;-<span class="st"> </span><span class="kw">tibble</span>(<span class="st">`</span><span class="dt">beta[2]</span><span class="st">`</span> =<span class="st"> </span>input<span class="op">$</span>r_zero <span class="op">/</span><span class="st"> </span>input<span class="op">$</span>infectious_time)</a>
-<a class="sourceLine" id="cb23-8" title="8">    disease<span class="op">$</span><span class="st">`</span><span class="dt">beta[3]</span><span class="st">`</span> &lt;-<span class="st"> </span>disease<span class="op">$</span><span class="st">`</span><span class="dt">beta[2]</span><span class="st">`</span></a>
-<a class="sourceLine" id="cb23-9" title="9">    </a>
-<a class="sourceLine" id="cb23-10" title="10">    <span class="co">## progressions out of the E class</span></a>
-<a class="sourceLine" id="cb23-11" title="11">    <span class="co">## (adjusting in the way described in the vignette for</span></a>
-<a class="sourceLine" id="cb23-12" title="12">    <span class="co">## order of movers)</span></a>
-<a class="sourceLine" id="cb23-13" title="13">    disease<span class="op">$</span><span class="st">`</span><span class="dt">.pE</span><span class="st">`</span> &lt;-<span class="st"> </span><span class="dv">1</span> <span class="op">-</span><span class="st"> </span><span class="kw">exp</span>(<span class="op">-</span><span class="dv">1</span> <span class="op">/</span><span class="st"> </span>input<span class="op">$</span>incubation_time)</a>
-<a class="sourceLine" id="cb23-14" title="14">    disease<span class="op">$</span><span class="st">`</span><span class="dt">.pEA</span><span class="st">`</span> &lt;-<span class="st"> </span>input<span class="op">$</span>pEA</a>
-<a class="sourceLine" id="cb23-15" title="15">    </a>
-<a class="sourceLine" id="cb23-16" title="16">    <span class="co">## progressions out of the A class</span></a>
-<a class="sourceLine" id="cb23-17" title="17">    disease<span class="op">$</span><span class="st">`</span><span class="dt">.pA</span><span class="st">`</span> &lt;-<span class="st"> </span><span class="dv">1</span> <span class="op">-</span><span class="st"> </span><span class="kw">exp</span>(<span class="op">-</span><span class="dv">1</span> <span class="op">/</span><span class="st"> </span>input<span class="op">$</span>infectious_time)</a>
-<a class="sourceLine" id="cb23-18" title="18">    </a>
-<a class="sourceLine" id="cb23-19" title="19">    <span class="co">## progressions out of the I class</span></a>
-<a class="sourceLine" id="cb23-20" title="20">    <span class="co">## (adjusting in the way described in the vignette for</span></a>
-<a class="sourceLine" id="cb23-21" title="21">    <span class="co">## order of movers)</span></a>
-<a class="sourceLine" id="cb23-22" title="22">    disease<span class="op">$</span><span class="st">`</span><span class="dt">.pI</span><span class="st">`</span> &lt;-<span class="st"> </span><span class="dv">1</span> <span class="op">-</span><span class="st"> </span><span class="kw">exp</span>(<span class="op">-</span><span class="dv">1</span> <span class="op">/</span><span class="st"> </span>input<span class="op">$</span>infectious_time)</a>
-<a class="sourceLine" id="cb23-23" title="23">    disease<span class="op">$</span><span class="st">`</span><span class="dt">.pIH</span><span class="st">`</span> &lt;-<span class="st"> </span>input<span class="op">$</span>pIH</a>
-<a class="sourceLine" id="cb23-24" title="24">    disease<span class="op">$</span><span class="st">`</span><span class="dt">.pIR</span><span class="st">`</span> &lt;-<span class="st"> </span>(<span class="dv">1</span> <span class="op">-</span><span class="st"> </span>input<span class="op">$</span>pIH) <span class="op">*</span><span class="st"> </span>input<span class="op">$</span>pIRprime</a>
-<a class="sourceLine" id="cb23-25" title="25">    </a>
-<a class="sourceLine" id="cb23-26" title="26">    <span class="co">## progressions out of the H class</span></a>
-<a class="sourceLine" id="cb23-27" title="27">    <span class="co">## (adjusting in the way described in the vignette for</span></a>
-<a class="sourceLine" id="cb23-28" title="28">    <span class="co">## order of movers)</span></a>
-<a class="sourceLine" id="cb23-29" title="29">    disease<span class="op">$</span><span class="st">`</span><span class="dt">.pH</span><span class="st">`</span> &lt;-<span class="st"> </span><span class="dv">1</span> <span class="op">-</span><span class="st"> </span><span class="kw">exp</span>(<span class="op">-</span><span class="dv">1</span> <span class="op">/</span><span class="st"> </span>input<span class="op">$</span>hospital_time)</a>
-<a class="sourceLine" id="cb23-30" title="30">    disease<span class="op">$</span><span class="st">`</span><span class="dt">.pHC</span><span class="st">`</span> &lt;-<span class="st"> </span>input<span class="op">$</span>pHC</a>
-<a class="sourceLine" id="cb23-31" title="31">    disease<span class="op">$</span><span class="st">`</span><span class="dt">.pHR</span><span class="st">`</span> &lt;-<span class="st"> </span>(<span class="dv">1</span> <span class="op">-</span><span class="st"> </span>input<span class="op">$</span>pHC) <span class="op">*</span><span class="st"> </span>input<span class="op">$</span>pHRprime</a>
-<a class="sourceLine" id="cb23-32" title="32">    </a>
-<a class="sourceLine" id="cb23-33" title="33">    <span class="co">## progressions out of the C class</span></a>
-<a class="sourceLine" id="cb23-34" title="34">    <span class="co">## (adjusting in the way described in the vignette for</span></a>
-<a class="sourceLine" id="cb23-35" title="35">    <span class="co">## order of movers)</span></a>
-<a class="sourceLine" id="cb23-36" title="36">    disease<span class="op">$</span><span class="st">`</span><span class="dt">.pC</span><span class="st">`</span> &lt;-<span class="st"> </span><span class="dv">1</span> <span class="op">-</span><span class="st"> </span><span class="kw">exp</span>(<span class="op">-</span><span class="dv">1</span> <span class="op">/</span><span class="st"> </span>input<span class="op">$</span>critical_time)</a>
-<a class="sourceLine" id="cb23-37" title="37">    disease<span class="op">$</span><span class="st">`</span><span class="dt">.pCR</span><span class="st">`</span> &lt;-<span class="st"> </span>input<span class="op">$</span>pCR</a>
-<a class="sourceLine" id="cb23-38" title="38">    </a>
-<a class="sourceLine" id="cb23-39" title="39">    <span class="co">## lockdown scalings</span></a>
-<a class="sourceLine" id="cb23-40" title="40">    disease<span class="op">$</span><span class="st">`</span><span class="dt">.lock_1_restrict</span><span class="st">`</span> &lt;-<span class="st"> </span>input<span class="op">$</span>lock_<span class="dv">1</span>_restrict</a>
-<a class="sourceLine" id="cb23-41" title="41">    disease<span class="op">$</span><span class="st">`</span><span class="dt">.lock_2_release</span><span class="st">`</span> &lt;-<span class="st"> </span>input<span class="op">$</span>lock_<span class="dv">2</span>_release</a>
-<a class="sourceLine" id="cb23-42" title="42">    </a>
-<a class="sourceLine" id="cb23-43" title="43">    <span class="co">## set up scaling for mixing matrix</span></a>
-<a class="sourceLine" id="cb23-44" title="44">    disease<span class="op">$</span><span class="st">`</span><span class="dt">.GP_A</span><span class="st">`</span> &lt;-<span class="st"> </span>input<span class="op">$</span>GP_A</a>
-<a class="sourceLine" id="cb23-45" title="45">    disease<span class="op">$</span><span class="st">`</span><span class="dt">.GP_H</span><span class="st">`</span> &lt;-<span class="st"> </span>input<span class="op">$</span>GP_H</a>
-<a class="sourceLine" id="cb23-46" title="46">    disease<span class="op">$</span><span class="st">`</span><span class="dt">.GP_C</span><span class="st">`</span> &lt;-<span class="st"> </span>input<span class="op">$</span>GP_C</a>
-<a class="sourceLine" id="cb23-47" title="47">    </a>
-<a class="sourceLine" id="cb23-48" title="48">    <span class="co">## finalise number of repeats</span></a>
-<a class="sourceLine" id="cb23-49" title="49">    disease<span class="op">$</span>repeats &lt;-<span class="st"> </span>input<span class="op">$</span>repeats</a>
-<a class="sourceLine" id="cb23-50" title="50">    </a>
-<a class="sourceLine" id="cb23-51" title="51">    <span class="co">## copy hash for each input</span></a>
-<a class="sourceLine" id="cb23-52" title="52">    disease<span class="op">$</span>output &lt;-<span class="st"> </span>input<span class="op">$</span>output</a>
-<a class="sourceLine" id="cb23-53" title="53">    </a>
-<a class="sourceLine" id="cb23-54" title="54">    <span class="co">## return disease file</span></a>
-<a class="sourceLine" id="cb23-55" title="55">    disease</a>
-<a class="sourceLine" id="cb23-56" title="56">}</a></code></pre></div>
+<a class="sourceLine" id="cb23-5" title="5">    <span class="kw">require</span>(tidyr)</a>
+<a class="sourceLine" id="cb23-6" title="6">  </a>
+<a class="sourceLine" id="cb23-7" title="7">    <span class="co">## convert from design space to input space</span></a>
+<a class="sourceLine" id="cb23-8" title="8">    input &lt;-<span class="st"> </span><span class="kw">mutate</span>(design, <span class="dt">ind =</span> <span class="dv">1</span><span class="op">:</span><span class="kw">n</span>()) <span class="op">%&gt;%</span></a>
+<a class="sourceLine" id="cb23-9" title="9"><span class="st">        </span><span class="kw">gather</span>(parameter, value, <span class="op">-</span>output, <span class="op">-</span>ind, <span class="op">-</span>repeats) <span class="op">%&gt;%</span></a>
+<a class="sourceLine" id="cb23-10" title="10"><span class="st">        </span><span class="kw">left_join</span>(parRanges, <span class="dt">by =</span> <span class="st">&quot;parameter&quot;</span>)</a>
+<a class="sourceLine" id="cb23-11" title="11">    <span class="cf">if</span>(scale[<span class="dv">1</span>] <span class="op">==</span><span class="st"> &quot;negone_one&quot;</span>) {</a>
+<a class="sourceLine" id="cb23-12" title="12">        input &lt;-<span class="st"> </span><span class="kw">mutate</span>(input, <span class="dt">value =</span> value <span class="op">/</span><span class="st"> </span><span class="dv">2</span> <span class="op">+</span><span class="st"> </span><span class="dv">1</span>)</a>
+<a class="sourceLine" id="cb23-13" title="13">    }</a>
+<a class="sourceLine" id="cb23-14" title="14">    input &lt;-<span class="st"> </span><span class="kw">mutate</span>(input, <span class="dt">value =</span> value <span class="op">*</span><span class="st"> </span>(upper <span class="op">-</span><span class="st"> </span>lower) <span class="op">+</span><span class="st"> </span>lower) <span class="op">%&gt;%</span></a>
+<a class="sourceLine" id="cb23-15" title="15"><span class="st">        </span>dplyr<span class="op">::</span><span class="kw">select</span>(ind, output, repeats, parameter, value) <span class="op">%&gt;%</span></a>
+<a class="sourceLine" id="cb23-16" title="16"><span class="st">        </span><span class="kw">spread</span>(parameter, value) <span class="op">%&gt;%</span></a>
+<a class="sourceLine" id="cb23-17" title="17"><span class="st">        </span><span class="kw">arrange</span>(ind) <span class="op">%&gt;%</span></a>
+<a class="sourceLine" id="cb23-18" title="18"><span class="st">        </span>dplyr<span class="op">::</span><span class="kw">select</span>(<span class="op">-</span>ind)</a>
+<a class="sourceLine" id="cb23-19" title="19">    </a>
+<a class="sourceLine" id="cb23-20" title="20">    <span class="co">## return inputs</span></a>
+<a class="sourceLine" id="cb23-21" title="21">    input</a>
+<a class="sourceLine" id="cb23-22" title="22">}</a></code></pre></div>
+<p>Once we have done this, we need to transform from the <em>input</em> space to the <em>disease</em> space for MetaWards. An R function is given below. This requires an <code>input</code> data frame, with columns denoting each <em>input</em> parameter and rows corresponding to each input points, a number of <code>repeats</code> and a column of unique identifiers (<code>output</code>).</p>
+<div class="sourceCode" id="cb24"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb24-1" title="1"><span class="co">## function to convert from input to disease space</span></a>
+<a class="sourceLine" id="cb24-2" title="2">convertInputToDisease &lt;-<span class="st"> </span><span class="cf">function</span>(input) {</a>
+<a class="sourceLine" id="cb24-3" title="3">   </a>
+<a class="sourceLine" id="cb24-4" title="4">    <span class="kw">require</span>(dplyr)</a>
+<a class="sourceLine" id="cb24-5" title="5">    </a>
+<a class="sourceLine" id="cb24-6" title="6">    <span class="co">## common parameters to all pathways</span></a>
+<a class="sourceLine" id="cb24-7" title="7">    disease &lt;-<span class="st"> </span><span class="kw">tibble</span>(<span class="st">`</span><span class="dt">beta[2]</span><span class="st">`</span> =<span class="st"> </span>input<span class="op">$</span>r_zero <span class="op">/</span><span class="st"> </span>input<span class="op">$</span>infectious_time)</a>
+<a class="sourceLine" id="cb24-8" title="8">    disease<span class="op">$</span><span class="st">`</span><span class="dt">beta[3]</span><span class="st">`</span> &lt;-<span class="st"> </span>disease<span class="op">$</span><span class="st">`</span><span class="dt">beta[2]</span><span class="st">`</span></a>
+<a class="sourceLine" id="cb24-9" title="9">    </a>
+<a class="sourceLine" id="cb24-10" title="10">    <span class="co">## progressions out of the E class</span></a>
+<a class="sourceLine" id="cb24-11" title="11">    <span class="co">## (adjusting in the way described in the vignette for</span></a>
+<a class="sourceLine" id="cb24-12" title="12">    <span class="co">## order of movers)</span></a>
+<a class="sourceLine" id="cb24-13" title="13">    disease<span class="op">$</span><span class="st">`</span><span class="dt">.pE</span><span class="st">`</span> &lt;-<span class="st"> </span><span class="dv">1</span> <span class="op">-</span><span class="st"> </span><span class="kw">exp</span>(<span class="op">-</span><span class="dv">1</span> <span class="op">/</span><span class="st"> </span>input<span class="op">$</span>incubation_time)</a>
+<a class="sourceLine" id="cb24-14" title="14">    disease<span class="op">$</span><span class="st">`</span><span class="dt">.pEA</span><span class="st">`</span> &lt;-<span class="st"> </span>input<span class="op">$</span>pEA</a>
+<a class="sourceLine" id="cb24-15" title="15">    </a>
+<a class="sourceLine" id="cb24-16" title="16">    <span class="co">## progressions out of the A class</span></a>
+<a class="sourceLine" id="cb24-17" title="17">    disease<span class="op">$</span><span class="st">`</span><span class="dt">.pA</span><span class="st">`</span> &lt;-<span class="st"> </span><span class="dv">1</span> <span class="op">-</span><span class="st"> </span><span class="kw">exp</span>(<span class="op">-</span><span class="dv">1</span> <span class="op">/</span><span class="st"> </span>input<span class="op">$</span>infectious_time)</a>
+<a class="sourceLine" id="cb24-18" title="18">    </a>
+<a class="sourceLine" id="cb24-19" title="19">    <span class="co">## progressions out of the I class</span></a>
+<a class="sourceLine" id="cb24-20" title="20">    <span class="co">## (adjusting in the way described in the vignette for</span></a>
+<a class="sourceLine" id="cb24-21" title="21">    <span class="co">## order of movers)</span></a>
+<a class="sourceLine" id="cb24-22" title="22">    disease<span class="op">$</span><span class="st">`</span><span class="dt">.pI</span><span class="st">`</span> &lt;-<span class="st"> </span><span class="dv">1</span> <span class="op">-</span><span class="st"> </span><span class="kw">exp</span>(<span class="op">-</span><span class="dv">1</span> <span class="op">/</span><span class="st"> </span>input<span class="op">$</span>infectious_time)</a>
+<a class="sourceLine" id="cb24-23" title="23">    disease<span class="op">$</span><span class="st">`</span><span class="dt">.pIH</span><span class="st">`</span> &lt;-<span class="st"> </span>input<span class="op">$</span>pIH</a>
+<a class="sourceLine" id="cb24-24" title="24">    disease<span class="op">$</span><span class="st">`</span><span class="dt">.pIR</span><span class="st">`</span> &lt;-<span class="st"> </span>(<span class="dv">1</span> <span class="op">-</span><span class="st"> </span>input<span class="op">$</span>pIH) <span class="op">*</span><span class="st"> </span>input<span class="op">$</span>pIRprime</a>
+<a class="sourceLine" id="cb24-25" title="25">    </a>
+<a class="sourceLine" id="cb24-26" title="26">    <span class="co">## progressions out of the H class</span></a>
+<a class="sourceLine" id="cb24-27" title="27">    <span class="co">## (adjusting in the way described in the vignette for</span></a>
+<a class="sourceLine" id="cb24-28" title="28">    <span class="co">## order of movers)</span></a>
+<a class="sourceLine" id="cb24-29" title="29">    disease<span class="op">$</span><span class="st">`</span><span class="dt">.pH</span><span class="st">`</span> &lt;-<span class="st"> </span><span class="dv">1</span> <span class="op">-</span><span class="st"> </span><span class="kw">exp</span>(<span class="op">-</span><span class="dv">1</span> <span class="op">/</span><span class="st"> </span>input<span class="op">$</span>hospital_time)</a>
+<a class="sourceLine" id="cb24-30" title="30">    disease<span class="op">$</span><span class="st">`</span><span class="dt">.pHC</span><span class="st">`</span> &lt;-<span class="st"> </span>input<span class="op">$</span>pHC</a>
+<a class="sourceLine" id="cb24-31" title="31">    disease<span class="op">$</span><span class="st">`</span><span class="dt">.pHR</span><span class="st">`</span> &lt;-<span class="st"> </span>(<span class="dv">1</span> <span class="op">-</span><span class="st"> </span>input<span class="op">$</span>pHC) <span class="op">*</span><span class="st"> </span>input<span class="op">$</span>pHRprime</a>
+<a class="sourceLine" id="cb24-32" title="32">    </a>
+<a class="sourceLine" id="cb24-33" title="33">    <span class="co">## progressions out of the C class</span></a>
+<a class="sourceLine" id="cb24-34" title="34">    <span class="co">## (adjusting in the way described in the vignette for</span></a>
+<a class="sourceLine" id="cb24-35" title="35">    <span class="co">## order of movers)</span></a>
+<a class="sourceLine" id="cb24-36" title="36">    disease<span class="op">$</span><span class="st">`</span><span class="dt">.pC</span><span class="st">`</span> &lt;-<span class="st"> </span><span class="dv">1</span> <span class="op">-</span><span class="st"> </span><span class="kw">exp</span>(<span class="op">-</span><span class="dv">1</span> <span class="op">/</span><span class="st"> </span>input<span class="op">$</span>critical_time)</a>
+<a class="sourceLine" id="cb24-37" title="37">    disease<span class="op">$</span><span class="st">`</span><span class="dt">.pCR</span><span class="st">`</span> &lt;-<span class="st"> </span>input<span class="op">$</span>pCR</a>
+<a class="sourceLine" id="cb24-38" title="38">    </a>
+<a class="sourceLine" id="cb24-39" title="39">    <span class="co">## lockdown scalings</span></a>
+<a class="sourceLine" id="cb24-40" title="40">    disease<span class="op">$</span><span class="st">`</span><span class="dt">.lock_1_restrict</span><span class="st">`</span> &lt;-<span class="st"> </span>input<span class="op">$</span>lock_<span class="dv">1</span>_restrict</a>
+<a class="sourceLine" id="cb24-41" title="41">    disease<span class="op">$</span><span class="st">`</span><span class="dt">.lock_2_release</span><span class="st">`</span> &lt;-<span class="st"> </span>input<span class="op">$</span>lock_<span class="dv">2</span>_release</a>
+<a class="sourceLine" id="cb24-42" title="42">    </a>
+<a class="sourceLine" id="cb24-43" title="43">    <span class="co">## set up scaling for mixing matrix</span></a>
+<a class="sourceLine" id="cb24-44" title="44">    disease<span class="op">$</span><span class="st">`</span><span class="dt">.GP_A</span><span class="st">`</span> &lt;-<span class="st"> </span>input<span class="op">$</span>GP_A</a>
+<a class="sourceLine" id="cb24-45" title="45">    disease<span class="op">$</span><span class="st">`</span><span class="dt">.GP_H</span><span class="st">`</span> &lt;-<span class="st"> </span>input<span class="op">$</span>GP_H</a>
+<a class="sourceLine" id="cb24-46" title="46">    disease<span class="op">$</span><span class="st">`</span><span class="dt">.GP_C</span><span class="st">`</span> &lt;-<span class="st"> </span>input<span class="op">$</span>GP_C</a>
+<a class="sourceLine" id="cb24-47" title="47">    </a>
+<a class="sourceLine" id="cb24-48" title="48">    <span class="co">## finalise number of repeats</span></a>
+<a class="sourceLine" id="cb24-49" title="49">    disease<span class="op">$</span>repeats &lt;-<span class="st"> </span>input<span class="op">$</span>repeats</a>
+<a class="sourceLine" id="cb24-50" title="50">    </a>
+<a class="sourceLine" id="cb24-51" title="51">    <span class="co">## copy hash for each input</span></a>
+<a class="sourceLine" id="cb24-52" title="52">    disease<span class="op">$</span>output &lt;-<span class="st"> </span>input<span class="op">$</span>output</a>
+<a class="sourceLine" id="cb24-53" title="53">    </a>
+<a class="sourceLine" id="cb24-54" title="54">    <span class="co">## return disease file</span></a>
+<a class="sourceLine" id="cb24-55" title="55">    disease</a>
+<a class="sourceLine" id="cb24-56" title="56">}</a></code></pre></div>
 <p>Also in <code>dataTools.R</code> is a function <code>ensembleIDGen()</code> that creates unique IDs for each design point. So an example of a quick LHS design for five design points and five replicates is:</p>
-<div class="sourceCode" id="cb24"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb24-1" title="1"><span class="co">## load libraries</span></a>
-<a class="sourceLine" id="cb24-2" title="2"><span class="kw">library</span>(lhs)</a>
-<a class="sourceLine" id="cb24-3" title="3"><span class="kw">library</span>(dplyr)</a>
-<a class="sourceLine" id="cb24-4" title="4"><span class="kw">library</span>(tidyr)</a>
-<a class="sourceLine" id="cb24-5" title="5"></a>
-<a class="sourceLine" id="cb24-6" title="6"><span class="co">## source dataTools</span></a>
-<a class="sourceLine" id="cb24-7" title="7"><span class="kw">source</span>(<span class="st">&quot;R_tools/dataTools.R&quot;</span>)</a>
-<a class="sourceLine" id="cb24-8" title="8"></a>
-<a class="sourceLine" id="cb24-9" title="9"><span class="co">## set up parameter ranges</span></a>
-<a class="sourceLine" id="cb24-10" title="10">parRanges &lt;-<span class="st"> </span><span class="kw">data.frame</span>(</a>
-<a class="sourceLine" id="cb24-11" title="11">    <span class="dt">parameter =</span> <span class="kw">c</span>(<span class="st">&quot;r_zero&quot;</span>, <span class="st">&quot;incubation_time&quot;</span>, <span class="st">&quot;infectious_time&quot;</span>, <span class="st">&quot;hospital_time&quot;</span>,</a>
-<a class="sourceLine" id="cb24-12" title="12">                  <span class="st">&quot;critical_time&quot;</span>, <span class="st">&quot;lock_1_restrict&quot;</span>, <span class="st">&quot;lock_2_release&quot;</span>,</a>
-<a class="sourceLine" id="cb24-13" title="13">                  <span class="st">&quot;pEA&quot;</span>, <span class="st">&quot;pIH&quot;</span>, <span class="st">&quot;pIRprime&quot;</span>, <span class="st">&quot;pHC&quot;</span>, <span class="st">&quot;pHRprime&quot;</span>, <span class="st">&quot;pCR&quot;</span>, </a>
-<a class="sourceLine" id="cb24-14" title="14">                  <span class="st">&quot;GP_A&quot;</span>, <span class="st">&quot;GP_H&quot;</span>, <span class="st">&quot;GP_C&quot;</span>),</a>
-<a class="sourceLine" id="cb24-15" title="15">    <span class="dt">lower =</span> <span class="kw">c</span>(<span class="fl">2.5</span>, <span class="dv">4</span>, <span class="dv">2</span>, <span class="dv">4</span>, <span class="dv">4</span>, <span class="kw">rep</span>(<span class="dv">0</span>, <span class="dv">11</span>)),</a>
-<a class="sourceLine" id="cb24-16" title="16">    <span class="dt">upper =</span> <span class="kw">c</span>(<span class="dv">4</span>, <span class="dv">6</span>, <span class="dv">4</span>, <span class="dv">12</span>, <span class="dv">12</span>, <span class="kw">rep</span>(<span class="dv">1</span>, <span class="dv">11</span>)),</a>
-<a class="sourceLine" id="cb24-17" title="17">    <span class="dt">stringsAsFactors =</span> <span class="ot">FALSE</span></a>
-<a class="sourceLine" id="cb24-18" title="18">)</a>
-<a class="sourceLine" id="cb24-19" title="19"><span class="kw">print</span>(<span class="st">&quot;NEED TO GET RANGES FIGURED OUT, THIS IS A TEST&quot;</span>)</a>
-<a class="sourceLine" id="cb24-20" title="20"></a>
-<a class="sourceLine" id="cb24-21" title="21"><span class="co">## generate LHS design</span></a>
-<a class="sourceLine" id="cb24-22" title="22">design &lt;-<span class="st"> </span><span class="kw">randomLHS</span>(<span class="dv">5</span>, <span class="kw">nrow</span>(parRanges))</a>
-<a class="sourceLine" id="cb24-23" title="23"><span class="kw">colnames</span>(design) &lt;-<span class="st"> </span>parRanges<span class="op">$</span>parameter</a>
-<a class="sourceLine" id="cb24-24" title="24">design &lt;-<span class="st"> </span><span class="kw">as_tibble</span>(design)</a>
-<a class="sourceLine" id="cb24-25" title="25"></a>
-<a class="sourceLine" id="cb24-26" title="26"><span class="co">## add unique hash identifier</span></a>
-<a class="sourceLine" id="cb24-27" title="27"><span class="co">## (at the moment don&#39;t use &quot;a0&quot; type ensembleID, because MetaWards</span></a>
-<a class="sourceLine" id="cb24-28" title="28"><span class="co">## parses to dates)</span></a>
-<a class="sourceLine" id="cb24-29" title="29">design<span class="op">$</span>output &lt;-<span class="st"> </span><span class="kw">ensembleIDGen</span>(<span class="dt">ensembleID =</span> <span class="st">&quot;Ens0&quot;</span>, <span class="kw">nrow</span>(design))</a>
-<a class="sourceLine" id="cb24-30" title="30">design<span class="op">$</span>repeats &lt;-<span class="st"> </span><span class="dv">2</span></a>
-<a class="sourceLine" id="cb24-31" title="31"></a>
-<a class="sourceLine" id="cb24-32" title="32"><span class="co">## convert to input space</span></a>
-<a class="sourceLine" id="cb24-33" title="33">input &lt;-<span class="st"> </span><span class="kw">convertDesignToInput</span>(design, parRanges, <span class="st">&quot;zero_one&quot;</span>)</a>
-<a class="sourceLine" id="cb24-34" title="34"></a>
-<a class="sourceLine" id="cb24-35" title="35"><span class="co">## convert input to disease</span></a>
-<a class="sourceLine" id="cb24-36" title="36">disease &lt;-<span class="st"> </span><span class="kw">convertInputToDisease</span>(input)</a>
-<a class="sourceLine" id="cb24-37" title="37"></a>
-<a class="sourceLine" id="cb24-38" title="38"><span class="co">## write to external files</span></a>
-<a class="sourceLine" id="cb24-39" title="39"><span class="kw">dir.create</span>(<span class="st">&quot;inputs&quot;</span>, <span class="dt">showWarnings =</span> <span class="ot">FALSE</span>)</a>
-<a class="sourceLine" id="cb24-40" title="40"></a>
-<a class="sourceLine" id="cb24-41" title="41"><span class="co">## write text file for MetaWards</span></a>
-<a class="sourceLine" id="cb24-42" title="42"><span class="kw">write.table</span>(disease, <span class="st">&quot;inputs/disease.dat&quot;</span>, <span class="dt">row.names =</span> <span class="ot">FALSE</span>, <span class="dt">sep =</span> <span class="st">&quot; &quot;</span>, <span class="dt">quote =</span> <span class="ot">FALSE</span>)</a>
-<a class="sourceLine" id="cb24-43" title="43"></a>
-<a class="sourceLine" id="cb24-44" title="44"><span class="co">## save inputs for data for post-simulation runs</span></a>
-<a class="sourceLine" id="cb24-45" title="45"><span class="kw">saveRDS</span>(design, <span class="st">&quot;inputs/design.rds&quot;</span>)</a>
-<a class="sourceLine" id="cb24-46" title="46"><span class="kw">saveRDS</span>(parRanges, <span class="st">&quot;inputs/parRanges.rds&quot;</span>)</a></code></pre></div>
+<div class="sourceCode" id="cb25"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb25-1" title="1"><span class="co">## load libraries</span></a>
+<a class="sourceLine" id="cb25-2" title="2"><span class="kw">library</span>(lhs)</a>
+<a class="sourceLine" id="cb25-3" title="3"><span class="kw">library</span>(dplyr)</a>
+<a class="sourceLine" id="cb25-4" title="4"><span class="kw">library</span>(tidyr)</a>
+<a class="sourceLine" id="cb25-5" title="5"></a>
+<a class="sourceLine" id="cb25-6" title="6"><span class="co">## source dataTools</span></a>
+<a class="sourceLine" id="cb25-7" title="7"><span class="kw">source</span>(<span class="st">&quot;R_tools/dataTools.R&quot;</span>)</a>
+<a class="sourceLine" id="cb25-8" title="8"></a>
+<a class="sourceLine" id="cb25-9" title="9"><span class="co">## set up parameter ranges</span></a>
+<a class="sourceLine" id="cb25-10" title="10">parRanges &lt;-<span class="st"> </span><span class="kw">data.frame</span>(</a>
+<a class="sourceLine" id="cb25-11" title="11">    <span class="dt">parameter =</span> <span class="kw">c</span>(<span class="st">&quot;r_zero&quot;</span>, <span class="st">&quot;incubation_time&quot;</span>, <span class="st">&quot;infectious_time&quot;</span>, <span class="st">&quot;hospital_time&quot;</span>,</a>
+<a class="sourceLine" id="cb25-12" title="12">                  <span class="st">&quot;critical_time&quot;</span>, <span class="st">&quot;lock_1_restrict&quot;</span>, <span class="st">&quot;lock_2_release&quot;</span>,</a>
+<a class="sourceLine" id="cb25-13" title="13">                  <span class="st">&quot;pEA&quot;</span>, <span class="st">&quot;pIH&quot;</span>, <span class="st">&quot;pIRprime&quot;</span>, <span class="st">&quot;pHC&quot;</span>, <span class="st">&quot;pHRprime&quot;</span>, <span class="st">&quot;pCR&quot;</span>, </a>
+<a class="sourceLine" id="cb25-14" title="14">                  <span class="st">&quot;GP_A&quot;</span>, <span class="st">&quot;GP_H&quot;</span>, <span class="st">&quot;GP_C&quot;</span>),</a>
+<a class="sourceLine" id="cb25-15" title="15">    <span class="dt">lower =</span> <span class="kw">c</span>(<span class="fl">2.5</span>, <span class="dv">4</span>, <span class="dv">2</span>, <span class="dv">4</span>, <span class="dv">4</span>, <span class="kw">rep</span>(<span class="dv">0</span>, <span class="dv">11</span>)),</a>
+<a class="sourceLine" id="cb25-16" title="16">    <span class="dt">upper =</span> <span class="kw">c</span>(<span class="dv">4</span>, <span class="dv">6</span>, <span class="dv">4</span>, <span class="dv">12</span>, <span class="dv">12</span>, <span class="kw">rep</span>(<span class="dv">1</span>, <span class="dv">11</span>)),</a>
+<a class="sourceLine" id="cb25-17" title="17">    <span class="dt">stringsAsFactors =</span> <span class="ot">FALSE</span></a>
+<a class="sourceLine" id="cb25-18" title="18">)</a>
+<a class="sourceLine" id="cb25-19" title="19"><span class="kw">print</span>(<span class="st">&quot;NEED TO GET RANGES FIGURED OUT, THIS IS A TEST&quot;</span>)</a>
+<a class="sourceLine" id="cb25-20" title="20"></a>
+<a class="sourceLine" id="cb25-21" title="21"><span class="co">## generate LHS design</span></a>
+<a class="sourceLine" id="cb25-22" title="22">design &lt;-<span class="st"> </span><span class="kw">randomLHS</span>(<span class="dv">5</span>, <span class="kw">nrow</span>(parRanges))</a>
+<a class="sourceLine" id="cb25-23" title="23"><span class="kw">colnames</span>(design) &lt;-<span class="st"> </span>parRanges<span class="op">$</span>parameter</a>
+<a class="sourceLine" id="cb25-24" title="24">design &lt;-<span class="st"> </span><span class="kw">as_tibble</span>(design)</a>
+<a class="sourceLine" id="cb25-25" title="25"></a>
+<a class="sourceLine" id="cb25-26" title="26"><span class="co">## add unique hash identifier</span></a>
+<a class="sourceLine" id="cb25-27" title="27"><span class="co">## (at the moment don&#39;t use &quot;a0&quot; type ensembleID, because MetaWards</span></a>
+<a class="sourceLine" id="cb25-28" title="28"><span class="co">## parses to dates)</span></a>
+<a class="sourceLine" id="cb25-29" title="29">design<span class="op">$</span>output &lt;-<span class="st"> </span><span class="kw">ensembleIDGen</span>(<span class="dt">ensembleID =</span> <span class="st">&quot;Ens0&quot;</span>, <span class="kw">nrow</span>(design))</a>
+<a class="sourceLine" id="cb25-30" title="30">design<span class="op">$</span>repeats &lt;-<span class="st"> </span><span class="dv">2</span></a>
+<a class="sourceLine" id="cb25-31" title="31"></a>
+<a class="sourceLine" id="cb25-32" title="32"><span class="co">## convert to input space</span></a>
+<a class="sourceLine" id="cb25-33" title="33">input &lt;-<span class="st"> </span><span class="kw">convertDesignToInput</span>(design, parRanges, <span class="st">&quot;zero_one&quot;</span>)</a>
+<a class="sourceLine" id="cb25-34" title="34"></a>
+<a class="sourceLine" id="cb25-35" title="35"><span class="co">## convert input to disease</span></a>
+<a class="sourceLine" id="cb25-36" title="36">disease &lt;-<span class="st"> </span><span class="kw">convertInputToDisease</span>(input)</a>
+<a class="sourceLine" id="cb25-37" title="37"></a>
+<a class="sourceLine" id="cb25-38" title="38"><span class="co">## write to external files</span></a>
+<a class="sourceLine" id="cb25-39" title="39"><span class="kw">dir.create</span>(<span class="st">&quot;inputs&quot;</span>, <span class="dt">showWarnings =</span> <span class="ot">FALSE</span>)</a>
+<a class="sourceLine" id="cb25-40" title="40"></a>
+<a class="sourceLine" id="cb25-41" title="41"><span class="co">## write text file for MetaWards</span></a>
+<a class="sourceLine" id="cb25-42" title="42"><span class="kw">write.table</span>(disease, <span class="st">&quot;inputs/disease.dat&quot;</span>, <span class="dt">row.names =</span> <span class="ot">FALSE</span>, <span class="dt">sep =</span> <span class="st">&quot; &quot;</span>, <span class="dt">quote =</span> <span class="ot">FALSE</span>)</a>
+<a class="sourceLine" id="cb25-43" title="43"></a>
+<a class="sourceLine" id="cb25-44" title="44"><span class="co">## save inputs for data for post-simulation runs</span></a>
+<a class="sourceLine" id="cb25-45" title="45"><span class="kw">saveRDS</span>(design, <span class="st">&quot;inputs/design.rds&quot;</span>)</a>
+<a class="sourceLine" id="cb25-46" title="46"><span class="kw">saveRDS</span>(parRanges, <span class="st">&quot;inputs/parRanges.rds&quot;</span>)</a></code></pre></div>
 <p>This produces a file <code>inputs/disease.dat</code> that can be passed to MetaWards to run the model. The <code>runscript.sh</code> batch file provides the command line instructions needed to the model using these inputs. This is written for Linux, and should be able to be run directly from the downloaded folder. If you don’t run Linux, then the file should give you an idea of how to run the model on your own system.</p>
 <p>The outputs from MetaWards are stored in an SQL database, which can be queried through any SQLite client. Each model run produces a file called <code>stages.db.bz2</code>, which is a compressed database containing the outputs. As an example, migrate to an output folder containing <code>stages.db.bz2</code>. To access the outputs you will first have to unzip this file. I do this on the command line e.g.</p>
 <pre><code>bzip2 -dk stages.db.bz2</code></pre>
 <p>If you’re happy with SQL, you can query these directly with e.g. SQLite. If you are an R user, then the <code>dplyr</code> package (or more specifically the <code>dbplyr</code> package) provides some useful R tools for querying SQL databases using <code>tidyverse</code>-type notation. More details can be found <a href="https://cran.r-project.org/web/packages/dbplyr/vignettes/dbplyr.html">here</a>.</p>
 <p>As a quick example, imagine that we want to extract the <strong>cumulative hospital cases</strong> on say day 100. Here we will need to extract the <strong>new hospital cases</strong> from day 1–100, and then sum them up for each ward. Therefore we need to extract <code>day</code>, <code>ward</code> and <code>stage_2</code> from the <code>hospital_totals</code> table, and then sum them up (see <a href="#extractor">here</a> for more details on how the outputs are stored). For speed, <code>dplyr</code> converts the R code to SQL, and only pulls the resulting table to R if you run the function <code>collect()</code> (see below).</p>
-<div class="sourceCode" id="cb26"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb26-1" title="1"><span class="co">## load library</span></a>
-<a class="sourceLine" id="cb26-2" title="2"><span class="co">## (you might also need to install the &#39;RSQLite&#39; </span></a>
-<a class="sourceLine" id="cb26-3" title="3"><span class="co">## and `dbplyr` packages which &#39;dplyr&#39; calls)</span></a>
-<a class="sourceLine" id="cb26-4" title="4"><span class="kw">library</span>(dplyr)</a>
-<a class="sourceLine" id="cb26-5" title="5"></a>
-<a class="sourceLine" id="cb26-6" title="6"><span class="co">## establish connection to database</span></a>
-<a class="sourceLine" id="cb26-7" title="7">con &lt;-<span class="st"> </span>DBI<span class="op">::</span><span class="kw">dbConnect</span>(RSQLite<span class="op">::</span><span class="kw">SQLite</span>(), <span class="st">&quot;stages.db&quot;</span>)</a>
-<a class="sourceLine" id="cb26-8" title="8"></a>
-<a class="sourceLine" id="cb26-9" title="9"><span class="co">## connect to the &#39;hospital_totals&#39; table</span></a>
-<a class="sourceLine" id="cb26-10" title="10">hospital &lt;-<span class="st"> </span><span class="kw">tbl</span>(con, <span class="st">&quot;hospital_totals&quot;</span>)</a>
-<a class="sourceLine" id="cb26-11" title="11"></a>
-<a class="sourceLine" id="cb26-12" title="12"><span class="co">## stage_2 contains the new cases, so sum these</span></a>
-<a class="sourceLine" id="cb26-13" title="13"><span class="co">## over each ward for days 1--100 </span></a>
-<a class="sourceLine" id="cb26-14" title="14"><span class="co">## (</span><span class="al">NOTE</span><span class="co">: `hosp_db` contains the query not the outcome,</span></a>
-<a class="sourceLine" id="cb26-15" title="15"><span class="co">## so &#39;show_query(hosp_db)&#39; can view this if you like)</span></a>
-<a class="sourceLine" id="cb26-16" title="16">hosp_db &lt;-<span class="st"> </span><span class="kw">filter</span>(hospital, day <span class="op">&lt;=</span><span class="st"> </span><span class="dv">100</span>) <span class="op">%&gt;%</span></a>
-<a class="sourceLine" id="cb26-17" title="17"><span class="st">    </span><span class="kw">select</span>(ward, stage_<span class="dv">2</span>) <span class="op">%&gt;%</span></a>
-<a class="sourceLine" id="cb26-18" title="18"><span class="st">    </span><span class="kw">group_by</span>(ward) <span class="op">%&gt;%</span></a>
-<a class="sourceLine" id="cb26-19" title="19"><span class="st">    </span><span class="kw">summarise</span>(<span class="dt">cH =</span> <span class="kw">sum</span>(stage_<span class="dv">2</span>))</a>
-<a class="sourceLine" id="cb26-20" title="20"></a>
-<a class="sourceLine" id="cb26-21" title="21"><span class="co">## run query and pull to R</span></a>
-<a class="sourceLine" id="cb26-22" title="22">hosp &lt;-<span class="st"> </span><span class="kw">collect</span>(hosp_db)</a>
-<a class="sourceLine" id="cb26-23" title="23"></a>
-<a class="sourceLine" id="cb26-24" title="24"><span class="co">## disconnect from database</span></a>
-<a class="sourceLine" id="cb26-25" title="25">DBI<span class="op">::</span><span class="kw">dbDisconnect</span>(con)</a></code></pre></div>
+<div class="sourceCode" id="cb27"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb27-1" title="1"><span class="co">## load library</span></a>
+<a class="sourceLine" id="cb27-2" title="2"><span class="co">## (you might also need to install the &#39;RSQLite&#39; </span></a>
+<a class="sourceLine" id="cb27-3" title="3"><span class="co">## and `dbplyr` packages which &#39;dplyr&#39; calls)</span></a>
+<a class="sourceLine" id="cb27-4" title="4"><span class="kw">library</span>(dplyr)</a>
+<a class="sourceLine" id="cb27-5" title="5"></a>
+<a class="sourceLine" id="cb27-6" title="6"><span class="co">## establish connection to database</span></a>
+<a class="sourceLine" id="cb27-7" title="7">con &lt;-<span class="st"> </span>DBI<span class="op">::</span><span class="kw">dbConnect</span>(RSQLite<span class="op">::</span><span class="kw">SQLite</span>(), <span class="st">&quot;stages.db&quot;</span>)</a>
+<a class="sourceLine" id="cb27-8" title="8"></a>
+<a class="sourceLine" id="cb27-9" title="9"><span class="co">## connect to the &#39;hospital_totals&#39; table</span></a>
+<a class="sourceLine" id="cb27-10" title="10">hospital &lt;-<span class="st"> </span><span class="kw">tbl</span>(con, <span class="st">&quot;hospital_totals&quot;</span>)</a>
+<a class="sourceLine" id="cb27-11" title="11"></a>
+<a class="sourceLine" id="cb27-12" title="12"><span class="co">## stage_2 contains the new cases, so sum these</span></a>
+<a class="sourceLine" id="cb27-13" title="13"><span class="co">## over each ward for days 1--100 </span></a>
+<a class="sourceLine" id="cb27-14" title="14"><span class="co">## (</span><span class="al">NOTE</span><span class="co">: `hosp_db` contains the query not the outcome,</span></a>
+<a class="sourceLine" id="cb27-15" title="15"><span class="co">## so &#39;show_query(hosp_db)&#39; can view this if you like)</span></a>
+<a class="sourceLine" id="cb27-16" title="16">hosp_db &lt;-<span class="st"> </span><span class="kw">filter</span>(hospital, day <span class="op">&lt;=</span><span class="st"> </span><span class="dv">100</span>) <span class="op">%&gt;%</span></a>
+<a class="sourceLine" id="cb27-17" title="17"><span class="st">    </span><span class="kw">select</span>(ward, stage_<span class="dv">2</span>) <span class="op">%&gt;%</span></a>
+<a class="sourceLine" id="cb27-18" title="18"><span class="st">    </span><span class="kw">group_by</span>(ward) <span class="op">%&gt;%</span></a>
+<a class="sourceLine" id="cb27-19" title="19"><span class="st">    </span><span class="kw">summarise</span>(<span class="dt">cH =</span> <span class="kw">sum</span>(stage_<span class="dv">2</span>))</a>
+<a class="sourceLine" id="cb27-20" title="20"></a>
+<a class="sourceLine" id="cb27-21" title="21"><span class="co">## run query and pull to R</span></a>
+<a class="sourceLine" id="cb27-22" title="22">hosp &lt;-<span class="st"> </span><span class="kw">collect</span>(hosp_db)</a>
+<a class="sourceLine" id="cb27-23" title="23"></a>
+<a class="sourceLine" id="cb27-24" title="24"><span class="co">## disconnect from database</span></a>
+<a class="sourceLine" id="cb27-25" title="25">DBI<span class="op">::</span><span class="kw">dbDisconnect</span>(con)</a></code></pre></div>
 <p>Now you can play with <code>hosp</code> as much as you like. Note that after you’ve pulled the correct outputs down, you might want to delete the <code>stage.db</code> (<strong>NOT</strong> the <code>stages.db.bz2</code>) file. I did this on the Unix command line using:</p>
 <pre><code>rm stage.db</code></pre>
 <blockquote>
