@@ -13,7 +13,7 @@ output:
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-# Introduction {.tabset .tabset-fade .tabset-pills}
+# Introduction
 
 This vignette contains all the details about the current UQ4Covid MetaWards implementation. It consists of various sections that can be accessed through the tabs below:
 
