@@ -1,291 +1,33 @@
----
-title: "Information on MetaWards"
-author: "TJ McKinley"
+---  
+title: MetaWards
+author: "Danny Williamson and TJ McKinley"
 date: "`r format(Sys.time(), '%d %B %Y')`"
 output: 
   html_document:
     code_folding: show
+layout: ../../../default
 ---
 
-This is a short document (not really a vignette) describing some key aspects of MetaWards that are pertinent to this UQ attempt. 
-
-**All model files can be downloaded from [here](../metawards.zip).**
-
-# Model description {#model}
-
-We ideally want a model that incorporates moves to hospital and ICU. Here each class is split into two components, e.g. $E_1$ and $E_2$. This is so that MetaWards can calculate new movements into each class easily, but are otherwise epidemiologically identical. Here:
-
-* $E$: infected but not infectious;
-* $A$: asymptomatic and infectious;
-* $I$: symptomatic and infectious;
-* $H$: hospitalised and infectious;
-* $C$: in critical care (ICU) and infectious;
-* $R$: recovered and immune;
-* $D$: died.
-
-```{r, echo = FALSE}
-library(DiagrammeR)
-grViz("digraph {
-    graph[layout = dot, rankdir = LR]
-    node [shape = rectangle]
-    
-    S
-    E1 [label = 'E@_{1}']; E2 [label = 'E@_{2}']
-    I1 [label = 'I@_{1}']; I2 [label = 'I@_{2}']
-    A1 [label = 'A@_{1}']; A2 [label = 'A@_{2}']
-    H1 [label = 'H@_{1}']; H2 [label = 'H@_{2}']
-    C1 [label = 'C@_{1}']; C2 [label = 'C@_{2}']
-    DI [label = 'D@_{I}']; DH [label = 'D@_{H}']; DC [label = 'D@_{C}']
-    RI [label = 'R@_{I}']; RH [label = 'R@_{H}']; RC [label = 'R@_{C}']; RA [label = 'R@_{A}']
-    St00 [style = 'invis']; St0 [label = 'Stage 0']; St1 [label = 'Stage 1']; 
-    St2 [label = 'Stage 2']; St3 [label = 'Stage 3']; St4 [label = 'Stage 4']; St5 [label = 'Stage 5']
-    genpop [label = 'Gen. Pop.']
-    hospital [label = 'Hospital Patient']
-    critical [label = 'Critical Care']
-    asymp [label = 'Asymptomatics']
-    
-    St00 -> St0 -> St1 -> St2 -> St3 -> St4 -> St5 [style = 'invis']
-    S -> E1 -> E2 -> I1 -> I2 
-    I2 -> RI
-    I2 -> DI [weight = 0]
-    I2 -> H1 -> H2 -> C1 -> C2 
-    C2 -> RC 
-    C2 -> DC [weight = 0]
-    H2 -> RH 
-    H2 -> DH [weight = 0] 
-    RI -> DI [style = 'invis']
-    RH -> DH [style = 'invis']
-    RC -> DC [style = 'invis']
-    E2 -> A1 [weight = 0]
-    A1 -> A2 -> RA 
-    genpop -> S [style = 'invis']
-    hospital -> H1 [style = 'invis']
-    critical -> C1[style = 'invis']
-    asymp -> A1 [style = 'invis']
-    subgraph {
-      rank = same; St00; genpop; hospital; critical; asymp;
-    }
-    subgraph {
-      rank = same; E1; St0;
-    }
-    subgraph {
-      rank = same; E2; St1;
-    }
-    subgraph cluster {
-      subgraph {
-        rank = same; I1; H1; C1; A1; St2;
-      }
-      subgraph {
-        rank = same; I2; H2; C2; A2; St3;
-      }
-      style = filled;
-      color = lightgrey;
-      label = 'Infectious Classes'
-    }
-    subgraph {
-      rank = same; RA, RI, RC; RH; St4;
-    }
-    subgraph {
-      rank = same; DI; DH; DC; St5;
-    }
-    
-}", height = '100%', width = '100%')
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
 ```
 
-# MetaWards setup
+# Introduction {.tabset}
 
-The model structure above allows for different progression pathways. MetaWards deals with this by assigning individuals to different "demographics", where each demographic can be used to represent different progression pathways. There are also `mover` functions that can be used to move individuals between demographics, and `mixer` functions that scale the force-of-infection (FOI) terms between the different demographics (explained later). There are currently seven pathways, which will be described below, but can be summarised as:
+This vignette contains all the details about the current UQ4Covid MetaWards implementation. It consists of various sections that can be accessed through the tabs below:
 
-* `SEAR`: asymptomatic infections, always recover.
-* `SEIR`: symptomatic infections, leading to recovery.
-* `SEID`: symptomatic infections, leading to death.
-* `SEIHR`: symptomatic infections, leading to hospital and then recovery.
-* `SEIHD`: symptomatic infections, leading to hospital and then death.
-* `SEIHCR`: symptomatic infections, leading to hospital, then critical care (ICU) and then recovery.
-* `SEIHCD`: symptomatic infections, leading to hospital, then critical care (ICU) and then death.
+* **Quick Start Guide**: contains instructions about how to install and run this version of MetaWards.
+* **Model Description**: A short guide to the model inputs and outputs.
+* MetaWards setup: A more detailed guide to the ins-and-outs of the model structure, and details of the implementation.
 
-In practice, we can summarise these through four demographics, and then `move` functions that conditionally move individuals through the seven pathways. First, we set up the `demographics.json` file, which should look something like:
+**All necessary files can be downloaded from [here](../metawards.zip).**
 
 
-```{js, code = readLines("../model_code/demographics.json"), eval = FALSE}
+```{r child = 'RunningForDummies.Rmd'}
 ```
 
-Individuals in the `genpop` demographic move through the $SEIR$ and $SEID$ pathways; the `asymp` demographic moves through the `SEAR` pathway; some individuals in the `genpop` demographic can be moved to the `hospital` demographic, and thus follow the `SEIHR` and `SEIHD` pathways; and finally, some individuals in the `hospital` demographic can be moved to the `critical` demographic, and thus follow the `SEIHCR` and `SEIHCD` pathways.
-
-We want the proportions stored in `work_ratios` and `play_ratios` to be variable parameters in the model. Therefore we want to specify proportions of individuals in each pathway such that $\sum_{i \in \mathcal{P}} p_i = 1$, where $\mathcal{P} = \{GP, A, H, C\}$.
-
-> Here we assume the same ratios in the `work` and `play` populations, but in practice these could be changed.
-
-## Parameters {#parameters}
-
-Once the demographics have been setup, we can then control progress through the different states as:
-
-* $p_{SE_1}$ driven by $\beta$ parameters, defined by $R_0$ and length of infectious period (see [here](#code));
-* $p_{E_1E_2} = 1$;
-* $p_{E_2A_1} = p_{EA}\left(1 - e^{-\gamma_{E}}\right)$ where $\gamma_E = \frac{1}{T_E}$ with $T_E$ the mean incubation period;
-* $p_{E_2I_1} = \left(1 - p_{EA}\right)\left(1 - e^{-\gamma_{E}}\right)$;
-* $p_{A_1A_2} = 1$;
-* $p_{A_2R} = 1 - e^{-\gamma_I}$ where $\gamma_I = \frac{1}{T_I}$ with $T_I$ the mean infectious period;
-* $p_{I_1I_2} = 1$;
-* $p_{I_2H_1} = p_{IH}\left(1 - e^{-\gamma_{I}}\right)$;
-* $p_{I_2R} = p_{IR}\left(1 - e^{-\gamma_{I}}\right)$;
-* $p_{I_2D} = \left(1 - p_{IH} - p_{IR}\right)\left(1 - e^{-\gamma_{I}}\right)$;
-* $p_{H_1H_2} = 1$;
-* $p_{H_2C_1} = p_{HC}\left(1 - e^{-\gamma_{H}}\right)$ where $\gamma_{H} = \frac{1}{T_H}$ with $T_H$ the mean length of a hospital stay;
-* $p_{H_2R} = p_{HR}\left(1 - e^{-\gamma_{H}}\right)$;
-* $p_{H_2D} = \left(1 - p_{HC} - p_{HR}\right)\left(1 - e^{-\gamma_{H}}\right)$;
-* $p_{C_1C_2} = 1$;
-* $p_{C_2R} = p_{CR}\left(1 - e^{-\gamma_{C}}\right)$ where $\gamma_C = \frac{1}{T_C}$ with $T_C$ is the mean length of time spent in ICU;
-* $p_{C_2D} = \left(1 - p_{CR}\right)\left(1 - e^{-\gamma_{C}}\right)$.
-
-Lockdown can be controlled either by constraining movements over a certain distance, or by scaling the $\beta$ parameters. We do the latter at the moment.
-
-## Disease `.json` file {#diseasefile}
-
-All pathways have an $SEI(R/D)$ structure, so we can set up an `ncov.json` file for the overall disease:
-
-```{js, code = readLines("../model_code/ncov.json"), eval = FALSE}
+```{r child = 'ModelStructure.Rmd'}
 ```
 
-We will discuss these choices in more detail in the subsequent sections, in particular the role of the `beta` parameters in the next section. Note that the `progress` parameters are all set to zero here, since all movements will be controlled via the custom `mover` function.
-
-## Controlling movements
-
-MetaWards has a specific structure in terms of how it progresses movements between the stages. To get the correct splits between the pathways specified [above](#model) we do all non-infection movements through a custom `mover` function specified [below](#mover). Note that the $X_1$-type states (e.g. $E_1$, $I_1$, $H_1$ and $C_1$) are dummy states that allow us to monitor *new moves into each class at each day*. Note that in the `ncov.json` file specified [above](#diseasefile), we set all `progress` parameters to be 0. Thus, all transition probabilities other than new infections are driven by user-defined parameters that are passed to the `mover` function.
-
-All this effort is so that we can monitor the counts and ensure the correct transitions, and depends on the order in which the events happen. For example, imagine that on day $t$ we get an infection at the end of the day, so a move from $S \to E_1$. Then the **recorded counts** for $E_1$ contain the new infections. Then, at the beginning of day $t + 1$, these individuals will be automatically moved from $E_1 \to E_2$ by the mover function, which subsequently operates using the probabilities [above](#parameters) to ensure the correct proportion of individuals progress into the $I_1$ or $A_1$ classes. The `mover` function applies movements in order, and so it is important to get the order correct. In particular we need to reverse the order of the stage movements (e.g. do movements out of the $C$ demographic *before* movements out of the $H$ demographic). This is to ensure that individuals move from $H_2 \to C_1$ say, can't then immediately move out of $C_1$. However, *within* each stage, we need to do $X_1 \to X_2$ moves first so that these individuals can progress out of $X_2$ subsequently (since the $X_1$ stages are simply dummy stages used for counting).
-
-### Moving functions {#mover}
-
-The implement the above ideas, create a file `move_pathways.py` containing the code below (hidden for brevity, but can be toggled on).
-
-```{python, code = readLines("../model_code/move_pathways.py"), eval = FALSE}
+```{r child = 'MetaWardsModel.Rmd'}
 ```
-
-> **Additional note**: The functions in the `mover` file operate in turn. Therefore the movement probabilities [above](#parameters) must be altered between each function, in order to get the correct proportions moved. For example, consider that we have $n$ individuals in the $I_2$ class and we want to move a proportion $p_Ip_{IH}$ from $I_2 \to H_1$, a proportion $p_Ip_{IR}$ from $I_2 \to R_I$, and a proportion $p_I\left(1 - p_{IH} - p_{IR}\right)$ from $I_2 \to D_I$, where $p_I = 1 - e^{-\gamma_I}$.
-> 
-> In this case the first `mover` function takes a random binomial sample from the $n$ individuals with probability $p_Ip_{IH}$ as requested, resulting in $n_{IH}$ moves. However, the second `mover` function now operates on the $n - n_{IH}$ individuals, so we need to adjust the sampling probabilities to adjust for this. Hence the second `mover` function needs to sample from the $n - n_{IH}$ individuals with probability $\frac{p_Ip_{IR}}{1 - p_Ip_{IH}}$ in order to generate the correct proportions of moves that we would expect, resulting in $n_{IR}$ moves. Similarly, the third `mover` function now operates on the $n - n_{IH} - n_{IR}$ remaining individuals, and thus we would need to adjust the sampling probability to $\frac{p_I\left(1 - p_{IH} - p_{IR}\right)}{1 - p_I\left(p_{IH} + p_{IR}\right)}$. The remaining individuals remain in $I_2$.
-
-## Interaction matrices
-
-The **interaction matrix** scales the FOI that different demographics have on other demographics. We need to store this in a file called `mix_pathways.py`. Since most of the classes are already infected, it's only the first row that has to contain non-zero entries. Here the `GP_A`, `GP_H` and `GP_C` parameters scale the impact of aymptomatics, hospital cases and critical care cases on the force-of-infection to the general population. All demographics other than `genpop` are already infected, so have no further force-of-infection acting on them, and thus the other parameters can be set to zero. These parameters are all $> 0$.
-
-```{python, code = readLines("../model_code/mix_pathways.py"), eval = FALSE}
-```
-
-## Code {#code}
-
-To run designs, we need to generate a `disease.csv` file containing different parameters to use for different runs. For consistency, we will define three spaces:
-
-* *input* space: this relates to the parameters ranges (defined below);
-* *design* space: this will usually be in $(0, 1)$ or $(-1, 1)$ space;
-* *disease* space: this relates to parameters that are fed into MetaWards.
-
-The *input* and *design* spaces are fairly trivial to convert between, but some more work has to be done to convert between the *input* space and the *disease* space.
-
-The current *input* parameter ranges are:
-\begin{align}
-    \mbox{$R_0$}&: (2.5, 4)\\
-    \mbox{scale asymptomatics}&: (0, 1)\\
-    \mbox{mean incubation period ($T_E$)}&: (4, 6)\\
-    \mbox{mean infectious period ($T_I$)}&: (2, 4)\\
-    \mbox{mean hospital stay ($T_H$)}&: (4, 12)\\
-    \mbox{mean stay in critical care ($T_C$)}&: (?????)\\
-    \mbox{lockdown 1 restrict}&: (0, 1)\\
-    \mbox{lockdown 2 release}&: (0, 1)\\
-    p_{EA}&: (0, 1)\\
-    p_{IH}&: (0, 1)\\
-    p_{IR}&: (0, 1) \quad \mbox{such that}~\sum_{i \in \{H, R\}} p_{Ii} < 1\\
-    p_{HC}&: (0, 1)\\
-    p_{HR}&: (0, 1) \quad \mbox{such that}~\sum_{i \in \{C, R\}} p_{Hi} < 1\\
-    p_{CR}&: (0, 1)\\
-    \beta^S_{A \to GP}&: (0, 1)\\
-    \beta^S_{H \to GP}&: (0, 1)\\
-    \beta^S_{C \to GP}&: (0, 1)
-\end{align}
-(The $\beta^S_{C \to GP}$ type parameters are the scaling rates used in the interaction matrix.)
-
-We need: **ranges for the length of hospital stay** (perhaps chat to Rob Challen)? Current hospital rough guides taken from [https://www.medrxiv.org/content/10.1101/2020.04.23.20076042v1.full.pdf](https://www.medrxiv.org/content/10.1101/2020.04.23.20076042v1.full.pdf). (I've stuck in IQR for comparison, but clearly we need to think about this more.)
-
-To ensure orthogonality, we could reparameterise such that:
-\begin{align}
-    p_{IR} &= \left(1 - p_{IH}\right) p^\prime_{IR}\\
-    p_{HR} &= \left(1 - p_{HC}\right) p^\prime_{HR}
-\end{align}
-and thus we have parameter ranges:
-\begin{align}
-    \mbox{$R_0$}&: (2.5, 4)\\
-    \mbox{scale asymptomatics}&: (0, 1)\\
-    \mbox{mean incubation period ($T_E$)}&: (4, 6)\\
-    \mbox{mean infectious period ($T_I$)}&: (2, 4)\\
-    \mbox{mean hospital stay ($T_H$)}&: (4, 12)\\
-    \mbox{mean time in critical care ($T_C$)}&: (????)\\
-    \mbox{lockdown 1 restrict}&: (0, 1)\\
-    \mbox{lockdown 2 release}&: (0, 1)\\
-    p_{EA}&: (0, 1)\\
-    p_{IH}&: (0, 1)\\
-    p^\prime_{IR}&: (0, 1)\\
-    p_{HC}&: (0, 1)\\
-    p^\prime_{HR}&: (0, 1)\\
-    p_{CR}&: (0, 1)\\
-    \beta^S_{A \to GP}&: (0, 1)\\
-    \beta^S_{H \to GP}&: (0, 1)\\
-    \beta^S_{C \to GP}&: (0, 1)
-\end{align}
-and this has removed the sum-to-one-constraints. 
-
-In R we can set up the *input* parameter ranges as follows:
-
-```{r}
-## set up parameter ranges
-parRanges <- data.frame(
-    parameter = c("r_zero", "incubation_time", "infectious_time", "hospital_time",
-                  "critical_time", "lock_1_restrict", "lock_2_release",
-                  "pEA", "pIH", "pIRprime", "pHC", "pHRprime", "pCR", 
-                  "GP_A", "GP_H", "GP_C"),
-    lower = c(2.5, 4, 2, 4, 4, rep(0, 11)),
-    upper = c(4, 6, 4, 12, 12, rep(1, 11)),
-    stringsAsFactors = FALSE
-)
-```
-
-Firstly we want a function to convert between the *design* and *input* spaces. A short R function called `convertDesignToInput()` which does this is given below. This requires a `design` data frame with columns denoting each *input* parameter in `parRanges` and rows corresponding to design points. There should be an additional column called `output` that defines a unique identifier for each design point, and a column called `repeats` that contains the number of repeats for each design point. The `convertDesignToInput()` function also requires the `parRanges` data frame (defined above). We use the `scale` argument to define whether the design is on the $(0, 1)$ (`scale = "zero_one"`) or $(-1, 1)$ (`scale = "negone_one"`) space.
-
-> **Note**: this function converts the probabilities correctly for the `mover` defined [above](#mover).
-
-```{r, echo = FALSE}
-library(knitr)
-read_chunk("../R_tools/dataTools.R")
-```
-
-```{r, convertDesignToInput}
-```
-
-Once we have done this, we need to transform from the *input* space to the *disease* space for MetaWards. An R function is given below. This requires an `input` data frame, with columns denoting each *input* parameter and rows corresponding to each input points, a number of `repeats` and a column of unique identifiers (`output`).
-
-
-```{r, convertInputToDisease}
-```
-
-Also in `dataTools.R` is a function `ensembleIDGen()` that creates unique IDs for each design point. So an example of a quick LHS design for five design points and five replicates is:
-
-```{r, code = readLines("../convertDesign.R"), eval = FALSE}
-```
-
-This produces a file `inputs/disease.dat` that can be passed to MetaWards to run the model. The `runscript.sh` batch file provides the command line instructions needed to the model using these inputs. This is written for Linux, and should be able to be run directly from the downloaded folder. If you don't run Linux, then the file should give you an idea of how to run the model on your own system.
-
-Once the design has been run, the `extractOutputs.R` file provides some code to extract some summary measures from the outputs. At the current time this relies on some OS-specific code, in order to unzip the compressed SQL database files, which also makes the process slow. Hopefully this will be sorted with a better solution in the future, but it gives you some ideas about what can be done.
-
-The outputs from MetaWards are stored in an SQL database, which can be queried through any SQLite client. The `dplyr` package (or more specifically the `dbplyr` package) provides some useful R tools for querying SQL databases using `tidyverse`-type notation. Some examples are in the `extractOutputs.R` file, and more details can be found [here](https://cran.r-project.org/web/packages/dbplyr/vignettes/dbplyr.html).
-
-```{r, code = readLines("../extractOutput.R"), eval = FALSE}
-```
-
-```{r, echo = FALSE, message = FALSE, warning = FALSE}
-tempdir <- getwd()
-setwd("..")
-source("convertDesign.R")
-system("zip metawards.zip model_code/* R_tools/* vignette/* convertDesign.R extractOutput.R runscript.sh README.sh")
-setwd(tempdir)
-```
-
