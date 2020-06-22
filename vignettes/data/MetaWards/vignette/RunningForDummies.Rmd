@@ -1,6 +1,6 @@
 ## Quick Start Guide {#quickstart}
 
-When performing UQ, it can hardly be overstated how useful it can be to run the model you are analysing for yourself. Obviously, if you can, as with Metawards, this comes with its own problems and dangers, and you might run the model in such a way as not to get anything useful out. Thanks to the work of our team (TJ McKinley and Chris Fenton in particular), and with help from Metawards developer Christopher Woods, we have a model structure [described here](https://uq4covid.github.io/vignettes/data/MetaWards/vignette/MetaWards) and a stable version of the code for running it for UQ and extracting the data for yourselves! 
+When performing UQ, it can hardly be overstated how useful it can be to run the model you are analysing for yourself. Obviously, if you can, as with Metawards, this comes with its own problems and dangers, and you might run the model in such a way as not to get anything useful out. Thanks to the work of our team (TJ McKinley and Chris Fenton in particular), and with help from Metawards developer Christopher Woods, we have a model structure (see **Model Description** tab above) and a (relatively) stable version of the code for running it for UQ and extracting the data for yourselves! 
 
 So why am I writing a "for dummies" guide to using it and not Chris/TJ? Well, because I qualify as a member of the target audience! Today, I went through TJ's instructions, failed in several places and figured out everything I needed to do to run it, so I figured I would pass that knowledge on.
 
@@ -11,24 +11,24 @@ As Mac uses Unix and I am on a Mac, the instructions are identical. There will n
 ### Install Metawards
 
 The easiest thing to do is to open a terminal and type
-```{unix, eval=FALSE}
+```{bash, eval=FALSE}
 pip3 install metawards
 ```
 
 I used `pip3`, you may have Python 3 as default and can use `pip`. The absolute best thing to do is go [here](https://metawards.org/install.html) and follow the instructions. They are really clear. For this part it doesn't matter what directory you are in.
 
 Now, you need to head to a directory where you want the Metawards data to live. If not familar with terminal navigation, I used
-```{unix, eval=FALSE}
+```{bash, eval=FALSE}
 cd Dropbox/BayesExeter
 ```
 
 and you can check if you are happy with what's in the directory with
-```{unix, eval=FALSE}
+```{bash, eval=FALSE}
 ls
 ```
 
 Next install the metawards data files with 
-```{unix, eval=FALSE}
+```{bash, eval=FALSE}
 git clone https://github.com/metawards/MetaWardsData
 ```
 
@@ -83,18 +83,18 @@ One you have made those changes, run the whole script and you are ready to run m
 ### Running Metawards
 
 There are 2 simple steps to this. First, you need to edit the file `runscript.sh`. Simply open it with xcode, and alter the line
-```{unix, eval=FALSE}
+```{bash, eval=FALSE}
 export METAWARDSDATA=$HOME/Dropbox/BayesExeter/MetaWardsData
 ```
-so that the direcroty is the place you cloned the Metawards data above. Now it's run time! The default is to run for 100 days, but you will probably want longer to look at interesting things. The final part of the long line calling Metawards handles this
-```{unix, eval=FALSE}
+so that the directory is the place you cloned the Metawards data above. Now it's run time! The default is to run for 100 days, but you will probably want longer to look at interesting things. The final part of the long line calling Metawards handles this
+```{bash, eval=FALSE}
 --nsteps 100
 ```
 
 and you can alter it in obvious ways.
 
 Open up a terminal and navigate via `cd` to the folder where your `runscript.sh` is. Once there type
-```{unix, eval=FALSE}
+```{bash, eval=FALSE}
 ./runscript.sh
 ```
 

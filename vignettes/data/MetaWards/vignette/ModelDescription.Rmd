@@ -169,7 +169,7 @@ The other demographics (`asymp`, `hospital` and `critical`) have the same struct
 
 If you're happy with SQL, you can query these directly with e.g. SQLite. If you are an R user, then the `dplyr` package (or more specifically the `dbplyr` package) provides some useful R tools for querying SQL databases using `tidyverse`-type notation. More details can be found [here](https://cran.r-project.org/web/packages/dbplyr/vignettes/dbplyr.html).
 
-As a quick example, imagine that we want to extract the **cumulative hospital cases** on say day 100. Here we will need to extract the **new hospital cases** from day 1--100, and then sum them up for each ward. Therefore we need to extract `day`, `ward` and `stage_2` from the `hospital_totals` table, and then sum them up. For speed, `dplyr` converts the R code to SQL, and only pulls the resulting table to R if you run the function `collect()` (see below).
+As a quick example, imagine that we want to extract the **cumulative hospital cases** on say day 100. Here we will need to extract the **new hospital cases** from day 1--100, and then sum them up for each ward. Therefore we need to extract `day`, `ward` and `stage_2` from the `hospital_totals` table, and then sum them up. For speed, `dplyr` converts the R code to SQL, and only pulls the resulting table to R if you run the function `collect()`. An example of this workflow is given below.
 
 ```{r, eval = FALSE}
 ## load library

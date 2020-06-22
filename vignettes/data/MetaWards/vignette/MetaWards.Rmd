@@ -5,14 +5,15 @@ date: "`r format(Sys.time(), '%d %B %Y')`"
 output: 
   html_document:
     code_folding: show
-layout: ../../../default
+    highlight: zenburn
+    css: css/main.css
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-# Introduction {.tabset}
+# Introduction {.tabset .tabset-fade .tabset-pills}
 
 This vignette contains all the details about the current UQ4Covid MetaWards implementation. It consists of various sections that can be accessed through the tabs below:
 
@@ -26,7 +27,7 @@ This vignette contains all the details about the current UQ4Covid MetaWards impl
 ```{r child = 'RunningForDummies.Rmd'}
 ```
 
-```{r child = 'ModelStructure.Rmd'}
+```{r child = 'ModelDescription.Rmd'}
 ```
 
 ```{r child = 'MetaWardsModel.Rmd'}
