@@ -4,14 +4,11 @@
 library(tidyverse)
 
 ## establish connection
-system("bzip2 -d raw_outputs/stages.db.bz2")
-con <- DBI::dbConnect(RSQLite::SQLite(), "raw_outputs/stages.db")
+system("bzip2 -dkf raw_outputs/stages3.db.bz2")
+con <- DBI::dbConnect(RSQLite::SQLite(), "raw_outputs/stages3.db")
 
 ## extract data
-genpop <- tbl(con, "genpop_totals")
-asymp <- tbl(con, "asymp_totals")
-hospital <- tbl(con, "hospital_totals")
-critical <- tbl(con, "critical_totals")
+compact <- tbl(con, "compact")
 
 ## the commands above don't pull down from the database
 ## until you run a 'collect()' pull, but it allows
@@ -20,14 +17,42 @@ critical <- tbl(con, "critical_totals")
 
 ## see e.g. https://db.rstudio.com/dplyr
 
-genpop <- collect(genpop) %>%
-    arrange(ward, day)
-asymp <- collect(asymp) %>%
-    arrange(ward, day)
-hospital <- collect(hospital) %>%
-    arrange(ward, day)
-critical <- collect(critical) %>%
-    arrange(ward, day)
+## now extract and reconstruct by filling in gaps
+compact <- collect(compact)
+
+genpop <- select(compact, day, ward, starts_with("genpop_")) %>%
+    complete(day = 1:10, nesting(ward)) %>%
+    arrange(ward, day) %>%
+    mutate_at(vars(starts_with("genpop_")), ~ifelse(day == 1 & is.na(.), 0, .)) %>%
+    fill(starts_with("genpop_"), .direction = "down") %>%
+    set_names(c("day", "ward", paste0("stage_", 0:5)))
+asymp <- select(compact, day, ward, starts_with("asymp_")) %>%
+    gather(stage, value, -day, -ward) %>%
+    complete(stage = paste0("asymp_", 0:5), nesting(ward, day), fill =list(value = 0)) %>%
+    spread(stage, value) %>%
+    complete(day = 1:10, nesting(ward)) %>%
+    arrange(ward, day) %>%
+    mutate_at(vars(starts_with("asymp_")), ~ifelse(day == 1 & is.na(.), 0, .)) %>%
+    fill(starts_with("asymp_"), .direction = "down") %>%
+    set_names(c("day", "ward", paste0("stage_", 0:5)))
+hospital <- select(compact, day, ward, starts_with("hospital_")) %>%
+    gather(stage, value, -day, -ward) %>%
+    complete(stage = paste0("hospital_", 0:5), nesting(ward, day), fill =list(value = 0)) %>%
+    spread(stage, value) %>%
+    complete(day = 1:10, nesting(ward)) %>%
+    arrange(ward, day) %>%
+    mutate_at(vars(starts_with("hospital_")), ~ifelse(day == 1 & is.na(.), 0, .)) %>%
+    fill(starts_with("hospital_"), .direction = "down") %>%
+    set_names(c("day", "ward", paste0("stage_", 0:5)))
+critical <- select(compact, day, ward, starts_with("critical_")) %>%
+    gather(stage, value, -day, -ward) %>%
+    complete(stage = paste0("critical_", 0:5), nesting(ward, day), fill =list(value = 0)) %>%
+    spread(stage, value) %>%
+    complete(day = 1:10, nesting(ward)) %>%
+    arrange(ward, day) %>%
+    mutate_at(vars(starts_with("critical_")), ~ifelse(day == 1 & is.na(.), 0, .)) %>%
+    fill(starts_with("critical_"), .direction = "down") %>%
+    set_names(c("day", "ward", paste0("stage_", 0:5)))
 results <- list(GP = genpop, A = asymp, H = hospital, C = critical) %>%
     bind_rows(.id = "demo")
 
