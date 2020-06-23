@@ -11,7 +11,7 @@
 
 <meta name="author" content="Danny Williamson" />
 
-<meta name="date" content="2020-06-22" />
+<meta name="date" content="2020-06-23" />
 
 <title>Quick Start Guide</title>
 
@@ -481,12 +481,12 @@ summary {
 
 <h1 class="title toc-ignore">Quick Start Guide</h1>
 <h4 class="author">Danny Williamson</h4>
-<h4 class="date">22 June 2020</h4>
+<h4 class="date">23 June 2020</h4>
 
 </div>
 
 
-<p>When performing UQ, it can hardly be overstated how useful it can be to run the model you are analysing for yourself. Obviously, if you can, as with Metawards, this comes with its own problems and dangers, and you might run the model in such a way as not to get anything useful out. Thanks to the work of our team (TJ McKinley and Chris Fenton in particular), and with help from Metawards developer Christopher Woods, we have a model structure (see <a href="./ModelDescription.html">here</a>) and a (relatively) stable version of the code for running it for UQ and extracting the data for yourselves!</p>
+<p>When performing UQ, it can hardly be overstated how useful it can be to run the model you are analysing for yourself. Obviously, if you can, as with Metawards, this comes with its own problems and dangers, and you might run the model in such a way as not to get anything useful out. Thanks to the work of our team (TJ McKinley and Chris Fenton in particular), and with help from Metawards developer Christopher Woods, we have a model structure (see <a href="data/MetaWards/vignette/ModelDescription.html">here</a>) and a (relatively) stable version of the code for running it for UQ and extracting the data for yourselves!</p>
 <p>So why am I writing a “for dummies” guide to using it and not Chris/TJ? Well, because I qualify as a member of the target audience! Today, I went through TJ’s instructions, failed in several places and figured out everything I needed to do to run it, so I figured I would pass that knowledge on.</p>
 <div id="instructions-for-linuxmac" class="section level2">
 <h2>Instructions for Linux/Mac</h2>
@@ -507,7 +507,7 @@ summary {
 <div id="get-the-uq4covid-version" class="section level2">
 <h2>Get the uq4covid version</h2>
 <p>Now, we get our version of the model, which consists of a number of files needed to do the running, designing and extracting.</p>
-<p><strong>These can be downloaded as a <code>.zip</code> file <a href="../metawards.zip">here</a>.</strong></p>
+<p><strong>These can be downloaded as a <code>.zip</code> file <a href="data/MetaWards/metawards.zip">here</a>.</strong></p>
 <p>Alternatively, these are also on the <code>uq4covid.io</code> repository <a href="https://github.com/UQ4covid/uq4covid.github.io">here</a>, which you should clone onto your machine or pull if you have it already.</p>
 <p>Once you have it, go to directory <code>vignettes/data/MetaWards</code> and there is everything you need. <strong>To ensure we keep the repo version clean, it’s best to copy this folder out to somewhere else.</strong> This guide is going to use RStudio to do most things, so head to this folder in Rstudio and set it as your working directory.</p>
 </div>
@@ -524,7 +524,7 @@ summary {
 <a class="sourceLine" id="cb5-7" title="7">    <span class="dt">upper =</span> <span class="kw">c</span>(<span class="dv">4</span>, <span class="dv">6</span>, <span class="dv">4</span>, <span class="dv">12</span>, <span class="dv">12</span>, <span class="kw">rep</span>(<span class="dv">1</span>, <span class="dv">11</span>)),</a>
 <a class="sourceLine" id="cb5-8" title="8">    <span class="dt">stringsAsFactors =</span> <span class="ot">FALSE</span></a>
 <a class="sourceLine" id="cb5-9" title="9">)</a></code></pre></div>
-<p>You can alter <code>lower</code> and <code>upper</code> for any of the parameters (or even fix some if you like) here. See the <a href="./ModelDescription.html">model description</a> to see what they all do.</p>
+<p>You can alter <code>lower</code> and <code>upper</code> for any of the parameters (or even fix some if you like) here. See the <a href="data/MetaWards/vignette/ModelDescription.html">model description</a> to see what they all do.</p>
 <p>Next, generate your own design. The default is a test 5 member LHC and is in the code like this</p>
 <div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb6-1" title="1">design &lt;-<span class="st"> </span><span class="kw">randomLHS</span>(<span class="dv">5</span>, <span class="kw">nrow</span>(parRanges))</a>
 <a class="sourceLine" id="cb6-2" title="2"><span class="kw">colnames</span>(design) &lt;-<span class="st"> </span>parRanges<span class="op">$</span>parameter</a>
@@ -550,7 +550,7 @@ summary {
 <div id="extracting-data" class="section level2">
 <h2>Extracting data</h2>
 <p>Eventually the fans will cool down and the simulations will be complete. Now you will want to get at some of the outputs. The <code>extractOutput.R</code> file lets you do this. Open this in RStudio.</p>
-<p>If you have all the required libraries, you can just run the whole thing and, by default, you will get the total number of infections in hospitals per ward. There is a lot you can do to customise, and details can be found in the <a href="./ModelDescription.html">Model Description</a>. To get you started, here are some things you can change.</p>
+<p>If you have all the required libraries, you can just run the whole thing and, by default, you will get the total number of infections in hospitals per ward. There is a lot you can do to customise, and details can be found in the <a href="data/MetaWards/vignette/ModelDescription.html">Model Description</a>. To get you started, here are some things you can change.</p>
 <p>The chunk</p>
 <div class="sourceCode" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb11-1" title="1">hospital &lt;-<span class="st"> </span><span class="kw">tbl</span>(con, <span class="st">&quot;hospital_totals&quot;</span>)</a>
 <a class="sourceLine" id="cb11-2" title="2">        hosp_db &lt;-<span class="st"> </span><span class="kw">filter</span>(hospital, day <span class="op">&lt;=</span><span class="st"> </span><span class="dv">100</span>) <span class="op">%&gt;%</span></a>

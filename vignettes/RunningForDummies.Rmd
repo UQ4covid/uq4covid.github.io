@@ -5,10 +5,10 @@ date: "`r format(Sys.time(), '%d %B %Y')`"
 output: 
   html_document:
     highlight: zenburn
-    css: css/main.css
+    css: data/MetaWards/vignette/css/main.css
 ---
 
-When performing UQ, it can hardly be overstated how useful it can be to run the model you are analysing for yourself. Obviously, if you can, as with Metawards, this comes with its own problems and dangers, and you might run the model in such a way as not to get anything useful out. Thanks to the work of our team (TJ McKinley and Chris Fenton in particular), and with help from Metawards developer Christopher Woods, we have a model structure (see [here](./ModelDescription.html)) and a (relatively) stable version of the code for running it for UQ and extracting the data for yourselves! 
+When performing UQ, it can hardly be overstated how useful it can be to run the model you are analysing for yourself. Obviously, if you can, as with Metawards, this comes with its own problems and dangers, and you might run the model in such a way as not to get anything useful out. Thanks to the work of our team (TJ McKinley and Chris Fenton in particular), and with help from Metawards developer Christopher Woods, we have a model structure (see [here](data/MetaWards/vignette/ModelDescription.html)) and a (relatively) stable version of the code for running it for UQ and extracting the data for yourselves! 
 
 So why am I writing a "for dummies" guide to using it and not Chris/TJ? Well, because I qualify as a member of the target audience! Today, I went through TJ's instructions, failed in several places and figured out everything I needed to do to run it, so I figured I would pass that knowledge on.
 
@@ -44,7 +44,7 @@ git clone https://github.com/metawards/MetaWardsData
 
 Now, we get our version of the model, which consists of a number of files needed to do the running, designing and extracting.
 
-**These can be downloaded as a `.zip` file [here](../metawards.zip).**
+**These can be downloaded as a `.zip` file [here](data/MetaWards/metawards.zip).**
 
 Alternatively, these are also on the `uq4covid.io` repository [here](https://github.com/UQ4covid/uq4covid.github.io), which you should clone onto your machine or pull if you have it already.
 
@@ -67,7 +67,7 @@ parRanges <- data.frame(
 )
 ```
 
-You can alter `lower` and `upper` for any of the parameters (or even fix some if you like) here. See the [model description](./ModelDescription.html) to see what they all do.
+You can alter `lower` and `upper` for any of the parameters (or even fix some if you like) here. See the [model description](data/MetaWards/vignette/ModelDescription.html) to see what they all do.
 
 Next, generate your own design. The default is a test 5 member LHC and is in the code like this
 ```{r, eval=FALSE}
@@ -112,7 +112,7 @@ and let the fun begin. Even this small test ensemble took about 10 mins on my ma
 
 Eventually the fans will cool down and the simulations will be complete. Now you will want to get at some of the outputs. The `extractOutput.R` file lets you do this. Open this in RStudio.
 
-If you have all the required libraries, you can just run the whole thing and, by default, you will get the total number of infections in hospitals per ward. There is a lot you can do to customise, and details can be found in the [Model Description](./ModelDescription.html). To get you started, here are some things you can change. 
+If you have all the required libraries, you can just run the whole thing and, by default, you will get the total number of infections in hospitals per ward. There is a lot you can do to customise, and details can be found in the [Model Description](data/MetaWards/vignette/ModelDescription.html). To get you started, here are some things you can change. 
 
 The chunk
 ```{r, eval=FALSE}
