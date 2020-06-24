@@ -35,7 +35,7 @@ def create_tables_3(network: Networks):
 def output_db(population: Population, network: Networks,
               workspace: Workspace, output_dir: OutputFiles, **kwargs):
     Console.print(f"Calling output_db for a {network.__class__} object")
-    conn3 = output_dir.open_db("stages3.db", initialise=create_tables_3(network))
+    conn3 = output_dir.open_db("stages.db", initialise=create_tables_3(network))
     c3 = conn3.cursor()
 
     # get each demographics data
@@ -54,7 +54,8 @@ def output_db(population: Population, network: Networks,
                     _zero_crossings[k] = True
                     Console.print(f"Got first infection in ward {k}")
 
-                # TODO: What is this?? Why are some classes deltas?
+                ## this makes sure that stages 1 and 3 are the number of individuals
+                ## in the class (see model vignette)
                 if j == 1 or j == 3:
                     vals.append(ward_inf_tot[j - 1][k] + ward_inf_tot[j][k])
                 else:

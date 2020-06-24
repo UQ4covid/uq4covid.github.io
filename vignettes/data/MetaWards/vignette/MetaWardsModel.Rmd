@@ -313,15 +313,41 @@ This produces a file `inputs/disease.dat` that can be passed to MetaWards to run
 
 The outputs from MetaWards are stored in an SQL database, which can be queried through any SQLite client. Each model run produces a file called `stages.db.bz2`, which is a compressed database containing the outputs. As an example, migrate to an output folder containing `stages.db.bz2`. To access the outputs you will first have to unzip this file. I do this on the command line e.g.
 
-```{bash, eval = FALSE}
-bzip2 -dk stages.db.bz2
+```{bash}
+bzip2 -dkf stages.db.bz2
 ```
 
-If you're happy with SQL, you can query these directly with e.g. SQLite. If you are an R user, then the `dplyr` package (or more specifically the `dbplyr` package) provides some useful R tools for querying SQL databases using `tidyverse`-type notation. More details can be found [here](https://cran.r-project.org/web/packages/dbplyr/vignettes/dbplyr.html).
+You will notice that the unzipped `stages.db` file is larger than the compressed version, though Chris has done a great job in storing the outputs in a memory efficient way. As such, you might need to remove `stages.db` at the end if you have limited hard drive space (to this end, the `bzip -dkf` flag I used above ensures that the original compressed file is not deleted when uncompressed). 
 
-As a quick example, imagine that we want to extract the **cumulative hospital cases** on say day 100. Here we will need to extract the **new hospital cases** from day 1--100, and then sum them up for each ward. Therefore we need to extract `day`, `ward` and `stage_2` from the `hospital_totals` table, and then sum them up (see [here](#extractor) for more details on how the outputs are stored). For speed, `dplyr` converts the R code to SQL, and only pulls the resulting table to R if you run the function `collect()` (see below).
+The database contains a single table called `compact`. To store the outputs efficiently, we have introduced various tricks:
 
-```{r, eval = FALSE}
+1. Extraneous classes are removed where not relevant for different demographics. For example, for the `genpop` demographic we return `stage_0`--`stage_5`. However, for the `asymp` demographic we only return `stage_2`--`stage_4`, and for the `hospital` and `critical` demographics, we return `stage_2`--`stage_5`.
+2. We only return data for time points *after initial infection in a ward*. This also means that wards that are not infected do not return any results. 
+
+These tricks **hugely** reduce the size of the output data, but means that we have to do some **post-processing** in order to extract quantities of interest. Since the data are stored as an SQL database, we can either query the database diectly, or use some of the tools in e.g. R (see below) to interface with it. So, to clarify, the `stages.db` database contains a table called `compact` with entries:
+
+* `day`, `ward`
+* `genpop_0`--`genpop_5`
+* `asymp_2`--`asymp_4`
+* `hospital_2`--`hospital_5`
+* `critical_2`--`critical_5`
+
+For the `genpop` demographic, these entries correspond to:
+
+* `stage_0`: **new** infections on each day (i.e. new moves into $E$)
+* `stage_1`: current infections on each day (i.e. number of individuals in $E$)
+* `stage_2`: **new** infectious individuals on each day (i.e. new moves into $I$)
+* `stage_3`: current infectious individuals on each day (i.e. number of individuals in $I$)
+* `stage_4`: current removals on each day (i.e. number of individuals in $R$)
+* `stage_5`: current deaths on each day (i.e. number of individuals in $D$)
+
+In the other demographics (`asymp`, `hospital` and `critical`) the `stage_2` and `stage_3` entries correspond to the new and current numbers in either the $A$, $H$ or $C$ classes according to the demographic (refer to the model structure [here](#modelS)).
+
+If you're happy with SQL, you can query these directly with e.g. SQLite. If you are an R user, then the `dplyr` package (or more specifically the `dbplyr` package) provides some useful R tools for querying SQL databases using `tidyverse`-type notation. More details about these tools can be found [here](https://cran.r-project.org/web/packages/dbplyr/vignettes/dbplyr.html).
+
+As a quick example, imagine that we want to extract the **cumulative hospital cases** on say day 100. Here we will need to extract the **new hospital cases** from day 1--100, and then sum them up for each ward. Therefore we need to extract `day`, `ward` and `hospital_2` from the `compact` table.
+
+```{r, message = FALSE, warning = FALSE}
 ## load library
 ## (you might also need to install the 'RSQLite' 
 ## and `dbplyr` packages which 'dplyr' calls)
@@ -330,34 +356,57 @@ library(dplyr)
 ## establish connection to database
 con <- DBI::dbConnect(RSQLite::SQLite(), "stages.db")
 
-## connect to the 'hospital_totals' table
-hospital <- tbl(con, "hospital_totals")
+## connect to the 'compact' table
+hospital <- tbl(con, "compact")
 
-## stage_2 contains the new cases, so sum these
-## over each ward for days 1--100 
-## (NOTE: `hosp_db` contains the query not the outcome,
-## so 'show_query(hosp_db)' can view this if you like)
+## examine
+hospital
+```
+
+By default, the package only pulls down enough data from the database to produce a summary on the screen (notice that it prints the dimensions as `?? x 19`). If the database is small enough, then the `collect()` function can be used to import tables directly into R as a `tibble`. Alternatively, the `dbplyr` package can convert `tidyverse`-style commands into SQL and run these directly within the database. For large databases this is likely to be much more efficient, in terms of speed and memory usage. You can then `collect()` the results of the query into R.
+
+As an example of this latter approach, we will set up a query that sums the **new** hospital cases over the first 10 days in each ward. **Remember**: the database only contains days when some change occurs. For cumulative *incidence* counts this is fine, since the missing data will be zero in each case, so we just need to filter to remove all time points $> 100$. To set up the query:
+
+```{r}
+## hospital_2 contains the new cases, so sum these
+## over each ward for days 1--100
 hosp_db <- filter(hospital, day <= 100) %>%
-    select(ward, stage_2) %>%
+    select(ward, hospital_2) %>%
     group_by(ward) %>%
-    summarise(cH = sum(stage_2))
+    summarise(cH = sum(hospital_2))
+```
 
+This hasn't run any commands yet, rather `hosp_db` contains a parsed SQL query that can be run through the database connection. If you like, you can view the generated SQL query using:
+
+```{r}
+## view query
+show_query(hosp_db)
+```
+
+Now let's run the query and return the results to R by passing `hosp_db` to the  `collect()` function:
+
+```{r}
 ## run query and pull to R
 hosp <- collect(hosp_db)
 
 ## disconnect from database
 DBI::dbDisconnect(con)
+
+## print to screen
+hosp
 ```
 
-Now you can play with `hosp` as much as you like. Note that after you've pulled the correct outputs down, you might want to delete the `stage.db` (**NOT** the `stages.db.bz2`) file. I did this on the Unix command line using:
+Now you can play with `hosp` as much as you like. **Note** that `hosp` here only contains information about wards that have some infections, and only from the time since initial infection. Hence for calibration you might need to expand to fill in the missing wards. Fortunately, R (especially `tidyverse`) has lots of tools for doing this. 
 
-```{bash, eval = FALSE}
-rm stage.db
+Note that after you've pulled the correct outputs down, you might want to delete the `stages.db` (**NOT** the `stages.db.bz2`) file. I did this on the Unix command line using:
+
+```{bash, eval = TRUE}
+rm stages.db
 ```
 
 > **Be careful**: remember that `rm` removes completely, so not to the recycle bin. However, as long as you don't remove `stages.db.bz2` then you can always recover.
 
-You can very easily wrap these ideas into an R function that can scroll through the design IDs, extract relevant outputs and bind to the inputs. An example that you are free to edit at will can be found in the `extractOutputs.R` file in the repo. **At the current time this relies on some OS-specific code, in order to unzip the compressed SQL database files.**
+You can very easily wrap these ideas into an R function that can scroll through the design IDs, extract relevant outputs and bind to the inputs. An example that you are free to edit at will can be found in the `extractOutputs.R` file in the repo.
 
 ```{r, echo = FALSE, message = FALSE, warning = FALSE}
 tempdir <- getwd()

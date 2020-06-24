@@ -1795,8 +1795,8 @@ summary {
 <li><span class="math inline">\(R\)</span>: recovered and immune;</li>
 <li><span class="math inline">\(D\)</span>: died.</li>
 </ul>
-<div id="htmlwidget-fd7940249612a4466154" style="width:100%;height:100%;" class="grViz html-widget"></div>
-<script type="application/json" data-for="htmlwidget-fd7940249612a4466154">{"x":{"diagram":"digraph model {\n    graph[layout = dot, rankdir = LR]\n    node [shape = rectangle]\n    \n    S\n    E1 [label = <E<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]; E2 [label = <E<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\n    I1 [label = <I<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]; I2 [label = <I<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\n    A1 [label = <A<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]; A2 [label = <A<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\n    H1 [label = <H<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]; H2 [label = <H<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\n    C1 [label = <C<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]; C2 [label = <C<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\n    DI [label = <D<FONT POINT-SIZE=\"8\"><SUB>I<\/SUB><\/FONT>>]; DH [label = <D<FONT POINT-SIZE=\"8\"><SUB>H<\/SUB><\/FONT>>]; DC [label = <D<FONT POINT-SIZE=\"8\"><SUB>C<\/SUB><\/FONT>>]\n    RI [label = <R<FONT POINT-SIZE=\"8\"><SUB>I<\/SUB><\/FONT>>]; RH [label = <R<FONT POINT-SIZE=\"8\"><SUB>H<\/SUB><\/FONT>>]; RC [label = <R<FONT POINT-SIZE=\"8\"><SUB>C<\/SUB><\/FONT>>]; RA [label = <R<FONT POINT-SIZE=\"8\"><SUB>A<\/SUB><\/FONT>>]\n    St00 [style = \"invis\"]; St0 [label = \"Stage 0\"]; St1 [label = \"Stage 1\"]; \n    St2 [label = \"Stage 2\"]; St3 [label = \"Stage 3\"]; St4 [label = \"Stage 4\"]; St5 [label = \"Stage 5\"]\n    genpop [label = \"Gen. Pop.\"]\n    hospital [label = \"Hospital Patient\"]\n    critical [label = \"Critical Care\"]\n    asymp [label = \"Asymptomatics\"]\n    \n    St00 -> St0 -> St1 -> St2 -> St3 -> St4 -> St5 [style = \"invis\"]\n    S -> E1 -> E2 -> I1 -> I2 \n    I2 -> RI\n    I2 -> DI [weight = 0]\n    I2 -> H1 -> H2 -> C1 -> C2 \n    C2 -> RC \n    C2 -> DC [weight = 0]\n    H2 -> RH \n    H2 -> DH [weight = 0] \n    RI -> DI [style = \"invis\"]\n    RH -> DH [style = \"invis\"]\n    RC -> DC [style = \"invis\"]\n    E2 -> A1 [weight = 0]\n    A1 -> A2 -> RA \n    genpop -> S [style = \"invis\"]\n    hospital -> H1 [style = \"invis\"]\n    critical -> C1[style = \"invis\"]\n    asymp -> A1 [style = \"invis\"]\n    subgraph {\n      rank = same; St00; genpop; hospital; critical; asymp;\n    }\n    subgraph {\n      rank = same; E1; St0;\n    }\n    subgraph {\n      rank = same; E2; St1;\n    }\n    subgraph cluster {\n      subgraph {\n        rank = same; I1; H1; C1; A1; St2;\n      }\n      subgraph {\n        rank = same; I2; H2; C2; A2; St3;\n      }\n      style = filled;\n      color = lightgrey;\n      label = \"Infectious Classes\"\n    }\n    subgraph {\n      rank = same; RA, RI, RC; RH; St4;\n    }\n    subgraph {\n      rank = same; DI; DH; DC; St5;\n    }\n    \n}","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
+<div id="htmlwidget-3cbbdfb701ae3e7b2843" style="width:100%;height:100%;" class="grViz html-widget"></div>
+<script type="application/json" data-for="htmlwidget-3cbbdfb701ae3e7b2843">{"x":{"diagram":"digraph model {\n    graph[layout = dot, rankdir = LR]\n    node [shape = rectangle]\n    \n    S\n    E1 [label = <E<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]; E2 [label = <E<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\n    I1 [label = <I<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]; I2 [label = <I<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\n    A1 [label = <A<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]; A2 [label = <A<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\n    H1 [label = <H<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]; H2 [label = <H<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\n    C1 [label = <C<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]; C2 [label = <C<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\n    DI [label = <D<FONT POINT-SIZE=\"8\"><SUB>I<\/SUB><\/FONT>>]; DH [label = <D<FONT POINT-SIZE=\"8\"><SUB>H<\/SUB><\/FONT>>]; DC [label = <D<FONT POINT-SIZE=\"8\"><SUB>C<\/SUB><\/FONT>>]\n    RI [label = <R<FONT POINT-SIZE=\"8\"><SUB>I<\/SUB><\/FONT>>]; RH [label = <R<FONT POINT-SIZE=\"8\"><SUB>H<\/SUB><\/FONT>>]; RC [label = <R<FONT POINT-SIZE=\"8\"><SUB>C<\/SUB><\/FONT>>]; RA [label = <R<FONT POINT-SIZE=\"8\"><SUB>A<\/SUB><\/FONT>>]\n    St00 [style = \"invis\"]; St0 [label = \"Stage 0\"]; St1 [label = \"Stage 1\"]; \n    St2 [label = \"Stage 2\"]; St3 [label = \"Stage 3\"]; St4 [label = \"Stage 4\"]; St5 [label = \"Stage 5\"]\n    genpop [label = \"Gen. Pop.\"]\n    hospital [label = \"Hospital Patient\"]\n    critical [label = \"Critical Care\"]\n    asymp [label = \"Asymptomatics\"]\n    \n    St00 -> St0 -> St1 -> St2 -> St3 -> St4 -> St5 [style = \"invis\"]\n    S -> E1 -> E2 -> I1 -> I2 \n    I2 -> RI\n    I2 -> DI [weight = 0]\n    I2 -> H1 -> H2 -> C1 -> C2 \n    C2 -> RC \n    C2 -> DC [weight = 0]\n    H2 -> RH \n    H2 -> DH [weight = 0] \n    RI -> DI [style = \"invis\"]\n    RH -> DH [style = \"invis\"]\n    RC -> DC [style = \"invis\"]\n    E2 -> A1 [weight = 0]\n    A1 -> A2 -> RA \n    genpop -> S [style = \"invis\"]\n    hospital -> H1 [style = \"invis\"]\n    critical -> C1[style = \"invis\"]\n    asymp -> A1 [style = \"invis\"]\n    subgraph {\n      rank = same; St00; genpop; hospital; critical; asymp;\n    }\n    subgraph {\n      rank = same; E1; St0;\n    }\n    subgraph {\n      rank = same; E2; St1;\n    }\n    subgraph cluster {\n      subgraph {\n        rank = same; I1; H1; C1; A1; St2;\n      }\n      subgraph {\n        rank = same; I2; H2; C2; A2; St3;\n      }\n      style = filled;\n      color = lightgrey;\n      label = \"Infectious Classes\"\n    }\n    subgraph {\n      rank = same; RA, RI, RC; RH; St4;\n    }\n    subgraph {\n      rank = same; DI; DH; DC; St5;\n    }\n    \n}","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
 <div id="metawards-setup" class="section level2">
 <h2>MetaWards setup</h2>
 <p>The model structure above allows for different progression pathways. MetaWards deals with this by assigning individuals to different “demographics”, where each demographic can be used to represent different progression pathways. There are also <code>mover</code> functions that can be used to move individuals between demographics, and <code>mixer</code> functions that scale the force-of-infection (FOI) terms between the different demographics (explained later). There are currently seven pathways, which will be described below, but can be summarised as:</p>
@@ -2296,7 +2296,7 @@ summary {
 <a class="sourceLine" id="cb7-35" title="35"><span class="kw">def</span> output_db(population: Population, network: Networks,</a>
 <a class="sourceLine" id="cb7-36" title="36">              workspace: Workspace, output_dir: OutputFiles, <span class="op">**</span>kwargs):</a>
 <a class="sourceLine" id="cb7-37" title="37">    Console.<span class="bu">print</span>(<span class="ss">f&quot;Calling output_db for a </span><span class="sc">{</span>network<span class="sc">.</span>__class__<span class="sc">}</span><span class="ss"> object&quot;</span>)</a>
-<a class="sourceLine" id="cb7-38" title="38">    conn3 <span class="op">=</span> output_dir.open_db(<span class="st">&quot;stages3.db&quot;</span>, initialise<span class="op">=</span>create_tables_3(network))</a>
+<a class="sourceLine" id="cb7-38" title="38">    conn3 <span class="op">=</span> output_dir.open_db(<span class="st">&quot;stages.db&quot;</span>, initialise<span class="op">=</span>create_tables_3(network))</a>
 <a class="sourceLine" id="cb7-39" title="39">    c3 <span class="op">=</span> conn3.cursor()</a>
 <a class="sourceLine" id="cb7-40" title="40"></a>
 <a class="sourceLine" id="cb7-41" title="41">    <span class="co"># get each demographics data</span></a>
@@ -2315,27 +2315,28 @@ summary {
 <a class="sourceLine" id="cb7-54" title="54">                    _zero_crossings[k] <span class="op">=</span> <span class="va">True</span></a>
 <a class="sourceLine" id="cb7-55" title="55">                    Console.<span class="bu">print</span>(<span class="ss">f&quot;Got first infection in ward </span><span class="sc">{k}</span><span class="ss">&quot;</span>)</a>
 <a class="sourceLine" id="cb7-56" title="56"></a>
-<a class="sourceLine" id="cb7-57" title="57">                <span class="co"># </span><span class="al">TODO</span><span class="co">: What is this?? Why are some classes deltas?</span></a>
-<a class="sourceLine" id="cb7-58" title="58">                <span class="cf">if</span> j <span class="op">==</span> <span class="dv">1</span> <span class="kw">or</span> j <span class="op">==</span> <span class="dv">3</span>:</a>
-<a class="sourceLine" id="cb7-59" title="59">                    vals.append(ward_inf_tot[j <span class="op">-</span> <span class="dv">1</span>][k] <span class="op">+</span> ward_inf_tot[j][k])</a>
-<a class="sourceLine" id="cb7-60" title="60">                <span class="cf">else</span>:</a>
-<a class="sourceLine" id="cb7-61" title="61">                    vals.append(ward_inf_tot[j][k])</a>
-<a class="sourceLine" id="cb7-62" title="62">            col2_str <span class="op">=</span> <span class="st">&#39;,&#39;</span>.join(col2_names)</a>
-<a class="sourceLine" id="cb7-63" title="63">            update_cols <span class="op">=</span> col2_names[<span class="dv">2</span>:]</a>
-<a class="sourceLine" id="cb7-64" title="64">            keeps <span class="op">=</span> [vals[x <span class="op">+</span> <span class="dv">2</span>] <span class="cf">for</span> x <span class="kw">in</span> <span class="bu">range</span>(N_INF_CLASSES) <span class="cf">if</span> x <span class="kw">in</span> _out_channels[subnet.name]]</a>
-<a class="sourceLine" id="cb7-65" title="65">            keeps_str <span class="op">=</span> <span class="st">&quot;,&quot;</span>.join([<span class="bu">str</span>(v) <span class="cf">for</span> v <span class="kw">in</span> [population.day, k] <span class="op">+</span> keeps])</a>
-<a class="sourceLine" id="cb7-66" title="66">            update_str <span class="op">=</span> <span class="st">&#39;,&#39;</span>.join([<span class="ss">f&quot;</span><span class="sc">{c}</span><span class="ss"> = </span><span class="sc">{v}</span><span class="ss">&quot;</span> <span class="cf">for</span> c, v <span class="kw">in</span> <span class="bu">zip</span>(update_cols, keeps)])</a>
-<a class="sourceLine" id="cb7-67" title="67">            qstring <span class="op">=</span> <span class="ss">f&quot;insert into compact (</span><span class="sc">{</span>col2_str<span class="sc">}</span><span class="ss">) values (</span><span class="sc">{</span>keeps_str<span class="sc">}</span><span class="ss">) &quot;</span> \</a>
-<a class="sourceLine" id="cb7-68" title="68">                      <span class="ss">f&quot;on conflict(day, ward) do update set </span><span class="sc">{</span>update_str<span class="sc">}</span><span class="ss">&quot;</span></a>
-<a class="sourceLine" id="cb7-69" title="69">            <span class="cf">if</span> _zero_crossings[k] <span class="kw">is</span> <span class="va">True</span>:</a>
-<a class="sourceLine" id="cb7-70" title="70">                c3.execute(qstring)</a>
-<a class="sourceLine" id="cb7-71" title="71">    conn3.commit()</a>
-<a class="sourceLine" id="cb7-72" title="72"></a>
+<a class="sourceLine" id="cb7-57" title="57">                <span class="co">## this makes sure that stages 1 and 3 are the number of individuals</span></a>
+<a class="sourceLine" id="cb7-58" title="58">                <span class="co">## in the class (see model vignette)</span></a>
+<a class="sourceLine" id="cb7-59" title="59">                <span class="cf">if</span> j <span class="op">==</span> <span class="dv">1</span> <span class="kw">or</span> j <span class="op">==</span> <span class="dv">3</span>:</a>
+<a class="sourceLine" id="cb7-60" title="60">                    vals.append(ward_inf_tot[j <span class="op">-</span> <span class="dv">1</span>][k] <span class="op">+</span> ward_inf_tot[j][k])</a>
+<a class="sourceLine" id="cb7-61" title="61">                <span class="cf">else</span>:</a>
+<a class="sourceLine" id="cb7-62" title="62">                    vals.append(ward_inf_tot[j][k])</a>
+<a class="sourceLine" id="cb7-63" title="63">            col2_str <span class="op">=</span> <span class="st">&#39;,&#39;</span>.join(col2_names)</a>
+<a class="sourceLine" id="cb7-64" title="64">            update_cols <span class="op">=</span> col2_names[<span class="dv">2</span>:]</a>
+<a class="sourceLine" id="cb7-65" title="65">            keeps <span class="op">=</span> [vals[x <span class="op">+</span> <span class="dv">2</span>] <span class="cf">for</span> x <span class="kw">in</span> <span class="bu">range</span>(N_INF_CLASSES) <span class="cf">if</span> x <span class="kw">in</span> _out_channels[subnet.name]]</a>
+<a class="sourceLine" id="cb7-66" title="66">            keeps_str <span class="op">=</span> <span class="st">&quot;,&quot;</span>.join([<span class="bu">str</span>(v) <span class="cf">for</span> v <span class="kw">in</span> [population.day, k] <span class="op">+</span> keeps])</a>
+<a class="sourceLine" id="cb7-67" title="67">            update_str <span class="op">=</span> <span class="st">&#39;,&#39;</span>.join([<span class="ss">f&quot;</span><span class="sc">{c}</span><span class="ss"> = </span><span class="sc">{v}</span><span class="ss">&quot;</span> <span class="cf">for</span> c, v <span class="kw">in</span> <span class="bu">zip</span>(update_cols, keeps)])</a>
+<a class="sourceLine" id="cb7-68" title="68">            qstring <span class="op">=</span> <span class="ss">f&quot;insert into compact (</span><span class="sc">{</span>col2_str<span class="sc">}</span><span class="ss">) values (</span><span class="sc">{</span>keeps_str<span class="sc">}</span><span class="ss">) &quot;</span> \</a>
+<a class="sourceLine" id="cb7-69" title="69">                      <span class="ss">f&quot;on conflict(day, ward) do update set </span><span class="sc">{</span>update_str<span class="sc">}</span><span class="ss">&quot;</span></a>
+<a class="sourceLine" id="cb7-70" title="70">            <span class="cf">if</span> _zero_crossings[k] <span class="kw">is</span> <span class="va">True</span>:</a>
+<a class="sourceLine" id="cb7-71" title="71">                c3.execute(qstring)</a>
+<a class="sourceLine" id="cb7-72" title="72">    conn3.commit()</a>
 <a class="sourceLine" id="cb7-73" title="73"></a>
-<a class="sourceLine" id="cb7-74" title="74"><span class="kw">def</span> extract_db(<span class="op">**</span>kwargs):</a>
-<a class="sourceLine" id="cb7-75" title="75">    funcs <span class="op">=</span> []</a>
-<a class="sourceLine" id="cb7-76" title="76">    funcs.append(output_db)</a>
-<a class="sourceLine" id="cb7-77" title="77">    <span class="cf">return</span> funcs</a></code></pre></div>
+<a class="sourceLine" id="cb7-74" title="74"></a>
+<a class="sourceLine" id="cb7-75" title="75"><span class="kw">def</span> extract_db(<span class="op">**</span>kwargs):</a>
+<a class="sourceLine" id="cb7-76" title="76">    funcs <span class="op">=</span> []</a>
+<a class="sourceLine" id="cb7-77" title="77">    funcs.append(output_db)</a>
+<a class="sourceLine" id="cb7-78" title="78">    <span class="cf">return</span> funcs</a></code></pre></div>
 </div>
 <div id="code" class="section level2">
 <h2>Input and output code</h2>
@@ -2529,9 +2530,33 @@ summary {
 <a class="sourceLine" id="cb11-46" title="46"><span class="kw">saveRDS</span>(parRanges, <span class="st">&quot;inputs/parRanges.rds&quot;</span>)</a></code></pre></div>
 <p>This produces a file <code>inputs/disease.dat</code> that can be passed to MetaWards to run the model. The <code>runscript.sh</code> batch file provides the command line instructions needed to the model using these inputs. This is written for Linux, and should be able to be run directly from the downloaded folder. If you don’t run Linux, then the file should give you an idea of how to run the model on your own system.</p>
 <p>The outputs from MetaWards are stored in an SQL database, which can be queried through any SQLite client. Each model run produces a file called <code>stages.db.bz2</code>, which is a compressed database containing the outputs. As an example, migrate to an output folder containing <code>stages.db.bz2</code>. To access the outputs you will first have to unzip this file. I do this on the command line e.g.</p>
-<div class="sourceCode" id="cb12"><pre class="sourceCode bash"><code class="sourceCode bash"><a class="sourceLine" id="cb12-1" title="1"><span class="fu">bzip2</span> -dk stages.db.bz2</a></code></pre></div>
-<p>If you’re happy with SQL, you can query these directly with e.g. SQLite. If you are an R user, then the <code>dplyr</code> package (or more specifically the <code>dbplyr</code> package) provides some useful R tools for querying SQL databases using <code>tidyverse</code>-type notation. More details can be found <a href="https://cran.r-project.org/web/packages/dbplyr/vignettes/dbplyr.html">here</a>.</p>
-<p>As a quick example, imagine that we want to extract the <strong>cumulative hospital cases</strong> on say day 100. Here we will need to extract the <strong>new hospital cases</strong> from day 1–100, and then sum them up for each ward. Therefore we need to extract <code>day</code>, <code>ward</code> and <code>stage_2</code> from the <code>hospital_totals</code> table, and then sum them up (see <a href="#extractor">here</a> for more details on how the outputs are stored). For speed, <code>dplyr</code> converts the R code to SQL, and only pulls the resulting table to R if you run the function <code>collect()</code> (see below).</p>
+<div class="sourceCode" id="cb12"><pre class="sourceCode bash"><code class="sourceCode bash"><a class="sourceLine" id="cb12-1" title="1"><span class="fu">bzip2</span> -dkf stages.db.bz2</a></code></pre></div>
+<p>You will notice that the unzipped <code>stages.db</code> file is larger than the compressed version, though Chris has done a great job in storing the outputs in a memory efficient way. As such, you might need to remove <code>stages.db</code> at the end if you have limited hard drive space (to this end, the <code>bzip -dkf</code> flag I used above ensures that the original compressed file is not deleted when uncompressed).</p>
+<p>The database contains a single table called <code>compact</code>. To store the outputs efficiently, we have introduced various tricks:</p>
+<ol style="list-style-type: decimal">
+<li>Extraneous classes are removed where not relevant for different demographics. For example, for the <code>genpop</code> demographic we return <code>stage_0</code>–<code>stage_5</code>. However, for the <code>asymp</code> demographic we only return <code>stage_2</code>–<code>stage_4</code>, and for the <code>hospital</code> and <code>critical</code> demographics, we return <code>stage_2</code>–<code>stage_5</code>.</li>
+<li>We only return data for time points <em>after initial infection in a ward</em>. This also means that wards that are not infected do not return any results.</li>
+</ol>
+<p>These tricks <strong>hugely</strong> reduce the size of the output data, but means that we have to do some <strong>post-processing</strong> in order to extract quantities of interest. Since the data are stored as an SQL database, we can either query the database diectly, or use some of the tools in e.g. R (see below) to interface with it. So, to clarify, the <code>stages.db</code> database contains a table called <code>compact</code> with entries:</p>
+<ul>
+<li><code>day</code>, <code>ward</code></li>
+<li><code>genpop_0</code>–<code>genpop_5</code></li>
+<li><code>asymp_2</code>–<code>asymp_4</code></li>
+<li><code>hospital_2</code>–<code>hospital_5</code></li>
+<li><code>critical_2</code>–<code>critical_5</code></li>
+</ul>
+<p>For the <code>genpop</code> demographic, these entries correspond to:</p>
+<ul>
+<li><code>stage_0</code>: <strong>new</strong> infections on each day (i.e. new moves into <span class="math inline">\(E\)</span>)</li>
+<li><code>stage_1</code>: current infections on each day (i.e. number of individuals in <span class="math inline">\(E\)</span>)</li>
+<li><code>stage_2</code>: <strong>new</strong> infectious individuals on each day (i.e. new moves into <span class="math inline">\(I\)</span>)</li>
+<li><code>stage_3</code>: current infectious individuals on each day (i.e. number of individuals in <span class="math inline">\(I\)</span>)</li>
+<li><code>stage_4</code>: current removals on each day (i.e. number of individuals in <span class="math inline">\(R\)</span>)</li>
+<li><code>stage_5</code>: current deaths on each day (i.e. number of individuals in <span class="math inline">\(D\)</span>)</li>
+</ul>
+<p>In the other demographics (<code>asymp</code>, <code>hospital</code> and <code>critical</code>) the <code>stage_2</code> and <code>stage_3</code> entries correspond to the new and current numbers in either the <span class="math inline">\(A\)</span>, <span class="math inline">\(H\)</span> or <span class="math inline">\(C\)</span> classes according to the demographic (refer to the model structure <a href="#modelS">here</a>).</p>
+<p>If you’re happy with SQL, you can query these directly with e.g. SQLite. If you are an R user, then the <code>dplyr</code> package (or more specifically the <code>dbplyr</code> package) provides some useful R tools for querying SQL databases using <code>tidyverse</code>-type notation. More details about these tools can be found <a href="https://cran.r-project.org/web/packages/dbplyr/vignettes/dbplyr.html">here</a>.</p>
+<p>As a quick example, imagine that we want to extract the <strong>cumulative hospital cases</strong> on say day 100. Here we will need to extract the <strong>new hospital cases</strong> from day 1–100, and then sum them up for each ward. Therefore we need to extract <code>day</code>, <code>ward</code> and <code>hospital_2</code> from the <code>compact</code> table.</p>
 <div class="sourceCode" id="cb13"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb13-1" title="1"><span class="co">## load library</span></a>
 <a class="sourceLine" id="cb13-2" title="2"><span class="co">## (you might also need to install the &#39;RSQLite&#39; </span></a>
 <a class="sourceLine" id="cb13-3" title="3"><span class="co">## and `dbplyr` packages which &#39;dplyr&#39; calls)</span></a>
@@ -2540,29 +2565,80 @@ summary {
 <a class="sourceLine" id="cb13-6" title="6"><span class="co">## establish connection to database</span></a>
 <a class="sourceLine" id="cb13-7" title="7">con &lt;-<span class="st"> </span>DBI<span class="op">::</span><span class="kw">dbConnect</span>(RSQLite<span class="op">::</span><span class="kw">SQLite</span>(), <span class="st">&quot;stages.db&quot;</span>)</a>
 <a class="sourceLine" id="cb13-8" title="8"></a>
-<a class="sourceLine" id="cb13-9" title="9"><span class="co">## connect to the &#39;hospital_totals&#39; table</span></a>
-<a class="sourceLine" id="cb13-10" title="10">hospital &lt;-<span class="st"> </span><span class="kw">tbl</span>(con, <span class="st">&quot;hospital_totals&quot;</span>)</a>
+<a class="sourceLine" id="cb13-9" title="9"><span class="co">## connect to the &#39;compact&#39; table</span></a>
+<a class="sourceLine" id="cb13-10" title="10">hospital &lt;-<span class="st"> </span><span class="kw">tbl</span>(con, <span class="st">&quot;compact&quot;</span>)</a>
 <a class="sourceLine" id="cb13-11" title="11"></a>
-<a class="sourceLine" id="cb13-12" title="12"><span class="co">## stage_2 contains the new cases, so sum these</span></a>
-<a class="sourceLine" id="cb13-13" title="13"><span class="co">## over each ward for days 1--100 </span></a>
-<a class="sourceLine" id="cb13-14" title="14"><span class="co">## (</span><span class="al">NOTE</span><span class="co">: `hosp_db` contains the query not the outcome,</span></a>
-<a class="sourceLine" id="cb13-15" title="15"><span class="co">## so &#39;show_query(hosp_db)&#39; can view this if you like)</span></a>
-<a class="sourceLine" id="cb13-16" title="16">hosp_db &lt;-<span class="st"> </span><span class="kw">filter</span>(hospital, day <span class="op">&lt;=</span><span class="st"> </span><span class="dv">100</span>) <span class="op">%&gt;%</span></a>
-<a class="sourceLine" id="cb13-17" title="17"><span class="st">    </span><span class="kw">select</span>(ward, stage_<span class="dv">2</span>) <span class="op">%&gt;%</span></a>
-<a class="sourceLine" id="cb13-18" title="18"><span class="st">    </span><span class="kw">group_by</span>(ward) <span class="op">%&gt;%</span></a>
-<a class="sourceLine" id="cb13-19" title="19"><span class="st">    </span><span class="kw">summarise</span>(<span class="dt">cH =</span> <span class="kw">sum</span>(stage_<span class="dv">2</span>))</a>
-<a class="sourceLine" id="cb13-20" title="20"></a>
-<a class="sourceLine" id="cb13-21" title="21"><span class="co">## run query and pull to R</span></a>
-<a class="sourceLine" id="cb13-22" title="22">hosp &lt;-<span class="st"> </span><span class="kw">collect</span>(hosp_db)</a>
-<a class="sourceLine" id="cb13-23" title="23"></a>
-<a class="sourceLine" id="cb13-24" title="24"><span class="co">## disconnect from database</span></a>
-<a class="sourceLine" id="cb13-25" title="25">DBI<span class="op">::</span><span class="kw">dbDisconnect</span>(con)</a></code></pre></div>
-<p>Now you can play with <code>hosp</code> as much as you like. Note that after you’ve pulled the correct outputs down, you might want to delete the <code>stage.db</code> (<strong>NOT</strong> the <code>stages.db.bz2</code>) file. I did this on the Unix command line using:</p>
-<div class="sourceCode" id="cb14"><pre class="sourceCode bash"><code class="sourceCode bash"><a class="sourceLine" id="cb14-1" title="1"><span class="fu">rm</span> stage.db</a></code></pre></div>
+<a class="sourceLine" id="cb13-12" title="12"><span class="co">## examine</span></a>
+<a class="sourceLine" id="cb13-13" title="13">hospital</a></code></pre></div>
+<pre><code>## # Source:   table&lt;compact&gt; [?? x 19]
+## # Database: sqlite 3.30.1
+## #   [/home/tj/Documents/covid/uq4covid.github.io/vignettes/data/MetaWards/vignette/stages.db]
+##      day  ward genpop_0 genpop_1 genpop_2 genpop_3 genpop_4 genpop_5 asymp_2
+##    &lt;int&gt; &lt;int&gt;    &lt;int&gt;    &lt;int&gt;    &lt;int&gt;    &lt;int&gt;    &lt;int&gt;    &lt;int&gt;   &lt;int&gt;
+##  1     1   255        5        5        0        0        0        0       0
+##  2     2   255        0        5        0        0        0        0       0
+##  3     3   255        0        5        0        0        0        0       0
+##  4     4   255        0        5        0        0        0        0       0
+##  5     5   255        1        4        2        2        0        0       0
+##  6     5  2553        1        1        0        0        0        0       0
+##  7     6   238        1        1        0        0        0        0       0
+##  8     6   255        0        4        0        2        0        0       0
+##  9     6  2553        1        1        0        0        0        0       1
+## 10     7   238        0        1        0        0        0        0       0
+## # … with more rows, and 10 more variables: asymp_3 &lt;int&gt;, asymp_4 &lt;int&gt;,
+## #   hospital_2 &lt;int&gt;, hospital_3 &lt;int&gt;, hospital_4 &lt;int&gt;, hospital_5 &lt;int&gt;,
+## #   critical_2 &lt;int&gt;, critical_3 &lt;int&gt;, critical_4 &lt;int&gt;, critical_5 &lt;int&gt;</code></pre>
+<p>By default, the package only pulls down enough data from the database to produce a summary on the screen (notice that it prints the dimensions as <code>?? x 19</code>). If the database is small enough, then the <code>collect()</code> function can be used to import tables directly into R as a <code>tibble</code>. Alternatively, the <code>dbplyr</code> package can convert <code>tidyverse</code>-style commands into SQL and run these directly within the database. For large databases this is likely to be much more efficient, in terms of speed and memory usage. You can then <code>collect()</code> the results of the query into R.</p>
+<p>As an example of this latter approach, we will set up a query that sums the <strong>new</strong> hospital cases over the first 10 days in each ward. <strong>Remember</strong>: the database only contains days when some change occurs. For cumulative <em>incidence</em> counts this is fine, since the missing data will be zero in each case, so we just need to filter to remove all time points <span class="math inline">\(&gt; 100\)</span>. To set up the query:</p>
+<div class="sourceCode" id="cb15"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb15-1" title="1"><span class="co">## hospital_2 contains the new cases, so sum these</span></a>
+<a class="sourceLine" id="cb15-2" title="2"><span class="co">## over each ward for days 1--100</span></a>
+<a class="sourceLine" id="cb15-3" title="3">hosp_db &lt;-<span class="st"> </span><span class="kw">filter</span>(hospital, day <span class="op">&lt;=</span><span class="st"> </span><span class="dv">100</span>) <span class="op">%&gt;%</span></a>
+<a class="sourceLine" id="cb15-4" title="4"><span class="st">    </span><span class="kw">select</span>(ward, hospital_<span class="dv">2</span>) <span class="op">%&gt;%</span></a>
+<a class="sourceLine" id="cb15-5" title="5"><span class="st">    </span><span class="kw">group_by</span>(ward) <span class="op">%&gt;%</span></a>
+<a class="sourceLine" id="cb15-6" title="6"><span class="st">    </span><span class="kw">summarise</span>(<span class="dt">cH =</span> <span class="kw">sum</span>(hospital_<span class="dv">2</span>))</a></code></pre></div>
+<p>This hasn’t run any commands yet, rather <code>hosp_db</code> contains a parsed SQL query that can be run through the database connection. If you like, you can view the generated SQL query using:</p>
+<div class="sourceCode" id="cb16"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb16-1" title="1"><span class="co">## view query</span></a>
+<a class="sourceLine" id="cb16-2" title="2"><span class="kw">show_query</span>(hosp_db)</a></code></pre></div>
+<pre><code>## &lt;SQL&gt;</code></pre>
+<pre><code>## Warning: Missing values are always removed in SQL.
+## Use `SUM(x, na.rm = TRUE)` to silence this warning
+## This warning is displayed only once per session.</code></pre>
+<pre><code>## SELECT `ward`, SUM(`hospital_2`) AS `cH`
+## FROM (SELECT `ward`, `hospital_2`
+## FROM (SELECT *
+## FROM `compact`
+## WHERE (`day` &lt;= 100.0)))
+## GROUP BY `ward`</code></pre>
+<p>Now let’s run the query and return the results to R by passing <code>hosp_db</code> to the <code>collect()</code> function:</p>
+<div class="sourceCode" id="cb20"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb20-1" title="1"><span class="co">## run query and pull to R</span></a>
+<a class="sourceLine" id="cb20-2" title="2">hosp &lt;-<span class="st"> </span><span class="kw">collect</span>(hosp_db)</a>
+<a class="sourceLine" id="cb20-3" title="3"></a>
+<a class="sourceLine" id="cb20-4" title="4"><span class="co">## disconnect from database</span></a>
+<a class="sourceLine" id="cb20-5" title="5">DBI<span class="op">::</span><span class="kw">dbDisconnect</span>(con)</a>
+<a class="sourceLine" id="cb20-6" title="6"></a>
+<a class="sourceLine" id="cb20-7" title="7"><span class="co">## print to screen</span></a>
+<a class="sourceLine" id="cb20-8" title="8">hosp</a></code></pre></div>
+<pre><code>## # A tibble: 8,579 x 2
+##     ward    cH
+##    &lt;int&gt; &lt;int&gt;
+##  1     1   135
+##  2     2     9
+##  3     3   103
+##  4     4   132
+##  5     5   124
+##  6     6   171
+##  7     7   164
+##  8     8   154
+##  9     9   123
+## 10    10   168
+## # … with 8,569 more rows</code></pre>
+<p>Now you can play with <code>hosp</code> as much as you like. <strong>Note</strong> that <code>hosp</code> here only contains information about wards that have some infections, and only from the time since initial infection. Hence for calibration you might need to expand to fill in the missing wards. Fortunately, R (especially <code>tidyverse</code>) has lots of tools for doing this.</p>
+<p>Note that after you’ve pulled the correct outputs down, you might want to delete the <code>stages.db</code> (<strong>NOT</strong> the <code>stages.db.bz2</code>) file. I did this on the Unix command line using:</p>
+<div class="sourceCode" id="cb22"><pre class="sourceCode bash"><code class="sourceCode bash"><a class="sourceLine" id="cb22-1" title="1"><span class="fu">rm</span> stages.db</a></code></pre></div>
 <blockquote>
 <p><strong>Be careful</strong>: remember that <code>rm</code> removes completely, so not to the recycle bin. However, as long as you don’t remove <code>stages.db.bz2</code> then you can always recover.</p>
 </blockquote>
-<p>You can very easily wrap these ideas into an R function that can scroll through the design IDs, extract relevant outputs and bind to the inputs. An example that you are free to edit at will can be found in the <code>extractOutputs.R</code> file in the repo. <strong>At the current time this relies on some OS-specific code, in order to unzip the compressed SQL database files.</strong></p>
+<p>You can very easily wrap these ideas into an R function that can scroll through the design IDs, extract relevant outputs and bind to the inputs. An example that you are free to edit at will can be found in the <code>extractOutputs.R</code> file in the repo.</p>
 <pre><code>## [1] &quot;NEED TO GET RANGES FIGURED OUT, THIS IS A TEST&quot;</code></pre>
 </div>
 

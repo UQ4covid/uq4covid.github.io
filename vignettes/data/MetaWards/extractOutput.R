@@ -39,17 +39,18 @@ cH <- map2(design$output, design$repeats, function(hash, reps) {
         path <- paste0("raw_outputs/", hash, "/stages.db")
         
         ## unzip DB
-        system(paste0("bzip2 -dk ", path, ".bz2"))
+        system(paste0("bzip2 -dkf ", path, ".bz2"))
         
         ## establish connection
         con <- DBI::dbConnect(RSQLite::SQLite(), path)
         
-        ## stage_2 in the hospital demographic contains the new incidence
-        hospital <- tbl(con, "hospital_totals")
-        hosp_db <- filter(hospital, day <= 100) %>%
-            select(ward, stage_2) %>%
+        ## hospital_2 in the compact table contains the new incidence
+        compact <- tbl(con, "compact")
+        hosp_db <- filter(compact, day <= 100) %>%
+            select(ward, hospital_2) %>%
             group_by(ward) %>%
-            summarise(cH = sum(stage_2))
+            summarise(cH = sum(hospital_2))
+        
         ## collect outcome of query
         hosp <- collect(hosp_db)
         
@@ -57,8 +58,7 @@ cH <- map2(design$output, design$repeats, function(hash, reps) {
         DBI::dbDisconnect(con)
         
         ## remove DB
-        ## using gio trash just in case anything goes wrong
-        system(paste0("gio trash ", path))
+        system(paste0("rm ", path))
         
         ## return counts by ward
         hosp

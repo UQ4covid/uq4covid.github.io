@@ -1792,8 +1792,8 @@ summary {
 <li><span class="math inline">\(R\)</span>: recovered and immune;</li>
 <li><span class="math inline">\(D\)</span>: died.</li>
 </ul>
-<div id="htmlwidget-8776532ab5bc0456c57b" style="width:100%;height:100%;" class="grViz html-widget"></div>
-<script type="application/json" data-for="htmlwidget-8776532ab5bc0456c57b">{"x":{"diagram":"digraph simpmod {\n    graph[layout = dot, rankdir = LR]\n    node [shape = rectangle]\n    \n    S\n    E [label = \"E\"];\n    I [label = \"I\"]; \n    A [label = \"A\"]; \n    H [label = \"H\"]; \n    C [label = \"C\"]; \n    DI [label = <D<FONT POINT-SIZE=\"8\"><SUB>I<\/SUB><\/FONT>>]; DH [label = <D<FONT POINT-SIZE=\"8\"><SUB>H<\/SUB><\/FONT>>]; DC [label = <D<FONT POINT-SIZE=\"8\"><SUB>C<\/SUB><\/FONT>>]\n    RI [label = <R<FONT POINT-SIZE=\"8\"><SUB>I<\/SUB><\/FONT>>]; RH [label = <R<FONT POINT-SIZE=\"8\"><SUB>H<\/SUB><\/FONT>>]; RC [label = <R<FONT POINT-SIZE=\"8\"><SUB>C<\/SUB><\/FONT>>]; RA [label = <R<FONT POINT-SIZE=\"8\"><SUB>A<\/SUB><\/FONT>>]\n    genpop [label = \"Gen. Pop.\"]\n    hospital [label = \"Hospital Patient\"]\n    critical [label = \"Critical Care\"]\n    asymp [label = \"Asymptomatics\"]\n    \n    S -> E -> I\n    I -> RI\n    I -> DI [weight = 0]\n    I -> H -> C\n    C -> RC \n    C -> DC [weight = 0]\n    H -> RH \n    H -> DH [weight = 0] \n    RI -> DI [style = \"invis\"]\n    RH -> DH [style = \"invis\"]\n    RC -> DC [style = \"invis\"]\n    E -> A [weight = 0]\n    A -> RA \n    genpop -> S [style = \"invis\"]\n    hospital -> H [style = \"invis\"]\n    critical -> C [style = \"invis\"]\n    asymp -> A [style = \"invis\"]\n    subgraph {\n      rank = same; asymp -> genpop -> hospital -> critical [style = \"invis\"]\n    }\n    subgraph cluster {\n      subgraph {\n        rank = same; A -> I -> H -> C [style = \"invis\"]\n      }\n      style = filled;\n      color = lightgrey;\n      label = \"Infectious Classes\"\n    }\n    subgraph {\n      rank = same; RA, RI, RC; RH;\n    }\n    subgraph {\n      rank = same; DI; DH; DC;\n    }\n    \n}","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
+<div id="htmlwidget-3722bd382c3846271c13" style="width:100%;height:100%;" class="grViz html-widget"></div>
+<script type="application/json" data-for="htmlwidget-3722bd382c3846271c13">{"x":{"diagram":"digraph simpmod {\n    graph[layout = dot, rankdir = LR]\n    node [shape = rectangle]\n    \n    S\n    E [label = \"E\"];\n    I [label = \"I\"]; \n    A [label = \"A\"]; \n    H [label = \"H\"]; \n    C [label = \"C\"]; \n    DI [label = <D<FONT POINT-SIZE=\"8\"><SUB>I<\/SUB><\/FONT>>]; DH [label = <D<FONT POINT-SIZE=\"8\"><SUB>H<\/SUB><\/FONT>>]; DC [label = <D<FONT POINT-SIZE=\"8\"><SUB>C<\/SUB><\/FONT>>]\n    RI [label = <R<FONT POINT-SIZE=\"8\"><SUB>I<\/SUB><\/FONT>>]; RH [label = <R<FONT POINT-SIZE=\"8\"><SUB>H<\/SUB><\/FONT>>]; RC [label = <R<FONT POINT-SIZE=\"8\"><SUB>C<\/SUB><\/FONT>>]; RA [label = <R<FONT POINT-SIZE=\"8\"><SUB>A<\/SUB><\/FONT>>]\n    genpop [label = \"Gen. Pop.\"]\n    hospital [label = \"Hospital Patient\"]\n    critical [label = \"Critical Care\"]\n    asymp [label = \"Asymptomatics\"]\n    \n    S -> E -> I\n    I -> RI\n    I -> DI [weight = 0]\n    I -> H -> C\n    C -> RC \n    C -> DC [weight = 0]\n    H -> RH \n    H -> DH [weight = 0] \n    RI -> DI [style = \"invis\"]\n    RH -> DH [style = \"invis\"]\n    RC -> DC [style = \"invis\"]\n    E -> A [weight = 0]\n    A -> RA \n    genpop -> S [style = \"invis\"]\n    hospital -> H [style = \"invis\"]\n    critical -> C [style = \"invis\"]\n    asymp -> A [style = \"invis\"]\n    subgraph {\n      rank = same; asymp -> genpop -> hospital -> critical [style = \"invis\"]\n    }\n    subgraph cluster {\n      subgraph {\n        rank = same; A -> I -> H -> C [style = \"invis\"]\n      }\n      style = filled;\n      color = lightgrey;\n      label = \"Infectious Classes\"\n    }\n    subgraph {\n      rank = same; RA, RI, RC; RH;\n    }\n    subgraph {\n      rank = same; DI; DH; DC;\n    }\n    \n}","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
 <div id="metawards-setup" class="section level2">
 <h2>MetaWards setup</h2>
 <p>The model structure above allows for different progression pathways. MetaWards deals with this by assigning individuals to different “demographics”, where each demographic can be used to represent different progression pathways. There are currently seven pathways, which will be described below, which can be summarised as:</p>
@@ -1864,19 +1864,22 @@ summary {
 <div id="outputS" class="section level2">
 <h2>Outputs</h2>
 <p>The outputs from MetaWards are stored in an SQL database, which can be queried through any SQLite client. Each model run produces a file called <code>stages.db.bz2</code>, which is a compressed database containing the outputs. To access this you will first have to unzip it. I do this on the command line e.g.</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode bash"><code class="sourceCode bash"><a class="sourceLine" id="cb1-1" title="1"><span class="fu">bzip2</span> -dk stages.db.bz2</a></code></pre></div>
-<p>You will notice that the unzipped <code>stages.db</code> file is <strong>much</strong> larger than the compressed version, so we need to be careful to remove <code>stages.db</code> at the end if we have limited hard drive space. The database contains four tables:</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode bash"><code class="sourceCode bash"><a class="sourceLine" id="cb1-1" title="1"><span class="fu">bzip2</span> -dkf stages.db.bz2</a></code></pre></div>
+<p>You will notice that the unzipped <code>stages.db</code> file is larger than the compressed version, though Chris has done a great job in storing the outputs in a memory efficient way. As such, you might need to remove <code>stages.db</code> at the end if you have limited hard drive space (to this end, the <code>bzip -dkf</code> flag I used above ensures that the original compressed file is not deleted when uncompressed).</p>
+<p>The database contains a single table called <code>compact</code>. To store the outputs efficiently, we have introduced various tricks:</p>
+<ol style="list-style-type: decimal">
+<li>Extraneous classes are removed where not relevant for different demographics. For example, for the <code>genpop</code> demographic we return <code>stage_0</code>–<code>stage_5</code>. However, for the <code>asymp</code> demographic we only return <code>stage_2</code>–<code>stage_4</code>, and for the <code>hospital</code> and <code>critical</code> demographics, we return <code>stage_2</code>–<code>stage_5</code>.</li>
+<li>We only return data for time points <em>after initial infection in a ward</em>. This also means that wards that are not infected do not return any results.</li>
+</ol>
+<p>These tricks <strong>hugely</strong> reduce the size of the output data, but means that we have to do some <strong>post-processing</strong> in order to extract quantities of interest. Since the data are stored as an SQL database, we can either query the database diectly, or use some of the tools in e.g. R (see below) to interface with it. So, to clarify, the <code>stages.db</code> database contains a table called <code>compact</code> with entries:</p>
 <ul>
-<li><code>genpop_totals</code></li>
-<li><code>hospital_totals</code></li>
-<li><code>asymp_totals</code></li>
-<li><code>critical_totals</code></li>
+<li><code>day</code>, <code>ward</code></li>
+<li><code>genpop_0</code>–<code>genpop_5</code></li>
+<li><code>asymp_2</code>–<code>asymp_4</code></li>
+<li><code>hospital_2</code>–<code>hospital_5</code></li>
+<li><code>critical_2</code>–<code>critical_5</code></li>
 </ul>
-<p>You will notice these are named after the different <strong>demographics</strong>. Each table contains entries for:</p>
-<ul>
-<li><code>ward</code>, <code>day</code>, <code>stage_0</code>, <code>stage_1</code>, <code>stage_2</code>, <code>stage_3</code>, <code>stage_4</code>, <code>stage_5</code></li>
-</ul>
-<p>For the <code>genpop</code> demographic, these correspond to:</p>
+<p>For the <code>genpop</code> demographic, these entries correspond to:</p>
 <ul>
 <li><code>stage_0</code>: <strong>new</strong> infections on each day (i.e. new moves into <span class="math inline">\(E\)</span>)</li>
 <li><code>stage_1</code>: current infections on each day (i.e. number of individuals in <span class="math inline">\(E\)</span>)</li>
@@ -1885,9 +1888,9 @@ summary {
 <li><code>stage_4</code>: current removals on each day (i.e. number of individuals in <span class="math inline">\(R\)</span>)</li>
 <li><code>stage_5</code>: current deaths on each day (i.e. number of individuals in <span class="math inline">\(D\)</span>)</li>
 </ul>
-<p>The other demographics (<code>asymp</code>, <code>hospital</code> and <code>critical</code>) have the same structure, but with <code>stage_0</code> and <code>stage_1</code> <strong>always 0</strong> (since new infections are always in <code>genpop</code>), and <code>stage_2</code> and <code>stage_3</code> correspond to the new and current numbers in either the <span class="math inline">\(A\)</span>, <span class="math inline">\(H\)</span> or <span class="math inline">\(C\)</span> classes according to the demographic (refer to the model structure <a href="#modelS">here</a>).</p>
-<p>If you’re happy with SQL, you can query these directly with e.g. SQLite. If you are an R user, then the <code>dplyr</code> package (or more specifically the <code>dbplyr</code> package) provides some useful R tools for querying SQL databases using <code>tidyverse</code>-type notation. More details can be found <a href="https://cran.r-project.org/web/packages/dbplyr/vignettes/dbplyr.html">here</a>.</p>
-<p>As a quick example, imagine that we want to extract the <strong>cumulative hospital cases</strong> on say day 100. Here we will need to extract the <strong>new hospital cases</strong> from day 1–100, and then sum them up for each ward. Therefore we need to extract <code>day</code>, <code>ward</code> and <code>stage_2</code> from the <code>hospital_totals</code> table, and then sum them up. For speed, <code>dplyr</code> converts the R code to SQL, and only pulls the resulting table to R if you run the function <code>collect()</code>. An example of this workflow is given below.</p>
+<p>In the other demographics (<code>asymp</code>, <code>hospital</code> and <code>critical</code>) the <code>stage_2</code> and <code>stage_3</code> entries correspond to the new and current numbers in either the <span class="math inline">\(A\)</span>, <span class="math inline">\(H\)</span> or <span class="math inline">\(C\)</span> classes according to the demographic (refer to the model structure <a href="#modelS">here</a>).</p>
+<p>If you’re happy with SQL, you can query these directly with e.g. SQLite. If you are an R user, then the <code>dplyr</code> package (or more specifically the <code>dbplyr</code> package) provides some useful R tools for querying SQL databases using <code>tidyverse</code>-type notation. More details about these tools can be found <a href="https://cran.r-project.org/web/packages/dbplyr/vignettes/dbplyr.html">here</a>.</p>
+<p>As a quick example, imagine that we want to extract the <strong>cumulative hospital cases</strong> on say day 100. Here we will need to extract the <strong>new hospital cases</strong> from day 1–100, and then sum them up for each ward. Therefore we need to extract <code>day</code>, <code>ward</code> and <code>hospital_2</code> from the <code>compact</code> table.</p>
 <div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb2-1" title="1"><span class="co">## load library</span></a>
 <a class="sourceLine" id="cb2-2" title="2"><span class="co">## (you might also need to install the &#39;RSQLite&#39; </span></a>
 <a class="sourceLine" id="cb2-3" title="3"><span class="co">## and `dbplyr` packages which &#39;dplyr&#39; calls)</span></a>
@@ -1896,25 +1899,76 @@ summary {
 <a class="sourceLine" id="cb2-6" title="6"><span class="co">## establish connection to database</span></a>
 <a class="sourceLine" id="cb2-7" title="7">con &lt;-<span class="st"> </span>DBI<span class="op">::</span><span class="kw">dbConnect</span>(RSQLite<span class="op">::</span><span class="kw">SQLite</span>(), <span class="st">&quot;stages.db&quot;</span>)</a>
 <a class="sourceLine" id="cb2-8" title="8"></a>
-<a class="sourceLine" id="cb2-9" title="9"><span class="co">## connect to the &#39;hospital_totals&#39; table</span></a>
-<a class="sourceLine" id="cb2-10" title="10">hospital &lt;-<span class="st"> </span><span class="kw">tbl</span>(con, <span class="st">&quot;hospital_totals&quot;</span>)</a>
+<a class="sourceLine" id="cb2-9" title="9"><span class="co">## connect to the &#39;compact&#39; table</span></a>
+<a class="sourceLine" id="cb2-10" title="10">hospital &lt;-<span class="st"> </span><span class="kw">tbl</span>(con, <span class="st">&quot;compact&quot;</span>)</a>
 <a class="sourceLine" id="cb2-11" title="11"></a>
-<a class="sourceLine" id="cb2-12" title="12"><span class="co">## stage_2 contains the new cases, so sum these</span></a>
-<a class="sourceLine" id="cb2-13" title="13"><span class="co">## over each ward for days 1--100 </span></a>
-<a class="sourceLine" id="cb2-14" title="14"><span class="co">## (</span><span class="al">NOTE</span><span class="co">: `hosp_db` contains the query not the outcome,</span></a>
-<a class="sourceLine" id="cb2-15" title="15"><span class="co">## so &#39;show_query(hosp_db)&#39; can view this if you like)</span></a>
-<a class="sourceLine" id="cb2-16" title="16">hosp_db &lt;-<span class="st"> </span><span class="kw">filter</span>(hospital, day <span class="op">&lt;=</span><span class="st"> </span><span class="dv">100</span>) <span class="op">%&gt;%</span></a>
-<a class="sourceLine" id="cb2-17" title="17"><span class="st">    </span><span class="kw">select</span>(ward, stage_<span class="dv">2</span>) <span class="op">%&gt;%</span></a>
-<a class="sourceLine" id="cb2-18" title="18"><span class="st">    </span><span class="kw">group_by</span>(ward) <span class="op">%&gt;%</span></a>
-<a class="sourceLine" id="cb2-19" title="19"><span class="st">    </span><span class="kw">summarise</span>(<span class="dt">cH =</span> <span class="kw">sum</span>(stage_<span class="dv">2</span>))</a>
-<a class="sourceLine" id="cb2-20" title="20"></a>
-<a class="sourceLine" id="cb2-21" title="21"><span class="co">## run query and pull to R</span></a>
-<a class="sourceLine" id="cb2-22" title="22">hosp &lt;-<span class="st"> </span><span class="kw">collect</span>(hosp_db)</a>
-<a class="sourceLine" id="cb2-23" title="23"></a>
-<a class="sourceLine" id="cb2-24" title="24"><span class="co">## disconnect from database</span></a>
-<a class="sourceLine" id="cb2-25" title="25">DBI<span class="op">::</span><span class="kw">dbDisconnect</span>(con)</a></code></pre></div>
-<p>Now you can play with <code>hosp</code> as much as you like. Note that after you’ve pulled the correct outputs down, you might want to delete the <code>stage.db</code> (<strong>NOT</strong> the <code>stages.db.bz2</code>) file. I did this on the Unix command line using:</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode bash"><code class="sourceCode bash"><a class="sourceLine" id="cb3-1" title="1"><span class="fu">rm</span> stage.db</a></code></pre></div>
+<a class="sourceLine" id="cb2-12" title="12"><span class="co">## examine</span></a>
+<a class="sourceLine" id="cb2-13" title="13">hospital</a></code></pre></div>
+<pre><code>## # Source:   table&lt;compact&gt; [?? x 19]
+## # Database: sqlite 3.30.1
+## #   [/home/tj/Documents/covid/uq4covid.github.io/vignettes/data/MetaWards/vignette/stages.db]
+##      day  ward genpop_0 genpop_1 genpop_2 genpop_3 genpop_4 genpop_5 asymp_2
+##    &lt;int&gt; &lt;int&gt;    &lt;int&gt;    &lt;int&gt;    &lt;int&gt;    &lt;int&gt;    &lt;int&gt;    &lt;int&gt;   &lt;int&gt;
+##  1     1   255        5        5        0        0        0        0       0
+##  2     2   255        0        5        0        0        0        0       0
+##  3     3   255        0        5        0        0        0        0       0
+##  4     4   255        0        5        0        0        0        0       0
+##  5     5   255        1        4        2        2        0        0       0
+##  6     5  2553        1        1        0        0        0        0       0
+##  7     6   238        1        1        0        0        0        0       0
+##  8     6   255        0        4        0        2        0        0       0
+##  9     6  2553        1        1        0        0        0        0       1
+## 10     7   238        0        1        0        0        0        0       0
+## # … with more rows, and 10 more variables: asymp_3 &lt;int&gt;, asymp_4 &lt;int&gt;,
+## #   hospital_2 &lt;int&gt;, hospital_3 &lt;int&gt;, hospital_4 &lt;int&gt;, hospital_5 &lt;int&gt;,
+## #   critical_2 &lt;int&gt;, critical_3 &lt;int&gt;, critical_4 &lt;int&gt;, critical_5 &lt;int&gt;</code></pre>
+<p>By default, the package only pulls down enough data from the database to produce a summary on the screen (notice that it prints the dimensions as <code>?? x 19</code>). If the database is small enough, then the <code>collect()</code> function can be used to import tables directly into R as a <code>tibble</code>. Alternatively, the <code>dbplyr</code> package can convert <code>tidyverse</code>-style commands into SQL and run these directly within the database. For large databases this is likely to be much more efficient, in terms of speed and memory usage. You can then <code>collect()</code> the results of the query into R.</p>
+<p>As an example of this latter approach, we will set up a query that sums the <strong>new</strong> hospital cases over the first 10 days in each ward. <strong>Remember</strong>: the database only contains days when some change occurs. For cumulative <em>incidence</em> counts this is fine, since the missing data will be zero in each case, so we just need to filter to remove all time points <span class="math inline">\(&gt; 100\)</span>. To set up the query:</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb4-1" title="1"><span class="co">## hospital_2 contains the new cases, so sum these</span></a>
+<a class="sourceLine" id="cb4-2" title="2"><span class="co">## over each ward for days 1--100</span></a>
+<a class="sourceLine" id="cb4-3" title="3">hosp_db &lt;-<span class="st"> </span><span class="kw">filter</span>(hospital, day <span class="op">&lt;=</span><span class="st"> </span><span class="dv">100</span>) <span class="op">%&gt;%</span></a>
+<a class="sourceLine" id="cb4-4" title="4"><span class="st">    </span><span class="kw">select</span>(ward, hospital_<span class="dv">2</span>) <span class="op">%&gt;%</span></a>
+<a class="sourceLine" id="cb4-5" title="5"><span class="st">    </span><span class="kw">group_by</span>(ward) <span class="op">%&gt;%</span></a>
+<a class="sourceLine" id="cb4-6" title="6"><span class="st">    </span><span class="kw">summarise</span>(<span class="dt">cH =</span> <span class="kw">sum</span>(hospital_<span class="dv">2</span>))</a></code></pre></div>
+<p>This hasn’t run any commands yet, rather <code>hosp_db</code> contains a parsed SQL query that can be run through the database connection. If you like, you can view the generated SQL query using:</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb5-1" title="1"><span class="co">## view query</span></a>
+<a class="sourceLine" id="cb5-2" title="2"><span class="kw">show_query</span>(hosp_db)</a></code></pre></div>
+<pre><code>## &lt;SQL&gt;</code></pre>
+<pre><code>## Warning: Missing values are always removed in SQL.
+## Use `SUM(x, na.rm = TRUE)` to silence this warning
+## This warning is displayed only once per session.</code></pre>
+<pre><code>## SELECT `ward`, SUM(`hospital_2`) AS `cH`
+## FROM (SELECT `ward`, `hospital_2`
+## FROM (SELECT *
+## FROM `compact`
+## WHERE (`day` &lt;= 100.0)))
+## GROUP BY `ward`</code></pre>
+<p>Now let’s run the query and return the results to R by passing <code>hosp_db</code> to the <code>collect()</code> function:</p>
+<div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb9-1" title="1"><span class="co">## run query and pull to R</span></a>
+<a class="sourceLine" id="cb9-2" title="2">hosp &lt;-<span class="st"> </span><span class="kw">collect</span>(hosp_db)</a>
+<a class="sourceLine" id="cb9-3" title="3"></a>
+<a class="sourceLine" id="cb9-4" title="4"><span class="co">## disconnect from database</span></a>
+<a class="sourceLine" id="cb9-5" title="5">DBI<span class="op">::</span><span class="kw">dbDisconnect</span>(con)</a>
+<a class="sourceLine" id="cb9-6" title="6"></a>
+<a class="sourceLine" id="cb9-7" title="7"><span class="co">## print to screen</span></a>
+<a class="sourceLine" id="cb9-8" title="8">hosp</a></code></pre></div>
+<pre><code>## # A tibble: 8,579 x 2
+##     ward    cH
+##    &lt;int&gt; &lt;int&gt;
+##  1     1   135
+##  2     2     9
+##  3     3   103
+##  4     4   132
+##  5     5   124
+##  6     6   171
+##  7     7   164
+##  8     8   154
+##  9     9   123
+## 10    10   168
+## # … with 8,569 more rows</code></pre>
+<p>Now you can play with <code>hosp</code> as much as you like. <strong>Note</strong> that <code>hosp</code> here only contains information about wards that have some infections, and only from the time since initial infection. Hence for calibration you might need to expand to fill in the missing wards. Fortunately, R (especially <code>tidyverse</code>) has lots of tools for doing this.</p>
+<p>Note that after you’ve pulled the correct outputs down, you might want to delete the <code>stages.db</code> (<strong>NOT</strong> the <code>stages.db.bz2</code>) file. I did this on the Unix command line using:</p>
+<div class="sourceCode" id="cb11"><pre class="sourceCode bash"><code class="sourceCode bash"><a class="sourceLine" id="cb11-1" title="1"><span class="fu">rm</span> stages.db</a></code></pre></div>
 <blockquote>
 <p><strong>Be careful</strong>: remember that <code>rm</code> removes completely, so not to the recycle bin. However, as long as you don’t remove <code>stages.db.bz2</code> then you can always recover.</p>
 </blockquote>

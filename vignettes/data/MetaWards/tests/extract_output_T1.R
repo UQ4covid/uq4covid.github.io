@@ -4,8 +4,8 @@
 library(tidyverse)
 
 ## establish connection
-system("bzip2 -dkf raw_outputs/stages3.db.bz2")
-con <- DBI::dbConnect(RSQLite::SQLite(), "raw_outputs/stages3.db")
+system("bzip2 -dkf raw_outputs/stages.db.bz2")
+con <- DBI::dbConnect(RSQLite::SQLite(), "raw_outputs/stages.db")
 
 ## extract data
 compact <- tbl(con, "compact")

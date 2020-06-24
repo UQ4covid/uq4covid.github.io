@@ -11,7 +11,7 @@
 
 <meta name="author" content="Danny Williamson" />
 
-<meta name="date" content="2020-06-23" />
+<meta name="date" content="2020-06-24" />
 
 <title>Quick Start Guide</title>
 
@@ -481,7 +481,7 @@ summary {
 
 <h1 class="title toc-ignore">Quick Start Guide</h1>
 <h4 class="author">Danny Williamson</h4>
-<h4 class="date">23 June 2020</h4>
+<h4 class="date">24 June 2020</h4>
 
 </div>
 
@@ -552,14 +552,16 @@ summary {
 <p>Eventually the fans will cool down and the simulations will be complete. Now you will want to get at some of the outputs. The <code>extractOutput.R</code> file lets you do this. Open this in RStudio.</p>
 <p>If you have all the required libraries, you can just run the whole thing and, by default, you will get the total number of infections in hospitals per ward. There is a lot you can do to customise, and details can be found in the <a href="data/MetaWards/vignette/ModelDescription.html">Model Description</a>. To get you started, here are some things you can change.</p>
 <p>The chunk</p>
-<div class="sourceCode" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb11-1" title="1">hospital &lt;-<span class="st"> </span><span class="kw">tbl</span>(con, <span class="st">&quot;hospital_totals&quot;</span>)</a>
-<a class="sourceLine" id="cb11-2" title="2">        hosp_db &lt;-<span class="st"> </span><span class="kw">filter</span>(hospital, day <span class="op">&lt;=</span><span class="st"> </span><span class="dv">100</span>) <span class="op">%&gt;%</span></a>
-<a class="sourceLine" id="cb11-3" title="3"><span class="st">            </span><span class="kw">select</span>(ward, stage_<span class="dv">2</span>) <span class="op">%&gt;%</span></a>
-<a class="sourceLine" id="cb11-4" title="4"><span class="st">            </span><span class="kw">group_by</span>(ward) <span class="op">%&gt;%</span></a>
-<a class="sourceLine" id="cb11-5" title="5"><span class="st">            </span><span class="kw">summarise</span>(<span class="dt">cH =</span> <span class="kw">sum</span>(stage_<span class="dv">2</span>))</a>
-<a class="sourceLine" id="cb11-6" title="6">        <span class="co">## collect outcome of query</span></a>
-<a class="sourceLine" id="cb11-7" title="7">        hosp &lt;-<span class="st"> </span><span class="kw">collect</span>(hosp_db)</a></code></pre></div>
-<p>is taking the database <code>con</code> created from the raw outputs, is selecting those from the <code>hospital</code> demographic, and summing the numbers at stage 2. Some reference to our model setup is required to see what to do, so maybe head there to see what the stages and demographics refer to in the diagram. We have 4 demographics: <code>genpop</code> , <code>hospital</code> , <code>critical</code>, and <code>asymp</code> (so you can substitute for any of these). There are 6 stages indexed 0-5 (so above we have stage 2). The diagram in TJ’s instruction shows where they are, but there are 2 things to note. Stages 0 and 2 count the new incidents of entry into that demographic <em>that day</em>. Stages 1 and 3 count the total incidents in that demographic that day <em>including the new ones from 0 and 1 respectively</em>. It’s a postprocessing trick, meaning that we get the most informative data each time. Stage 4 is recovered and stage 5 is death.</p>
+<div class="sourceCode" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb11-1" title="1"><span class="co">## hospital_2 in the compact table contains the new incidence</span></a>
+<a class="sourceLine" id="cb11-2" title="2">compact &lt;-<span class="st"> </span><span class="kw">tbl</span>(con, <span class="st">&quot;compact&quot;</span>)</a>
+<a class="sourceLine" id="cb11-3" title="3">hosp_db &lt;-<span class="st"> </span><span class="kw">filter</span>(compact, day <span class="op">&lt;=</span><span class="st"> </span><span class="dv">100</span>) <span class="op">%&gt;%</span></a>
+<a class="sourceLine" id="cb11-4" title="4"><span class="st">    </span><span class="kw">select</span>(ward, hospital_<span class="dv">2</span>) <span class="op">%&gt;%</span></a>
+<a class="sourceLine" id="cb11-5" title="5"><span class="st">    </span><span class="kw">group_by</span>(ward) <span class="op">%&gt;%</span></a>
+<a class="sourceLine" id="cb11-6" title="6"><span class="st">    </span><span class="kw">summarise</span>(<span class="dt">cH =</span> <span class="kw">sum</span>(hospital_<span class="dv">2</span>))</a>
+<a class="sourceLine" id="cb11-7" title="7"></a>
+<a class="sourceLine" id="cb11-8" title="8"><span class="co">## collect outcome of query</span></a>
+<a class="sourceLine" id="cb11-9" title="9">hosp &lt;-<span class="st"> </span><span class="kw">collect</span>(hosp_db)</a></code></pre></div>
+<p>is taking the database <code>con</code> created from the raw outputs, is selecting the first 100 days from the <code>hospital_2</code> stage (which counts the new hospital cases at each day), and summing these up within each ward. Some reference to our model setup is required to see what to do, so maybe head <a href="data/MetaWards/vignettes/ModelDescription.html">there</a> to see what the stages and demographics refer to in the diagram. Briefly, we have 4 demographics: <code>genpop</code> , <code>hospital</code> , <code>critical</code>, and <code>asymp</code> (so you can substitute for any of these). There are 6 stages indexed 0-5 (so above we have stage 2). The diagram in TJ’s instruction shows where they are, but there are 2 things to note. Stages 0 and 2 count the new incidents of entry into that demographic <em>that day</em>. Stages 1 and 3 count the total incidents in that demographic that day <em>including the new ones from 0 and 1 respectively</em>. It’s a postprocessing trick, meaning that we get the most informative data each time. Stage 4 is recovered and stage 5 is death. For brevity, the outputs are coalesced (so <code>hospital_2</code> is stage 2 for the <code>hospital</code> demographic), and extraneous stages are removed (for example, stage 0 and stage 1 only exist for the <code>genpop</code> demographic, so they are not returned here).</p>
 <p>Having extracted data like this in tibble form, it is ready to be processed for building whatever emulators you like.</p>
 </div>
 <div id="sundries" class="section level2">
