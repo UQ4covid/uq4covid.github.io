@@ -15,8 +15,9 @@ Please read the [**guide to contributing vignettes**]({{ site.baseurl }}/vignett
 
 ## The UQ4Covid Model structure
 
-- [Model structure (still evolving)]({{ site.baseurl }}/vignettes/data/MetaWards/vignette/MetaWards) - TJ McKinley
-- [Running your own ensembles]({{ site.baseurl }}/vignettes/RunningForDummies) - Danny Williamson
+- [Quick Start Guide]({{ site.baseurl }}/vignettes/RunningForDummies): contains instructions about how to install and run this version of MetaWards with the current model - Danny Williamson
+- [Model Description]({{ site.baseurl }}/vignettes/data/MetaWards/vignette/ModelDescription): A short guide to the model structure, inputs and outputs - TJ McKinley
+- [MetaWards setup]({{ site.baseurl }}/vignettes/data/MetaWards/vignette/MetaWardsModel): A more detailed guide to the ins-and-outs of the model structure, and details of the implementation in MetaWards - TJ McKinley
 
 ## Experimental design
 

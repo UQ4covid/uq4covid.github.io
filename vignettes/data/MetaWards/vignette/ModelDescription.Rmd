@@ -1,0 +1,220 @@
+---  
+title: Model Description
+author: "TJ McKinley"
+date: "`r format(Sys.time(), '%d %B %Y')`"
+output: 
+  html_document:
+    code_folding: show
+    highlight: zenburn
+    css: css/main.css
+---
+
+The basic model structure is:
+
+* $E$: infected but not infectious;
+* $A$: asymptomatic and infectious;
+* $I$: symptomatic and infectious;
+* $H$: hospitalised and infectious;
+* $C$: in critical care (ICU) and infectious;
+* $R$: recovered and immune;
+* $D$: died.
+
+```{r, echo = FALSE}
+library(DiagrammeR)
+grViz("digraph simpmod {
+    graph[layout = dot, rankdir = LR]
+    node [shape = rectangle]
+    
+    S
+    E [label = 'E'];
+    I [label = 'I']; 
+    A [label = 'A']; 
+    H [label = 'H']; 
+    C [label = 'C']; 
+    DI [label = 'D@_{I}']; DH [label = 'D@_{H}']; DC [label = 'D@_{C}']
+    RI [label = 'R@_{I}']; RH [label = 'R@_{H}']; RC [label = 'R@_{C}']; RA [label = 'R@_{A}']
+    genpop [label = 'Gen. Pop.']
+    hospital [label = 'Hospital Patient']
+    critical [label = 'Critical Care']
+    asymp [label = 'Asymptomatics']
+    
+    S -> E -> I
+    I -> RI
+    I -> DI [weight = 0]
+    I -> H -> C
+    C -> RC 
+    C -> DC [weight = 0]
+    H -> RH 
+    H -> DH [weight = 0] 
+    RI -> DI [style = 'invis']
+    RH -> DH [style = 'invis']
+    RC -> DC [style = 'invis']
+    E -> A [weight = 0]
+    A -> RA 
+    genpop -> S [style = 'invis']
+    hospital -> H [style = 'invis']
+    critical -> C [style = 'invis']
+    asymp -> A [style = 'invis']
+    subgraph {
+      rank = same; asymp -> genpop -> hospital -> critical [style = 'invis']
+    }
+    subgraph cluster {
+      subgraph {
+        rank = same; A -> I -> H -> C [style = 'invis']
+      }
+      style = filled;
+      color = lightgrey;
+      label = 'Infectious Classes'
+    }
+    subgraph {
+      rank = same; RA, RI, RC; RH;
+    }
+    subgraph {
+      rank = same; DI; DH; DC;
+    }
+    
+}", height = '100%', width = '100%')
+```
+
+## MetaWards setup
+
+The model structure above allows for different progression pathways. MetaWards deals with this by assigning individuals to different "demographics", where each demographic can be used to represent different progression pathways. There are currently seven pathways, which will be described below, which can be summarised as:
+
+* `SEAR`: asymptomatic infections, always recover.
+* `SEIR`: symptomatic infections, leading to recovery.
+* `SEID`: symptomatic infections, leading to death.
+* `SEIHR`: symptomatic infections, leading to hospital and then recovery.
+* `SEIHD`: symptomatic infections, leading to hospital and then death.
+* `SEIHCR`: symptomatic infections, leading to hospital, then critical care (ICU) and then recovery.
+* `SEIHCD`: symptomatic infections, leading to hospital, then critical care (ICU) and then death.
+
+Individuals in the `genpop` demographic move through the $SEIR$ and $SEID$ pathways; the `asymp` demographic moves through the `SEAR` pathway; some individuals in the `genpop` demographic can be moved to the `hospital` demographic, and thus follow the `SEIHR` and `SEIHD` pathways; and finally, some individuals in the `hospital` demographic can be moved to the `critical` demographic, and thus follow the `SEIHCR` and `SEIHCD` pathways.
+
+## Parameters {#parametersS}
+
+Movements through the different states are governed by key parameters:
+
+* $p_{SE}$ driven by $\beta$ parameters, defined by $R_0$ and length of infectious period (see [here](#codeS));
+* $p_{EA} = p_{EA}\left(1 - e^{-\gamma_{E}}\right)$ where $\gamma_E = \frac{1}{T_E}$ with $T_E$ the mean incubation period;
+* $p_{EI} = \left(1 - p_{EA}\right)\left(1 - e^{-\gamma_{E}}\right)$;
+* $p_{AR} = 1 - e^{-\gamma_I}$ where $\gamma_I = \frac{1}{T_I}$ with $T_I$ the mean infectious period;
+* $p_{IH} = p_{IH}\left(1 - e^{-\gamma_{I}}\right)$;
+* $p_{IR} = p_{IR}\left(1 - e^{-\gamma_{I}}\right)$;
+* $p_{ID} = \left(1 - p_{IH} - p_{IR}\right)\left(1 - e^{-\gamma_{I}}\right)$;
+* $p_{HC} = p_{HC}\left(1 - e^{-\gamma_{H}}\right)$ where $\gamma_{H} = \frac{1}{T_H}$ with $T_H$ the mean length of a hospital stay;
+* $p_{HR} = p_{HR}\left(1 - e^{-\gamma_{H}}\right)$;
+* $p_{HD} = \left(1 - p_{HC} - p_{HR}\right)\left(1 - e^{-\gamma_{H}}\right)$;
+* $p_{CR} = p_{CR}\left(1 - e^{-\gamma_{C}}\right)$ where $\gamma_C = \frac{1}{T_C}$ with $T_C$ is the mean length of time spent in ICU;
+* $p_{CD} = \left(1 - p_{CR}\right)\left(1 - e^{-\gamma_{C}}\right)$.
+
+Lockdown can be controlled either by constraining movements over a certain distance, or by scaling the $\beta$ parameters. We do the latter at the moment.
+
+## Interaction matrices
+
+The **interaction matrix** scales the force-of-infection (FOI) that different demographics have on other demographics. We have three free parameters here: $\beta^S_{A \to GP}$, $\beta^S_{H \to GP}$ and $\beta^S_{C \to GP}$ which scale the impact of aymptomatics, hospital cases and critical care cases on the FOI to the general population. 
+
+## Input parameters {#inputS}
+
+To run designs, we need to generate a `disease.csv` file containing different parameters to use for different runs. For consistency, we will define three spaces:
+
+* *input* space: this relates to the parameters ranges (defined below);
+* *design* space: this will usually be in $(0, 1)$ or $(-1, 1)$ space;
+* *disease* space: this relates to parameters that are fed into MetaWards.
+
+The *input* and *design* spaces are fairly trivial to convert between, but some more work has to be done to convert between the *input* space and the *disease* space. To ensure orthogonality, we reparameterise a couple of the parameters such that:
+\begin{align}
+    p_{IR} &= \left(1 - p_{IH}\right) p^\prime_{IR}\\
+    p_{HR} &= \left(1 - p_{HC}\right) p^\prime_{HR}
+\end{align}
+and thus we have parameter ranges:
+\begin{align}
+    \mbox{$R_0$}&: (2.5, 4)\\
+    \mbox{mean incubation period ($T_E$)}&: (4, 6)\\
+    \mbox{mean infectious period ($T_I$)}&: (2, 4)\\
+    \mbox{mean hospital stay ($T_H$)}&: (4, 12)\\
+    \mbox{mean time in critical care ($T_C$)}&: (4, 12)\\
+    \mbox{lockdown 1 restrict}&: (0, 1)\\
+    \mbox{lockdown 2 release}&: (0, 1)\\
+    p_{EA}&: (0, 1)\\
+    p_{IH}&: (0, 1)\\
+    p^\prime_{IR}&: (0, 1)\\
+    p_{HC}&: (0, 1)\\
+    p^\prime_{HR}&: (0, 1)\\
+    p_{CR}&: (0, 1)\\
+    \beta^S_{A \to GP}&: (0, 1)\\
+    \beta^S_{H \to GP}&: (0, 1)\\
+    \beta^S_{C \to GP}&: (0, 1).
+\end{align}
+
+## Outputs {#outputS}
+
+The outputs from MetaWards are stored in an SQL database, which can be queried through any SQLite client. Each model run produces a file called `stages.db.bz2`, which is a compressed database containing the outputs. To access this you will first have to unzip it. I do this on the command line e.g.
+
+```
+bzip2 -dk stages.db.bz2
+```
+
+You will notice that the unzipped `stages.db` file is **much** larger than the compressed version, so we need to be careful to remove `stages.db` at the end if we have limited hard drive space. The database contains four tables:
+
+* `genpop_totals`
+* `hospital_totals`
+* `asymp_totals`
+* `critical_totals`
+
+You will notice these are named after the different **demographics**. Each table contains entries for:
+
+* `ward`, `day`, `stage_0`, `stage_1`, `stage_2`, `stage_3`, `stage_4`, `stage_5`
+
+For the `genpop` demographic, these correspond to:
+
+* `stage_0`: **new** infections on each day (i.e. new moves into $E$)
+* `stage_1`: current infections on each day (i.e. number of individuals in $E$)
+* `stage_2`: **new** infectious individuals on each day (i.e. new moves into $I$)
+* `stage_3`: current infectious individuals on each day (i.e. number of individuals in $I$)
+* `stage_4`: current removals on each day (i.e. number of individuals in $R$)
+* `stage_5`: current deaths on each day (i.e. number of individuals in $D$)
+
+The other demographics (`asymp`, `hospital` and `critical`) have the same structure, but with `stage_0` and `stage_1` **always 0** (since new infections are always in `genpop`), and `stage_2` and `stage_3` correspond to the new and current numbers in either the $A$, $H$ or $C$ classes according to the demographic (refer to the model structure [here](#modelS)).
+
+If you're happy with SQL, you can query these directly with e.g. SQLite. If you are an R user, then the `dplyr` package (or more specifically the `dbplyr` package) provides some useful R tools for querying SQL databases using `tidyverse`-type notation. More details can be found [here](https://cran.r-project.org/web/packages/dbplyr/vignettes/dbplyr.html).
+
+As a quick example, imagine that we want to extract the **cumulative hospital cases** on say day 100. Here we will need to extract the **new hospital cases** from day 1--100, and then sum them up for each ward. Therefore we need to extract `day`, `ward` and `stage_2` from the `hospital_totals` table, and then sum them up. For speed, `dplyr` converts the R code to SQL, and only pulls the resulting table to R if you run the function `collect()`. An example of this workflow is given below.
+
+```{r, eval = FALSE}
+## load library
+## (you might also need to install the 'RSQLite' 
+## and `dbplyr` packages which 'dplyr' calls)
+library(dplyr)
+
+## establish connection to database
+con <- DBI::dbConnect(RSQLite::SQLite(), "stages.db")
+
+## connect to the 'hospital_totals' table
+hospital <- tbl(con, "hospital_totals")
+
+## stage_2 contains the new cases, so sum these
+## over each ward for days 1--100 
+## (NOTE: `hosp_db` contains the query not the outcome,
+## so 'show_query(hosp_db)' can view this if you like)
+hosp_db <- filter(hospital, day <= 100) %>%
+    select(ward, stage_2) %>%
+    group_by(ward) %>%
+    summarise(cH = sum(stage_2))
+
+## run query and pull to R
+hosp <- collect(hosp_db)
+
+## disconnect from database
+DBI::dbDisconnect(con)
+```
+
+Now you can play with `hosp` as much as you like. Note that after you've pulled the correct outputs down, you might want to delete the `stage.db` (**NOT** the `stages.db.bz2`) file. I did this on the Unix command line using:
+
+```
+rm stage.db
+```
+
+> **Be careful**: remember that `rm` removes completely, so not to the recycle bin. However, as long as you don't remove `stages.db.bz2` then you can always recover.
+
+You can very easily wrap these ideas into an R function that can scroll through the design IDs, extract relevant outputs and bind to the inputs. An example that you are free to edit at will can be found in the `extractOutputs.R` file in the repo.
+

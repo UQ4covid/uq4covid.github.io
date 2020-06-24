@@ -1,19 +1,17 @@
----
-title: "Information on MetaWards"
+---  
+title: Model Structure in MetaWards
 author: "TJ McKinley"
 date: "`r format(Sys.time(), '%d %B %Y')`"
 output: 
   html_document:
     code_folding: show
+    highlight: zenburn
+    css: css/main.css
 ---
 
-This is a short document (not really a vignette) describing some key aspects of MetaWards that are pertinent to this UQ attempt. 
+> **In order to get the model structure and outputs described previously, we have to play a few tricks in MetaWards. The detail below corresponds to how we have implemented the current model, and requires additional stages to ensure we get the correct transitions and outputs.**
 
-**All model files can be downloaded from [here](../metawards.zip).**
-
-# Model description {#model}
-
-We ideally want a model that incorporates moves to hospital and ICU. Here each class is split into two components, e.g. $E_1$ and $E_2$. This is so that MetaWards can calculate new movements into each class easily, but are otherwise epidemiologically identical. Here:
+Here most classes are split into two components, e.g. $E_1$ and $E_2$. This is so that MetaWards can calculate new movements into each class easily, but are otherwise epidemiologically identical. Here:
 
 * $E$: infected but not infectious;
 * $A$: asymptomatic and infectious;
@@ -25,7 +23,7 @@ We ideally want a model that incorporates moves to hospital and ICU. Here each c
 
 ```{r, echo = FALSE}
 library(DiagrammeR)
-grViz("digraph {
+grViz("digraph model {
     graph[layout = dot, rankdir = LR]
     node [shape = rectangle]
     
@@ -92,7 +90,7 @@ grViz("digraph {
 }", height = '100%', width = '100%')
 ```
 
-# MetaWards setup
+## MetaWards setup
 
 The model structure above allows for different progression pathways. MetaWards deals with this by assigning individuals to different "demographics", where each demographic can be used to represent different progression pathways. There are also `mover` functions that can be used to move individuals between demographics, and `mixer` functions that scale the force-of-infection (FOI) terms between the different demographics (explained later). There are currently seven pathways, which will be described below, but can be summarised as:
 
@@ -112,7 +110,7 @@ In practice, we can summarise these through four demographics, and then `move` f
 
 Individuals in the `genpop` demographic move through the $SEIR$ and $SEID$ pathways; the `asymp` demographic moves through the `SEAR` pathway; some individuals in the `genpop` demographic can be moved to the `hospital` demographic, and thus follow the `SEIHR` and `SEIHD` pathways; and finally, some individuals in the `hospital` demographic can be moved to the `critical` demographic, and thus follow the `SEIHCR` and `SEIHCD` pathways.
 
-We want the proportions stored in `work_ratios` and `play_ratios` to be variable parameters in the model. Therefore we want to specify proportions of individuals in each pathway such that $\sum_{i \in \mathcal{P}} p_i = 1$, where $\mathcal{P} = \{GP, A, H, C\}$.
+We need to specify initial proportions of individuals in each pathway such that $\sum_{i \in \mathcal{P}} p_i = 1$, where $\mathcal{P} = \{GP, A, H, C\}$.
 
 > Here we assume the same ratios in the `work` and `play` populations, but in practice these could be changed.
 
@@ -138,7 +136,7 @@ Once the demographics have been setup, we can then control progress through the 
 * $p_{C_2R} = p_{CR}\left(1 - e^{-\gamma_{C}}\right)$ where $\gamma_C = \frac{1}{T_C}$ with $T_C$ is the mean length of time spent in ICU;
 * $p_{C_2D} = \left(1 - p_{CR}\right)\left(1 - e^{-\gamma_{C}}\right)$.
 
-Lockdown can be controlled either by constraining movements over a certain distance, or by scaling the $\beta$ parameters. We do the latter at the moment.
+Lockdown can be controlled either by constraining movements over a certain distance, or by scaling the $\beta$ parameters. We do the latter at the moment. The moves of the type $p_{X_1X_2} = 1$ are tricks to enable us to get the correct counts (see [below](#movements) for more details).
 
 ## Disease `.json` file {#diseasefile}
 
@@ -149,11 +147,13 @@ All pathways have an $SEI(R/D)$ structure, so we can set up an `ncov.json` file 
 
 We will discuss these choices in more detail in the subsequent sections, in particular the role of the `beta` parameters in the next section. Note that the `progress` parameters are all set to zero here, since all movements will be controlled via the custom `mover` function.
 
-## Controlling movements
+## Controlling movements {#movements}
 
-MetaWards has a specific structure in terms of how it progresses movements between the stages. To get the correct splits between the pathways specified [above](#model) we do all non-infection movements through a custom `mover` function specified [below](#mover). Note that the $X_1$-type states (e.g. $E_1$, $I_1$, $H_1$ and $C_1$) are dummy states that allow us to monitor *new moves into each class at each day*. Note that in the `ncov.json` file specified [above](#diseasefile), we set all `progress` parameters to be 0. Thus, all transition probabilities other than new infections are driven by user-defined parameters that are passed to the `mover` function.
+MetaWards has a specific structure in terms of how it progresses movements between the stages. To get the correct splits between the pathways specified above we do all non-infection movements through a custom `mover` function specified [below](#mover). Note that the $X_1$-type states (e.g. $E_1$, $I_1$, $H_1$ and $C_1$) are dummy states that allow us to monitor *new moves into each class at each day*. Note that in the `ncov.json` file specified [above](#diseasefile), we set all `progress` parameters to be 0. Thus, all transition probabilities other than new infections are driven by user-defined parameters that are passed to the `mover` function.
 
 All this effort is so that we can monitor the counts and ensure the correct transitions, and depends on the order in which the events happen. For example, imagine that on day $t$ we get an infection at the end of the day, so a move from $S \to E_1$. Then the **recorded counts** for $E_1$ contain the new infections. Then, at the beginning of day $t + 1$, these individuals will be automatically moved from $E_1 \to E_2$ by the mover function, which subsequently operates using the probabilities [above](#parameters) to ensure the correct proportion of individuals progress into the $I_1$ or $A_1$ classes. The `mover` function applies movements in order, and so it is important to get the order correct. In particular we need to reverse the order of the stage movements (e.g. do movements out of the $C$ demographic *before* movements out of the $H$ demographic). This is to ensure that individuals move from $H_2 \to C_1$ say, can't then immediately move out of $C_1$. However, *within* each stage, we need to do $X_1 \to X_2$ moves first so that these individuals can progress out of $X_2$ subsequently (since the $X_1$ stages are simply dummy stages used for counting).
+
+> **Note**: remember that $X_1$ and $X_2$ are tricks here. We want $X_1$ to record the number of **new movements into** class $X$, and $X_2$ to record the **number of individuals in** class $X$. At the moment, moves into $X_1$ on day $t$ say are not currently included in $X_2$. Epidemiologically these are treated OK, since the [`mover`](#mover) below accounts for the transitions correctly. However, we want the outputs for the $X_2$ type classes to be the **number of individuals** in that class on each day. As such, we use a custom [`extractor`](#extractor) function that adds $X_1$ to $X_2$ at the end, so that $X_1$ corresponds to **new movements into** the $X$ class, and $X_2$ is the **number** of individuals in the $X$ class.
 
 ### Moving functions {#mover}
 
@@ -173,7 +173,46 @@ The **interaction matrix** scales the FOI that different demographics have on ot
 ```{python, code = readLines("../model_code/mix_pathways.py"), eval = FALSE}
 ```
 
-## Code {#code}
+## Lockdown
+
+Chris Fenton wrote a neat custom `iterator` function, that models lockdown by scaling the FOI terms for different time period,s that represent different stages of interventions. The custom iterator is:
+
+```{python, code = readLines("../model_code/iterate.py"), eval = FALSE}
+```
+
+This requires an additional input file containing the dates of the different stages (which are fixed parameters here). This is stored in the `lockdown_states.txt` file:
+
+```{python, code = readLines("../model_code/lockdown_states.txt"), eval = FALSE}
+```
+
+## Extractor {#extractor}
+
+We also have a custom `extractor` function, that saves the outputs as a compressed SQL database called `stages.db.bz2`. This is important since the outputs are very large (all classes across all days and all wards, for multiple replicates of each design point). The database contains four tables:
+
+* `genpop_totals`
+* `hospital_totals`
+* `asymp_totals`
+* `critical_totals`
+
+You will notice these are named after the different **demographics**. Each table contains entries for:
+
+* `ward`, `day`, `stage_0`, `stage_1`, `stage_2`, `stage_3`, `stage_4`, `stage_5`
+
+For the `genpop` demographic, these correspond to:
+
+* `stage_0`: **new** infections on each day (i.e. new moves into $E$)
+* `stage_1`: current infections on each day (i.e. number of individuals in $E$)
+* `stage_2`: **new** infectious individuals on each day (i.e. new moves into $I$)
+* `stage_3`: current infectious individuals on each day (i.e. number of individuals in $I$)
+* `stage_4`: current removals on each day (i.e. number of individuals in $R$)
+* `stage_5`: current deaths on each day (i.e. number of individuals in $D$)
+
+The other demographics (`asymp`, `hospital` and `critical`) have the same structure, but with `stage_0` and `stage_1` **always 0** (since new infections are always in `genpop`), and `stage_2` and `stage_3` correspond to the new and current numbers in either the $A$, $H$ or $C$ classes according to the demographic.
+
+```{python, code = readLines("../model_code/ward_extractor.py"), eval = FALSE}
+```
+
+## Input and output code {#code}
 
 To run designs, we need to generate a `disease.csv` file containing different parameters to use for different runs. For consistency, we will define three spaces:
 
@@ -186,11 +225,10 @@ The *input* and *design* spaces are fairly trivial to convert between, but some 
 The current *input* parameter ranges are:
 \begin{align}
     \mbox{$R_0$}&: (2.5, 4)\\
-    \mbox{scale asymptomatics}&: (0, 1)\\
     \mbox{mean incubation period ($T_E$)}&: (4, 6)\\
     \mbox{mean infectious period ($T_I$)}&: (2, 4)\\
     \mbox{mean hospital stay ($T_H$)}&: (4, 12)\\
-    \mbox{mean stay in critical care ($T_C$)}&: (?????)\\
+    \mbox{mean stay in critical care ($T_C$)}&: (4, 12)\\
     \mbox{lockdown 1 restrict}&: (0, 1)\\
     \mbox{lockdown 2 release}&: (0, 1)\\
     p_{EA}&: (0, 1)\\
@@ -215,11 +253,10 @@ To ensure orthogonality, we could reparameterise such that:
 and thus we have parameter ranges:
 \begin{align}
     \mbox{$R_0$}&: (2.5, 4)\\
-    \mbox{scale asymptomatics}&: (0, 1)\\
     \mbox{mean incubation period ($T_E$)}&: (4, 6)\\
     \mbox{mean infectious period ($T_I$)}&: (2, 4)\\
     \mbox{mean hospital stay ($T_H$)}&: (4, 12)\\
-    \mbox{mean time in critical care ($T_C$)}&: (????)\\
+    \mbox{mean time in critical care ($T_C$)}&: (4, 12)\\
     \mbox{lockdown 1 restrict}&: (0, 1)\\
     \mbox{lockdown 2 release}&: (0, 1)\\
     p_{EA}&: (0, 1)\\
@@ -274,12 +311,53 @@ Also in `dataTools.R` is a function `ensembleIDGen()` that creates unique IDs fo
 
 This produces a file `inputs/disease.dat` that can be passed to MetaWards to run the model. The `runscript.sh` batch file provides the command line instructions needed to the model using these inputs. This is written for Linux, and should be able to be run directly from the downloaded folder. If you don't run Linux, then the file should give you an idea of how to run the model on your own system.
 
-Once the design has been run, the `extractOutputs.R` file provides some code to extract some summary measures from the outputs. At the current time this relies on some OS-specific code, in order to unzip the compressed SQL database files, which also makes the process slow. Hopefully this will be sorted with a better solution in the future, but it gives you some ideas about what can be done.
+The outputs from MetaWards are stored in an SQL database, which can be queried through any SQLite client. Each model run produces a file called `stages.db.bz2`, which is a compressed database containing the outputs. As an example, migrate to an output folder containing `stages.db.bz2`. To access the outputs you will first have to unzip this file. I do this on the command line e.g.
 
-The outputs from MetaWards are stored in an SQL database, which can be queried through any SQLite client. The `dplyr` package (or more specifically the `dbplyr` package) provides some useful R tools for querying SQL databases using `tidyverse`-type notation. Some examples are in the `extractOutputs.R` file, and more details can be found [here](https://cran.r-project.org/web/packages/dbplyr/vignettes/dbplyr.html).
-
-```{r, code = readLines("../extractOutput.R"), eval = FALSE}
 ```
+bzip2 -dk stages.db.bz2
+```
+
+If you're happy with SQL, you can query these directly with e.g. SQLite. If you are an R user, then the `dplyr` package (or more specifically the `dbplyr` package) provides some useful R tools for querying SQL databases using `tidyverse`-type notation. More details can be found [here](https://cran.r-project.org/web/packages/dbplyr/vignettes/dbplyr.html).
+
+As a quick example, imagine that we want to extract the **cumulative hospital cases** on say day 100. Here we will need to extract the **new hospital cases** from day 1--100, and then sum them up for each ward. Therefore we need to extract `day`, `ward` and `stage_2` from the `hospital_totals` table, and then sum them up (see [here](#extractor) for more details on how the outputs are stored). For speed, `dplyr` converts the R code to SQL, and only pulls the resulting table to R if you run the function `collect()` (see below).
+
+```{r, eval = FALSE}
+## load library
+## (you might also need to install the 'RSQLite' 
+## and `dbplyr` packages which 'dplyr' calls)
+library(dplyr)
+
+## establish connection to database
+con <- DBI::dbConnect(RSQLite::SQLite(), "stages.db")
+
+## connect to the 'hospital_totals' table
+hospital <- tbl(con, "hospital_totals")
+
+## stage_2 contains the new cases, so sum these
+## over each ward for days 1--100 
+## (NOTE: `hosp_db` contains the query not the outcome,
+## so 'show_query(hosp_db)' can view this if you like)
+hosp_db <- filter(hospital, day <= 100) %>%
+    select(ward, stage_2) %>%
+    group_by(ward) %>%
+    summarise(cH = sum(stage_2))
+
+## run query and pull to R
+hosp <- collect(hosp_db)
+
+## disconnect from database
+DBI::dbDisconnect(con)
+```
+
+Now you can play with `hosp` as much as you like. Note that after you've pulled the correct outputs down, you might want to delete the `stage.db` (**NOT** the `stages.db.bz2`) file. I did this on the Unix command line using:
+
+```
+rm stage.db
+```
+
+> **Be careful**: remember that `rm` removes completely, so not to the recycle bin. However, as long as you don't remove `stages.db.bz2` then you can always recover.
+
+You can very easily wrap these ideas into an R function that can scroll through the design IDs, extract relevant outputs and bind to the inputs. An example that you are free to edit at will can be found in the `extractOutputs.R` file in the repo. **At the current time this relies on some OS-specific code, in order to unzip the compressed SQL database files.**
 
 ```{r, echo = FALSE, message = FALSE, warning = FALSE}
 tempdir <- getwd()

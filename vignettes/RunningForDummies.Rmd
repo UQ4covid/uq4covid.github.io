@@ -1,54 +1,56 @@
----
-title: "Running Our Metawards implementation for yourself (for dummies)"
+---  
+title: Quick Start Guide
 author: "Danny Williamson"
-output: html_document
+date: "`r format(Sys.time(), '%d %B %Y')`"
+output: 
+  html_document:
+    highlight: zenburn
+    css: data/MetaWards/vignette/css/main.css
 ---
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-```
-
-## Introduction
-
-When performing UQ, it can hardly be overstated how useful it can be to run the model you are analysing for yourself. Obviously, if you can, as with Metawards, this comes with its own problems and dangers, and you might run the model in such a way as not to get anything useful out. Thanks to the work of our team (TJ McKinley and Chris Fenton in particular), and with help from Metawards developer Chris Woods, we have a model structure [described here](https://uq4covid.github.io/vignettes/data/MetaWards/vignette/MetaWards) and a stable version of the code for running it for UQ and extracting the data for yourselves! 
+When performing UQ, it can hardly be overstated how useful it can be to run the model you are analysing for yourself. Obviously, if you can, as with Metawards, this comes with its own problems and dangers, and you might run the model in such a way as not to get anything useful out. Thanks to the work of our team (TJ McKinley and Chris Fenton in particular), and with help from Metawards developer Christopher Woods, we have a model structure (see [here](data/MetaWards/vignette/ModelDescription.html)) and a (relatively) stable version of the code for running it for UQ and extracting the data for yourselves! 
 
 So why am I writing a "for dummies" guide to using it and not Chris/TJ? Well, because I qualify as a member of the target audience! Today, I went through TJ's instructions, failed in several places and figured out everything I needed to do to run it, so I figured I would pass that knowledge on.
 
 ## Instructions for Linux/Mac
 
-As Mac uses unix and I am on a mac, the instructions are identical. There will need to be tweaks to the below for windows users, but what is here should be enough to get you started.
+As Mac uses Unix and I am on a Mac, the instructions are identical. There will need to be tweaks to the below for Windows users, but what is here should be enough to get you started.
 
-### Install Metawards
+## Install Metawards
 
 The easiest thing to do is to open a terminal and type
-```{unix, eval=FALSE}
+```{bash, eval=FALSE}
 pip3 install metawards
 ```
 
-I used pip3, you may have Python 3 as default and can use pip. The absolute best thing to do is go [here](https://metawards.org/install.html) and follow the instructions. They are really clear. For this part it doesnt matter what directory you are in.
+I used `pip3`, you may have Python 3 as default and can use `pip`. The absolute best thing to do is go [here](https://metawards.org/install.html) and follow the instructions. They are really clear. For this part it doesn't matter what directory you are in.
 
 Now, you need to head to a directory where you want the Metawards data to live. If not familar with terminal navigation, I used
-```{unix, eval=FALSE}
+```{bash, eval=FALSE}
 cd Dropbox/BayesExeter
 ```
 
-and you can check if you are happy with whats in the directory with
-```{unix, eval=FALSE}
+and you can check if you are happy with what's in the directory with
+```{bash, eval=FALSE}
 ls
 ```
 
 Next install the metawards data files with 
-```{unix, eval=FALSE}
+```{bash, eval=FALSE}
 git clone https://github.com/metawards/MetaWardsData
 ```
 
-### Get the uq4covid version
+## Get the uq4covid version
 
-Now, we get our version of the model, which consists of a number of files needed to do the running, designing and extracting. These are on the `uq4covid.io` repository [here](https://github.com/UQ4covid/uq4covid.github.io), which you should clone onto your machine or pull if you have it already.
+Now, we get our version of the model, which consists of a number of files needed to do the running, designing and extracting.
 
-Once you have it, go to directory `vignettes/data/MetaWards` and there is everything you need. **To ensure we keep the repo version clean, it's best to copy this folder out to somewhere else.** This guide is going to use Rstudio to do most things, so head to this folder in Rstudio and set it as your working directory.
+**These can be downloaded as a `.zip` file [here](data/MetaWards/metawards.zip).**
 
-### Generating a new design
+Alternatively, these are also on the `uq4covid.io` repository [here](https://github.com/UQ4covid/uq4covid.github.io), which you should clone onto your machine or pull if you have it already.
+
+Once you have it, go to directory `vignettes/data/MetaWards` and there is everything you need. **To ensure we keep the repo version clean, it's best to copy this folder out to somewhere else.** This guide is going to use RStudio to do most things, so head to this folder in Rstudio and set it as your working directory.
+
+## Generating a new design
 
 The file `convertDesign.R` creates new designs to your specification. To run a custom design, you need to open it and change a few things. I'll highlight the blocks you need to look at now.
 
@@ -65,7 +67,7 @@ parRanges <- data.frame(
 )
 ```
 
-You can alter `lower` and `upper` for any of the parameters (or even fix some if you like) here. See the model description linked at the top to see what they all do.
+You can alter `lower` and `upper` for any of the parameters (or even fix some if you like) here. See the [model description](data/MetaWards/vignette/ModelDescription.html) to see what they all do.
 
 Next, generate your own design. The default is a test 5 member LHC and is in the code like this
 ```{r, eval=FALSE}
@@ -86,31 +88,31 @@ The second gives the number of repeats per run so is fairly obvious. Our early e
 
 One you have made those changes, run the whole script and you are ready to run metawards!
 
-### Running Metawards
+## Running Metawards
 
 There are 2 simple steps to this. First, you need to edit the file `runscript.sh`. Simply open it with xcode, and alter the line
-```{unix, eval=FALSE}
+```{bash, eval=FALSE}
 export METAWARDSDATA=$HOME/Dropbox/BayesExeter/MetaWardsData
 ```
-so that the direcroty is the place you cloned the Metawards data above. Now it's run time! The default is to run for 100 days, but you will probably want longer to look at interesting things. The final part of the long line calling Metawards handles this
-```{unix, eval=FALSE}
+so that the directory is the place you cloned the Metawards data above. Now it's run time! The default is to run for 100 days, but you will probably want longer to look at interesting things. The final part of the long line calling Metawards handles this
+```{bash, eval=FALSE}
 --nsteps 100
 ```
 
 and you can alter it in obvious ways.
 
 Open up a terminal and navigate via `cd` to the folder where your `runscript.sh` is. Once there type
-```{unix, eval=FALSE}
+```{bash, eval=FALSE}
 ./runscript.sh
 ```
 
 and let the fun begin. Even this small test ensemble took about 10 mins on my machine, and it runs on all the cores, so don't expect to be able to do a tonne whilst it's running. TJ had a bigger job run all night.
 
-### Extracting data
+## Extracting data
 
 Eventually the fans will cool down and the simulations will be complete. Now you will want to get at some of the outputs. The `extractOutput.R` file lets you do this. Open this in RStudio.
 
-If you have all the required libraries, you can just run the whole thing and, by default, you will get the total number of infections in hospitals per ward. There is a lot you can do to customise, and I think TJ will write a vignette with more information. To get you started, here are some things you can change. 
+If you have all the required libraries, you can just run the whole thing and, by default, you will get the total number of infections in hospitals per ward. There is a lot you can do to customise, and details can be found in the [Model Description](data/MetaWards/vignette/ModelDescription.html). To get you started, here are some things you can change. 
 
 The chunk
 ```{r, eval=FALSE}
@@ -128,7 +130,7 @@ is taking the database `con` created from the raw outputs, is selecting those fr
 
 Having extracted data like this in tibble form, it is ready to be processed for building whatever emulators you like.
 
-### Sundries
+## Sundries
 
 All of the files for running Metawards are in the different folders in our repo (that you will have cloned onto your machine), so you are free to change things for your own investigations. In the future, when we decide on different experiments we want to do, we will alter these files, but still be able to retain the same designing, running and processing experience.
 
