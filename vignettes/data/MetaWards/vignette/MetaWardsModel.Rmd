@@ -313,7 +313,7 @@ This produces a file `inputs/disease.dat` that can be passed to MetaWards to run
 
 The outputs from MetaWards are stored in an SQL database, which can be queried through any SQLite client. Each model run produces a file called `stages.db.bz2`, which is a compressed database containing the outputs. As an example, migrate to an output folder containing `stages.db.bz2`. To access the outputs you will first have to unzip this file. I do this on the command line e.g.
 
-```
+```{bash, eval = FALSE}
 bzip2 -dk stages.db.bz2
 ```
 
@@ -351,7 +351,7 @@ DBI::dbDisconnect(con)
 
 Now you can play with `hosp` as much as you like. Note that after you've pulled the correct outputs down, you might want to delete the `stage.db` (**NOT** the `stages.db.bz2`) file. I did this on the Unix command line using:
 
-```
+```{bash, eval = FALSE}
 rm stage.db
 ```
 

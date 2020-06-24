@@ -11,7 +11,7 @@
 
 <meta name="author" content="TJ McKinley" />
 
-<meta name="date" content="2020-06-22" />
+<meta name="date" content="2020-06-24" />
 
 <title>Model Structure in MetaWards</title>
 
@@ -1777,7 +1777,7 @@ summary {
 
 <h1 class="title toc-ignore">Model Structure in MetaWards</h1>
 <h4 class="author">TJ McKinley</h4>
-<h4 class="date">22 June 2020</h4>
+<h4 class="date">24 June 2020</h4>
 
 </div>
 
@@ -1795,8 +1795,8 @@ summary {
 <li><span class="math inline">\(R\)</span>: recovered and immune;</li>
 <li><span class="math inline">\(D\)</span>: died.</li>
 </ul>
-<div id="htmlwidget-943992f809fef22978f3" style="width:100%;height:100%;" class="grViz html-widget"></div>
-<script type="application/json" data-for="htmlwidget-943992f809fef22978f3">{"x":{"diagram":"digraph model {\n    graph[layout = dot, rankdir = LR]\n    node [shape = rectangle]\n    \n    S\n    E1 [label = <E<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]; E2 [label = <E<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\n    I1 [label = <I<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]; I2 [label = <I<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\n    A1 [label = <A<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]; A2 [label = <A<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\n    H1 [label = <H<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]; H2 [label = <H<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\n    C1 [label = <C<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]; C2 [label = <C<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\n    DI [label = <D<FONT POINT-SIZE=\"8\"><SUB>I<\/SUB><\/FONT>>]; DH [label = <D<FONT POINT-SIZE=\"8\"><SUB>H<\/SUB><\/FONT>>]; DC [label = <D<FONT POINT-SIZE=\"8\"><SUB>C<\/SUB><\/FONT>>]\n    RI [label = <R<FONT POINT-SIZE=\"8\"><SUB>I<\/SUB><\/FONT>>]; RH [label = <R<FONT POINT-SIZE=\"8\"><SUB>H<\/SUB><\/FONT>>]; RC [label = <R<FONT POINT-SIZE=\"8\"><SUB>C<\/SUB><\/FONT>>]; RA [label = <R<FONT POINT-SIZE=\"8\"><SUB>A<\/SUB><\/FONT>>]\n    St00 [style = \"invis\"]; St0 [label = \"Stage 0\"]; St1 [label = \"Stage 1\"]; \n    St2 [label = \"Stage 2\"]; St3 [label = \"Stage 3\"]; St4 [label = \"Stage 4\"]; St5 [label = \"Stage 5\"]\n    genpop [label = \"Gen. Pop.\"]\n    hospital [label = \"Hospital Patient\"]\n    critical [label = \"Critical Care\"]\n    asymp [label = \"Asymptomatics\"]\n    \n    St00 -> St0 -> St1 -> St2 -> St3 -> St4 -> St5 [style = \"invis\"]\n    S -> E1 -> E2 -> I1 -> I2 \n    I2 -> RI\n    I2 -> DI [weight = 0]\n    I2 -> H1 -> H2 -> C1 -> C2 \n    C2 -> RC \n    C2 -> DC [weight = 0]\n    H2 -> RH \n    H2 -> DH [weight = 0] \n    RI -> DI [style = \"invis\"]\n    RH -> DH [style = \"invis\"]\n    RC -> DC [style = \"invis\"]\n    E2 -> A1 [weight = 0]\n    A1 -> A2 -> RA \n    genpop -> S [style = \"invis\"]\n    hospital -> H1 [style = \"invis\"]\n    critical -> C1[style = \"invis\"]\n    asymp -> A1 [style = \"invis\"]\n    subgraph {\n      rank = same; St00; genpop; hospital; critical; asymp;\n    }\n    subgraph {\n      rank = same; E1; St0;\n    }\n    subgraph {\n      rank = same; E2; St1;\n    }\n    subgraph cluster {\n      subgraph {\n        rank = same; I1; H1; C1; A1; St2;\n      }\n      subgraph {\n        rank = same; I2; H2; C2; A2; St3;\n      }\n      style = filled;\n      color = lightgrey;\n      label = \"Infectious Classes\"\n    }\n    subgraph {\n      rank = same; RA, RI, RC; RH; St4;\n    }\n    subgraph {\n      rank = same; DI; DH; DC; St5;\n    }\n    \n}","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
+<div id="htmlwidget-fd7940249612a4466154" style="width:100%;height:100%;" class="grViz html-widget"></div>
+<script type="application/json" data-for="htmlwidget-fd7940249612a4466154">{"x":{"diagram":"digraph model {\n    graph[layout = dot, rankdir = LR]\n    node [shape = rectangle]\n    \n    S\n    E1 [label = <E<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]; E2 [label = <E<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\n    I1 [label = <I<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]; I2 [label = <I<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\n    A1 [label = <A<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]; A2 [label = <A<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\n    H1 [label = <H<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]; H2 [label = <H<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\n    C1 [label = <C<FONT POINT-SIZE=\"8\"><SUB>1<\/SUB><\/FONT>>]; C2 [label = <C<FONT POINT-SIZE=\"8\"><SUB>2<\/SUB><\/FONT>>]\n    DI [label = <D<FONT POINT-SIZE=\"8\"><SUB>I<\/SUB><\/FONT>>]; DH [label = <D<FONT POINT-SIZE=\"8\"><SUB>H<\/SUB><\/FONT>>]; DC [label = <D<FONT POINT-SIZE=\"8\"><SUB>C<\/SUB><\/FONT>>]\n    RI [label = <R<FONT POINT-SIZE=\"8\"><SUB>I<\/SUB><\/FONT>>]; RH [label = <R<FONT POINT-SIZE=\"8\"><SUB>H<\/SUB><\/FONT>>]; RC [label = <R<FONT POINT-SIZE=\"8\"><SUB>C<\/SUB><\/FONT>>]; RA [label = <R<FONT POINT-SIZE=\"8\"><SUB>A<\/SUB><\/FONT>>]\n    St00 [style = \"invis\"]; St0 [label = \"Stage 0\"]; St1 [label = \"Stage 1\"]; \n    St2 [label = \"Stage 2\"]; St3 [label = \"Stage 3\"]; St4 [label = \"Stage 4\"]; St5 [label = \"Stage 5\"]\n    genpop [label = \"Gen. Pop.\"]\n    hospital [label = \"Hospital Patient\"]\n    critical [label = \"Critical Care\"]\n    asymp [label = \"Asymptomatics\"]\n    \n    St00 -> St0 -> St1 -> St2 -> St3 -> St4 -> St5 [style = \"invis\"]\n    S -> E1 -> E2 -> I1 -> I2 \n    I2 -> RI\n    I2 -> DI [weight = 0]\n    I2 -> H1 -> H2 -> C1 -> C2 \n    C2 -> RC \n    C2 -> DC [weight = 0]\n    H2 -> RH \n    H2 -> DH [weight = 0] \n    RI -> DI [style = \"invis\"]\n    RH -> DH [style = \"invis\"]\n    RC -> DC [style = \"invis\"]\n    E2 -> A1 [weight = 0]\n    A1 -> A2 -> RA \n    genpop -> S [style = \"invis\"]\n    hospital -> H1 [style = \"invis\"]\n    critical -> C1[style = \"invis\"]\n    asymp -> A1 [style = \"invis\"]\n    subgraph {\n      rank = same; St00; genpop; hospital; critical; asymp;\n    }\n    subgraph {\n      rank = same; E1; St0;\n    }\n    subgraph {\n      rank = same; E2; St1;\n    }\n    subgraph cluster {\n      subgraph {\n        rank = same; I1; H1; C1; A1; St2;\n      }\n      subgraph {\n        rank = same; I2; H2; C2; A2; St3;\n      }\n      style = filled;\n      color = lightgrey;\n      label = \"Infectious Classes\"\n    }\n    subgraph {\n      rank = same; RA, RI, RC; RH; St4;\n    }\n    subgraph {\n      rank = same; DI; DH; DC; St5;\n    }\n    \n}","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
 <div id="metawards-setup" class="section level2">
 <h2>MetaWards setup</h2>
 <p>The model structure above allows for different progression pathways. MetaWards deals with this by assigning individuals to different “demographics”, where each demographic can be used to represent different progression pathways. There are also <code>mover</code> functions that can be used to move individuals between demographics, and <code>mixer</code> functions that scale the force-of-infection (FOI) terms between the different demographics (explained later). There are currently seven pathways, which will be described below, but can be summarised as:</p>
@@ -2263,65 +2263,79 @@ summary {
 <a class="sourceLine" id="cb7-2" title="2"><span class="im">from</span> metawards <span class="im">import</span> Networks, OutputFiles, Population, Workspace</a>
 <a class="sourceLine" id="cb7-3" title="3"><span class="im">from</span> metawards.utils <span class="im">import</span> Console</a>
 <a class="sourceLine" id="cb7-4" title="4"></a>
-<a class="sourceLine" id="cb7-5" title="5"><span class="kw">def</span> create_tables(network: Networks):</a>
-<a class="sourceLine" id="cb7-6" title="6">    <span class="co"># return a function that creates the tables</span></a>
-<a class="sourceLine" id="cb7-7" title="7">    <span class="co"># for the specified number of disease classes</span></a>
-<a class="sourceLine" id="cb7-8" title="8"></a>
-<a class="sourceLine" id="cb7-9" title="9">    <span class="kw">def</span> initialise(conn):</a>
-<a class="sourceLine" id="cb7-10" title="10">        <span class="co"># create tables for the values for each demographic... - put all your initialisation code here</span></a>
-<a class="sourceLine" id="cb7-11" title="11">        c <span class="op">=</span> conn.cursor()</a>
-<a class="sourceLine" id="cb7-12" title="12"></a>
-<a class="sourceLine" id="cb7-13" title="13">        <span class="cf">for</span> i, subnet <span class="kw">in</span> <span class="bu">enumerate</span>(network.subnets):</a>
-<a class="sourceLine" id="cb7-14" title="14">            name <span class="op">=</span> subnet.name</a>
-<a class="sourceLine" id="cb7-15" title="15">            N_INF_CLASSES <span class="op">=</span> subnet.params.disease_params.N_INF_CLASSES()</a>
+<a class="sourceLine" id="cb7-5" title="5"><span class="co"># Output list</span></a>
+<a class="sourceLine" id="cb7-6" title="6">_out_channels <span class="op">=</span> <span class="op">\</span></a>
+<a class="sourceLine" id="cb7-7" title="7">    {</a>
+<a class="sourceLine" id="cb7-8" title="8">        <span class="st">&quot;asymp&quot;</span>: [<span class="dv">2</span>, <span class="dv">3</span>, <span class="dv">4</span>],</a>
+<a class="sourceLine" id="cb7-9" title="9">        <span class="st">&quot;critical&quot;</span>: [<span class="dv">2</span>, <span class="dv">3</span>, <span class="dv">4</span>, <span class="dv">5</span>],</a>
+<a class="sourceLine" id="cb7-10" title="10">        <span class="st">&quot;genpop&quot;</span>: [<span class="dv">0</span>, <span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">3</span>, <span class="dv">4</span>, <span class="dv">5</span>],</a>
+<a class="sourceLine" id="cb7-11" title="11">        <span class="st">&quot;hospital&quot;</span>: [<span class="dv">2</span>, <span class="dv">3</span>, <span class="dv">4</span>, <span class="dv">5</span>]</a>
+<a class="sourceLine" id="cb7-12" title="12">    }</a>
+<a class="sourceLine" id="cb7-13" title="13"></a>
+<a class="sourceLine" id="cb7-14" title="14">_zero_crossings <span class="op">=</span> {}</a>
+<a class="sourceLine" id="cb7-15" title="15"></a>
 <a class="sourceLine" id="cb7-16" title="16"></a>
-<a class="sourceLine" id="cb7-17" title="17">            values <span class="op">=</span> <span class="st">&quot;,&quot;</span>.join([<span class="ss">f&quot;stage_</span><span class="sc">{i}</span><span class="ss"> int&quot;</span> <span class="cf">for</span> i <span class="kw">in</span> <span class="bu">range</span>(<span class="dv">0</span>, N_INF_CLASSES)])</a>
-<a class="sourceLine" id="cb7-18" title="18">            c.execute(<span class="ss">f&quot;create table </span><span class="sc">{</span>name<span class="sc">}</span><span class="ss">_totals(day int, ward int, </span><span class="sc">{</span>values<span class="sc">}</span><span class="ss">)&quot;</span>)</a>
-<a class="sourceLine" id="cb7-19" title="19"></a>
-<a class="sourceLine" id="cb7-20" title="20">        conn.commit()</a>
+<a class="sourceLine" id="cb7-17" title="17"><span class="kw">def</span> create_tables_3(network: Networks):</a>
+<a class="sourceLine" id="cb7-18" title="18">    <span class="co"># return a function that creates the tables</span></a>
+<a class="sourceLine" id="cb7-19" title="19">    <span class="co"># for the specified number of disease classes</span></a>
+<a class="sourceLine" id="cb7-20" title="20">    <span class="co"># Primary key needs to be composite here</span></a>
 <a class="sourceLine" id="cb7-21" title="21"></a>
-<a class="sourceLine" id="cb7-22" title="22">    <span class="cf">return</span> initialise</a>
-<a class="sourceLine" id="cb7-23" title="23"></a>
-<a class="sourceLine" id="cb7-24" title="24"></a>
-<a class="sourceLine" id="cb7-25" title="25"><span class="kw">def</span> output_db(population: Population, network: Networks,</a>
-<a class="sourceLine" id="cb7-26" title="26">              workspace: Workspace, output_dir: OutputFiles, <span class="op">**</span>kwargs):</a>
-<a class="sourceLine" id="cb7-27" title="27"></a>
-<a class="sourceLine" id="cb7-28" title="28">    Console.<span class="bu">print</span>(<span class="ss">f&quot;Calling output_db for a </span><span class="sc">{</span>network<span class="sc">.</span>__class__<span class="sc">}</span><span class="ss"> object&quot;</span>)</a>
-<a class="sourceLine" id="cb7-29" title="29"></a>
-<a class="sourceLine" id="cb7-30" title="30">    <span class="co"># open a database to hold the data - call the &#39;create_tables&#39;</span></a>
-<a class="sourceLine" id="cb7-31" title="31">    <span class="co"># function on this database when it is first opened</span></a>
-<a class="sourceLine" id="cb7-32" title="32">    conn <span class="op">=</span> output_dir.open_db(<span class="st">&quot;stages.db&quot;</span>,</a>
-<a class="sourceLine" id="cb7-33" title="33">                              initialise<span class="op">=</span>create_tables(network))</a>
+<a class="sourceLine" id="cb7-22" title="22">    <span class="kw">def</span> initialise(conn):</a>
+<a class="sourceLine" id="cb7-23" title="23">        c <span class="op">=</span> conn.cursor()</a>
+<a class="sourceLine" id="cb7-24" title="24">        table_name: <span class="bu">str</span> <span class="op">=</span> <span class="st">&quot;compact&quot;</span></a>
+<a class="sourceLine" id="cb7-25" title="25">        values: List[<span class="bu">str</span>] <span class="op">=</span> []</a>
+<a class="sourceLine" id="cb7-26" title="26">        <span class="cf">for</span> i, subnet <span class="kw">in</span> <span class="bu">enumerate</span>(network.subnets):</a>
+<a class="sourceLine" id="cb7-27" title="27">            values <span class="op">+=</span> [<span class="ss">f&quot;</span><span class="sc">{</span>subnet<span class="sc">.</span>name<span class="sc">}</span><span class="ss">_</span><span class="sc">{i}</span><span class="ss"> int&quot;</span> <span class="cf">for</span> i <span class="kw">in</span> _out_channels[subnet.name]]</a>
+<a class="sourceLine" id="cb7-28" title="28">        c.execute(<span class="ss">f&quot;create table </span><span class="sc">{</span>table_name<span class="sc">}</span><span class="ss">(day int not null, ward int not null, </span><span class="sc">{</span><span class="st">&#39;,&#39;</span><span class="sc">.</span>join(values)<span class="sc">}</span><span class="ss">, &quot;</span></a>
+<a class="sourceLine" id="cb7-29" title="29">                  <span class="ss">f&quot;primary key (day, ward))&quot;</span>)</a>
+<a class="sourceLine" id="cb7-30" title="30">        conn.commit()</a>
+<a class="sourceLine" id="cb7-31" title="31"></a>
+<a class="sourceLine" id="cb7-32" title="32">    <span class="cf">return</span> initialise</a>
+<a class="sourceLine" id="cb7-33" title="33"></a>
 <a class="sourceLine" id="cb7-34" title="34"></a>
-<a class="sourceLine" id="cb7-35" title="35">    c <span class="op">=</span> conn.cursor()</a>
-<a class="sourceLine" id="cb7-36" title="36"></a>
-<a class="sourceLine" id="cb7-37" title="37">    <span class="co"># get each demographics data</span></a>
-<a class="sourceLine" id="cb7-38" title="38">    <span class="cf">for</span> i, subnet <span class="kw">in</span> <span class="bu">enumerate</span>(network.subnets):</a>
-<a class="sourceLine" id="cb7-39" title="39">        name <span class="op">=</span> subnet.name</a>
+<a class="sourceLine" id="cb7-35" title="35"><span class="kw">def</span> output_db(population: Population, network: Networks,</a>
+<a class="sourceLine" id="cb7-36" title="36">              workspace: Workspace, output_dir: OutputFiles, <span class="op">**</span>kwargs):</a>
+<a class="sourceLine" id="cb7-37" title="37">    Console.<span class="bu">print</span>(<span class="ss">f&quot;Calling output_db for a </span><span class="sc">{</span>network<span class="sc">.</span>__class__<span class="sc">}</span><span class="ss"> object&quot;</span>)</a>
+<a class="sourceLine" id="cb7-38" title="38">    conn3 <span class="op">=</span> output_dir.open_db(<span class="st">&quot;stages3.db&quot;</span>, initialise<span class="op">=</span>create_tables_3(network))</a>
+<a class="sourceLine" id="cb7-39" title="39">    c3 <span class="op">=</span> conn3.cursor()</a>
 <a class="sourceLine" id="cb7-40" title="40"></a>
-<a class="sourceLine" id="cb7-41" title="41">        ward_inf_tot <span class="op">=</span> workspace.subspaces[i].ward_inf_tot</a>
-<a class="sourceLine" id="cb7-42" title="42"></a>
-<a class="sourceLine" id="cb7-43" title="43">        N_INF_CLASSES <span class="op">=</span> workspace.subspaces[i].n_inf_classes</a>
-<a class="sourceLine" id="cb7-44" title="44"></a>
-<a class="sourceLine" id="cb7-45" title="45">        <span class="cf">for</span> k <span class="kw">in</span> <span class="bu">range</span>(<span class="dv">1</span>, workspace.subspaces[i].nnodes<span class="op">+</span><span class="dv">1</span>):</a>
-<a class="sourceLine" id="cb7-46" title="46">            vals <span class="op">=</span> [population.day, k]</a>
-<a class="sourceLine" id="cb7-47" title="47">            <span class="cf">for</span> j <span class="kw">in</span> <span class="bu">range</span>(<span class="dv">0</span>, N_INF_CLASSES):</a>
-<a class="sourceLine" id="cb7-48" title="48">                <span class="cf">if</span> j <span class="op">==</span> <span class="dv">1</span> <span class="kw">or</span> j <span class="op">==</span> <span class="dv">3</span>:</a>
-<a class="sourceLine" id="cb7-49" title="49">                    vals.append(ward_inf_tot[j <span class="op">-</span> <span class="dv">1</span>][k] <span class="op">+</span> ward_inf_tot[j][k])</a>
-<a class="sourceLine" id="cb7-50" title="50">                <span class="cf">else</span>:</a>
-<a class="sourceLine" id="cb7-51" title="51">                    vals.append(ward_inf_tot[j][k])</a>
-<a class="sourceLine" id="cb7-52" title="52"></a>
-<a class="sourceLine" id="cb7-53" title="53">            vals_str <span class="op">=</span> <span class="st">&quot;,&quot;</span>.join([<span class="bu">str</span>(v) <span class="cf">for</span> v <span class="kw">in</span> vals])</a>
-<a class="sourceLine" id="cb7-54" title="54"></a>
-<a class="sourceLine" id="cb7-55" title="55">            c.execute(<span class="ss">f&quot;insert into </span><span class="sc">{</span>name<span class="sc">}</span><span class="ss">_totals VALUES (</span><span class="sc">{</span>vals_str<span class="sc">}</span><span class="ss">)&quot;</span>)</a>
+<a class="sourceLine" id="cb7-41" title="41">    <span class="co"># get each demographics data</span></a>
+<a class="sourceLine" id="cb7-42" title="42">    <span class="cf">for</span> i, subnet <span class="kw">in</span> <span class="bu">enumerate</span>(network.subnets):</a>
+<a class="sourceLine" id="cb7-43" title="43">        ward_inf_tot <span class="op">=</span> workspace.subspaces[i].ward_inf_tot</a>
+<a class="sourceLine" id="cb7-44" title="44">        N_INF_CLASSES <span class="op">=</span> workspace.subspaces[i].n_inf_classes</a>
+<a class="sourceLine" id="cb7-45" title="45">        col2_names <span class="op">=</span> [<span class="st">&quot;day&quot;</span>, <span class="st">&quot;ward&quot;</span>] <span class="op">+</span> [<span class="ss">f&quot;</span><span class="sc">{</span>subnet<span class="sc">.</span>name<span class="sc">}</span><span class="ss">_</span><span class="sc">{i}</span><span class="ss">&quot;</span> <span class="cf">for</span> i <span class="kw">in</span> _out_channels[subnet.name]]</a>
+<a class="sourceLine" id="cb7-46" title="46">        <span class="cf">for</span> k <span class="kw">in</span> <span class="bu">range</span>(<span class="dv">1</span>, workspace.subspaces[i].nnodes <span class="op">+</span> <span class="dv">1</span>):</a>
+<a class="sourceLine" id="cb7-47" title="47">            <span class="cf">if</span> k <span class="kw">not</span> <span class="kw">in</span> _zero_crossings:</a>
+<a class="sourceLine" id="cb7-48" title="48">                _zero_crossings[k] <span class="op">=</span> <span class="va">False</span></a>
+<a class="sourceLine" id="cb7-49" title="49">            vals <span class="op">=</span> [population.day, k]</a>
+<a class="sourceLine" id="cb7-50" title="50">            <span class="cf">for</span> j <span class="kw">in</span> <span class="bu">range</span>(<span class="dv">0</span>, N_INF_CLASSES):</a>
+<a class="sourceLine" id="cb7-51" title="51"></a>
+<a class="sourceLine" id="cb7-52" title="52">                <span class="co"># Try to fudge a marker for first infections</span></a>
+<a class="sourceLine" id="cb7-53" title="53">                <span class="cf">if</span> ward_inf_tot[<span class="dv">0</span>][k] <span class="op">!=</span> <span class="dv">0</span> <span class="kw">and</span> _zero_crossings[k] <span class="kw">is</span> <span class="va">False</span>:</a>
+<a class="sourceLine" id="cb7-54" title="54">                    _zero_crossings[k] <span class="op">=</span> <span class="va">True</span></a>
+<a class="sourceLine" id="cb7-55" title="55">                    Console.<span class="bu">print</span>(<span class="ss">f&quot;Got first infection in ward </span><span class="sc">{k}</span><span class="ss">&quot;</span>)</a>
 <a class="sourceLine" id="cb7-56" title="56"></a>
-<a class="sourceLine" id="cb7-57" title="57">    conn.commit()</a>
-<a class="sourceLine" id="cb7-58" title="58"></a>
-<a class="sourceLine" id="cb7-59" title="59"></a>
-<a class="sourceLine" id="cb7-60" title="60"><span class="kw">def</span> extract_db(<span class="op">**</span>kwargs):</a>
-<a class="sourceLine" id="cb7-61" title="61">    funcs <span class="op">=</span> []</a>
-<a class="sourceLine" id="cb7-62" title="62">    funcs.append(output_db)</a>
-<a class="sourceLine" id="cb7-63" title="63">    <span class="cf">return</span> funcs</a></code></pre></div>
+<a class="sourceLine" id="cb7-57" title="57">                <span class="co"># </span><span class="al">TODO</span><span class="co">: What is this?? Why are some classes deltas?</span></a>
+<a class="sourceLine" id="cb7-58" title="58">                <span class="cf">if</span> j <span class="op">==</span> <span class="dv">1</span> <span class="kw">or</span> j <span class="op">==</span> <span class="dv">3</span>:</a>
+<a class="sourceLine" id="cb7-59" title="59">                    vals.append(ward_inf_tot[j <span class="op">-</span> <span class="dv">1</span>][k] <span class="op">+</span> ward_inf_tot[j][k])</a>
+<a class="sourceLine" id="cb7-60" title="60">                <span class="cf">else</span>:</a>
+<a class="sourceLine" id="cb7-61" title="61">                    vals.append(ward_inf_tot[j][k])</a>
+<a class="sourceLine" id="cb7-62" title="62">            col2_str <span class="op">=</span> <span class="st">&#39;,&#39;</span>.join(col2_names)</a>
+<a class="sourceLine" id="cb7-63" title="63">            update_cols <span class="op">=</span> col2_names[<span class="dv">2</span>:]</a>
+<a class="sourceLine" id="cb7-64" title="64">            keeps <span class="op">=</span> [vals[x <span class="op">+</span> <span class="dv">2</span>] <span class="cf">for</span> x <span class="kw">in</span> <span class="bu">range</span>(N_INF_CLASSES) <span class="cf">if</span> x <span class="kw">in</span> _out_channels[subnet.name]]</a>
+<a class="sourceLine" id="cb7-65" title="65">            keeps_str <span class="op">=</span> <span class="st">&quot;,&quot;</span>.join([<span class="bu">str</span>(v) <span class="cf">for</span> v <span class="kw">in</span> [population.day, k] <span class="op">+</span> keeps])</a>
+<a class="sourceLine" id="cb7-66" title="66">            update_str <span class="op">=</span> <span class="st">&#39;,&#39;</span>.join([<span class="ss">f&quot;</span><span class="sc">{c}</span><span class="ss"> = </span><span class="sc">{v}</span><span class="ss">&quot;</span> <span class="cf">for</span> c, v <span class="kw">in</span> <span class="bu">zip</span>(update_cols, keeps)])</a>
+<a class="sourceLine" id="cb7-67" title="67">            qstring <span class="op">=</span> <span class="ss">f&quot;insert into compact (</span><span class="sc">{</span>col2_str<span class="sc">}</span><span class="ss">) values (</span><span class="sc">{</span>keeps_str<span class="sc">}</span><span class="ss">) &quot;</span> \</a>
+<a class="sourceLine" id="cb7-68" title="68">                      <span class="ss">f&quot;on conflict(day, ward) do update set </span><span class="sc">{</span>update_str<span class="sc">}</span><span class="ss">&quot;</span></a>
+<a class="sourceLine" id="cb7-69" title="69">            <span class="cf">if</span> _zero_crossings[k] <span class="kw">is</span> <span class="va">True</span>:</a>
+<a class="sourceLine" id="cb7-70" title="70">                c3.execute(qstring)</a>
+<a class="sourceLine" id="cb7-71" title="71">    conn3.commit()</a>
+<a class="sourceLine" id="cb7-72" title="72"></a>
+<a class="sourceLine" id="cb7-73" title="73"></a>
+<a class="sourceLine" id="cb7-74" title="74"><span class="kw">def</span> extract_db(<span class="op">**</span>kwargs):</a>
+<a class="sourceLine" id="cb7-75" title="75">    funcs <span class="op">=</span> []</a>
+<a class="sourceLine" id="cb7-76" title="76">    funcs.append(output_db)</a>
+<a class="sourceLine" id="cb7-77" title="77">    <span class="cf">return</span> funcs</a></code></pre></div>
 </div>
 <div id="code" class="section level2">
 <h2>Input and output code</h2>
@@ -2515,7 +2529,7 @@ summary {
 <a class="sourceLine" id="cb11-46" title="46"><span class="kw">saveRDS</span>(parRanges, <span class="st">&quot;inputs/parRanges.rds&quot;</span>)</a></code></pre></div>
 <p>This produces a file <code>inputs/disease.dat</code> that can be passed to MetaWards to run the model. The <code>runscript.sh</code> batch file provides the command line instructions needed to the model using these inputs. This is written for Linux, and should be able to be run directly from the downloaded folder. If you don’t run Linux, then the file should give you an idea of how to run the model on your own system.</p>
 <p>The outputs from MetaWards are stored in an SQL database, which can be queried through any SQLite client. Each model run produces a file called <code>stages.db.bz2</code>, which is a compressed database containing the outputs. As an example, migrate to an output folder containing <code>stages.db.bz2</code>. To access the outputs you will first have to unzip this file. I do this on the command line e.g.</p>
-<pre><code>bzip2 -dk stages.db.bz2</code></pre>
+<div class="sourceCode" id="cb12"><pre class="sourceCode bash"><code class="sourceCode bash"><a class="sourceLine" id="cb12-1" title="1"><span class="fu">bzip2</span> -dk stages.db.bz2</a></code></pre></div>
 <p>If you’re happy with SQL, you can query these directly with e.g. SQLite. If you are an R user, then the <code>dplyr</code> package (or more specifically the <code>dbplyr</code> package) provides some useful R tools for querying SQL databases using <code>tidyverse</code>-type notation. More details can be found <a href="https://cran.r-project.org/web/packages/dbplyr/vignettes/dbplyr.html">here</a>.</p>
 <p>As a quick example, imagine that we want to extract the <strong>cumulative hospital cases</strong> on say day 100. Here we will need to extract the <strong>new hospital cases</strong> from day 1–100, and then sum them up for each ward. Therefore we need to extract <code>day</code>, <code>ward</code> and <code>stage_2</code> from the <code>hospital_totals</code> table, and then sum them up (see <a href="#extractor">here</a> for more details on how the outputs are stored). For speed, <code>dplyr</code> converts the R code to SQL, and only pulls the resulting table to R if you run the function <code>collect()</code> (see below).</p>
 <div class="sourceCode" id="cb13"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb13-1" title="1"><span class="co">## load library</span></a>
@@ -2544,7 +2558,7 @@ summary {
 <a class="sourceLine" id="cb13-24" title="24"><span class="co">## disconnect from database</span></a>
 <a class="sourceLine" id="cb13-25" title="25">DBI<span class="op">::</span><span class="kw">dbDisconnect</span>(con)</a></code></pre></div>
 <p>Now you can play with <code>hosp</code> as much as you like. Note that after you’ve pulled the correct outputs down, you might want to delete the <code>stage.db</code> (<strong>NOT</strong> the <code>stages.db.bz2</code>) file. I did this on the Unix command line using:</p>
-<pre><code>rm stage.db</code></pre>
+<div class="sourceCode" id="cb14"><pre class="sourceCode bash"><code class="sourceCode bash"><a class="sourceLine" id="cb14-1" title="1"><span class="fu">rm</span> stage.db</a></code></pre></div>
 <blockquote>
 <p><strong>Be careful</strong>: remember that <code>rm</code> removes completely, so not to the recycle bin. However, as long as you don’t remove <code>stages.db.bz2</code> then you can always recover.</p>
 </blockquote>

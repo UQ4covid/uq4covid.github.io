@@ -11,7 +11,7 @@
 
 <meta name="author" content="TJ McKinley" />
 
-<meta name="date" content="2020-06-22" />
+<meta name="date" content="2020-06-24" />
 
 <title>Model Description</title>
 
@@ -1777,7 +1777,7 @@ summary {
 
 <h1 class="title toc-ignore">Model Description</h1>
 <h4 class="author">TJ McKinley</h4>
-<h4 class="date">22 June 2020</h4>
+<h4 class="date">24 June 2020</h4>
 
 </div>
 
@@ -1792,8 +1792,8 @@ summary {
 <li><span class="math inline">\(R\)</span>: recovered and immune;</li>
 <li><span class="math inline">\(D\)</span>: died.</li>
 </ul>
-<div id="htmlwidget-bc49f98a27fbfd2113a4" style="width:100%;height:100%;" class="grViz html-widget"></div>
-<script type="application/json" data-for="htmlwidget-bc49f98a27fbfd2113a4">{"x":{"diagram":"digraph simpmod {\n    graph[layout = dot, rankdir = LR]\n    node [shape = rectangle]\n    \n    S\n    E [label = \"E\"];\n    I [label = \"I\"]; \n    A [label = \"A\"]; \n    H [label = \"H\"]; \n    C [label = \"C\"]; \n    DI [label = <D<FONT POINT-SIZE=\"8\"><SUB>I<\/SUB><\/FONT>>]; DH [label = <D<FONT POINT-SIZE=\"8\"><SUB>H<\/SUB><\/FONT>>]; DC [label = <D<FONT POINT-SIZE=\"8\"><SUB>C<\/SUB><\/FONT>>]\n    RI [label = <R<FONT POINT-SIZE=\"8\"><SUB>I<\/SUB><\/FONT>>]; RH [label = <R<FONT POINT-SIZE=\"8\"><SUB>H<\/SUB><\/FONT>>]; RC [label = <R<FONT POINT-SIZE=\"8\"><SUB>C<\/SUB><\/FONT>>]; RA [label = <R<FONT POINT-SIZE=\"8\"><SUB>A<\/SUB><\/FONT>>]\n    genpop [label = \"Gen. Pop.\"]\n    hospital [label = \"Hospital Patient\"]\n    critical [label = \"Critical Care\"]\n    asymp [label = \"Asymptomatics\"]\n    \n    S -> E -> I\n    I -> RI\n    I -> DI [weight = 0]\n    I -> H -> C\n    C -> RC \n    C -> DC [weight = 0]\n    H -> RH \n    H -> DH [weight = 0] \n    RI -> DI [style = \"invis\"]\n    RH -> DH [style = \"invis\"]\n    RC -> DC [style = \"invis\"]\n    E -> A [weight = 0]\n    A -> RA \n    genpop -> S [style = \"invis\"]\n    hospital -> H [style = \"invis\"]\n    critical -> C [style = \"invis\"]\n    asymp -> A [style = \"invis\"]\n    subgraph {\n      rank = same; asymp -> genpop -> hospital -> critical [style = \"invis\"]\n    }\n    subgraph cluster {\n      subgraph {\n        rank = same; A -> I -> H -> C [style = \"invis\"]\n      }\n      style = filled;\n      color = lightgrey;\n      label = \"Infectious Classes\"\n    }\n    subgraph {\n      rank = same; RA, RI, RC; RH;\n    }\n    subgraph {\n      rank = same; DI; DH; DC;\n    }\n    \n}","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
+<div id="htmlwidget-8776532ab5bc0456c57b" style="width:100%;height:100%;" class="grViz html-widget"></div>
+<script type="application/json" data-for="htmlwidget-8776532ab5bc0456c57b">{"x":{"diagram":"digraph simpmod {\n    graph[layout = dot, rankdir = LR]\n    node [shape = rectangle]\n    \n    S\n    E [label = \"E\"];\n    I [label = \"I\"]; \n    A [label = \"A\"]; \n    H [label = \"H\"]; \n    C [label = \"C\"]; \n    DI [label = <D<FONT POINT-SIZE=\"8\"><SUB>I<\/SUB><\/FONT>>]; DH [label = <D<FONT POINT-SIZE=\"8\"><SUB>H<\/SUB><\/FONT>>]; DC [label = <D<FONT POINT-SIZE=\"8\"><SUB>C<\/SUB><\/FONT>>]\n    RI [label = <R<FONT POINT-SIZE=\"8\"><SUB>I<\/SUB><\/FONT>>]; RH [label = <R<FONT POINT-SIZE=\"8\"><SUB>H<\/SUB><\/FONT>>]; RC [label = <R<FONT POINT-SIZE=\"8\"><SUB>C<\/SUB><\/FONT>>]; RA [label = <R<FONT POINT-SIZE=\"8\"><SUB>A<\/SUB><\/FONT>>]\n    genpop [label = \"Gen. Pop.\"]\n    hospital [label = \"Hospital Patient\"]\n    critical [label = \"Critical Care\"]\n    asymp [label = \"Asymptomatics\"]\n    \n    S -> E -> I\n    I -> RI\n    I -> DI [weight = 0]\n    I -> H -> C\n    C -> RC \n    C -> DC [weight = 0]\n    H -> RH \n    H -> DH [weight = 0] \n    RI -> DI [style = \"invis\"]\n    RH -> DH [style = \"invis\"]\n    RC -> DC [style = \"invis\"]\n    E -> A [weight = 0]\n    A -> RA \n    genpop -> S [style = \"invis\"]\n    hospital -> H [style = \"invis\"]\n    critical -> C [style = \"invis\"]\n    asymp -> A [style = \"invis\"]\n    subgraph {\n      rank = same; asymp -> genpop -> hospital -> critical [style = \"invis\"]\n    }\n    subgraph cluster {\n      subgraph {\n        rank = same; A -> I -> H -> C [style = \"invis\"]\n      }\n      style = filled;\n      color = lightgrey;\n      label = \"Infectious Classes\"\n    }\n    subgraph {\n      rank = same; RA, RI, RC; RH;\n    }\n    subgraph {\n      rank = same; DI; DH; DC;\n    }\n    \n}","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
 <div id="metawards-setup" class="section level2">
 <h2>MetaWards setup</h2>
 <p>The model structure above allows for different progression pathways. MetaWards deals with this by assigning individuals to different “demographics”, where each demographic can be used to represent different progression pathways. There are currently seven pathways, which will be described below, which can be summarised as:</p>
@@ -1864,7 +1864,7 @@ summary {
 <div id="outputS" class="section level2">
 <h2>Outputs</h2>
 <p>The outputs from MetaWards are stored in an SQL database, which can be queried through any SQLite client. Each model run produces a file called <code>stages.db.bz2</code>, which is a compressed database containing the outputs. To access this you will first have to unzip it. I do this on the command line e.g.</p>
-<pre><code>bzip2 -dk stages.db.bz2</code></pre>
+<div class="sourceCode" id="cb1"><pre class="sourceCode bash"><code class="sourceCode bash"><a class="sourceLine" id="cb1-1" title="1"><span class="fu">bzip2</span> -dk stages.db.bz2</a></code></pre></div>
 <p>You will notice that the unzipped <code>stages.db</code> file is <strong>much</strong> larger than the compressed version, so we need to be careful to remove <code>stages.db</code> at the end if we have limited hard drive space. The database contains four tables:</p>
 <ul>
 <li><code>genpop_totals</code></li>
@@ -1914,7 +1914,7 @@ summary {
 <a class="sourceLine" id="cb2-24" title="24"><span class="co">## disconnect from database</span></a>
 <a class="sourceLine" id="cb2-25" title="25">DBI<span class="op">::</span><span class="kw">dbDisconnect</span>(con)</a></code></pre></div>
 <p>Now you can play with <code>hosp</code> as much as you like. Note that after you’ve pulled the correct outputs down, you might want to delete the <code>stage.db</code> (<strong>NOT</strong> the <code>stages.db.bz2</code>) file. I did this on the Unix command line using:</p>
-<pre><code>rm stage.db</code></pre>
+<div class="sourceCode" id="cb3"><pre class="sourceCode bash"><code class="sourceCode bash"><a class="sourceLine" id="cb3-1" title="1"><span class="fu">rm</span> stage.db</a></code></pre></div>
 <blockquote>
 <p><strong>Be careful</strong>: remember that <code>rm</code> removes completely, so not to the recycle bin. However, as long as you don’t remove <code>stages.db.bz2</code> then you can always recover.</p>
 </blockquote>
