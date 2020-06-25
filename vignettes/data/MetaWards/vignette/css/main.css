@@ -56,6 +56,19 @@ blockquote{
   font-size: 1em;
   border-left: 5px solid #555; /* Just change the color value and that's it*/
 }
-.nav-pills>li.active>a, .nav-pills>li.active>a:hover, .nav-pills>li.active>a:focus {
-    background-color: #555;
+button {
+  background-color: #555;
+  border: none;
+  border-radius: 4px;
+  color: white;
+  padding: 10px 25px;
+  text-align: center;
+  text-decoration: none;
+  display: inline-block;
+  font-size: 1em;
+  margin: 10px;
+  cursor: pointer;
+}
+.wrapper {
+    text-align: center;
 }

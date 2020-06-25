@@ -19,15 +19,15 @@ compact <- tbl(con, "compact")
 
 ## check all demographics other than genpop are empty
 stopifnot(
-    select(compact, -day, -ward, -starts_with("genpop_")) %>%
+    select(compact, -day, -ward, -Einc, -E, -Iinc, -I, -RI, -DI) %>%
     collect() %>%
     sum() == 0
 )
 
 ## plot infection counts
-p <- select(compact, day, ward, genpop_3) %>%
+p <- select(compact, day, ward, I) %>%
     group_by(day) %>%
-    summarise(I = sum(genpop_3)) %>%
+    summarise(I = sum(I)) %>%
     collect() %>%
     ggplot(aes(x = day, y = I)) +
         geom_line() +
@@ -35,13 +35,19 @@ p <- select(compact, day, ward, genpop_3) %>%
         ggtitle("R0 = 3.5 Inc./Inf. period = 2 days")
 ggsave("infections_T5.pdf", p)
 
+## calculate number of wards infected
+wards <- select(compact, ward) %>%
+    collect() %>%
+    pluck("ward") %>%
+    unique()
+print(paste0("Number of infected wards = ", length(wards)))
 
 ## extract cumulative infections at day 100
-genpop <- select(compact, day, ward, genpop_2) %>%
+genpop <- select(compact, day, ward, Iinc) %>%
     filter(day <= 100) %>%
     arrange(ward, day) %>%
     group_by(ward) %>%
-    summarise(cI = sum(genpop_2)) %>%
+    summarise(Icum = sum(Iinc)) %>%
     collect()
 
 ## optimise proportion    
@@ -49,4 +55,7 @@ fun <- function(p) abs(1 - exp(-3.5 * p) - p)
 opt <- optimise(fun, interval = c(0, 1))
 
 ## extract national level
-print(paste0("runs: ", sum(genpop$cI) / 56082077, "pred: ", opt$minimum))
+print(paste0("runs: ", sum(genpop$Icum) / 56082077, "pred: ", opt$minimum))
+
+## remove db
+system("rm raw_outputs/stages.db")
