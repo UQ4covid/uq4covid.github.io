@@ -100,3 +100,54 @@ metawards --nproc 24 --nthreads 1 -d ../model_code/ncov.json -D ../model_code/de
 ## run R check
 R CMD BATCH --no-save --no-restore --slave extract_output_T4.R
 
+
+
+## check for saturation across wards with high-ish R0
+## just SEIR for simplicity
+cp diseaseTest.dat disease.dat
+
+## beta[2] beta[3] .pE .pEA 
+printf '1.75 1.75 0.5 0 ' >> disease.dat
+## .pA 
+printf '0 ' >> disease.dat
+## .pI .pIH .pIR 
+printf '0.5 0 1 ' >> disease.dat
+## .pH .pHC .pHR 
+printf '0 0 0 ' >> disease.dat
+## .pC .pCR
+printf '0 0 ' >> disease.dat
+## .lock_1_restrict .lock_2_release .GP_A .GP_H .GP_C repeats 
+printf '0 0 0 0 0 1' >> disease.dat
+
+## run MetaWards
+metawards --nproc 24 --nthreads 1 -d ../model_code/ncov.json -D ../model_code/demographics.json --mixer ../model_code/mix_pathways --mover ../model_code/move_pathways --input disease.dat -a ExtraSeedsLondon.dat -u ../model_code/lockdown_states.txt -o raw_outputs --force-overwrite-output --iterator ../model_code/iterate --extractor ../model_code/ward_extractor --start-date 2020/01/01 --theme simple --nsteps 100
+
+## run R check
+R CMD BATCH --no-save --no-restore --slave extract_output_T5.R
+
+
+
+## check for saturation across wards with high-ish R0
+## just SEIR for simplicity
+cp diseaseTest.dat disease.dat
+
+## beta[2] beta[3] .pE .pEA 
+printf '1 1 0.5 0 ' >> disease.dat
+## .pA 
+printf '0 ' >> disease.dat
+## .pI .pIH .pIR 
+printf '0.5 0 1 ' >> disease.dat
+## .pH .pHC .pHR 
+printf '0 0 0 ' >> disease.dat
+## .pC .pCR
+printf '0 0 ' >> disease.dat
+## .lock_1_restrict .lock_2_release .GP_A .GP_H .GP_C repeats 
+printf '0 0 0 0 0 1' >> disease.dat
+
+## run MetaWards
+metawards --nproc 24 --nthreads 1 -d ../model_code/ncov.json -D ../model_code/demographics.json --mixer ../model_code/mix_pathways --mover ../model_code/move_pathways --input disease.dat -a ExtraSeedsLondon.dat -u ../model_code/lockdown_states.txt -o raw_outputs --force-overwrite-output --iterator ../model_code/iterate --extractor ../model_code/ward_extractor --start-date 2020/01/01 --theme simple --nsteps 100
+
+## run R check
+R CMD BATCH --no-save --no-restore --slave extract_output_T6.R
+
+
