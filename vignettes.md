@@ -34,7 +34,7 @@ Please read the [**guide to contributing vignettes**]({{ site.baseurl }}/vignett
 
 - [An Early Sensitivity analysis]({{ site.baseurl }}/vignettes/metawards_sa) - Doug McNeall
 - [Cumulative Cases at Lockdown]({{ site.baseurl }}/vignettes/cumulative_infections_at_lockdown_sensitivity) - Doug McNeall
-
+- [Sensitivity Analysis with Generalised Additive Models]({{ site.baseurl }}/vignettes/SensitivityAnalysisWithGAM) - Jeremy Oakley
 
 ## Emulation
 

@@ -1,0 +1,258 @@
+---
+title: "Sensitivity Analysis with Generalised Additive Models"
+author: "Jeremy Oakley"
+date: "June 25th, 2020"
+output: html_document
+---
+
+# Introduction
+
+This is to illustrate how to do a quick sensitivity analysis using generalised additive models, without having to build a GP emulator. This approach is used in [Strong et al. (2014).](https://journals.sagepub.com/doi/full/10.1177/0272989x13505910)
+
+The advantages of this method are:
+
+- it's quick and easy: you'll probably spend longer typing the commands than you will waiting for the results;
+- it scales well with higher dimensional input. This is because, to do the basic analysis, you only need to do regression (once per model input) with a single independent variable.
+
+Disadvantages are:
+
+- you can't compute all the sensitivity measures that you could do with a full emulator;
+- you may well need an emulator anyway for other tasks (e.g. calibration);
+- it assumes the training inputs are randomly sampled from their input distributions. If you've used some non-random design, you could still use the emulator method, but this method might not work.
+
+I think this method is always worth trying, even if just to validate sensitivity measures obtained from an emulator.
+
+I'm going to compare the results with those obtained in Doug McNeall's vignette [An Early Sensitivity analysis](https://uq4covid.github.io/vignettes/metawards_sa). (Many thanks to Doug: his code was *incredibly* helpful for getting hold of the data and for doing my own analysis. I've copied quite a lot of his code in the following.) I'll also repeat his **disclaimer**:
+
+**This code is an example only, and not (yet) a serious analysis. Results of the sensitivity analysis will change - perhaps dramatically - when sensible ranges for the parameters are used.**
+
+
+# Training data
+
+I'll copy Doug's code to get the inputs and outputs.
+
+```{r, message = FALSE}
+library(tidyverse)
+```
+
+
+## Inputs
+
+```{r}
+design_file = 'https://raw.githubusercontent.com/dougmcneall/covid/master/experiments/2020-05-07-sensitivity-analysis/design.csv'
+X <- read.csv(design_file, sep = "")
+parnames = colnames(X)
+```
+
+In general, I like to add in a dummy input that I know has no effect on the output, so I'll do that here:
+
+```{r}
+set.seed(123)
+X$dummy <- runif(90)
+```
+
+
+
+## Outputs
+
+(I had problems reading the output file into R directly from the web: I had to download it first). I downloaded a file `results.csv.bz2` from 
+
+[https://github.com/dougmcneall/covid/blob/master/experiments/2020-05-07-sensitivity-analysis/output/results.csv.bz2]
+
+
+```{r}
+dat <- read.csv("data/SA_GAM/results.csv.bz2")
+```
+
+
+```{r }
+
+unique_fingerprint = unique(dat$fingerprint)
+
+# find maximum number of infections for each ensemble member
+max_infections <- dat %>% 
+                  group_by(fingerprint) %>%
+                  summarize(max(I))
+reorder_ix <- match(unique_fingerprint, max_infections$fingerprint)
+max_infections <- max_infections[reorder_ix, ]
+```
+
+Outputs will be stored in a vector `y`
+
+```{r}
+y <- pull(max_infections,'max(I)')
+```
+
+
+
+# Notation and main effect indices
+
+Denote the model by the function 
+$$
+y = f(x_1,\ldots,x_d).
+$$
+We suppose the unknown true values of the inputs are $X_1,\ldots,X_d$, so that our sensitivity analysis is of the random variable
+$$
+Y = f(X_1,\ldots,X_d).
+$$
+We're going to compute main effect indices
+$$
+\frac{Var_{X_i}(E(Y|X_i))}{Var(Y)},
+$$
+where the numerator is the expected reduction in the variance of $Y$, obtained by learning the true value of $X_i$ (and in the main effect index, we express this expected reduction as a fraction of the total variance).
+
+# Computing main effect indices with generalised additive models
+
+We'll assume we already have an estimate of $Var(Y)$, so that we want to compute the numerator, for $i=1,\ldots,d$.
+
+To compute this via a GP emulator, we have to build an approximation of the $d$-dimension input function $y = f(x_1,\ldots,x_d)$. Alternatively, we can first write the numerator as
+$$
+Var(g(X_i)),
+$$
+If we knew what the function $g$ was, we could estimate this using Monte Carlo, given a sample $x_{i,1},\ldots,x_{i,N}$ from the distribution of $X_i$. We've already got this sample from our training runs. So we're going to estimate the main effect index using
+
+$$
+\frac{\sum_{j=1}^n (g(x_{i,j}) - \bar{g})^2}{\sum_{j=1}^n(y_j - \bar{y})^2},
+$$
+using the training points $x_{i,1},\ldots,x_{i,N}$ for input $X_i$, the training outputs $y_1,\ldots,y_N$, and an estimate of $g$.
+
+Now let's look at $g(X_i)$. We have
+$$
+g(X_i):=E(Y | X_i)
+$$
+
+The trick is to spot that we can use the training data to estimate $g$ directly. Think of each training run as function of $x_i$ only, with added noise:
+
+$$
+y_j = f(x_{1,j},\ldots,x_{i-1,j},x_{i,j},x_{i+1,j}, \ldots,x_{d,j}) = g(x_{i,j}) + \varepsilon_{j}
+$$
+If we've randomly sampled our inputs from their distributions to get our training data, then the error term will have expectation 0, though the variance will not necessarily be constant (but we won't worry about that...). So, you can use your favourite regression method to estimate $g$, where you only have one independent variable. The estimates of $g(x_{i,j})$ are then just the fitted values from the regression model. 
+
+We've found generalised additive models work well, and the [`mgcv`](https://cran.r-project.org/web/packages/mgcv/index.html) package is excellent (the book is great too: see refs at end). You can actually see this in action just by using `ggplot2`, e.g. for $X_1$
+
+```{r}
+cbind(X, y) %>%
+  ggplot(aes(x = beta.2., y = y)) +
+  geom_point(alpha = 0.5) + 
+   geom_smooth(method = mgcv::gam,
+               formula = y ~ s(x, bs = "tp"),
+               fill = "red",
+               method.args = list(method="GCV.Cp"))
+  
+```
+
+(I've specified `formula` and `method.args` within `geom_smooth()` to make the ggplot2 implementation match up with the `mgcv` defaults).
+
+It's worth plotting this for all the inputs. This is similar to Doug's one-at-a-time SA, except that we're averaging over the other inputs, as each input sweeps across it's range. (Again, just a minor change to Doug's plotting code):
+
+```{r}
+X %>% 
+  as_tibble %>% 
+  mutate(y=y) %>% 
+  gather('parameter', 'value', -y) %>% 
+  ggplot(aes(x=value, y=y)) + 
+    geom_point(alpha = 0.5) + 
+    facet_wrap(~parameter) +
+    labs(y='output', x='input') +
+  geom_smooth(method = mgcv::gam,
+               formula = y ~ s(x, bs = "tp"),
+               fill = "red",
+               method.args = list(method="GCV.Cp"))
+  
+```
+
+The inputs have uniform distributions, so arguably, once you have this plot, you don't really learn anything more by computing main effect indices: you can see which inputs are going to have the largest main effects, and you shouldn't read too much into the *precise* values of the indices anyway (how precisely did you obtain your input distributions?) But for non-uniformly distributed inputs, computing main effects helps you understand how the input distributions and input-output relationships combine to induce uncertainty in the outputs. 
+
+## Computation in R
+
+Now we'll compute the main effect index for $X_1$. Just two lines of R code are needed:
+
+```{r}
+gam1 <- mgcv::gam(y ~ s(X[, 1]))
+var(gam1$fitted) / var(y)
+```
+That's it!
+
+To compute all the main effect indices (including one for my dummy input $X_{10}$):
+
+
+```{r}
+mainEffects <- rep(0, 10)
+for(i in 1:10){
+  gam1 <- mgcv::gam(y ~ s(X[, i]))
+  mainEffects[i] <- var(gam1$fitted) / var(y)
+}
+barplot(mainEffects, names.arg = paste0("X", 1:10))
+```
+
+This picture is broadly similar to Doug's results.
+
+The main effects sum to about 100%, though there's no doubt some error in the estimates. We can't (easily) calculate total effects using this approach, as GAM would now have to handle $d-1$ independent variables, but in general, we could push it to interaction effects. The sample size is probably too small here, but to compute an interaction effect between $X_1$ and $X_2$, we would do
+
+```{r}
+gam1 <- mgcv::gam(y ~ te(X[, 1], X[, 2]))
+var(gam1$fitted)/var(y) - mainEffects[1] - mainEffects[2]
+```
+
+Note that the model has quite a large number of parameters (and we've only got 90 observations):
+```{r}
+length(gam1$coefficients)
+```
+
+
+
+
+## Uncertainty in main effect index estimates
+
+Getting a standard error for the estimate is a bit awkward, as the main effect index estimate is a ratio of two estimates. If we ignore the error in the estimate of $Var(Y)$, we can sample from the distribution of the numerator, assuming the coefficients $\beta$ in the GAM model are normally distributed, and expressing the fitted values in the GAM model as $X\beta$. We can extract the matrix $X$ with the command
+
+```{r, eval = FALSE}
+predict(gam1, type = "lpmatrix")
+```
+
+and a covariance matrix for $\beta$ is provided by
+
+```{r, eval = FALSE}
+vcov(gam1)
+```
+
+Putting this together
+
+```{r}
+set.seed(123)
+nReps <- 10000
+mE <- matrix(0, nReps, 10)
+for(i in 1:ncol(mE)){
+  gam1 <- mgcv::gam(y ~ s(X[, i]))
+  p1 <- predict(gam1, type = "lpmatrix")
+  rFitted <- mgcv::rmvn(nReps, 
+                        as.numeric(p1 %*% matrix(coef(gam1),
+                                                 ncol = 1)),
+                        p1 %*% vcov(gam1) %*% t(p1))
+  mE[, i] <-  apply(rFitted, 1, var) / var(y)
+}
+```
+
+
+Then to visualise:
+
+```{r}
+mE <- as.data.frame(mE)
+colnames(mE) <- colnames(X)
+mE %>%
+  pivot_longer(everything()) %>%
+  ggplot(aes(x = name, y = value)) + 
+  geom_boxplot()+
+  labs(y = "main effect index", x = "input") +
+  scale_y_continuous(labels=scales::percent)+
+  coord_flip()
+```
+
+The outliers look a bit spurious, but the interquartile ranges give a rough idea of uncertainty in the estimates: we can be fairly confident that we've got the main story right.
+
+# References
+
+- Strong M, Oakley J. E., Brennan A. (2014). [Estimating multi-parameter partial Expected Value of Perfect Information from a probabilistic sensitivity analysis sample: a non-parametric regression approach](http://www.shef.ac.uk/polopoly_fs/1.305038!/file/multiparameterEVPPI_MDM_Accepted_clean_version.pdf). Medical Decision Making, 34(3), 311-26.
+
+- Wood, S.N. (2017) Generalized Additive Models: An Introduction
+  with R (2nd edition). Chapman and Hall/CRC.
