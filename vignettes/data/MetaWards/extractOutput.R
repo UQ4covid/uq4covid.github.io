@@ -26,7 +26,7 @@ parRanges <- readRDS("inputs/parRanges.rds")
 ## at day 100
 
 ## extract data
-cH <- map2(design$output, design$repeats, function(hash, reps) {
+Hcum <- map2(design$output, design$repeats, function(hash, reps) {
     
     ## generate output hashes
     hashes <- map_chr(1:reps, function(i, hash) {
@@ -44,12 +44,12 @@ cH <- map2(design$output, design$repeats, function(hash, reps) {
         ## establish connection
         con <- DBI::dbConnect(RSQLite::SQLite(), path)
         
-        ## hospital_2 in the compact table contains the new incidence
+        ## Hinc in the compact table contains the new incidence
         compact <- tbl(con, "compact")
         hosp_db <- filter(compact, day <= 100) %>%
-            select(ward, hospital_2) %>%
+            select(ward, Hinc) %>%
             group_by(ward) %>%
-            summarise(cH = sum(hospital_2))
+            summarise(Hcum = sum(Hinc))
         
         ## collect outcome of query
         hosp <- collect(hosp_db)
@@ -73,18 +73,18 @@ cH <- map2(design$output, design$repeats, function(hash, reps) {
     print(paste0(hashes, ": Finished"))
     output
 })
-cH <- bind_rows(cH)
+Hcum <- bind_rows(Hcum)
 
 ## now you can join the design file to the outputs
 ## via the 'output' indicator
 
 ## for brevity let's sum hospital cases over all wards
 ## and then join to the design file for plotting
-sims <- group_by(cH, output, replicate) %>%
-    summarise(cH = sum(cH)) %>%
+sims <- group_by(Hcum, output, replicate) %>%
+    summarise(Hcum = sum(Hcum)) %>%
     ungroup() %>%
     inner_join(design, by = "output") 
 
 ## plot R0 against sims
-ggplot(sims, aes(x = r_zero, y = cH, colour = output)) +
+ggplot(sims, aes(x = r_zero, y = Hcum, colour = output)) +
     geom_point()
