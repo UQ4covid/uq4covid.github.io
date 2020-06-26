@@ -29,9 +29,7 @@ convertInputToDisease <- function(input) {
     require(dplyr)
     
     ## common parameters to all pathways
-    disease <- tibble(`beta[2]` = input$r_zero / input$infectious_time)
-    disease$`beta[3]` <- disease$`beta[2]`
-    
+    disease <- tibble(`beta[1]` = input$r_zero / input$infectious_time)
     ## progressions out of the E class
     ## (adjusting in the way described in the vignette for
     ## order of movers)
