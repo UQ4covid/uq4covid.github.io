@@ -18,7 +18,11 @@ compact <- tbl(con, "compact")
 ## see e.g. https://db.rstudio.com/dplyr
 
 ## now extract and reconstruct by filling in gaps
-compact <- collect(compact)
+compact <- collect(compact) %>%
+    rename(genpop_0 = Einc, genpop_1 = E, genpop_2 = Iinc, genpop_3 = I, genpop_4 = RI, genpop_5 = DI) %>%
+    rename(asymp_2 = Ainc, asymp_3 = A, asymp_4 = RA) %>%
+    rename(hospital_2 = Hinc, hospital_3 = H, hospital_4 = RH, hospital_5 = DH) %>%
+    rename(critical_2 = Cinc, critical_3 = C, critical_4 = RC, critical_5 = DC)
 
 genpop <- select(compact, day, ward, starts_with("genpop_")) %>%
     complete(day = 1:10, nesting(ward)) %>%

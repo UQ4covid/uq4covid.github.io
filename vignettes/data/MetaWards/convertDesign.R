@@ -12,7 +12,7 @@ parRanges <- data.frame(
                   "critical_time", "lock_1_restrict", "lock_2_release",
                   "pEA", "pIH", "pIRprime", "pHC", "pHRprime", "pCR", 
                   "GP_A", "GP_H", "GP_C"),
-    lower = c(2.5, 4, 2, 4, 4, rep(0, 11)),
+    lower = c(2, 4, 2, 4, 4, rep(0, 11)),
     upper = c(4, 6, 4, 12, 12, rep(1, 11)),
     stringsAsFactors = FALSE
 )

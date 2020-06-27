@@ -4,7 +4,7 @@ This directory contains the information necessary to hopefully run the
 specific version of the MetaWards model specified. The details of the model
 and explanations of the code can be found in the accompanying vignette.
 
-This assumes you have MetaWards version 1.1.0 installed; if you don't then
+This assumes you have **MetaWards version 1.2.0** installed; if you don't then
 you can find instructions [here](https://metawards.org/install.html). It also
 assumes that you have cloned the MetaWardsData as detailed 
 [here](https://metawards.org/model_data.html).

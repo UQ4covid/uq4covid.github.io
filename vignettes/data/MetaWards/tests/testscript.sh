@@ -9,8 +9,8 @@ export METAWARDSDATA=$HOME/Documents/covid/MetaWardsData
 ## test for no progression from R to D
 cp diseaseTest.dat disease.dat
 
-## beta[2] beta[3] .pE .pEA 
-printf '1 1 0.5 0 ' >> disease.dat
+## beta[1] .pE .pEA 
+printf '1 0.5 0 ' >> disease.dat
 ## .pA 
 printf '0 ' >> disease.dat
 ## .pI .pIH .pIR 
@@ -33,8 +33,8 @@ R CMD BATCH --no-save --no-restore --slave extract_output_T1.R
 ## turn hospitals on
 cp diseaseTest.dat disease.dat
 
-## beta[2] beta[3] .pE .pEA 
-printf '1 1 0.5 0 ' >> disease.dat
+## beta[1] .pE .pEA 
+printf '1 0.5 0 ' >> disease.dat
 ## .pA 
 printf '0 ' >> disease.dat
 ## .pI .pIH .pIR 
@@ -57,8 +57,8 @@ R CMD BATCH --no-save --no-restore --slave extract_output_T2.R
 ## turn asymptomatics on
 cp diseaseTest.dat disease.dat
 
-## beta[2] beta[3] .pE .pEA 
-printf '1 1 0.5 1 ' >> disease.dat
+## beta[1] .pE .pEA 
+printf '1 0.5 1 ' >> disease.dat
 ## .pA 
 printf '0.5 ' >> disease.dat
 ## .pI .pIH .pIR 
@@ -81,8 +81,8 @@ R CMD BATCH --no-save --no-restore --slave extract_output_T3.R
 ## turn everything on
 cp diseaseTest.dat disease.dat
 
-## beta[2] beta[3] .pE .pEA 
-printf '1 1 0.5 0.5 ' >> disease.dat
+## beta[1] .pE .pEA 
+printf '1 0.5 0.5 ' >> disease.dat
 ## .pA 
 printf '0.5 ' >> disease.dat
 ## .pI .pIH .pIR 
@@ -106,8 +106,8 @@ R CMD BATCH --no-save --no-restore --slave extract_output_T4.R
 ## just SEIR for simplicity
 cp diseaseTest.dat disease.dat
 
-## beta[2] beta[3] .pE .pEA 
-printf '1.75 1.75 0.5 0 ' >> disease.dat
+## beta[1] .pE .pEA 
+printf '1.75 0.5 0 ' >> disease.dat
 ## .pA 
 printf '0 ' >> disease.dat
 ## .pI .pIH .pIR 
@@ -131,8 +131,8 @@ R CMD BATCH --no-save --no-restore --slave extract_output_T5.R
 ## just SEIR for simplicity
 cp diseaseTest.dat disease.dat
 
-## beta[2] beta[3] .pE .pEA 
-printf '1 1 0.5 0 ' >> disease.dat
+## beta[1] .pE .pEA 
+printf '1 0.5 0 ' >> disease.dat
 ## .pA 
 printf '0 ' >> disease.dat
 ## .pI .pIH .pIR 

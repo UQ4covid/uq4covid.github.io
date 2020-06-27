@@ -28,34 +28,23 @@ def move_pathways(network, **kwargs):
         
     func = []
     
-    ## movers in reverse order through the stages to ensure correct mapping
+    ## movers in reverse order through the stages to 
+    ## ensure correct mapping
     
     #######################################################
-    #########              C1 MOVES               #########
-    #######################################################
-    
-    ## move C1 critical to C2 critical
-    func.append(lambda **kwargs: go_stage(go_from="critical",
-                                      go_to="critical",
-                                      from_stage=2,
-                                      to_stage=3,
-                                      fraction=1.0,
-                                      **kwargs))
-    
-    #######################################################
-    #########              C2 MOVES               #########
+    #########              C MOVES                #########
     #######################################################
                                       
-    ## move C2 critical to R critical
+    ## move C critical to R critical
     tpCR = pC * pCR
     func.append(lambda **kwargs: go_stage(go_from="critical",
                                       go_to="critical",
-                                      from_stage=3,
-                                      to_stage=4,
+                                      from_stage=1,
+                                      to_stage=2,
                                       fraction=tpCR,
                                       **kwargs))
                                       
-    ## move C2 critical to D critical
+    ## move C critical to D critical
     ## (denominator adjustment is due to operating on remainder
     ## as described in the vignette, also includes correction
     ## in case of rounding error)
@@ -64,37 +53,25 @@ def move_pathways(network, **kwargs):
     tpCD = 0.0 if tpCD < 0.0 else tpCD
     func.append(lambda **kwargs: go_stage(go_from="critical",
                                       go_to="critical",
-                                      from_stage=3,
-                                      to_stage=5,
+                                      from_stage=1,
+                                      to_stage=3,
                                       fraction=tpCD,
                                       **kwargs))
                                       
     #######################################################
-    #########              H1 MOVES               #########
+    #########              H MOVES                #########
     #######################################################
     
-    ## move H1 hospital to H2 hospital
-    func.append(lambda **kwargs: go_stage(go_from="hospital",
-                                      go_to="hospital",
-                                      from_stage=2,
-                                      to_stage=3,
-                                      fraction=1.0,
-                                      **kwargs))
-                                      
-    #######################################################
-    #########              H2 MOVES               #########
-    #######################################################
-    
-    ## move H2 hospital to C1 critical
+    ## move H hospital to C critical
     tpHC = pH * pHC
     func.append(lambda **kwargs: go_stage(go_from="hospital",
                                       go_to="critical",
-                                      from_stage=3,
-                                      to_stage=2,
+                                      from_stage=1,
+                                      to_stage=1,
                                       fraction=tpHC,
                                       **kwargs))
                                       
-    ## move H2 hospital to R hospital
+    ## move H hospital to R hospital
     ## (denominator adjustment is due to operating on remainder
     ## as described in the vignette, also includes correction
     ## in case of rounding error)
@@ -103,12 +80,12 @@ def move_pathways(network, **kwargs):
     tpHR = 0.0 if tpHR < 0.0 else tpHR
     func.append(lambda **kwargs: go_stage(go_from="hospital",
                                       go_to="hospital",
-                                      from_stage=3,
-                                      to_stage=4,
+                                      from_stage=1,
+                                      to_stage=2,
                                       fraction=tpHR,
                                       **kwargs))
                                       
-    ## move H2 hospital to D hospital
+    ## move H hospital to D hospital
     ## (denominator adjustment is due to operating on remainder
     ## as described in the vignette, also includes correction
     ## in case of rounding error)
@@ -117,37 +94,25 @@ def move_pathways(network, **kwargs):
     tpHD = 0.0 if tpHD < 0.0 else tpHD
     func.append(lambda **kwargs: go_stage(go_from="hospital",
                                       go_to="hospital",
-                                      from_stage=3,
-                                      to_stage=5,
+                                      from_stage=1,
+                                      to_stage=3,
                                       fraction=tpHD,
                                       **kwargs))
-                                      
-    #######################################################
-    #########              I1 MOVES               #########
-    #######################################################
-    
-    ## move I1 genpop to I2 genpop
-    func.append(lambda **kwargs: go_stage(go_from="genpop",
-                                      go_to="genpop",
-                                      from_stage=2,
-                                      to_stage=3,
-                                      fraction=1.0,
-                                      **kwargs))
     
     #######################################################
-    #########              I2 MOVES               #########
+    #########              I MOVES                #########
     #######################################################
 
-    ## move I2 genpop to H1 hospital
+    ## move I genpop to H hospital
     tpIH = pI * pIH
     func.append(lambda **kwargs: go_stage(go_from="genpop",
                                       go_to="hospital",
-                                      from_stage=3,
-                                      to_stage=2,
+                                      from_stage=1,
+                                      to_stage=1,
                                       fraction=tpIH,
                                       **kwargs))
 
-    ## move I2 genpop to R genpop
+    ## move I genpop to R genpop
     ## (denominator adjustment is due to operating on remainder
     ## as described in the vignette, also includes correction
     ## in case of rounding error)
@@ -156,12 +121,12 @@ def move_pathways(network, **kwargs):
     tpIR = 0.0 if tpIR < 0.0 else tpIR
     func.append(lambda **kwargs: go_stage(go_from="genpop",
                                       go_to="genpop",
-                                      from_stage=3,
-                                      to_stage=4,
+                                      from_stage=1,
+                                      to_stage=2,
                                       fraction=tpIR,
                                       **kwargs))
 
-    ## move I2 genpop to D genpop
+    ## move I genpop to D genpop
     ## (denominator adjustment is due to operating on remainder
     ## as described in the vignette, also includes correction
     ## in case of rounding error)
@@ -170,62 +135,38 @@ def move_pathways(network, **kwargs):
     tpID = 0.0 if tpID < 0.0 else tpID
     func.append(lambda **kwargs: go_stage(go_from="genpop",
                                       go_to="genpop",
-                                      from_stage=3,
-                                      to_stage=5,
+                                      from_stage=1,
+                                      to_stage=3,
                                       fraction=tpID,
                                       **kwargs))
-                                      
-    #######################################################
-    #########              A1 MOVES               #########
-    #######################################################
-    
-    ## move A1 asymp to A2 asymp
-    func.append(lambda **kwargs: go_stage(go_from="asymp",
-                                      go_to="asymp",
-                                      from_stage=2,
-                                      to_stage=3,
-                                      fraction=1.0,
-                                      **kwargs))
     
     #######################################################
-    #########              A2 MOVES                #########
+    #########              A MOVES                #########
     #######################################################
 
-    ## move A2 asymp to R asymp
+    ## move A asymp to R asymp
     tpAR = pA
     func.append(lambda **kwargs: go_stage(go_from="asymp",
                                       go_to="asymp",
-                                      from_stage=3,
-                                      to_stage=4,
+                                      from_stage=1,
+                                      to_stage=2,
                                       fraction=tpAR,
-                                      **kwargs))
-                                      
-    #######################################################
-    #########              E1 MOVES               #########
-    #######################################################
-                                      
-    ## move E1 genpop to E2 genpop
-    func.append(lambda **kwargs: go_stage(go_from="genpop",
-                                      go_to="genpop",
-                                      from_stage=0,
-                                      to_stage=1,
-                                      fraction=1.0,
                                       **kwargs))
     
     #######################################################
-    #########              E2 MOVES               #########
+    #########              E MOVES                #########
     #######################################################
 
-    ## move E2 genpop to A1 asymp
+    ## move E genpop to A asymp
     tpEA = pE * pEA
     func.append(lambda **kwargs: go_stage(go_from="genpop",
                                       go_to="asymp",
-                                      from_stage=1,
-                                      to_stage=2,
+                                      from_stage=0,
+                                      to_stage=1,
                                       fraction=tpEA,
                                       **kwargs))
 
-    ## move E2 genpop to I1 genpop
+    ## move E genpop to I genpop
     ## (denominator adjustment is due to operating on remainder
     ## as described in the vignette, also includes correction
     ## in case of rounding error)
@@ -234,8 +175,8 @@ def move_pathways(network, **kwargs):
     tpEI = 0.0 if tpEI < 0.0 else tpEI
     func.append(lambda **kwargs: go_stage(go_from="genpop",
                                       go_to="genpop",
-                                      from_stage=1,
-                                      to_stage=2,
+                                      from_stage=0,
+                                      to_stage=1,
                                       fraction=tpEI,
                                       **kwargs))
 

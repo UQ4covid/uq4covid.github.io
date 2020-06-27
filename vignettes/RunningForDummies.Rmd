@@ -116,18 +116,17 @@ If you have all the required libraries, you can just run the whole thing and, by
 
 The chunk
 ```{r, eval=FALSE}
-## hospital_2 in the compact table contains the new incidence
-compact <- tbl(con, "compact")
+## Hinc contains the new cases, so sum these
+## over each ward for days 1--100
 hosp_db <- filter(compact, day <= 100) %>%
-    select(ward, hospital_2) %>%
+    select(ward, Hinc) %>%
     group_by(ward) %>%
-    summarise(cH = sum(hospital_2))
-
+    summarise(Hcum = sum(Hinc))
 ## collect outcome of query
 hosp <- collect(hosp_db)
 ```
 
-is taking the database `con` created from the raw outputs, is selecting the first 100 days from the `hospital_2` stage (which counts the new hospital cases at each day), and summing these up within each ward. Some reference to our model setup is required to see what to do, so maybe head [there](data/MetaWards/vignettes/ModelDescription.html) to see what the stages and demographics refer to in the diagram. Briefly, we have 4 demographics: `genpop` , `hospital` , `critical`, and `asymp` (so you can substitute for any of these). There are 6 stages indexed 0-5 (so above we have stage 2). The diagram in TJ's instruction shows where they are, but there are 2 things to note. Stages 0 and 2 count the new incidents of entry into that demographic *that day*. Stages 1 and 3 count the total incidents in that demographic that day *including the new ones from 0 and 1 respectively*. It's a postprocessing trick, meaning that we get the most informative data each time. Stage 4 is recovered and stage 5 is death. For brevity, the outputs are coalesced (so `hospital_2` is stage 2 for the `hospital` demographic), and extraneous stages are removed (for example, stage 0 and stage 1 only exist for the `genpop` demographic, so they are not returned here).
+is taking the database `con` created from the raw outputs, is selecting the first 100 days from the `Hinc` stage (which counts the new hospital cases at each day), and summing these up within each ward. Some reference to our model setup is required to see what to do, so maybe head [there](data/MetaWards/vignettes/ModelDescription.html) to see what the stages and demographics refer to in the diagram. Briefly, we have 4 demographics: `genpop` , `hospital` , `critical`, and `asymp`. The diagram in TJ's instruction shows where they are, and also contains a description of the [outputs](data/MetaWards/vignettes/ModelDescription.html#extractor). Note that columns with `inc` appended to their names count the new entries into the class on *that day*. So `Hinc` is the number of *new* hospital cases on a given day, and `H` is the number of individuals in class $H$ (including `Hinc`). For brevity, extraneous stages are removed (for example, `E` and `I` only exist for the `genpop` demographic, so they are not returned for any other demographics since all entries are zero in any case). Entries are only returned for a ward once infection is present, so not all wards will have outputs on day 1 say. See the [Model Description](data/MetaWards/vignettes/ModelDescription.html) for full details.
 
 Having extracted data like this in tibble form, it is ready to be processed for building whatever emulators you like.
 
