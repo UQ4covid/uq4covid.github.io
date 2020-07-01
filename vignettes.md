@@ -18,6 +18,10 @@ Please read the [**guide to contributing vignettes**]({{ site.baseurl }}/vignett
 - [Quick Start Guide]({{ site.baseurl }}/vignettes/RunningForDummies): contains instructions about how to install and run this version of MetaWards with the current model - Danny Williamson
 - [Model Description]({{ site.baseurl }}/vignettes/data/MetaWards/vignette/ModelDescription): A guide to the current model structure, inputs and outputs - TJ McKinley
 
+## Ensemble Zero
+
+-[Ensemble Zero]({{ site.baseurl }}/vignettes/EnsembleZero): 16 parameters, 5 Latin Hypercubes, 4000 members, 8 hours run time, this vignette describes our first major Covid-19 ensemble - Danny Williamson and TJ McKinley
+
 ## Experimental design
 
 - [Experimental design (defunct)]({{ site.baseurl }}/vignettes/metawards_design) 

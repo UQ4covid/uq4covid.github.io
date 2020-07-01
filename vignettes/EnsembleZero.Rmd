@@ -1,0 +1,189 @@
+---  
+title: "Ensemble Zero: A 4000 member ensemble of UK COVID-19 simulations"
+author: "Danny Williamson and TJ McKinley"
+date: "`r format(Sys.time(), '%d %B %Y')`"
+output: 
+  html_document:
+    highlight: zenburn
+    css: data/MetaWards/vignette/css/main.css
+references:
+- id: willi15
+  title: Exploratory designs for computer experiments using k-extended Latin Hypercubes
+  author:
+  - family: Williamson
+    given: Daniel
+  container-title: Environmetrics
+  volume: 26
+  URL: 'https://doi.org/10.1002/env.2335'
+  DOI: 10.1002/env.2335
+  issue: 4
+  page: 268-283
+  type: article-journal
+  issued:
+    year: 2015
+---
+
+This vignette describes "Ensemble Zero", our first scaled ensemble of Metawards for UQ. We will explain the experimental protocol, the design, the model data we are publishing here + instructions for obtaining more output. We will also provide tools for converting the model runs to quantities that are directly comparable with data we have for hospital trusts from Leon. An Exeter NDA means we cannot host the hospital trust data here. If you are Exeter staff/student, we can get you a copy. Else, we will look for some publically available version from the ONS (which may be behind or slightly differnt to what we will use) to host here.
+
+# Experimental Protocol
+
+We are using our own version of Metawards described [here](data/MetaWards/vignette/ModelDescription.html). Metawards is a framework for simulating spatial infectious diseases and has currently been set up for COVID-19. Our version includes demographics for hospitals, intensive care units and deaths from these sources and the general population. We also have demographics for asymptomatics. We are motivated in our choice of demographics by the need to calibrate to data, the most reliable of which is coming out of hospital trusts.
+
+Ensemble Zero is run over England and Wales at Ward level. It will be the last ensemble we run with this protocol. Our next version will run over the UK using LSOAs (Lower Layer Super Output areas), which are nested, directly compatible with hosptial trusts (for which we have data) and, perhaps most importantly, include Scotland. We have already run Metawards in this mode, but are missing a lookup table that would enable us to use the data (Leon has contacted the ONS for this, hopefully coming soon). 
+
+We have 16 parameters, and have varied them over the parameter ranges given in the model description. The model is run on HPC at Bristol using 512 cores and took 8 hours for the ensemble we describe below. Using Chris Fenton's compressor, we are able to store all of the output compressed using 89GB, and have been donated an AWS cloud node with 16GB ram, 200GB hard disc and 4 cores where it is stored and we have sudo access for postprocessing. We must thank Christopher Woods, the HPE Catalyst program and the University of Bristol Advanced Computing Research Centre for their support in running and storing ensembles for us.
+
+# Experimental Design
+
+Our [design vignette](DesigningForMetawards.html) describes k-extended Latin Hypercubes for designing models with repeats. We use these again here. Motivated by quantile emulation ideas (see [here](QuantileKriging_experiment.html), [here](QuantileKriging_experiment2_Independent.html) and [here](Quantile_Emulation_MOGP.html)), we use $20$ repeats and ensure we use repeats for all ensemble members. 
+
+The code for generating the design is [here](data/EnsembleZero/DesignEnsembleZero.R), for reproducibility. We choose a k-extended LHC with $200$ members made up of $5$ sub-LHCs of size $40$. This means that we have a $200$ member LHC made up of $5$ $40$ member LHCs, and with the sub-LHCs and larger optimally space filling and orthogonal wrt to each other as per [@willi15]. The visualised benefit of this approach is that 5 different $160$ member LHCs can be used as training data (following the usual "10x" rule), and well designed validation sets of size $40$ can be used to assess them. This opens up very robust diagnostic checking which should be taken advantage of when an analysis might inform Spi-M. You can obtain the design via 
+
+```{r, eval=TRUE}
+design <- readRDS("data/EnsembleZero/inputs/design.rds")
+parRanges <- readRDS("data/EnsembleZero/inputs/parRanges.rds")
+```
+
+For emulation purposes, you will want the `design` tibble.
+
+# Available model data
+
+The design above generates $4000$ runs of Metawards, takes 8 hours to complete on 512 cores and when compressed to within an inch of its life is still too big for us to store. As such, we have written extractors to obtain outputs of the data in the cloud that are around 120MB each, that can be used for UQ, or even stitched together if needed. Even extracting 3 outputs once per week for each ward and only after lockdown it takes around 3 hours and our AWS server runs out of memory during construction of this data (TJ has worked hard to introduce multiple scripts to capture and then combine the data). As such, we have been selective in terms of what we are making available. However, if on reading the model description, you would like an output not in the set here, we can obtain it for you. We are also working on an SQL solution that can be accessed by `dplyr` without needing to even store the data in RAM.
+
+The ensemble is post-processed using an R script you can look at in full [here](data/EnsembleZero/extractOutput.R). I will reproduce some important parts of that script to highlight what we've done and why, and to give you an idea what you need to change if you want something else.
+
+First we set up some dates, days and weeks. Our idea is to return weekly averages for prevalence variables and total counts on the Sunday of the named week (when needed).
+```{r, eval=FALSE}
+library(lubridate)
+startdate <- dmy("01/01/2020")
+dates <- startdate + 0:177
+lockdownDate1 <- dmy("21/03/2020")
+lockdownDate2 <- dmy("13/05/2020")
+tweeks <- week(dates)
+lockdown1 <- dmy("21/03/2020")
+WEEKS <- unique(tweeks[dates >= (lockdown1-7)])
+```
+
+Our extraction then needs to loop over all runIDs and then all repeats per ID, unzipping the database, calling the variables we need, and then postprocessing these before we delete the unzipped data to save memory. Here is what we have done with a line by line explanation to introduce the data we have.
+```{r, eval=FALSE}
+output <- dplyr::select(compact, day, ward, H, C, DH, DC) %>%
+  collect()
+```
+
+Here `compact` is the name of the database we have connected to, and we are extracting the `day`, `ward`, `H` the number in hospital, `C` the number in internsive care, `DH` total hospital deaths, `DC` total intensive care deaths. There are many more variables described [here](data/MetaWards/vignette/ModelDescription.html).
+
+Our data has daily *hospital prevalence*, *ICU prevalence* and *deaths in hospital* per trust (not ward, but we'll get there). Addressing deaths first, we cannot separate hostpial and ICU with what we have, so it makes sense to sum DH and DC and create a new variable called `Deaths` (DC and DH are already cumulative, so we take the maximum value each week). `H` and `C` are directly comparable to the data, but the data is very noisy. Considering `H` (in the data not the ensemble), daily fluctuations in `H` represent patients being discharged, new COVID patients, patients being moved to ICU, and deaths and as such can be quite noisy. Similarly for ICU. We therefore take weekly averages of both in the ensemble to ensure we have something more comparable with data. The code is
+```{r, eval=FALSE}
+output  <- mutate(output, week = week(dates[day])) %>%
+            filter(week %in% WEEKS) %>%
+            group_by(ward, week) %>%
+            summarise(Hprev = mean(H), Cprev = mean(C), Deaths = max(DC) + max(DH)) %>%
+            ungroup() %>%
+            complete(ward = 1:8588, week = WEEKS, fill = list(Hprev = 0, Cprev = 0, Deaths = 0))
+```
+
+The last line ensures that values that should be 0, which Chris does not store to save space in the data base are now added so that UQ will work. If you want something different (say something from the asymptomatics class, you will need to provide code like this to us).
+
+# Data files
+
+Because the data is so big, even just for a single output at a time, such as `Hprev` as defined above, we cannot store the tibble in RAM for every week, even just those weeks since lockdown. Instead, we have produced weekly datasets for each of the 3 outputs described above. Each data file contains the value of a particular output across the ensemble and for all UK wards for a given week. We will perform our examples below with the hospital prevalances in week 12 (`hprev_12.rds`). This particular file is on the git repository. The rest of the data can be downloaded from [here](https://universityofexeteruk-my.sharepoint.com/:f:/r/personal/d_williamson_exeter_ac_uk/Documents/EnsembleZero?csf=1&web=1&e=jcup8t). *Note, this is a temporary solution and doesnt work for non-Exeter users, and it not fast enough even then. I am looking for a more general solution. In the meantime, if you are not at Exeter and reading this, please let me know and I will share a dropbox folder with you.*
+
+To load in one piece of the data (assuming you have downloaded `Hprev_12.rds` and placed it in the directory below)
+```{r, include=FALSE}
+library(dplyr)
+output_Hprev <- as_tibble(readRDS("Data/EnsembleZero/Hprev_12.rds"))
+```
+```{r,eval=FALSE}
+library(dplyr)
+output_Hprev <- as_tibble(readRDS("Data/EnsembleZero/Hprev_12.rds"))
+```
+```{r}
+output_Hprev
+```
+
+Note even this subset has over 34 million entries and only contains the week 12 data.
+
+# Example data manipulations
+
+In this section we provide examples of how to convert the tibble we have here into useful data frames for UQ. The ensemble data is provided in tidy form, so those proficient with tidy data analysis using `dplyr` etc could ignore all of this. However, I will describe obtaining ward names, deriving local authorities and matching to hosptial trusts, so at least a skim will be worthwhile.
+
+## Naming the wards and bringing in local authorities
+
+Our output data only has wards as numbers. These correspond to the FIDs in the Metawards lookup table. The code below extracts the ward names and IDs from that table that will be needed for linking to local authorities or hospital trusts, and readies it to be paired with our data.
+```{r,include=FALSE}
+library(readr)
+Ward_Lookup <- read_csv("data/EnsembleZero/Ward_Lookup.csv")
+names(Ward_Lookup)[11] <- "ward"
+Ward_Lookup <- Ward_Lookup[,-c(3:7,10)]
+```
+```{r,eval=FALSE}
+library(readr)
+Ward_Lookup <- read_csv("data/EnsembleZero/Ward_Lookup.csv")
+names(Ward_Lookup)[11] <- "ward"
+Ward_Lookup <- Ward_Lookup[,-c(3:7,10)]
+```
+```{r}
+names(Ward_Lookup)
+```
+
+We can now pair with our output as follows:
+```{r}
+NewOut <- inner_join(Ward_Lookup, output_Hprev, by="ward")
+NewOut
+```
+
+Now analysis can be done per ward, or the data can be mapped to local authority for analysis. E.g. from `NewOut` above:
+```{r}
+LocalData <- group_by(NewOut, LAD11NM, output, replicate) %>%
+  summarise(Hmean = mean(Hprev)) %>%
+  ungroup()
+LocalData
+```
+
+## Linking to hospital trusts
+
+We must thank Rob Challen for this work. He has mapped wards to hospital trusts. This mapping cannot be exact because wards straddle trusts and is the main reason that the next ensemble will move to LSOAs, where we don't have this issue. A particular problem is that wards on or encompassing islands are not aligned to trusts and so are dropped by these steps. Note this is not a problem for history matching to single trusts, but of course could be for probabilistic calibration or for basis methods.
+
+The look up for hospital trusts can be read in
+```{r,eval=FALSE}
+WD11ToAcuteTrustIncWalesHB <- read_csv("~/Dropbox/BayesExeter/NewEnsemble/WD11ToAcuteTrustIncWalesHB.csv")
+```
+```{r,include=FALSE}
+WD11ToAcuteTrustIncWalesHB <- read_csv("~/Dropbox/BayesExeter/NewEnsemble/WD11ToAcuteTrustIncWalesHB.csv")
+```
+
+```{r}
+WD11ToAcuteTrustIncWalesHB
+```
+
+The codes and names can be used to bind to the ensemble via
+```{r}
+NewWithHosptial <- inner_join(WD11ToAcuteTrustIncWalesHB, NewOut, by=c("WD11CD", "WD11NM"))
+NewWithHosptial
+```
+
+and combining the wards into trusts
+```{r}
+TrustData <- group_by(NewWithHosptial, trustId, trustName, output, replicate) %>%
+  summarise(Hmean=mean(Hprev)) %>% 
+  ungroup()
+```
+
+Finally to prepare data for emulation, we need to attach the design points and ensure that the spatial units we want are in the columns. Suppose we want to emulate hospital prevalence in week 12 by hospital trust:
+```{r}
+library(tidyr)
+EmulateOut <- dplyr::select(TrustData, output, trustId, replicate, Hmean) %>% pivot_wider(names_from = trustId, values_from = Hmean) %>%
+  dplyr::select(-replicate)
+ToEmulate <- inner_join(design, EmulateOut, by="output")
+head(ToEmulate)
+```
+
+From here you can use any of the emulation methods tried on our site so far. Please explore some of the vignettes!
+
+# Data for calibration
+
+If you are an Exeter researcher, please [get in touch](d.williamson@exeter.ac.uk) and I will send you the data on hosptial deaths, admission and ICU by hospital trust. If not, contact me anyway and we will explore whether your university has a similar agreement. 
+
+# Posting new vignettes
+
+Firstly, this is the real thing. Please help us emulate and calibrate the model! Please post all vignettes, whether EDA, emulation, sensitivity analysis, calibration or whatever with a title beginning "Ensemble Zero: ..." e.g. "Ensemble Zero: Solving everything, so you don't have to".
