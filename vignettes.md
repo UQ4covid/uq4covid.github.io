@@ -20,7 +20,7 @@ Please read the [**guide to contributing vignettes**]({{ site.baseurl }}/vignett
 
 ## Ensemble Zero
 
--[Ensemble Zero]({{ site.baseurl }}/vignettes/EnsembleZero): 16 parameters, 5 Latin Hypercubes, 4000 members, 8 hours run time, this vignette describes our first major Covid-19 ensemble - Danny Williamson and TJ McKinley
+- [Ensemble Zero]({{ site.baseurl }}/vignettes/EnsembleZero): 16 parameters, 5 Latin Hypercubes, 4000 members, 8 hours run time, this vignette describes our first major Covid-19 ensemble - Danny Williamson and TJ McKinley
 
 ## Experimental design
 
