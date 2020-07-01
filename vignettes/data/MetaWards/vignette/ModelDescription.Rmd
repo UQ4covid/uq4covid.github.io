@@ -405,13 +405,21 @@ rm stages.db
 
 > **Be careful**: remember that `rm` removes completely, so not to the recycle bin. However, as long as you don't remove `stages.db.bz2` then you can always recover.
 
-You can very easily wrap these ideas into an R function that can scroll through the design IDs, extract relevant outputs and bind to the inputs. An example that you are free to edit at will can be found in the `extractOutputs.R` file in the repo.
+You can very easily wrap these ideas into an R function that can scroll through the design IDs, extract relevant outputs and bind to the inputs. Some examples are described below.
+
+#### SQL outputs
+
+The file `extractOutputsSQL.R` provides code that extracts mean hospital prevalence, mean critical care prevalence, and total deaths from critical care and hospitals during each week since lockdown, for each ward. This output is large, so the code produces a compressed SQL database: `raw_outputs/uberStages.db.bz2`. (This also depends on two other files `extractSQL.sql` and `mergeSQL.sql`, which are both available in the code [zip](./metawards.zip) file.) This does include some OS-specific code that might not work on your machine. Please view this as an illustration, which you might have to amend depending on your own setup.
+
+There is subsequently a file called `extractOutputs.R` that includes some R code giving examples about how to manipulate and extract information from `uberStages.db`. Note that in order to do this you will have to uncompress the `uberStages.db.bz2` file. On Linux this can be done on the command line as above, but bear in mind that for large designs the uncompressed file will be **huge**, and it will take a while to decompress. Whether you choose to store the decompressed file permanently will depend on how much storage you have!
+
+Please feel free to amend these output files as you see fit, or write your own depending on what you want to extract!
 
 ```{r, echo = FALSE, message = FALSE, warning = FALSE}
 tempdir <- getwd()
 setwd("..")
 source("convertDesign.R")
-system("zip metawards.zip model_code/* R_tools/* vignette/* convertDesign.R extractOutput.R runscript.sh README.sh")
+system("zip metawards.zip model_code/* R_tools/* vignette/* convertDesign.R extract* mergeSQL.sql runscript.sh README.sh")
 setwd(tempdir)
 ```
 
