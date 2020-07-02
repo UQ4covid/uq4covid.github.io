@@ -86,12 +86,12 @@ The last line ensures that values that should be 0, which Chris does not store t
 
 # Data files
 
-Because the data is so big, even just for a single output at a time, such as `Hprev` as defined above, we cannot store the tibble in RAM for every week, even just those weeks since lockdown. Instead, we have produced weekly datasets for each of the 3 outputs described above. Each data file contains the value of a particular output across the ensemble and for all UK wards for a given week. We will perform our examples below with the hospital prevalances in week 12 (`hprev_12.rds`). This particular file is on the git repository. The rest of the data can be downloaded from [here](https://universityofexeteruk-my.sharepoint.com/:f:/r/personal/d_williamson_exeter_ac_uk/Documents/EnsembleZero?csf=1&web=1&e=jcup8t). *Note, this is a temporary solution and doesnt work for non-Exeter users, and it not fast enough even then. I am looking for a more general solution. In the meantime, if you are not at Exeter and reading this, please let me know and I will share a dropbox folder with you.*
+Because the data is so big, even just for a single output at a time, such as `Hprev` as defined above, we cannot store the tibble in RAM for every week, even just those weeks since lockdown. Instead, we have produced weekly datasets for each of the 3 outputs described above. Each data file contains the value of a particular output across the ensemble and for all UK wards for a given week. We will perform our examples below with the hospital prevalances in week 12 (`hprev_12.rds`). This particular file is on the git repository. The rest of the data can be downloaded from [here](https://universityofexeteruk-my.sharepoint.com/:f:/g/personal/d_williamson_exeter_ac_uk/EmiT-CS7RY9ErAhjpN-wDKYBUlAC_pDSgKyqhLa24moULg?e=kJI9zn). *Note, this is a temporary solution and doesnt work for non-Exeter users, and it not fast enough even then. I am looking for a more general solution. In the meantime, if you are not at Exeter and reading this, please let me know and I will share a dropbox folder with you.*
 
 To load in one piece of the data (assuming you have downloaded `Hprev_12.rds` and placed it in the directory below)
 ```{r, include=FALSE}
 library(dplyr)
-output_Hprev <- as_tibble(readRDS("Data/EnsembleZero/Hprev_12.rds"))
+output_Hprev <- readRDS("Data/EnsembleZero/Hprev_12.rds")
 ```
 ```{r,eval=FALSE}
 library(dplyr)
