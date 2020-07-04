@@ -16,7 +16,6 @@ parRanges <- data.frame(
     upper = c(4, 6, 4, 12, 12, rep(1, 11)),
     stringsAsFactors = FALSE
 )
-print("NEED TO GET RANGES FIGURED OUT, THIS IS A TEST")
 
 ## generate LHS design
 design <- randomLHS(5, nrow(parRanges))
