@@ -1,0 +1,321 @@
+---
+title: "Ensemble Zero: Emulator Struggles :("
+author: "Evan Baker"
+date: "09/07/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Lets try some emulators for wave 1 (none seem to work :( )
+
+## Get Data
+```{r data, message = FALSE, warning = FALSE}
+set.seed(12345)
+
+library(lhs)
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+library(readr)
+
+#set up mogp and Exeter_mogp (will be different for you)
+mogp_dir <- "~/MoGP/mogp_emulator-devel"
+setwd("~/MoGP/ExeterUQ_MOGP-devel")
+source("~/MoGP/ExeterUQ_MOGP-devel/BuildEmulator/BuildEmulator.R")
+
+
+
+#get simulator data 
+setwd("~/My_Files/Covid/uq4covid.github.io/vignettes/")
+design <- readRDS("data/EnsembleZero/inputs/design.rds")
+parRanges <- readRDS("data/EnsembleZero/inputs/parRanges.rds")
+
+Hprev_12 <- as_tibble(readRDS("~/My_Files/Covid/Initial Calibration/Hprev_12.rds")) # see the EnsembleZer vignette for info on how to get data
+
+#tidy up
+Ward_Lookup <- read_csv("data/EnsembleZero/Ward_Lookup.csv")
+names(Ward_Lookup)[11] <- "ward"
+Ward_Lookup <- Ward_Lookup[,-c(3:7,10)]
+NewOut <- inner_join(Ward_Lookup, Hprev_12, by="ward")
+
+#match to hosptial trusts
+WD11ToAcuteTrustIncWalesHB <- read_csv("data/EnsembleZero/WD11ToAcuteTrustIncWalesHB.csv")
+NewWithHosptial <- inner_join(WD11ToAcuteTrustIncWalesHB, NewOut, by=c("WD11CD", "WD11NM"))
+
+TrustData <- group_by(NewWithHosptial, trustId, trustName, output, replicate) %>%
+  summarise(Hprev=mean(Hprev)) %>% 
+  ungroup()
+
+#put in nice format for emulation
+library(tidyr)
+EmulateOut <- dplyr::select(TrustData, output, trustId, replicate, Hprev) %>% pivot_wider(names_from = trustId, values_from = Hprev) %>%
+  dplyr::select(-replicate)
+ToEmulate <- inner_join(design, EmulateOut, by="output")
+head(ToEmulate)
+```
+
+And prepare for emulation
+
+```{r data standardise}
+#split into training and testing
+data <- ToEmulate[801:4000,]
+data_valid <- ToEmulate[1:800,]
+
+#extract Xs and ys
+X <- data[,1:16]
+X_valid <- data_valid[,1:16]
+y <- data[,19:ncol(data)]
+y_valid <- data_valid[,19:ncol(data_valid)]
+
+
+#sqrt transform to ensure positivity
+y <- sqrt(y)
+y_valid <- sqrt(y_valid)
+
+
+#and also standardise
+ymean <- apply(y, 2, mean)
+ysd <- apply(y, 2, sd)
+y <- (y - ymean[col(y)]) / ysd[col(y)]
+y_valid <- (y_valid - ymean[col(y_valid)]) / ysd[col(y_valid)]
+```
+
+
+## Let's fit a QK emulator
+
+
+```{r QK}
+
+##First emulator is a QK
+#We're going to use ExeterUQ for the backend of this, so data needs to be further tidied up
+#and rearranged for correct format for QK
+
+#get location names
+tnames <- names(data)[-c(1:18)]
+tnames[1:5]
+
+tnames <- paste("trust", tnames, sep = "_")#add "trust" to beginning of each name
+
+#and ensure no weird characters
+for(i in 1:length(tnames)){
+  tsplit <- strsplit(tnames[i],split=" ")[[1]]
+  if(length(tsplit)>1)
+    tnames[i] <- paste(tsplit,collapse = "")
+}
+for(i in 1:length(tnames)){
+  tsplit <- strsplit(tnames[i],split="-")[[1]]
+  if(length(tsplit)>1)
+    tnames[i] <- paste(tsplit,collapse = "")
+}
+for(i in 1:length(tnames)){
+  tsplit <- strsplit(tnames[i],split=",")[[1]]
+  if(length(tsplit)>1)
+    tnames[i] <- paste(tsplit,collapse = "")
+}
+for(i in 1:length(tnames)){
+  tsplit <- strsplit(tnames[i],split="'")[[1]]
+  if(length(tsplit)>1)
+    tnames[i] <- paste(tsplit,collapse = "")
+}
+
+
+#then we use the following function to rearrange the data such that the empirical quantiles are an input (for a few quantiles)
+#code stolen from Danny which was in-turn modified code of mine
+QK_data <- function(X, y){
+  full_output <- as.matrix(y)
+  output_dim <- ncol(full_output)
+  quantile_dfs <- list()
+  y1 <- full_output[,1]
+  quantile_df <- data.frame(X = X, y1 = y1)
+  quantile_df <-  quantile_df %>% group_by_at(vars(names(quantile_df)[1:(length(X[1,]))])) %>% summarise("0.025" = quantile(y1, 0.025), "0.25" = quantile(y1, 0.25), "0.5" = quantile(y1, 0.5), "0.75" = quantile(y1, 0.75), "0.975" = quantile(y1, 0.975))
+  final_df <-  quantile_df %>% gather(Quantile, y1, "0.025":"0.975")
+  names(final_df)[ncol(final_df)] <- tnames[1]
+  for(i in 2:ncol(full_output)){
+    y1 <- full_output[,i]
+    quantile_df <- data.frame(X = X, y1 = y1)
+    quantile_df <-  quantile_df %>% group_by_at(vars(names(quantile_df)[1:(length(X[1,]))])) %>% summarise("0.025" = quantile(y1, 0.05), "0.25" = quantile(y1, 0.25), "0.5" = quantile(y1, 0.5), "0.75" = quantile(y1, 0.75), "0.975" = quantile(y1, 0.975))
+    quantile_df <- quantile_df %>% gather(Quantile, y1, "0.025":"0.975")
+    final_df <- merge(final_df, quantile_df)
+    names(final_df)[ncol(final_df)] <- tnames[i]
+  }
+  final_df
+}
+
+
+#then use this function to get the data, and prepare for ExeterUQ
+final_df <- QK_data(X,y[,1:3]) #(for speed, lets just consider the first few outputs for now)
+Noise <- rnorm(nrow(final_df),0,0.4) #ExeterUQ needs artifical noise for buildingt he prior mean function
+tData <- cbind(final_df[,1:17],Noise,final_df[,18:ncol(final_df)]) #ExeterUQ input
+tData$Quantile <- as.numeric(tData$Quantile)
+
+
+
+
+
+
+#now build the QK emulators for each output location
+
+MetaEmulatorsAll <- BuildNewEmulators(tData, HowManyEmulators = ncol(tData)-18, meanFun = "linear", kernel = "Matern52",additionalVariables = names(tData)[1:17])
+
+#also extract nuggets (note im using a slightly older version of mogp where you have to do this, newer versions you dont)
+nuggets <- rep(NA, 3)
+for (i in 1:3){
+  nuggets[i] <- MetaEmulatorsAll$mogp$emulators[[i]]$nugget
+}
+
+```
+
+And see how this performs
+
+```{r QK valid}
+#And some rudimentary validation
+
+
+#to validate a QK, we need to do sampling, as using the point estimates for select quantiles
+#doesnt account for the epistemic uncertainty in predictions, making the emulator seem worse than it is
+M = 1000 #how many samples
+X_pred <- unique(X_valid) #only want to predict for each unique point
+pred_samples <- list()
+for (i in 1:nrow(X_pred)){ #for every pred point
+  #get inputs to emulator to predict (by sampling quantiles and pairing with x):
+  quantiles_pred <- runif(M, 0, 1)
+  X_pred_sample <- cbind(matrix(rep(X_pred[i,],each=M),nrow=M), quantiles_pred)
+  
+  pred = MetaEmulatorsAll$mogp$predict(data.frame(X_pred_sample))  #make predictions
+  samples <- matrix(NA, nrow = M, ncol = 3)
+  for (j in 1:3){ #then sample from normal (once per sample per output dimension)
+    samplesj <- rnorm(M, pred$mean[j,], pred$unc[j,]+nuggets[j])
+    samples[,j] <- samplesj
+  }
+  pred_samples[[i]] <- samples
+  
+}
+
+#now obtain validation plots
+
+m_pred5 <- t(sapply((pred_samples), function(x) apply((x), 2, quantile, 0.5))) #get intervals from sample dist
+m_pred975 <- t(sapply((pred_samples), function(x) apply((x), 2, quantile, 0.975)))
+m_pred025 <- t(sapply((pred_samples), function(x) apply((x), 2, quantile, 0.025)))
+m_pred75 <- t(sapply((pred_samples), function(x) apply((x), 2, quantile, 0.75)))
+m_pred25 <- t(sapply((pred_samples), function(x) apply((x), 2, quantile, 0.25)))
+
+#we repeat the predictions each 20 times, as the validaiton data is repeated 20 times each
+m_pred5 =matrix(rep(m_pred5,each=20),ncol=ncol(m_pred5))
+m_pred975 =matrix(rep(m_pred975,each=20),ncol=ncol(m_pred975))
+m_pred025 =matrix(rep(m_pred025,each=20),ncol=ncol(m_pred025))
+m_pred75 =matrix(rep(m_pred75,each=20),ncol=ncol(m_pred75))
+m_pred25 =matrix(rep(m_pred25,each=20),ncol=ncol(m_pred25))
+
+
+
+#Try Location 1
+loc = 1
+
+#within?
+within = ((y_valid[,loc]) >= m_pred025[,loc]) & ((y_valid[,loc]) <= m_pred975[,loc])
+
+ggplot()+
+  geom_errorbar(aes(x=X_valid[,1][[1]], ymin = m_pred025[,loc], ymax =m_pred975[,loc] ))+
+  geom_errorbar(aes(x=X_valid[,1][[1]], ymin = m_pred25[,loc], ymax =m_pred75[,loc] ))+
+  geom_point(aes(x=X_valid[within,1][[1]], y = y_valid[within,loc]), colour = "blue")+
+  geom_point(aes(x=X_valid[!within,1][[1]], y = y_valid[!within,loc]), colour = "red")+
+  geom_point(aes(x=X_valid[,1][[1]], y = m_pred5[,loc]))+
+  ylab("y (for site 1)")+
+  xlab("x_1")
+```
+
+This one sucks, in numerous places it misses the "mean" of the output, and almost always gets the distribution wrong as well
+
+
+
+
+
+## Ok, but what about a more standard method, say a GP with heteroscedastic noise?
+
+
+```{r hetGP}
+#fit hetGP instead
+library(hetGP)
+fit <- mleHetGP(as.matrix(X), as.matrix(y[,1])) #just use 1 output (for speed, and quicker to implement)
+```
+
+And how does this look?
+
+```{r hetGP valid}
+
+#now do valdiation
+pred <- predict(fit, as.matrix(X_valid))
+
+m_pred5 <- pred$mean
+m_pred975 <- pred$mean + 2*sqrt(pred$nugs+pred$sd2)
+m_pred025 <- pred$mean - 2*sqrt(pred$nugs+pred$sd2)
+#within?
+within = ((y_valid[,loc]) >= m_pred025) & ((y_valid[,loc] <= m_pred975))
+
+ggplot()+
+  geom_errorbar(aes(x=X_valid[,loc][[1]], ymin = m_pred025, ymax =m_pred975 ))+
+  geom_point(aes(x=X_valid[within,loc][[1]], y = y_valid[within,loc]), colour = "blue")+
+  geom_point(aes(x=X_valid[!within,loc][[1]], y = y_valid[!within,loc]), colour = "red")+
+  geom_point(aes(x=X_valid[,loc][[1]], y = m_pred5))+
+  ylab("y (for site 1)")+
+  xlab("x_1")
+```
+
+This one also sucks, the variance is grossly overestimated....
+
+
+
+
+
+## Ok, so how about a hail mary. What if we do QK again, but rather than a GP, we use a neural net as the backend?
+(in desperation)
+(this is also not fast to fit)
+
+```{r NN, message = FALSE, warning = FALSE}
+final_df <- QK_data(X,y[,1:20]) #we want all the outputs now, as a NN can use the same latent nodes for many outputs
+#(note, this is then not fast, so we just use 20 here)
+
+tData <- cbind(final_df[,1:17],final_df[,18:ncol(final_df)])
+tData$Quantile <- as.numeric(tData$Quantile)
+
+
+
+library(neuralnet) #ah the wonders of packages, we can as mindlessly build a NN jsut as we would linear regression...
+
+formula <- as.formula(paste(paste(colnames(tData)[18:ncol(tData)], collapse = " + ") , " ~ ",  paste(colnames(tData)[1:17], collapse = " + ")))
+
+
+nn=neuralnet(formula, data = tData, hidden=3 ,act.fct = "tanh")
+
+```
+
+And how does this look?
+```{r NN valid}
+
+#dont need to sample, as theres no epistemic uncertainty
+
+m_pred5 <- predict(nn, data.frame(X_valid, "Quantile" = 0.5)) #mean est
+m_pred975 <- predict(nn, data.frame(X_valid, "Quantile" = 0.975)) 
+m_pred025 <- predict(nn, data.frame(X_valid, "Quantile" = 0.025)) 
+m_pred75 <- predict(nn, data.frame(X_valid, "Quantile" = 0.75)) 
+m_pred25 <- predict(nn, data.frame(X_valid, "Quantile" = 0.25)) 
+
+within = ((y_valid[,loc]) >= m_pred025[,loc]) & ((y_valid[,loc]) <= m_pred975[,loc])
+
+ggplot()+
+  geom_point(aes(x=X_valid[within,1][[1]], y = y_valid[within,loc]), colour = "blue")+
+  geom_point(aes(x=X_valid[!within,1][[1]], y = y_valid[!within,loc]), colour = "red")+
+  geom_point(aes(x=X_valid[,1][[1]], y = m_pred5[,loc]))+
+  geom_errorbar(aes(x=X_valid[,1][[1]], ymin = m_pred025[,loc], ymax =m_pred975[,loc] ))+
+  geom_errorbar(aes(x=X_valid[,1][[1]], ymin = m_pred25[,loc], ymax =m_pred75[,loc] )) +
+  ylab("y (for site 1)")+
+  xlab("x_1")
+```
+
+And this is terrible (not really suprising without any degree of tuning).
+
+
+
