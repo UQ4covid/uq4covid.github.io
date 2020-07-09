@@ -10,7 +10,9 @@ output:
 
 <center>
 
-**CURRENTLY ONLY WORKS WITH DEVELOPMENT BRANCH OF METAWARDS, BUT SHOULD WORK WHEN RELEASED AS 1.2.0**
+**Requires MetaWards 1.2.0**
+
+Please download files for running the model from **[here](metawards.zip)**.
 
 </center>
 
@@ -128,20 +130,20 @@ We will discuss these choices in more detail in the subsequent sections, in part
 
 ## Parameters {#parameters}
 
-Once the demographics have been setup, we can then control progress through the different states as:
+For generic states $X$ and $Y$ say, the progress of an individual from state $X$ to state $Y$ in a given day is governed by probability $q_{XY}$, where:
 
-* $p_{SE}$ driven by $\beta$ parameters, defined by $R_0$ and length of infectious period (see [here](#code));
-* $p_{EA} = p_{EA}\left(1 - e^{-\gamma_{E}}\right)$ where $\gamma_E = \frac{1}{T_E}$ with $T_E$ the mean incubation period;
-* $p_{EI} = \left(1 - p_{EA}\right)\left(1 - e^{-\gamma_{E}}\right)$;
-* $p_{AR} = 1 - e^{-\gamma_I}$ where $\gamma_I = \frac{1}{T_I}$ with $T_I$ the mean infectious period;
-* $p_{IH} = p_{IH}\left(1 - e^{-\gamma_{I}}\right)$;
-* $p_{IR} = p_{IR}\left(1 - e^{-\gamma_{I}}\right)$;
-* $p_{ID} = \left(1 - p_{IH} - p_{IR}\right)\left(1 - e^{-\gamma_{I}}\right)$;
-* $p_{HC} = p_{HC}\left(1 - e^{-\gamma_{H}}\right)$ where $\gamma_{H} = \frac{1}{T_H}$ with $T_H$ the mean length of a hospital stay;
-* $p_{HR} = p_{HR}\left(1 - e^{-\gamma_{H}}\right)$;
-* $p_{HD} = \left(1 - p_{HC} - p_{HR}\right)\left(1 - e^{-\gamma_{H}}\right)$;
-* $p_{CR} = p_{CR}\left(1 - e^{-\gamma_{C}}\right)$ where $\gamma_C = \frac{1}{T_C}$ with $T_C$ is the mean length of time spent in ICU;
-* $p_{CD} = \left(1 - p_{CR}\right)\left(1 - e^{-\gamma_{C}}\right)$.
+* $q_{SE}$ driven by $\beta$ parameters, defined by $R_0$ and length of infectious period (see [here](#code));
+* $q_{EA} = p_{EA}\left(1 - e^{-\gamma_{E}}\right)$ where $\gamma_E = \frac{1}{T_E}$ with $T_E$ the mean incubation period;
+* $q_{EI} = \left(1 - p_{EA}\right)\left(1 - e^{-\gamma_{E}}\right)$;
+* $q_{AR} = 1 - e^{-\gamma_I}$ where $\gamma_I = \frac{1}{T_I}$ with $T_I$ the mean infectious period;
+* $q_{IH} = p_{IH}\left(1 - e^{-\gamma_{I}}\right)$;
+* $q_{IR} = p_{IR}\left(1 - e^{-\gamma_{I}}\right)$;
+* $q_{ID} = \left(1 - p_{IH} - p_{IR}\right)\left(1 - e^{-\gamma_{I}}\right)$;
+* $q_{HC} = p_{HC}\left(1 - e^{-\gamma_{H}}\right)$ where $\gamma_{H} = \frac{1}{T_H}$ with $T_H$ the mean length of a hospital stay;
+* $q_{HR} = p_{HR}\left(1 - e^{-\gamma_{H}}\right)$;
+* $q_{HD} = \left(1 - p_{HC} - p_{HR}\right)\left(1 - e^{-\gamma_{H}}\right)$;
+* $q_{CR} = p_{CR}\left(1 - e^{-\gamma_{C}}\right)$ where $\gamma_C = \frac{1}{T_C}$ with $T_C$ is the mean length of time spent in ICU;
+* $q_{CD} = \left(1 - p_{CR}\right)\left(1 - e^{-\gamma_{C}}\right)$.
 
 Lockdown can be controlled either by constraining movements over a certain distance, or by scaling the $\beta$ parameters. We do the latter at the moment. 
 
@@ -203,7 +205,7 @@ The database for a given run contains a single table called `compact`. To store 
 1. Extraneous classes are removed where not relevant for different demographics. For example, for the `genpop` demographic we return `stage_0`--`stage_3`. However, for the `asymp` demographic we only return `stage_1` and `stage_2`, and for the `hospital` and `critical` demographics, we return `stage_1`--`stage_3`.
 2. We only return data for time points *after initial infection in a ward*. This also means that wards that are not infected do not return any results. 
 
-These tricks **hugely** reduce the size of the output data, but means that we have to do some **post-processing** in order to extract quantities of interest. Since the data are stored as an SQL database, we can either query the database diectly, or use some of the tools in e.g. R (see below) to interface with it. So, to clarify, the `stages.db` database contains a table called `compact` with entries:
+These tricks **hugely** reduce the size of the output data, but means that we have to do some **post-processing** in order to extract quantities of interest. Since the data are stored as an SQL database, we can either query the database directly, or use some of the tools in e.g. R (see below) to interface with it. So, to clarify, the `stages.db` database contains a table called `compact` with entries:
 
 * `day`, `ward`
 * `Einc`, `E`, `Iinc`, `I`, `RI`, `DI`
@@ -362,7 +364,7 @@ compact
 
 By default, the package only pulls down enough data from the database to produce a summary on the screen (notice that it prints the dimensions as `?? x 19`). If the database is small enough, then the `collect()` function can be used to import tables directly into R as a `tibble`. Alternatively, the `dbplyr` package can convert `tidyverse`-style commands into SQL and run these directly within the database. For large databases this is likely to be much more efficient, in terms of speed and memory usage. You can then `collect()` the results of the query into R.
 
-As an example of this latter approach, we will set up a query that sums the **new** hospital cases over the first 100 days in each ward. **Remember**: the database only contains days when some change occurs. For cumulative *incidence* counts this is fine, since the missing data will be zero in each case, so we just need to filter first to remove all time points $> 100$. To set up the query:
+As an example of this latter approach, we will set up a query that sums the **new** hospital cases over the first 100 days in each ward. **Remember**: for each ward the database only contains days after the initial infection occurs. For cumulative *incidence* counts this is fine, since the missing data will be zero in each case, so we just need to filter first to remove all time points $> 100$. To set up the query:
 
 ```{r}
 ## Hinc contains the new cases, so sum these

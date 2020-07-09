@@ -11,7 +11,7 @@
 
 <meta name="author" content="TJ McKinley" />
 
-<meta name="date" content="2020-06-26" />
+<meta name="date" content="2020-07-06" />
 
 <title>Model Description</title>
 
@@ -1711,13 +1711,14 @@ summary {
 
 <h1 class="title toc-ignore">Model Description</h1>
 <h4 class="author">TJ McKinley</h4>
-<h4 class="date">26 June 2020</h4>
+<h4 class="date">06 July 2020</h4>
 
 </div>
 
 
 <center>
-<p><strong>CURRENTLY ONLY WORKS WITH DEVELOPMENT BRANCH OF METAWARDS, BUT SHOULD WORK WHEN RELEASED AS 1.2.0</strong></p>
+<p><strong>Requires MetaWards 1.2.0</strong></p>
+<p>Please download files for running the model from <strong><a href="metawards.zip">here</a></strong>.</p>
 </center>
 <p><a name="model"></a></p>
 <p>The basic model structure is:</p>
@@ -1730,8 +1731,8 @@ summary {
 <li><span class="math inline">\(R\)</span>: recovered and immune;</li>
 <li><span class="math inline">\(D\)</span>: died.</li>
 </ul>
-<div id="htmlwidget-b7376b615397c9cec054" style="width:100%;height:100%;" class="grViz html-widget"></div>
-<script type="application/json" data-for="htmlwidget-b7376b615397c9cec054">{"x":{"diagram":"digraph simpmod {\n    graph[layout = dot, rankdir = LR]\n    node [shape = rectangle]\n    \n    S [group = gp]; E [group = gp]; I [group = gp]; RI [label = <R<FONT POINT-SIZE=\"8\"><SUB>I<\/SUB><\/FONT>>, group = gp]; DI [label = <D<FONT POINT-SIZE=\"8\"><SUB>I<\/SUB><\/FONT>>, group = gp]; \n    A [group = as]; RA [label = <R<FONT POINT-SIZE=\"8\"><SUB>A<\/SUB><\/FONT>>, group = as];\n    H [group = hos]; RH [label = <R<FONT POINT-SIZE=\"8\"><SUB>H<\/SUB><\/FONT>>, group = hos]; DH [label = <D<FONT POINT-SIZE=\"8\"><SUB>H<\/SUB><\/FONT>>, group = hos]; \n    C [group = crit]; RC [label = <R<FONT POINT-SIZE=\"8\"><SUB>C<\/SUB><\/FONT>>, group = crit]; DC [label = <D<FONT POINT-SIZE=\"8\"><SUB>C<\/SUB><\/FONT>>, group = crit];\n    genpop [label = \"Gen. Pop.\", group = gp]\n    asymp [label = \"Asymptomatics\", group = as]\n    hospital [label = \"Hospital Patient\", group = hos]\n    critical [label = \"Critical Care\", group = crit]\n    St00 [style = \"invis\", group = st]; St0 [label = \"Stage 0\", group = st]; \n    St1 [label = \"Stage 1\", group = st]; \n    St2 [label = \"Stage 2\", group = st]; St3 [label = \"Stage 3\", group = st]; \n    \n    genpop -> S [style = \"invis\"]\n    hospital -> H [style = \"invis\"]\n    critical -> C [style = \"invis\"]\n    asymp -> A [style = \"invis\"]\n    S -> E -> I -> RI\n    I -> DI [weight = 0]\n    I -> H -> C -> RC \n    C -> DC [weight = 0]\n    H -> RH \n    H -> DH [weight = 0] \n    RI -> DI [style = \"invis\"]\n    RH -> DH [style = \"invis\"]\n    RC -> DC [style = \"invis\"]\n    E -> A [weight = 0]\n    A -> RA \n    St00 -> St0 -> St1 -> St2 -> St3 [style = \"invis\"]\n    subgraph {\n      rank = same; St0; E;\n    }\n    subgraph {\n      rank = same; St00 -> asymp -> genpop -> hospital -> critical [style = \"invis\"]\n    }\n    subgraph cluster {\n      subgraph {\n        rank = same; A -> I -> H -> C [style = \"invis\"]\n      }\n      style = filled;\n      color = lightgrey;\n      label = \"Infectious Classes\"\n    }\n    subgraph {\n      rank = same; St2; RA, RI, RC; RH;\n    }\n    subgraph {\n      rank = same; St3; DI; DH; DC;\n    }\n    \n}","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
+<div id="htmlwidget-c51718faaab83621244a" style="width:100%;height:100%;" class="grViz html-widget"></div>
+<script type="application/json" data-for="htmlwidget-c51718faaab83621244a">{"x":{"diagram":"digraph simpmod {\n    graph[layout = dot, rankdir = LR]\n    node [shape = rectangle]\n    \n    S [group = gp]; E [group = gp]; I [group = gp]; RI [label = <R<FONT POINT-SIZE=\"8\"><SUB>I<\/SUB><\/FONT>>, group = gp]; DI [label = <D<FONT POINT-SIZE=\"8\"><SUB>I<\/SUB><\/FONT>>, group = gp]; \n    A [group = as]; RA [label = <R<FONT POINT-SIZE=\"8\"><SUB>A<\/SUB><\/FONT>>, group = as];\n    H [group = hos]; RH [label = <R<FONT POINT-SIZE=\"8\"><SUB>H<\/SUB><\/FONT>>, group = hos]; DH [label = <D<FONT POINT-SIZE=\"8\"><SUB>H<\/SUB><\/FONT>>, group = hos]; \n    C [group = crit]; RC [label = <R<FONT POINT-SIZE=\"8\"><SUB>C<\/SUB><\/FONT>>, group = crit]; DC [label = <D<FONT POINT-SIZE=\"8\"><SUB>C<\/SUB><\/FONT>>, group = crit];\n    genpop [label = \"Gen. Pop.\", group = gp]\n    asymp [label = \"Asymptomatics\", group = as]\n    hospital [label = \"Hospital Patient\", group = hos]\n    critical [label = \"Critical Care\", group = crit]\n    St00 [style = \"invis\", group = st]; St0 [label = \"Stage 0\", group = st]; \n    St1 [label = \"Stage 1\", group = st]; \n    St2 [label = \"Stage 2\", group = st]; St3 [label = \"Stage 3\", group = st]; \n    \n    genpop -> S [style = \"invis\"]\n    hospital -> H [style = \"invis\"]\n    critical -> C [style = \"invis\"]\n    asymp -> A [style = \"invis\"]\n    S -> E -> I -> RI\n    I -> DI [weight = 0]\n    I -> H -> C -> RC \n    C -> DC [weight = 0]\n    H -> RH \n    H -> DH [weight = 0] \n    RI -> DI [style = \"invis\"]\n    RH -> DH [style = \"invis\"]\n    RC -> DC [style = \"invis\"]\n    E -> A [weight = 0]\n    A -> RA \n    St00 -> St0 -> St1 -> St2 -> St3 [style = \"invis\"]\n    subgraph {\n      rank = same; St0; E;\n    }\n    subgraph {\n      rank = same; St00 -> asymp -> genpop -> hospital -> critical [style = \"invis\"]\n    }\n    subgraph cluster {\n      subgraph {\n        rank = same; A -> I -> H -> C [style = \"invis\"]\n      }\n      style = filled;\n      color = lightgrey;\n      label = \"Infectious Classes\"\n    }\n    subgraph {\n      rank = same; St2; RA, RI, RC; RH;\n    }\n    subgraph {\n      rank = same; St3; DI; DH; DC;\n    }\n    \n}","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
 <div id="metawards-setup" class="section level2">
 <h2>MetaWards setup</h2>
 <p>The model structure above allows for different progression pathways. MetaWards deals with this by assigning individuals to different “demographics”, where each demographic can be used to represent different progression pathways. There are also <code>mover</code> functions that can be used to move individuals between demographics, and <code>mixer</code> functions that scale the force-of-infection (FOI) terms between the different demographics (explained later). There are currently seven pathways, which will be described below, but can be summarised as:</p>
@@ -1784,20 +1785,20 @@ Click for MetaWards <code>disease</code> file
 </div>
 <div id="parameters" class="section level2">
 <h2>Parameters</h2>
-<p>Once the demographics have been setup, we can then control progress through the different states as:</p>
+<p>For generic states <span class="math inline">\(X\)</span> and <span class="math inline">\(Y\)</span> say, the progress of an individual from state <span class="math inline">\(X\)</span> to state <span class="math inline">\(Y\)</span> in a given day is governed by probability <span class="math inline">\(q_{XY}\)</span>, where:</p>
 <ul>
-<li><span class="math inline">\(p_{SE}\)</span> driven by <span class="math inline">\(\beta\)</span> parameters, defined by <span class="math inline">\(R_0\)</span> and length of infectious period (see <a href="#code">here</a>);</li>
-<li><span class="math inline">\(p_{EA} = p_{EA}\left(1 - e^{-\gamma_{E}}\right)\)</span> where <span class="math inline">\(\gamma_E = \frac{1}{T_E}\)</span> with <span class="math inline">\(T_E\)</span> the mean incubation period;</li>
-<li><span class="math inline">\(p_{EI} = \left(1 - p_{EA}\right)\left(1 - e^{-\gamma_{E}}\right)\)</span>;</li>
-<li><span class="math inline">\(p_{AR} = 1 - e^{-\gamma_I}\)</span> where <span class="math inline">\(\gamma_I = \frac{1}{T_I}\)</span> with <span class="math inline">\(T_I\)</span> the mean infectious period;</li>
-<li><span class="math inline">\(p_{IH} = p_{IH}\left(1 - e^{-\gamma_{I}}\right)\)</span>;</li>
-<li><span class="math inline">\(p_{IR} = p_{IR}\left(1 - e^{-\gamma_{I}}\right)\)</span>;</li>
-<li><span class="math inline">\(p_{ID} = \left(1 - p_{IH} - p_{IR}\right)\left(1 - e^{-\gamma_{I}}\right)\)</span>;</li>
-<li><span class="math inline">\(p_{HC} = p_{HC}\left(1 - e^{-\gamma_{H}}\right)\)</span> where <span class="math inline">\(\gamma_{H} = \frac{1}{T_H}\)</span> with <span class="math inline">\(T_H\)</span> the mean length of a hospital stay;</li>
-<li><span class="math inline">\(p_{HR} = p_{HR}\left(1 - e^{-\gamma_{H}}\right)\)</span>;</li>
-<li><span class="math inline">\(p_{HD} = \left(1 - p_{HC} - p_{HR}\right)\left(1 - e^{-\gamma_{H}}\right)\)</span>;</li>
-<li><span class="math inline">\(p_{CR} = p_{CR}\left(1 - e^{-\gamma_{C}}\right)\)</span> where <span class="math inline">\(\gamma_C = \frac{1}{T_C}\)</span> with <span class="math inline">\(T_C\)</span> is the mean length of time spent in ICU;</li>
-<li><span class="math inline">\(p_{CD} = \left(1 - p_{CR}\right)\left(1 - e^{-\gamma_{C}}\right)\)</span>.</li>
+<li><span class="math inline">\(q_{SE}\)</span> driven by <span class="math inline">\(\beta\)</span> parameters, defined by <span class="math inline">\(R_0\)</span> and length of infectious period (see <a href="#code">here</a>);</li>
+<li><span class="math inline">\(q_{EA} = p_{EA}\left(1 - e^{-\gamma_{E}}\right)\)</span> where <span class="math inline">\(\gamma_E = \frac{1}{T_E}\)</span> with <span class="math inline">\(T_E\)</span> the mean incubation period;</li>
+<li><span class="math inline">\(q_{EI} = \left(1 - p_{EA}\right)\left(1 - e^{-\gamma_{E}}\right)\)</span>;</li>
+<li><span class="math inline">\(q_{AR} = 1 - e^{-\gamma_I}\)</span> where <span class="math inline">\(\gamma_I = \frac{1}{T_I}\)</span> with <span class="math inline">\(T_I\)</span> the mean infectious period;</li>
+<li><span class="math inline">\(q_{IH} = p_{IH}\left(1 - e^{-\gamma_{I}}\right)\)</span>;</li>
+<li><span class="math inline">\(q_{IR} = p_{IR}\left(1 - e^{-\gamma_{I}}\right)\)</span>;</li>
+<li><span class="math inline">\(q_{ID} = \left(1 - p_{IH} - p_{IR}\right)\left(1 - e^{-\gamma_{I}}\right)\)</span>;</li>
+<li><span class="math inline">\(q_{HC} = p_{HC}\left(1 - e^{-\gamma_{H}}\right)\)</span> where <span class="math inline">\(\gamma_{H} = \frac{1}{T_H}\)</span> with <span class="math inline">\(T_H\)</span> the mean length of a hospital stay;</li>
+<li><span class="math inline">\(q_{HR} = p_{HR}\left(1 - e^{-\gamma_{H}}\right)\)</span>;</li>
+<li><span class="math inline">\(q_{HD} = \left(1 - p_{HC} - p_{HR}\right)\left(1 - e^{-\gamma_{H}}\right)\)</span>;</li>
+<li><span class="math inline">\(q_{CR} = p_{CR}\left(1 - e^{-\gamma_{C}}\right)\)</span> where <span class="math inline">\(\gamma_C = \frac{1}{T_C}\)</span> with <span class="math inline">\(T_C\)</span> is the mean length of time spent in ICU;</li>
+<li><span class="math inline">\(q_{CD} = \left(1 - p_{CR}\right)\left(1 - e^{-\gamma_{C}}\right)\)</span>.</li>
 </ul>
 <p>Lockdown can be controlled either by constraining movements over a certain distance, or by scaling the <span class="math inline">\(\beta\)</span> parameters. We do the latter at the moment.</p>
 <p>MetaWards has a specific structure in terms of how it progresses movements between the stages. To get the correct splits between the pathways specified above we do all non-infection movements through a custom <code>mover</code> function specified <a href="#mover">below</a>. Note that in the <code>ncov.json</code> file specified <a href="#diseasefile">above</a>, we set all <code>progress</code> parameters to be 0. Thus, all transition probabilities other than new infections are driven by user-defined parameters that are passed to the <code>mover</code> function, which we call <code>move_pathways.py</code> here.</p>
@@ -2131,7 +2132,7 @@ Click for MetaWards <code>iterator</code> files
 <li>Extraneous classes are removed where not relevant for different demographics. For example, for the <code>genpop</code> demographic we return <code>stage_0</code>–<code>stage_3</code>. However, for the <code>asymp</code> demographic we only return <code>stage_1</code> and <code>stage_2</code>, and for the <code>hospital</code> and <code>critical</code> demographics, we return <code>stage_1</code>–<code>stage_3</code>.</li>
 <li>We only return data for time points <em>after initial infection in a ward</em>. This also means that wards that are not infected do not return any results.</li>
 </ol>
-<p>These tricks <strong>hugely</strong> reduce the size of the output data, but means that we have to do some <strong>post-processing</strong> in order to extract quantities of interest. Since the data are stored as an SQL database, we can either query the database diectly, or use some of the tools in e.g. R (see below) to interface with it. So, to clarify, the <code>stages.db</code> database contains a table called <code>compact</code> with entries:</p>
+<p>These tricks <strong>hugely</strong> reduce the size of the output data, but means that we have to do some <strong>post-processing</strong> in order to extract quantities of interest. Since the data are stored as an SQL database, we can either query the database directly, or use some of the tools in e.g. R (see below) to interface with it. So, to clarify, the <code>stages.db</code> database contains a table called <code>compact</code> with entries:</p>
 <ul>
 <li><code>day</code>, <code>ward</code></li>
 <li><code>Einc</code>, <code>E</code>, <code>Iinc</code>, <code>I</code>, <code>RI</code>, <code>DI</code></li>
@@ -2466,34 +2467,33 @@ Click for R <code>convertInputToDisease</code> function
 <a class="sourceLine" id="cb11-16" title="16">    <span class="dt">upper =</span> <span class="kw">c</span>(<span class="dv">4</span>, <span class="dv">6</span>, <span class="dv">4</span>, <span class="dv">12</span>, <span class="dv">12</span>, <span class="kw">rep</span>(<span class="dv">1</span>, <span class="dv">11</span>)),</a>
 <a class="sourceLine" id="cb11-17" title="17">    <span class="dt">stringsAsFactors =</span> <span class="ot">FALSE</span></a>
 <a class="sourceLine" id="cb11-18" title="18">)</a>
-<a class="sourceLine" id="cb11-19" title="19"><span class="kw">print</span>(<span class="st">&quot;NEED TO GET RANGES FIGURED OUT, THIS IS A TEST&quot;</span>)</a>
-<a class="sourceLine" id="cb11-20" title="20"></a>
-<a class="sourceLine" id="cb11-21" title="21"><span class="co">## generate LHS design</span></a>
-<a class="sourceLine" id="cb11-22" title="22">design &lt;-<span class="st"> </span><span class="kw">randomLHS</span>(<span class="dv">5</span>, <span class="kw">nrow</span>(parRanges))</a>
-<a class="sourceLine" id="cb11-23" title="23"><span class="kw">colnames</span>(design) &lt;-<span class="st"> </span>parRanges<span class="op">$</span>parameter</a>
-<a class="sourceLine" id="cb11-24" title="24">design &lt;-<span class="st"> </span><span class="kw">as_tibble</span>(design)</a>
-<a class="sourceLine" id="cb11-25" title="25"></a>
-<a class="sourceLine" id="cb11-26" title="26"><span class="co">## add unique hash identifier</span></a>
-<a class="sourceLine" id="cb11-27" title="27"><span class="co">## (at the moment don&#39;t use &quot;a0&quot; type ensembleID, because MetaWards</span></a>
-<a class="sourceLine" id="cb11-28" title="28"><span class="co">## parses to dates)</span></a>
-<a class="sourceLine" id="cb11-29" title="29">design<span class="op">$</span>output &lt;-<span class="st"> </span><span class="kw">ensembleIDGen</span>(<span class="dt">ensembleID =</span> <span class="st">&quot;Ens0&quot;</span>, <span class="kw">nrow</span>(design))</a>
-<a class="sourceLine" id="cb11-30" title="30">design<span class="op">$</span>repeats &lt;-<span class="st"> </span><span class="dv">2</span></a>
-<a class="sourceLine" id="cb11-31" title="31"></a>
-<a class="sourceLine" id="cb11-32" title="32"><span class="co">## convert to input space</span></a>
-<a class="sourceLine" id="cb11-33" title="33">input &lt;-<span class="st"> </span><span class="kw">convertDesignToInput</span>(design, parRanges, <span class="st">&quot;zero_one&quot;</span>)</a>
-<a class="sourceLine" id="cb11-34" title="34"></a>
-<a class="sourceLine" id="cb11-35" title="35"><span class="co">## convert input to disease</span></a>
-<a class="sourceLine" id="cb11-36" title="36">disease &lt;-<span class="st"> </span><span class="kw">convertInputToDisease</span>(input)</a>
-<a class="sourceLine" id="cb11-37" title="37"></a>
-<a class="sourceLine" id="cb11-38" title="38"><span class="co">## write to external files</span></a>
-<a class="sourceLine" id="cb11-39" title="39"><span class="kw">dir.create</span>(<span class="st">&quot;inputs&quot;</span>, <span class="dt">showWarnings =</span> <span class="ot">FALSE</span>)</a>
-<a class="sourceLine" id="cb11-40" title="40"></a>
-<a class="sourceLine" id="cb11-41" title="41"><span class="co">## write text file for MetaWards</span></a>
-<a class="sourceLine" id="cb11-42" title="42"><span class="kw">write.table</span>(disease, <span class="st">&quot;inputs/disease.dat&quot;</span>, <span class="dt">row.names =</span> <span class="ot">FALSE</span>, <span class="dt">sep =</span> <span class="st">&quot; &quot;</span>, <span class="dt">quote =</span> <span class="ot">FALSE</span>)</a>
-<a class="sourceLine" id="cb11-43" title="43"></a>
-<a class="sourceLine" id="cb11-44" title="44"><span class="co">## save inputs for data for post-simulation runs</span></a>
-<a class="sourceLine" id="cb11-45" title="45"><span class="kw">saveRDS</span>(design, <span class="st">&quot;inputs/design.rds&quot;</span>)</a>
-<a class="sourceLine" id="cb11-46" title="46"><span class="kw">saveRDS</span>(parRanges, <span class="st">&quot;inputs/parRanges.rds&quot;</span>)</a></code></pre></div>
+<a class="sourceLine" id="cb11-19" title="19"></a>
+<a class="sourceLine" id="cb11-20" title="20"><span class="co">## generate LHS design</span></a>
+<a class="sourceLine" id="cb11-21" title="21">design &lt;-<span class="st"> </span><span class="kw">randomLHS</span>(<span class="dv">5</span>, <span class="kw">nrow</span>(parRanges))</a>
+<a class="sourceLine" id="cb11-22" title="22"><span class="kw">colnames</span>(design) &lt;-<span class="st"> </span>parRanges<span class="op">$</span>parameter</a>
+<a class="sourceLine" id="cb11-23" title="23">design &lt;-<span class="st"> </span><span class="kw">as_tibble</span>(design)</a>
+<a class="sourceLine" id="cb11-24" title="24"></a>
+<a class="sourceLine" id="cb11-25" title="25"><span class="co">## add unique hash identifier</span></a>
+<a class="sourceLine" id="cb11-26" title="26"><span class="co">## (at the moment don&#39;t use &quot;a0&quot; type ensembleID, because MetaWards</span></a>
+<a class="sourceLine" id="cb11-27" title="27"><span class="co">## parses to dates)</span></a>
+<a class="sourceLine" id="cb11-28" title="28">design<span class="op">$</span>output &lt;-<span class="st"> </span><span class="kw">ensembleIDGen</span>(<span class="dt">ensembleID =</span> <span class="st">&quot;Ens0&quot;</span>, <span class="kw">nrow</span>(design))</a>
+<a class="sourceLine" id="cb11-29" title="29">design<span class="op">$</span>repeats &lt;-<span class="st"> </span><span class="dv">2</span></a>
+<a class="sourceLine" id="cb11-30" title="30"></a>
+<a class="sourceLine" id="cb11-31" title="31"><span class="co">## convert to input space</span></a>
+<a class="sourceLine" id="cb11-32" title="32">input &lt;-<span class="st"> </span><span class="kw">convertDesignToInput</span>(design, parRanges, <span class="st">&quot;zero_one&quot;</span>)</a>
+<a class="sourceLine" id="cb11-33" title="33"></a>
+<a class="sourceLine" id="cb11-34" title="34"><span class="co">## convert input to disease</span></a>
+<a class="sourceLine" id="cb11-35" title="35">disease &lt;-<span class="st"> </span><span class="kw">convertInputToDisease</span>(input)</a>
+<a class="sourceLine" id="cb11-36" title="36"></a>
+<a class="sourceLine" id="cb11-37" title="37"><span class="co">## write to external files</span></a>
+<a class="sourceLine" id="cb11-38" title="38"><span class="kw">dir.create</span>(<span class="st">&quot;inputs&quot;</span>, <span class="dt">showWarnings =</span> <span class="ot">FALSE</span>)</a>
+<a class="sourceLine" id="cb11-39" title="39"></a>
+<a class="sourceLine" id="cb11-40" title="40"><span class="co">## write text file for MetaWards</span></a>
+<a class="sourceLine" id="cb11-41" title="41"><span class="kw">write.table</span>(disease, <span class="st">&quot;inputs/disease.dat&quot;</span>, <span class="dt">row.names =</span> <span class="ot">FALSE</span>, <span class="dt">sep =</span> <span class="st">&quot; &quot;</span>, <span class="dt">quote =</span> <span class="ot">FALSE</span>)</a>
+<a class="sourceLine" id="cb11-42" title="42"></a>
+<a class="sourceLine" id="cb11-43" title="43"><span class="co">## save inputs for data for post-simulation runs</span></a>
+<a class="sourceLine" id="cb11-44" title="44"><span class="kw">saveRDS</span>(design, <span class="st">&quot;inputs/design.rds&quot;</span>)</a>
+<a class="sourceLine" id="cb11-45" title="45"><span class="kw">saveRDS</span>(parRanges, <span class="st">&quot;inputs/parRanges.rds&quot;</span>)</a></code></pre></div>
 <p>This produces a file <code>inputs/disease.dat</code> that can be passed to MetaWards to run the model. The <code>runscript.sh</code> batch file provides the command line instructions needed to the model using these inputs. This is written for Linux, and should be able to be run directly from the downloaded folder. If you don’t run Linux, then the file should give you an idea of how to run the model on your own system.</p>
 <button data-toggle="collapse" data-target="#run">
 Click for <code>runscript.sh</code> file
@@ -2555,7 +2555,7 @@ Click for <code>runscript.sh</code> file
 ## # … with more rows, and 6 more variables: RH &lt;int&gt;, DH &lt;int&gt;, Cinc &lt;int&gt;,
 ## #   C &lt;int&gt;, RC &lt;int&gt;, DC &lt;int&gt;</code></pre>
 <p>By default, the package only pulls down enough data from the database to produce a summary on the screen (notice that it prints the dimensions as <code>?? x 19</code>). If the database is small enough, then the <code>collect()</code> function can be used to import tables directly into R as a <code>tibble</code>. Alternatively, the <code>dbplyr</code> package can convert <code>tidyverse</code>-style commands into SQL and run these directly within the database. For large databases this is likely to be much more efficient, in terms of speed and memory usage. You can then <code>collect()</code> the results of the query into R.</p>
-<p>As an example of this latter approach, we will set up a query that sums the <strong>new</strong> hospital cases over the first 100 days in each ward. <strong>Remember</strong>: the database only contains days when some change occurs. For cumulative <em>incidence</em> counts this is fine, since the missing data will be zero in each case, so we just need to filter first to remove all time points <span class="math inline">\(&gt; 100\)</span>. To set up the query:</p>
+<p>As an example of this latter approach, we will set up a query that sums the <strong>new</strong> hospital cases over the first 100 days in each ward. <strong>Remember</strong>: for each ward the database only contains days after the initial infection occurs. For cumulative <em>incidence</em> counts this is fine, since the missing data will be zero in each case, so we just need to filter first to remove all time points <span class="math inline">\(&gt; 100\)</span>. To set up the query:</p>
 <div class="sourceCode" id="cb16"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb16-1" title="1"><span class="co">## Hinc contains the new cases, so sum these</span></a>
 <a class="sourceLine" id="cb16-2" title="2"><span class="co">## over each ward for days 1--100</span></a>
 <a class="sourceLine" id="cb16-3" title="3">hosp_db &lt;-<span class="st"> </span><span class="kw">filter</span>(compact, day <span class="op">&lt;=</span><span class="st"> </span><span class="dv">100</span>) <span class="op">%&gt;%</span></a>
@@ -2605,7 +2605,6 @@ Click for <code>runscript.sh</code> file
 <p><strong>Be careful</strong>: remember that <code>rm</code> removes completely, so not to the recycle bin. However, as long as you don’t remove <code>stages.db.bz2</code> then you can always recover.</p>
 </blockquote>
 <p>You can very easily wrap these ideas into an R function that can scroll through the design IDs, extract relevant outputs and bind to the inputs. An example that you are free to edit at will can be found in the <code>extractOutputs.R</code> file in the repo.</p>
-<pre><code>## [1] &quot;NEED TO GET RANGES FIGURED OUT, THIS IS A TEST&quot;</code></pre>
 </div>
 </div>
 
