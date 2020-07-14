@@ -1,12 +1,11 @@
 ## load libraries
-library(tidyverse)
-library(broom)
+library(dplyr)
+library(readr)
+library(tidyr)
 library(rgdal)
-library(rgeos)
-library(maptools)
+library(animation)
 library(scico)
-library(gganimate)
-library(gifski)
+library(shape)
 
 # ------------------------------------------------------------------------------
 # ----------------------------- Read arguments  --------------------------------
@@ -14,44 +13,37 @@ library(gifski)
 
 args <- commandArgs(TRUE)
 if(length(args) > 0) {
-    stopifnot(length(args) == 4)
+    stopifnot(length(args) == 3)
     ID <- args[1]
     REP <- as.numeric(args[2])
     VAR <- args[3]
-    OUTNAME <- args[4]
 } else {
   stop("No arguments")
 }
 
-## tests
-ID <- "Ens0000"
-REP <- 1
-VAR <- "H"
-OUTNAME <- "WeekDeaths"
+### tests
+#ID <- "Ens0000"
+#REP <- 1
+#VAR <- "H"
+
+print(paste0("ID: ", ID))
+print(paste0("REP: ", REP))
+print(paste0("VAR: ", VAR))
 
 # ------------------------------------------------------------------------------
 # ----------------------- Read shapefiles / lookups ----------------------------
 # ------------------------------------------------------------------------------
 
 trust <- readOGR(
-  dsn = "shapefiles/WD11-TRUST/WD11-TRUST.shp", 
-  stringsAsFactors = FALSE
+    dsn = "../data/WD11-TRUST/WD11-TRUST.shp", 
+    stringsAsFactors = FALSE
 )
 
-sites <- readOGR(
-  dsn = "shapefiles/WD11-TRUST-SITES/WD11-TRUST-SITES.shp", 
-  stringsAsFactors = FALSE
-) %>% 
-  as_tibble() %>%
-  rename(long = coords.x1, lat = coords.x2)
+ward_lookup <- read_csv("../data/Ward_Lookup.csv", guess_max = 3000) %>%
+    dplyr::select(WD11CD, WD11NM, LAD11CD, LAD11NM, ward = FID)
 
-trust_df <- broom::tidy(trust, region = "trustId")
-
-ward_lookup <- read_csv("Ward_Lookup.csv") %>%
-  dplyr::select(WD11CD, WD11NM, LAD11CD, LAD11NM, ward = FID)
-
-to_trust <- read_csv("WD11ToAcuteTrustIncWalesHB.csv") %>%
-  as_tibble()
+to_trust <- read_csv("../data/WD11ToAcuteTrustIncWalesHB.csv") %>%
+    as_tibble()
 
 # ------------------------------------------------------------------------------
 # --------------------------------- Read SQL -----------------------------------
@@ -61,7 +53,7 @@ to_trust <- read_csv("WD11ToAcuteTrustIncWalesHB.csv") %>%
 ID <- ifelse(REP != 1, paste0(ID, "x", str_pad(REP, 3, pad = "0")), ID)    
 
 ## create path
-path <- paste0("raw_outputs/", ID, "/stages.db")
+path <- paste0("../raw_outputs/", ID, "/stages.db")
 
 ## unzip DB
 system(paste0("bzip2 -dkf ", path, ".bz2"))
@@ -82,42 +74,39 @@ system(paste0("rm ", path))
 
 ## join to lookups
 plot_tmp <- data_tmp %>%
-  rename(var = !!VAR) %>%
-  complete(ward = 1:8588, day = 1:max(day), fill = list(var = 0)) %>%
-  left_join(ward_lookup, by = "ward") %>%
-  left_join(to_trust, by = "WD11CD") %>%
-  dplyr::select(
-    ward, day, var, trustId
-  ) %>%
-  group_by(trustId, day) %>%
-  summarise(var = mean(var)) %>%
-  ungroup() %>%
-  right_join(trust_df, by = c("trustId" = "id"))
+    rename(var = !!VAR) %>%
+    complete(ward = 1:8588, day = 1:max(day), fill = list(var = 0)) %>%
+    left_join(ward_lookup, by = "ward") %>%
+    left_join(to_trust, by = "WD11CD") %>%
+    dplyr::select(
+        ward, day, var, trustId
+    ) %>%
+    group_by(trustId, day) %>%
+    summarise(var = mean(var)) %>%
+    ungroup() 
+    
+## set colours for plotting
+mycolours <- scico(30, palette = "batlow")
+mybreaks <- pretty(seq(0, max(plot_tmp$var), length = 30), n = 30)
+plot_tmp <- mutate(plot_tmp, cols = mycolours[findInterval(var, vec = mybreaks)])
+mybreaklab <- pretty(mybreaks, n = 5)
+mybreaklab <- mybreaklab[mybreaklab <= max(mybreaks)]
 
-## set up for gganimate package
-p <- ggplot(data = plot_tmp) + 
-  geom_polygon( 
-    aes(x = long, y = lat, group = group, fill = var)
-  ) +
-  coord_fixed() +
-  theme_bw() +
-  xlab("Longitude") +
-  ylab("Latitude") +
-  scale_fill_scico(
-    paste0("Trust Averaged\n", VAR), 
-    direction = 1, 
-    palette = "batlow"
-  ) +
-  transition_time(day) +
-  view_follow() +
-  labs(title = "Day: {frame_time}")
-
-# Warning: this takes a while...
-# If you want a smoother transition mess around with nframes and fps and 
-# transformr and ggplot will handle it.
-a <- animate(p, nframes = 16, fps = 1, renderer = gifski_renderer())
-
-## write to external files
-dir.create("images", showWarnings = FALSE)
-anim_save(paste0("images/", OUTNAME, "_", ID, "_", REP, ".gif"), a)
+## create GIF
+saveGIF({
+        ## bind subset of data
+        for (i in sort(unique(plot_tmp$day))) {
+            print(paste("Day", i, "done"))
+            ## bind to polygons
+            temp <- filter(plot_tmp, day == i) %>%
+                dplyr::select(-day)
+            temp <- merge(trust, temp, by = "trustId")
+            plot(temp, col = temp$cols, main = paste0("Day ", i))
+            colorlegend(posx = c(0.82, 0.85), posy = c(0.2, 0.8), 
+                zlim = range(mybreaks), zval = mybreaklab, col = mycolours)
+        }
+    }, 
+    movie.name = paste0(ID, "_", REP, "_", VAR, "_day.gif"), 
+    ani.width = 500, ani.height = 500, interval = 0.5)
+    
 
