@@ -3,4 +3,6 @@ tests/*.Rout
 tests/raw_outputs
 tests/disease.dat
 
-images
+images/*.gif
+data/trustDeathsAdmissionsIcuExtract20200624.csv
+
