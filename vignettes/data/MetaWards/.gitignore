@@ -3,4 +3,4 @@ tests/*.Rout
 tests/raw_outputs
 tests/disease.dat
 
-
+images
