@@ -52,6 +52,36 @@ For large designs the uncompressed file will be **huge**, and it will take a whi
 decompress. Whether you choose to store the decompressed file permanently will depend
 on how much storage you have!
 
+## Animations
+
+In the `images` folder there are some R scripts to produce animations. The `plotAnimation.R` script accesses weekly counts from the `uberStages.db` database. It takes three inputs:
+
+* ID (Ensemble ID, e.g. "Ens0000")
+* REP (Replicate number)
+* VAR (Variable you wish to animate---must be in `uberStages.db`)
+
+So the command:
+
+```
+R CMD BATCH --no-restore --no-save --slave "--args Ens0000 1 Hprev" plotAnimation.R
+```
+
+will produce an animation of the weekly `Hprev` values for replicate 1 of design point `Ens0000`. **Note: it helps to have set an index on the `output` column of `uberStages.db`**---see the comments in `plotAnimation.R` for more details.
+
+Alternatively, the `plotAnimation_stages.R` script accesses daily counts from an individual the `stages.db.bz2` file. It takes three inputs:
+
+* ID (Ensemble ID, e.g. "Ens0000")
+* REP (Replicate number)
+* VAR (Variable you wish to animate---must be in `stages.db`)
+
+So the command:
+
+```
+R CMD BATCH --no-restore --no-save --slave "--args Ens0000 1 H" plotAnimation_stages.R
+```
+
+will produce an animation of the daily `H` values for replicate 1 of design point `Ens0000`. This is quicker due to using base R plotting, rather than `gganimate`.
+
 ## Possible extensions / to-do
 
 * Lockdown cut-off for distance travelled.

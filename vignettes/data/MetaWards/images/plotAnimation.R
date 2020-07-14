@@ -7,6 +7,7 @@ library(maptools)
 library(scico)
 library(gganimate)
 library(gifski)
+library(transformr)
 
 # ------------------------------------------------------------------------------
 # ----------------------------- Read arguments  --------------------------------
@@ -14,11 +15,10 @@ library(gifski)
 
 args <- commandArgs(TRUE)
 if(length(args) > 0) {
-    stopifnot(length(args) == 4)
+    stopifnot(length(args) == 3)
     ID <- args[1]
     REP <- as.numeric(args[2])
     VAR <- args[3]
-    OUTNAME <- args[4]
 } else {
   stop("No arguments")
 }
@@ -26,20 +26,23 @@ if(length(args) > 0) {
 ### tests
 #ID <- "Ens0000"
 #REP <- 1
-#VAR <- "Deaths"
-#OUTNAME <- "WeekDeaths"
+#VAR <- "Hprev"
+
+print(paste0("ID: ", ID))
+print(paste0("REP: ", REP))
+print(paste0("VAR: ", VAR))
 
 # ------------------------------------------------------------------------------
 # ----------------------------- Read shapefiles --------------------------------
 # ------------------------------------------------------------------------------
 
 trust <- readOGR(
-  dsn = "shapefiles/WD11-TRUST/WD11-TRUST.shp", 
+  dsn = "../data/WD11-TRUST/WD11-TRUST.shp", 
   stringsAsFactors = FALSE
 )
 
 sites <- readOGR(
-  dsn = "shapefiles/WD11-TRUST-SITES/WD11-TRUST-SITES.shp", 
+  dsn = "../data/WD11-TRUST-SITES/WD11-TRUST-SITES.shp", 
   stringsAsFactors = FALSE
 ) %>% 
   as_tibble() %>%
@@ -51,7 +54,7 @@ trust_df <- broom::tidy(trust, region = "trustId")
 # --------------------------------- Read SQL -----------------------------------
 # ------------------------------------------------------------------------------
 
-con <- DBI::dbConnect(RSQLite::SQLite(), "raw_outputs/uberStages.db")
+con <- DBI::dbConnect(RSQLite::SQLite(), "../raw_outputs/uberStages.db")
 covid <- tbl(con, "compact")
 
 # ------------------------------------------------------------------------------
@@ -65,10 +68,10 @@ covid <- tbl(con, "compact")
 # ---------------------------- Plot model output -------------------------------
 # ------------------------------------------------------------------------------
 
-ward_lookup <- read_csv("Ward_Lookup.csv") %>%
+ward_lookup <- read_csv("../data/Ward_Lookup.csv", guess_max = 3000) %>%
   dplyr::select(WD11CD, WD11NM, LAD11CD, LAD11NM, ward = FID)
 
-to_trust <- read_csv("WD11ToAcuteTrustIncWalesHB.csv") %>%
+to_trust <- read_csv("../data/WD11ToAcuteTrustIncWalesHB.csv") %>%
   as_tibble()
 
 data_tmp <- covid %>%
@@ -78,6 +81,9 @@ data_tmp <- covid %>%
     ward = as.numeric(ward),
     week = as.numeric(week)
   )
+  
+## disconnect from DB
+DBI::dbDisconnect(con)
 
 plot_tmp <- data_tmp %>%
   left_join(ward_lookup, by = "ward") %>%
@@ -113,6 +119,5 @@ p <- ggplot(data = plot_tmp) +
 a <- animate(p, nframes = 16, fps = 1, renderer = gifski_renderer())
 
 ## write to external files
-dir.create("images", showWarnings = FALSE)
-anim_save(paste0("images/", OUTNAME, ".gif"), a)
+anim_save(paste0(ID, "_", REP, "_", VAR, "_week.gif"), a)
 
