@@ -17,6 +17,7 @@ Please read the [**guide to contributing vignettes**]({{ site.baseurl }}/vignett
 
 - [Quick Start Guide]({{ site.baseurl }}/vignettes/RunningForDummies): contains instructions about how to install and run this version of MetaWards with the current model - Danny Williamson
 - [Model Description]({{ site.baseurl }}/vignettes/data/MetaWards/vignette/ModelDescription): A guide to the current model structure, inputs and outputs - TJ McKinley
+- [Database Interaction]({{ site.baseurl }}/vignettes/database_interaction): A guide to interacting with SQLite databases from R with EnsembleZero as an example - Lachlan Astfalck
 
 ## Ensemble Zero
 
