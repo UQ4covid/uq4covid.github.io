@@ -1,0 +1,175 @@
+---
+title: "Database Interaction in R"
+author: "Lachlan Astfalck"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    theme: spacelab #paper
+    highlight: pygments #tango
+    # toc: true
+    # toc_float: true
+    number_sections: true
+bibliography: ["bibtex.bib"]
+biblio-style: "apalike"
+link-citations: yes
+---
+
+\newcommand{\by}{\textbf{y}}
+\newcommand{\bY}{\textbf{Y}}
+\newcommand{\bx}{\textbf{x}}
+\newcommand{\bf}{\textbf{f}}
+\newcommand{\bmu}{\boldsymbol{\mu}}
+
+```{r, echo = FALSE, warning = FALSE, include = FALSE} 
+
+library(dplyr)
+library(ggplot2)
+
+theme_set(theme_bw())
+```
+
+# Introduction
+
+This is a short vignette to show some tips and tricks for efficiently pulling data from the database of Metawards runs, using Ensemble Zero for demonstrative purposes. I for no moment profess to be an expert at SQL or relational databases so any further additions or corrections to this vignette are welcome.
+
+# Loading and inspection
+
+Let us first load the packages that I'm going to use. `dplyr` is part of the `tidyverse` set of packages that enables a clean interface to data management. `dbplyr` translates `dplyr` notation into SQL, allowing us to communicate to the database. `RSQLite` which embeds the SQL database engine in R. Finally, `DBI`hosts a bunch of tools to communicate between R and our database.
+
+```{r, message = FALSE}
+library(dplyr)
+library(dbplyr)
+library(RSQLite)
+library(DBI)
+
+```
+
+First we must establish a connection to the database.
+
+```{r, message = FALSE}
+con <- DBI::dbConnect(
+  RSQLite::SQLite(), 
+  "../data/uberStages.db"
+)
+
+```
+
+Once we establish this connection we can have a look at what tables are in the database. Note, if you download the ensemble zero `uberStages.db` you will only have `compact` and *not* `ward_to_trust` (this is a table that I've added locally). 
+
+```{r} 
+src_dbi(con)
+```
+
+Then we link to the table that we're interested in. As the code stands at the moment all the good stuff lies in the `compact` table. When we print the connection, `metawards`, it looks more or less like a regular tibble, only with a database connection added and `??` number of rows. When we see the `??`, `dbplyr` is being smart/lazy and intentionally only considering the top few rows of data to show us what it looks like. This is nice for databases as they are generally of a size where they'll max out our RAM and then no one has a good time.
+
+```{r} 
+metawards <- tbl(con, "compact")
+print(metawards)
+```
+
+From here we can utilise the magic of `dbplyr` to subset and pull in parts of the database as a tibble to work on. All we have to add is the `collect` call to explicitly tell `dbplyr` to go get our data. __Do not run this before reading the next section__.
+
+```{r, eval = FALSE} 
+data_tmp <- metawards %>%
+  filter(output == "Ens002q", replicate == 4) %>%
+  collect()
+```
+
+# Indexing
+
+Indexing is a method used to more quickly retrieve subsets of data from the database. Indexing a database is akin to creating a glossary for different column values so when we want to filter and pull data (for example, `ward == 19`) it can look up all rows that match the criterion and pull them, as opposed to considering all of the rows in the database. Unfortunately indexing also requires it's fair share of memory and can make database compression less efficient. As it stands the databases hosted online will be un-indexed, and so you will have to do this on your local copy.
+
+This can be done inside of `R` with the following style command
+```{r, eval = FALSE} 
+dbSendStatement(con, "CREATE INDEX *index_name* ON *tbl* (*column_name*);")
+```
+
+For instance, say you were particularly interested in pulling different model outputs. You could create an index on the output column with the command
+
+```{r, eval = FALSE} 
+dbSendStatement(con, "CREATE INDEX output_idx ON compact (output);")
+```
+
+What if you were interested in pulling unique combinations of columns, say, outputs and replicates. Creating two separate indexes will only help for the first filtering criteria as indexes are binary search trees, and so once you've filtered on the first criteria then the lookup information won't help for the second criteria (thanks to TJ for pointing this out to me). We can, however, create an index on multiple columns where data are filtered by multiple criteria. For the example with outputs and replicates, we can write
+
+```{r, eval = FALSE} 
+dbSendStatement(con, "CREATE INDEX run_idx ON compact (output, replicate);")
+```
+
+Now, you've created some indexes, run your analyses, and your stuck with this monolithic database. How do we get rid of the indexes to conserve memory? Easy. Just use the `IF EXISTS` and `DROP INDEX` drop index commands,
+```{r, eval = FALSE} 
+dbSendStatement(con, "DROP INDEX IF EXISTS *idx_name* ON *tbl*;")
+```
+
+Can't remember what indexes you've created? Try
+
+```{r, eval = FALSE} 
+dbGetQuery(con, "PRAGMA index_list('compact')")
+```
+Note that here we are using the command `dbGetQuery` as we're wanting something back from the database rather than just sending commands to it.
+
+As a final note, just be prepared that creating indexes can take some time. My local machine requires about 10 minutes to create a single column index. Despite this, the savings from indexing are massive. I highly recommend that you use them.
+
+# A short example
+
+I've included a short example from some code I've been using for plots (plot vignette coming soon). The goal here is to pull some data, and map it to the trust level. We must go through an intermediary stage of first mapping it to ward names; although, there has been discussion of including trust names in the next iteration of the database so this step may soon be redundant.
+
+First let us read in our ward and trust data
+```{r, message = FALSE, warning = FALSE} 
+library(readr)
+
+ward_lookup <- read_csv("../data/ward_lookup.csv") %>%
+  dplyr::select(WD11CD, WD11NM, LAD11CD, LAD11NM, ward = FID)
+
+to_trust <- read_csv("../data/WD11ToAcuteTrustIncWalesHB.csv") %>%
+  as_tibble()
+```
+
+Now let us filter a single model output from the database. Note that wards and weeks are stored as a character vector, and so I convert them at the end to numeric. To demonstrate how fast indexing is, I've also called `bench::mark` around this call.
+```{r} 
+bench::mark({
+  data_tmp <- metawards %>%
+    filter(output == "Ens002q", replicate == 4) %>%
+    collect() %>%
+    mutate(
+      ward = as.numeric(ward),
+      week = as.numeric(week)
+    )
+})[,-1]
+```
+Half a second to filter a single model run from over half a trillion rows of data: not bad! Let's look at our model, ward, and trust data.
+
+```{r} 
+print(data_tmp)
+print(ward_lookup)
+print(to_trust)
+```
+
+To get from the ward identifier in our model output to our trust ID we'll have to first join to the `ward_lookup` tibble to find the ward code, and then to the `to_trust` tibble to find the trust ID. This can be done fairly simply in a `dplyr` pipe command. There a many different join commands that can be used. Personally, I prefer `left_join` as should any model location be unidentified with a ward it will return `NA` values and notify us that something is maybe wrong somewhere. Other commands, such as `inner_join` will not do this and quietly throw out the unidentified data.
+
+```{r} 
+data_tmp %>%
+  left_join(ward_lookup, by = "ward") %>%
+  left_join(to_trust, by = "WD11CD") %>%
+  dplyr::select(
+    ward, week, Hprev, Cprev, Deaths, output, trustId
+  )
+```
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- 
+site: "bookdown::bookdown_site"
+output:
+  bookdown::gitbook: default
+  code_folding: hide 
+documentclass: book-->
