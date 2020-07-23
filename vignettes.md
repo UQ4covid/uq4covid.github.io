@@ -32,6 +32,7 @@ Please read the [**guide to contributing vignettes**]({{ site.baseurl }}/vignett
 
 ## Visualisation
 
+- [Plotting with ggplot]({{ site.baseurl }}/vignettes/plotting_model_runs): A guide to plotting Metawards outputs with ggplot - Lachlan Astfalck
 - [Visualise output]({{ site.baseurl }}/vignettes/metawards_plot) - Stefan Siegert
 
 

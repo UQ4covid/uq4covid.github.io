@@ -1,0 +1,62 @@
+---
+title: "Plotting Metawards Outputs in R"
+author: "Lachlan Astfalck"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    theme: spacelab #paper
+    highlight: pygments #tango
+    # toc: true
+    # toc_float: true
+    number_sections: true
+link-citations: yes
+---
+
+\newcommand{\by}{\textbf{y}}
+\newcommand{\bY}{\textbf{Y}}
+\newcommand{\bx}{\textbf{x}}
+\newcommand{\bf}{\textbf{f}}
+\newcommand{\bmu}{\boldsymbol{\mu}}
+
+```{r, echo = FALSE, warning = FALSE, include = FALSE} 
+
+library(dplyr)
+library(ggplot2)
+
+theme_set(theme_bw())
+
+setwd("/Users/lachlan/Documents/PostDoc/20200710_covid_plots/uq4covid.github.io/vignettes")
+```
+
+# Introduction
+
+This is a vignette to demonstrate some plotting tips and tricks for Metawards model outputs. This adds to the [vignette](https://uq4covid.github.io/vignettes/metawards_plot) written by Stefan. I'll go over a few of the differences between plotting different data structures, include some methods for generating animations of model runs (everyone loves a movie!), and finally show how to the plot the data in a cartogram (maybe not scientific, but definitely fun!). 
+
+# Some example data
+
+I've written a vignette ([here](https://uq4covid.github.io/vignettes/database_interaction)) to demonstrate some methods for pulling data from the ensemble databases. The data I will be using herein was generated from the following command.
+
+```{r, eval = FALSE} 
+plot_data <- metawards %>%
+  filter(output == "Ens002q", replicate == 4) %>%
+  collect() %>%
+  mutate(
+    ward = as.numeric(ward),
+    week = as.numeric(week)
+  )
+```
+
+I have included it as an `RDS` file in the data section of this vignette if you do not want to go through database interaction and just want to get tucked into plotting. To load this simply (from the vignettes folder) run
+
+```{r} 
+plot_data <- readRDS("data/plotting_model_runs/plot_data.RDS")
+```
+
+
+
+<!-- 
+site: "bookdown::bookdown_site"
+output:
+  bookdown::gitbook: default
+  code_folding: hide 
+documentclass: book -->
