@@ -30,7 +30,9 @@ setwd("/Users/lachlan/Documents/PostDoc/20200710_covid_plots/uq4covid.github.io/
 
 # Introduction
 
-This is a vignette to demonstrate some plotting tips and tricks for Metawards model outputs. This adds to the [vignette](https://uq4covid.github.io/vignettes/metawards_plot) written by Stefan. I'll go over a few of the differences between plotting different data structures, include some methods for generating animations of model runs (everyone loves a movie!), and finally show how to the plot the data in a cartogram (maybe not scientific, but definitely fun!). 
+This is a vignette to demonstrate some plotting tips and tricks for Metawards model outputs. This adds to the [vignette](https://uq4covid.github.io/vignettes/metawards_plot) written by Stefan. I'll go over a few of the differences between plotting different data structures, and include some nifty features.
+
+Eventually I'll include some methods for generating animations of model runs (everyone loves a movie!), and show how to the plot the data in a cartogram (maybe not scientific, but definitely fun!). 
 
 # Some example data
 
@@ -46,11 +48,260 @@ plot_data <- metawards %>%
   )
 ```
 
-I have included it as an `RDS` file in the data section of this vignette if you do not want to go through database interaction and just want to get tucked into plotting. To load this simply (from the vignettes folder) run
+I have included it as an `RDS` file in the data section of this vignette if you do not want to go through database interaction and just want to get tucked into plotting. To load this (with your working directory in the vignettes folder) run
 
 ```{r} 
 plot_data <- readRDS("data/plotting_model_runs/plot_data.RDS")
 ```
+
+# Plotting 
+
+Okay now we're ready to plot. The packages that I tend to use are all loaded below. The list is rather long and so rather than explaining them here I'll call all functions with the `package::function` notation. All of my colour palettes I pull from `scico`. There is a very good reason for this and I encourage you to have a read [here](https://blogs.egu.eu/divisions/gd/2017/08/23/the-rainbow-colour-map/) and [here](https://www.data-imaginist.com/2018/scico-and-the-colour-conundrum/) about this collection of palettes.
+
+```{r, results = 'hide', message = F, warning = F} 
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(scico)
+library(broom)
+library(readr)
+library(rgdal)
+library(gganimate)
+library(ggpubr)
+library(sf)
+```
+
+We have our data loaded, now we just need a few other bits. First, lets load in the two csv files that map ward number to ward identifier and ward identifier to trust ID.
+
+```{r, results = 'hide', message = F, warning = F} 
+ward_lookup <- readr::read_csv(
+  "data/plotting_model_runs/ward_lookup.csv"
+) %>%
+  dplyr::select(WD11CD, WD11NM, LAD11CD, LAD11NM, ward = FID)
+
+to_trust <- readr::read_csv(
+  "data/plotting_model_runs/WD11ToAcuteTrustIncWalesHB.csv"
+) %>%
+  as_tibble()
+```
+
+And lets load in our trust shapefile. 
+
+```{r} 
+trust <- rgdal::readOGR(
+  dsn = "data/plotting_model_runs/WD11-TRUST/WD11-TRUST.shp", 
+  stringsAsFactors = F
+)
+```
+
+The objects `plot_data`, `ward_lookup`, and `to_trust` are all standard tibbles. The object `trust` is a `SpatialPolygonsDataFrame` which has a standardised but rather complicated structure (try running `str(trust)`). As `rgdal` has told us, `trust` has information stored in 6 fields for 186 different features. The features correspond to each individual trust, and the fields to the data that are recorded on each trust. Let's have a look
+
+```{r} 
+head(trust@data) %>% as_tibble()
+```
+
+Note that `SpatialPolygonsDataFrame` objects are a `S4` class and so we subset components using `@` rather than `$`. 
+
+We can leave `trust` as a spatial object or we can convert it to a standard tibble. I'll go over plotting either data structure, so really it's a horses for courses thing. Personally, I generally work with tibbles if I'm just messing around on my machine, and I work with spatial objects if I'm making nice plots for presentations and publications. 
+
+First lets mash together `plot_data`, `ward_lookup`, and `to_trust` to something useful. Obviously, select which model output you want to look at and summarise them as you will. This leaves us with our data indexed by trust and week.
+
+```{r, warning = F, message = F} 
+plot_tmp <- plot_data %>%
+  left_join(ward_lookup, by = "ward") %>%
+  left_join(to_trust, by = "WD11CD") %>%
+  dplyr::select(
+    ward, week, Hprev, Cprev, Deaths, output, trustId
+  ) %>%
+  group_by(trustId, week) %>%
+  summarise(H_sum = sum(Hprev)) %>%
+  ungroup()
+
+  print(plot_tmp)
+```
+
+## Plotting using tibbles
+
+When doing vanilla plots that don't need fancy spatial projections and features, I like casting SpatialPolygonsDataFrames to a regular tibble and going from there. This method is a bit less flexible, but the data is in a nice normal structure that we can do normal things with. Call me old fashioned, but in my humble opinion it covers about 90% of use cases with minimal effort. The package `broom` makes this really easy.
+
+```{r, warning = F, message = F} 
+trust_df <- broom::tidy(trust, region = "trustId")
+print(trust_df)
+```
+
+Now we can link our data up to our trust shapes
+
+```{r} 
+plot_tibble <- right_join(plot_tmp, trust_df, by = c("trustId" = "id"))
+print(plot_tibble)
+```
+
+and plot for a single week
+
+```{r} 
+week_select <- 11
+
+ggplot(
+  data = plot_tibble %>% dplyr::filter(week == week_select)
+) + 
+  geom_polygon( 
+    aes(
+      x = long, 
+      y = lat, 
+      group = group, 
+      fill = H_sum
+    ),
+    colour = "grey", size = 0.1
+  ) +
+  coord_map() +
+  theme_bw() +
+  xlab("Longitude") +
+  ylab("Latitude") +
+  scale_fill_scico(
+    "Hospital\nPrevalence", 
+    direction = 1, 
+    palette = "batlow"
+  ) +
+  ggtitle(paste0("Week: ", week_select))
+```
+
+## Plotting using spatial objects 
+
+As discussed, spatial objects have a bit more built in functionality if we want to do snazzier things. The classes inherited from the `sp` package, such as `SpatialPolygonsDataFrame`, have become a standard for any spatial analysis in R. They're clunky, non-intuitive, and require intimate knowledge of the `sp` package to do anything of worth. Luckily, the package `sf` (simple features) can solve much of our concerns without sacrificing functionality. To convert from the `SpatialPolygonsDataFrame` class to a `sf` class we use the function `st_as_sf()`.
+```{r} 
+trust_sf <- sf::st_as_sf(trust)
+print(trust_sf)
+```
+All of our data is now in one clean data frame, with the polygon geometry stored as a `MULTIPOLYGON` in the geometry column. Now, as before, we join up our data and plot. Out of interest in saving space, I'm going to save this plot as a template object that we can alter individual layers of.
+
+```{r} 
+plot_sf <- left_join(trust_sf, plot_tmp, by = "trustId")
+
+plot_template <- ggplot(
+  data = plot_sf %>% dplyr::filter(week == week_select)
+) + 
+  geom_sf( 
+    aes(
+      geometry = geometry, 
+      fill = H_sum
+    ),
+    colour = "grey", size = 0.1
+  ) +
+  coord_sf() +
+  theme_bw() +
+  xlab("Longitude") +
+  ylab("Latitude") +
+  scale_fill_scico(
+    "Hospital\nPrevalence", 
+    direction = 1, 
+    palette = "batlow"
+  ) +
+  ggtitle(paste0("Week: ", week_select))
+
+  print(plot_template)
+
+```
+
+Here we need to use the layers `geom_sf` and `coord_sf`. `geom_sf` handles the `MULTIPOLYGON` outputs, and `coord_sf` makes sure that everything is plotted using the same coordinate reference system (CRS). The method in Section 3.1 has no such checks and so allows one to do dumb things like plot layers with differing CRSs.
+
+What advantages do we have with spatial objects? We can do things like change up the CRS in the data frame itself (for instance, using the UK projected coordinate system: `st_transform(trust_sf, "+init=epsg:27700")`). But we can also do this inside of the `coord_sf()` layer in ggplot.
+
+```{r} 
+plot_template +
+  coord_sf(crs = "+init=epsg:27700")
+```
+
+We can also efficiently zoom in on regions without weirdly clipping polygons and creating odd boundary problems. Let's look at Greater London.
+
+```{r, warning = F, message = F} 
+plot_template +
+  coord_sf(
+    xlim = c(-0.489, 0.236), 
+    ylim = c(51.28, 51.686)
+  )
+```
+
+We can label trusts.
+
+```{r, warning = F, message = F} 
+plot_template +
+  geom_sf_label(aes(label = trustId)) +
+  coord_sf(
+    xlim = c(-0.489, 0.236), 
+    ylim = c(51.28, 51.686)
+  )
+```
+
+We can use `ggpubr` to show the zoom area on the original map.
+
+```{r, warning = F, message = F, fig.width = 9} 
+plot_zoom1 <- plot_template +
+  geom_rect(
+    aes(xmin = -0.489, xmax = 0.236, ymin = 51.28, ymax = 51.686),
+    colour = "red", fill = NA
+  ) +
+  theme(legend.position = "none")
+
+plot_zoom2 <- plot_template +
+  coord_sf(
+    xlim = c(-0.489, 0.236), 
+    ylim = c(51.28, 51.686)
+  )
+
+ggpubr::ggarrange(plot_zoom1, plot_zoom2, nrow = 1, ncol = 2)
+
+```
+
+We can facet different weeks together (we can also do this with standard tibbles).
+
+```{r, fig.width = 9} 
+
+week_select <- c(11, 25)
+week_labs <- paste0("Week: ", week_select)
+names(week_labs) <- week_select
+
+ggplot(
+  data = plot_sf %>% dplyr::filter(week %in% week_select)
+) + 
+  geom_sf( 
+    aes(
+      geometry = geometry, 
+      fill = H_sum
+    ),
+    colour = "grey", size = 0.1
+  ) +
+  coord_sf() +
+  theme_bw() +
+  xlab("Longitude") +
+  ylab("Latitude") +
+  scale_fill_scico(
+    "Hospital\nPrevalence", 
+    direction = 1, 
+    palette = "batlow"
+  ) +
+  facet_wrap(
+    vars(week), nrow = 1, ncol = 2,
+    labeller = labeller(week = week_labs)
+  )
+```
+
+We can do lots. I'm going to keep on adding to this as I create more plots. If you need something not in here, or have a good idea for something not shown here, let me know and I'll give it a crack.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
