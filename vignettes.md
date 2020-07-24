@@ -22,7 +22,7 @@ Please read the [**guide to contributing vignettes**]({{ site.baseurl }}/vignett
 ## Ensemble Zero
 
 - [Ensemble Zero]({{ site.baseurl }}/vignettes/EnsembleZero): 16 parameters, 5 Latin Hypercubes, 4000 members, 8 hours run time, this vignette describes our first major Covid-19 ensemble - Danny Williamson and TJ McKinley
-- [Ensemble Zero: Emulator Struggles :(]({{ site.baseurl }}/vignettes/EnsembleZero_Emulator_Struggles): Initial attempt at emulating ensemble 0 - Evan Baker
+
 
 ## Experimental design
 
@@ -41,6 +41,7 @@ Please read the [**guide to contributing vignettes**]({{ site.baseurl }}/vignett
 - [An Early Sensitivity analysis]({{ site.baseurl }}/vignettes/metawards_sa) - Doug McNeall
 - [Cumulative Cases at Lockdown]({{ site.baseurl }}/vignettes/cumulative_infections_at_lockdown_sensitivity) - Doug McNeall
 - [Sensitivity Analysis with Generalised Additive Models]({{ site.baseurl }}/vignettes/SensitivityAnalysisWithGAM) - Jeremy Oakley
+- [GAM Sensitivity Analysis for Ensemble Zero]({{ site.baseurl }}/vignettes/EnsembleZeroSensitivity) - Danny Williamson
 
 ## Emulation
 
@@ -48,6 +49,7 @@ Please read the [**guide to contributing vignettes**]({{ site.baseurl }}/vignett
 - [Quantile Kriging Emulator (with PCA)]({{ site.baseurl }}/vignettes/QuantileKriging_experiment) - Evan Baker
 - [Quantile Kriging Emulator (Independent outputs)]({{ site.baseurl }}/vignettes/QuantileKriging_experiment2_Independent) - Evan Baker
 - [Quantile Emulation with MOGP]({{ site.baseurl }}/vignettes/Quantile_Emulation_MOGP) - Danny Williamson
+- [Ensemble Zero: Emulator Struggles :(]({{ site.baseurl }}/vignettes/EnsembleZero_Emulator_Struggles): Initial attempt at emulating ensemble 0 - Evan Baker
 
 
 ## Calibration
