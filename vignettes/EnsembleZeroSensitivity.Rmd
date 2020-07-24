@@ -1,0 +1,277 @@
+---  
+title: "Basic sensitivity analysis for Hospital prevalance in Ensemble Zero"
+author: "Danny Williamson"
+date: "`r format(Sys.time(), '%d %B %Y')`"
+output: 
+  html_document:
+    highlight: zenburn
+    css: data/MetaWards/vignette/css/main.css
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(readr)
+library(dplyr)
+library(tidyr)
+library(tm)
+library(pracma)
+library(ggplot2)
+```
+
+In this vignette I will apply the some of the sensitivity analysis techniques given in the vignette by Jeremy Oakley to the hospital prevalances in Ensemble Zero.
+
+# Preliminaries
+
+Working with quantiles of ensemble zero for all wards is just about within the memory capacity of my laptop, but not a great idea for running in a vignette. I have assembled weekly data for the ensemble at trust level via code you can see by expanding <p><details><summary>this link</summary>
+```{r big_code_chunk, eval=FALSE}
+library(readr)
+library(dplyr)
+library(tidyr)
+#Load and manipulate look up tables
+Ward_Lookup <- read_csv("data/EnsembleZero/Ward_Lookup.csv")
+names(Ward_Lookup)[11] <- "ward"
+Ward_Lookup <- Ward_Lookup[,-c(3:7,10)]
+WD11ToAcuteTrustIncWalesHB <- read_csv("data/EnsembleZero/WD11ToAcuteTrustIncWalesHB.csv")
+
+#Load the ward level ensemble zero hospital prevalances for week 25 (13GB ram)
+output_Hprev <- readRDS("~/Dropbox/BayesExeter/NewEnsemble/EnsembleZero/Hprev_25.rds")
+#Add ward names for aggregating to trust level
+NewOut <- inner_join(Ward_Lookup, output_Hprev, by="ward")
+rm(output_Hprev)
+#Add and then group be hospital trust
+NewWithHosptial <- inner_join(WD11ToAcuteTrustIncWalesHB, NewOut, by=c("WD11CD", "WD11NM"))
+#NewWithHosptial
+rm(NewOut)
+TrustData <- group_by(NewWithHosptial, trustId, trustName, output, replicate) %>%
+  summarise(Hmean=sum(Hprev)) %>% 
+  ungroup()
+#TrustData
+rm(NewWithHosptial)
+# Find quantiles for each parameter set and save the data
+TrustQuantiles <- group_by(TrustData, trustId, trustName, output) %>%
+  summarise("0.05" = quantile(Hmean, 0.05), "0.25" = quantile(Hmean, 0.25), "0.5" = quantile(Hmean, 0.5), "0.75" = quantile(Hmean, 0.75), "0.95"=quantile(Hmean, 0.95)) %>%
+  ungroup() %>%
+  pivot_longer(cols="0.05":"0.95", names_to = "Quantile", values_to = "Hprev") %>%
+  mutate(Quantile = as.numeric(Quantile))
+#Save TrustQuantiles for analysis
+saveRDS(TrustQuantiles,file="data/EnsembleZero/TrustQuantilesW25.rds")
+```
+</details></p>
+
+Let's look at week 12 first
+```{r}
+WeekNum=12
+tfile <- paste0("~/Dropbox/BayesExeter/NewEnsemble/Analysis1/TrustQuantilesW",WeekNum,".rds")
+TrustQuantiles <- readRDS(tfile)
+head(TrustQuantiles)
+```
+
+As the trust names are a little long, we do a bit of editing
+
+```{r}
+TrustNamesOnly <- filter(TrustQuantiles, output=="Ens0000"&Quantile==0.5) %>%
+  dplyr::select(trustId,trustName)
+TrustNames <- tools::toTitleCase(tolower(TrustNamesOnly$trustName))
+
+#now automatically remove certain words
+require("tm")
+#have to do this iteratively, as some words only are removed in chunks
+removewords1 <- c("Nhs", "Trust", "Foundation", "University Hospitals of ", "University Hospital of", "and District","University Local Board")
+removewords2 <- c("University Hospitals", "University Hospital", "Teaching Hospitals", "Teaching Hospitals")
+removewords3 <- c("Hospitals", "Hospital", "Teaching", "District", "Health", "Healthcare", "Services", "General", "Countess of ", "The", "Group", "Acute")
+
+TrustNames <- strTrim(stripWhitespace(removeWords(TrustNames,removewords1)))
+TrustNames <- strTrim(stripWhitespace(removeWords(TrustNames,removewords2)))
+TrustNames <- strTrim(stripWhitespace(removeWords(TrustNames,removewords3)))
+TrustNames <- strTrim(stripWhitespace(removeWords(TrustNames,removewords1)))
+TrustNamesOnly <- mutate(TrustNamesOnly, ShortName = TrustNames)
+TrustNamesOnly
+
+#Then to change your data names....
+TrustQuantiles <- inner_join(TrustQuantiles, TrustNamesOnly, by=c("trustId", "trustName"),keep=TRUE) %>%
+  select(-trustName) %>%
+  mutate(trustName=ShortName) %>%
+  select(-ShortName)
+```
+
+The following code prepares the ensemble for emulation for all the English trusts with `mogp_emulator` which I do here anyway a more formal sensitivity analysis would need one.
+```{r}
+
+AllEnglandIDs <- TrustNamesOnly$trustId[7:134]
+Englandtrusts <- filter(TrustQuantiles, trustId %in% AllEnglandIDs)
+Englandtrusts <- select(Englandtrusts, trustName, Quantile, output, Hprev) 
+EmulateEngland <- dplyr::select(Englandtrusts, output, trustName, Quantile, Hprev) %>% 
+  pivot_wider(names_from = trustName, values_from = Hprev)
+design <- readRDS("~/Dropbox/BayesExeter/uq4covid.github.io/vignettes/data/EnsembleZero/inputs/design.rds")
+#design <- dplyr::select(design, -repeats, -lock_2_release, -pCR, -pHRprime) %>%
+design <- dplyr::select(design, -repeats, -pCR, -pHRprime) %>%
+  mutate(Noise = runif(dim(design)[1],0,1))
+ToEmulateEngland <- inner_join(design, EmulateEngland, by="output")
+ToEmulateEngland
+```
+
+Now I will perform a GAM-based sensitivity analysis for Cambridge (as an example I prepared for a talk at the Isaac Newton Institute)
+```{r}
+Sensitivity1 <- dplyr::select(ToEmulateEngland, "r_zero":"GP_C","Quantile", "Cambridge") %>%
+  mutate(Quantile=jitter(Quantile))
+Sensitivity1 <- select(Sensitivity1, -lock_2_release)
+Sensitivity1 %>% 
+  as_tibble %>% 
+  gather('parameter', 'value', -"Cambridge") %>% 
+  ggplot(aes(x=value, y=`Cambridge`)) + 
+  geom_point(alpha = 0.5) + 
+  facet_wrap(~parameter) +
+  labs(y="Cambridge HPrev", x='input') +
+  geom_smooth(method = mgcv::gam,
+              formula = y ~ s(x, bs = "tp"),
+              fill = "red",
+              method.args = list(method="GCV.Cp"))
+```
+
+We can see the main effects patterns from this plot but it's difficult to see what is really driving the variability. The following (described in Jeremy's vignette) is much clearer
+
+```{r}
+mainEffects <- c()
+for(i in c(1:14)){
+  gam1 <- mgcv::gam(Sensitivity1$"Cambridge"~s(as.matrix(Sensitivity1)[,i]))
+  mainEffects <- c(mainEffects,var(gam1$fitted)/var(Sensitivity1$"Cambridge"))
+}
+par(mar=c(7,4,4,2),mfrow=c(1,1))
+barplot(mainEffects,names.arg = names(Sensitivity1)[c(1:14)],las=2,main= "Sensitivity Week12: Cambridge")
+```
+
+Essentially at week 12 (the week of lockdown in our model) we're seeing that the ensemble variability is largely explained by `pEA` the probability that exposed are asymptomatic, and `pIH` the probability that infecteds are sick enough to be admitted to hospital. We also see that `GP_A`, the rate asymptomatics are infecting the general population, and `r_zero` are important. What happens is that before lockdown, when most exposed individuals are symptomatic and when most symptomatics end up in hospital, we see very big pandemics in hospital (makes sense so far).
+
+I will repeat the analyses (not including the setup code) for later weeks to see what happens. First, for week 20:
+```{r, echo=FALSE}
+WeekNum=20
+tfile <- paste0("~/Dropbox/BayesExeter/NewEnsemble/Analysis1/TrustQuantilesW",WeekNum,".rds")
+TrustQuantiles <- readRDS(tfile)
+TrustNamesOnly <- filter(TrustQuantiles, output=="Ens0000"&Quantile==0.5) %>%
+  dplyr::select(trustId,trustName)
+TrustNames <- tools::toTitleCase(tolower(TrustNamesOnly$trustName))
+
+#now automatically remove certain words
+require("tm")
+#have to do this iteratively, as some words only are removed in chunks
+removewords1 <- c("Nhs", "Trust", "Foundation", "University Hospitals of ", "University Hospital of", "and District","University Local Board")
+removewords2 <- c("University Hospitals", "University Hospital", "Teaching Hospitals", "Teaching Hospitals")
+removewords3 <- c("Hospitals", "Hospital", "Teaching", "District", "Health", "Healthcare", "Services", "General", "Countess of ", "The", "Group", "Acute")
+
+TrustNames <- strTrim(stripWhitespace(removeWords(TrustNames,removewords1)))
+TrustNames <- strTrim(stripWhitespace(removeWords(TrustNames,removewords2)))
+TrustNames <- strTrim(stripWhitespace(removeWords(TrustNames,removewords3)))
+TrustNames <- strTrim(stripWhitespace(removeWords(TrustNames,removewords1)))
+TrustNamesOnly <- mutate(TrustNamesOnly, ShortName = TrustNames)
+
+#Then to change your data names....
+TrustQuantiles <- inner_join(TrustQuantiles, TrustNamesOnly, by=c("trustId", "trustName"),keep=TRUE) %>%
+  select(-trustName) %>%
+  mutate(trustName=ShortName) %>%
+  select(-ShortName)
+AllEnglandIDs <- TrustNamesOnly$trustId[7:134]
+Englandtrusts <- filter(TrustQuantiles, trustId %in% AllEnglandIDs)
+Englandtrusts <- select(Englandtrusts, trustName, Quantile, output, Hprev) #%>%
+  #mutate(Hprev=sqrt(Hprev+1)-1)
+EmulateEngland <- dplyr::select(Englandtrusts, output, trustName, Quantile, Hprev) %>% 
+  pivot_wider(names_from = trustName, values_from = Hprev)
+design <- readRDS("~/Dropbox/BayesExeter/uq4covid.github.io/vignettes/data/EnsembleZero/inputs/design.rds")
+#design <- dplyr::select(design, -repeats, -lock_2_release, -pCR, -pHRprime) %>%
+design <- dplyr::select(design, -repeats, -pCR, -pHRprime) %>%
+  mutate(Noise = runif(dim(design)[1],0,1))
+ToEmulateEngland <- inner_join(design, EmulateEngland, by="output")
+Sensitivity1 <- dplyr::select(ToEmulateEngland, "r_zero":"GP_C","Quantile", "Cambridge") %>%
+  mutate(Quantile=jitter(Quantile))
+```
+
+```{r}
+Sensitivity1 %>% 
+  as_tibble %>% 
+  gather('parameter', 'value', -"Cambridge") %>% 
+  ggplot(aes(x=value, y=`Cambridge`)) + 
+  geom_point(alpha = 0.5) + 
+  facet_wrap(~parameter) +
+  labs(y="Cambridge HPrev", x='input') +
+  geom_smooth(method = mgcv::gam,
+              formula = y ~ s(x, bs = "tp"),
+              fill = "red",
+              method.args = list(method="GCV.Cp"))
+
+#Sensitivity1$Quantile <- jitter(Sensitivity1$Quantile)
+mainEffects <- c()
+for(i in c(1:15)){
+  gam1 <- mgcv::gam(Sensitivity1$"Cambridge"~s(as.matrix(Sensitivity1)[,i]))
+  mainEffects <- c(mainEffects,var(gam1$fitted)/var(Sensitivity1$"Cambridge"))
+}
+par(mar=c(7,4,4,2),mfrow=c(1,1))
+barplot(mainEffects,names.arg = names(Sensitivity1)[c(1:15)],las=2,main= "Sensitivity Week 20: Cambridge")
+```
+
+This is the point in the simulation where lockdown is released somewhat. As we can see now, a number of other parameters have become important, including the average stay in hospital and the rate at which those in hospitals infect the general population. The scaling of the force of infection for lockdown is also important and we see rates and stays in critical care having an impact. 
+
+For week 25, where we might see the effects of relaxing lockdown, we see
+```{r, echo=FALSE}
+WeekNum=25
+tfile <- paste0("~/Dropbox/BayesExeter/NewEnsemble/Analysis1/TrustQuantilesW",WeekNum,".rds")
+TrustQuantiles <- readRDS(tfile)
+TrustNamesOnly <- filter(TrustQuantiles, output=="Ens0000"&Quantile==0.5) %>%
+  dplyr::select(trustId,trustName)
+TrustNames <- tools::toTitleCase(tolower(TrustNamesOnly$trustName))
+
+#now automatically remove certain words
+require("tm")
+#have to do this iteratively, as some words only are removed in chunks
+removewords1 <- c("Nhs", "Trust", "Foundation", "University Hospitals of ", "University Hospital of", "and District","University Local Board")
+removewords2 <- c("University Hospitals", "University Hospital", "Teaching Hospitals", "Teaching Hospitals")
+removewords3 <- c("Hospitals", "Hospital", "Teaching", "District", "Health", "Healthcare", "Services", "General", "Countess of ", "The", "Group", "Acute")
+
+TrustNames <- strTrim(stripWhitespace(removeWords(TrustNames,removewords1)))
+TrustNames <- strTrim(stripWhitespace(removeWords(TrustNames,removewords2)))
+TrustNames <- strTrim(stripWhitespace(removeWords(TrustNames,removewords3)))
+TrustNames <- strTrim(stripWhitespace(removeWords(TrustNames,removewords1)))
+TrustNamesOnly <- mutate(TrustNamesOnly, ShortName = TrustNames)
+
+#Then to change your data names....
+TrustQuantiles <- inner_join(TrustQuantiles, TrustNamesOnly, by=c("trustId", "trustName"),keep=TRUE) %>%
+  select(-trustName) %>%
+  mutate(trustName=ShortName) %>%
+  select(-ShortName)
+AllEnglandIDs <- TrustNamesOnly$trustId[7:134]
+Englandtrusts <- filter(TrustQuantiles, trustId %in% AllEnglandIDs)
+Englandtrusts <- select(Englandtrusts, trustName, Quantile, output, Hprev) #%>%
+  #mutate(Hprev=sqrt(Hprev+1)-1)
+EmulateEngland <- dplyr::select(Englandtrusts, output, trustName, Quantile, Hprev) %>% 
+  pivot_wider(names_from = trustName, values_from = Hprev)
+design <- readRDS("~/Dropbox/BayesExeter/uq4covid.github.io/vignettes/data/EnsembleZero/inputs/design.rds")
+#design <- dplyr::select(design, -repeats, -lock_2_release, -pCR, -pHRprime) %>%
+design <- dplyr::select(design, -repeats, -pCR, -pHRprime) %>%
+  mutate(Noise = runif(dim(design)[1],0,1))
+ToEmulateEngland <- inner_join(design, EmulateEngland, by="output")
+Sensitivity1 <- dplyr::select(ToEmulateEngland, "r_zero":"GP_C","Quantile", "Cambridge") %>%
+  mutate(Quantile=jitter(Quantile))
+```
+
+```{r}
+Sensitivity1 %>% 
+  as_tibble %>% 
+  gather('parameter', 'value', -"Cambridge") %>% 
+  ggplot(aes(x=value, y=`Cambridge`)) + 
+  geom_point(alpha = 0.5) + 
+  facet_wrap(~parameter) +
+  labs(y="Cambridge HPrev", x='input') +
+  geom_smooth(method = mgcv::gam,
+              formula = y ~ s(x, bs = "tp"),
+              fill = "red",
+              method.args = list(method="GCV.Cp"))
+
+#Sensitivity1$Quantile <- jitter(Sensitivity1$Quantile)
+mainEffects <- c()
+for(i in c(1:15)){
+  gam1 <- mgcv::gam(Sensitivity1$"Cambridge"~s(as.matrix(Sensitivity1)[,i]))
+  mainEffects <- c(mainEffects,var(gam1$fitted)/var(Sensitivity1$"Cambridge"))
+}
+par(mar=c(7,4,4,2),mfrow=c(1,1))
+barplot(mainEffects,names.arg = names(Sensitivity1)[c(1:15)],las=2,main= "Sensitivity Week 25: Cambridge")
+```
+
+It becomes clear that the effect of parameters is changing as the simulation continues, which suggests that even sparse data, for example on hospital prevalence should enable a lot of discrimination amongst the different parameters.
