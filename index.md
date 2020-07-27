@@ -6,8 +6,7 @@ layout: default
 # [UQ4Covid](/)
 
 
-
-<img src="{{ site.url }}/assets/uq4covid-banner.png" alt="alt" width=800 />
+![]({{ site.url }}/assets/uq4covid-banner.jpg)
 
 The __UQ4Covid project__ develops uncertainty quantification (UQ) techniques for models of COVID-19 in the UK.
 The project brings together epidemiologists and statisticians to use the
