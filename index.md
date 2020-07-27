@@ -3,7 +3,7 @@ layout: default
 ---
 
 
-# [UQ4Covid](/)
+# [Uncertainty Quantification for Expensive COVID-19 Simulation Models (UQ4Covid)](/)
 
 
 ![]({{ site.url }}/assets/uq4covid-banner.jpg)
