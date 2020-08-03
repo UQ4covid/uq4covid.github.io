@@ -44,11 +44,8 @@ parRanges <- readRDS("inputs/parRanges.rds")
 ## hospital deaths, critical care counts and critical care
 ## deaths at each week since lockdown
 
-## write to external files
-dir.create("tempOutputs", showWarnings = FALSE)
-
 ## extract data
-output <- map2(design$output, design$repeats, function(hash, reps) {
+output <- map2(design$output[1], design$repeats[1], function(hash, reps) {
   
     ## generate output hashes
     hashes <- map(1:reps, function(i, hash) {
@@ -59,7 +56,9 @@ output <- map2(design$output, design$repeats, function(hash, reps) {
     print(paste0("Currently evaluating: ", hash))
     
     ## run through hashes and extract runs
-    output <- mclapply(hashes, function(hash, WEEKS, dates) {
+    output <- lapply(hashes, function(hash) {
+    
+    browser()
     
         ## extract replicate and hash
         replicate <- hash[2]
@@ -68,52 +67,18 @@ output <- map2(design$output, design$repeats, function(hash, reps) {
 
         ## create path
         path <- paste0("raw_outputs/", path, "/stages.db")
-
-        ## unzip DB
-        system(paste0("bzip2 -dkf ", path, ".bz2"))
         
         ## run SQL
         cmd <- paste0("sqlite3 \"", path, "\" \".param set :id ", hash, "\" \".param set :rep ", replicate, "\" \".read extractSQL.sql\"")
         system(cmd)
         
-    }, mc.cores = 4)
-    
-    ## combine into single table per input
-    hashes <- map_chr(hashes, 1)
-    system(paste0("cp raw_outputs/", hashes[1], "/stages.db tempOutputs/"))
-    system(paste0("rm raw_outputs/", hashes[1], "/stages.db"))
-    ## next bit must be run in serial
-    map(hashes[-1], function(hash) {
-        ## create path
-        path <- paste0("raw_outputs/", hash, "/stages.db")
-        cmd <- paste0("sqlite3 \"tempOutputs/stages.db\" \".param set :new ", path, "\" \".read mergeSQL.sql\"")
-        system(cmd)
-        system(paste0("rm ", path))
-        return(NULL)
-    })
-    system(paste0("mv tempOutputs/stages.db tempOutputs/stages", hash, ".db"))
+    })#, mc.cores = 10)
        
     print(paste0(hashes, ": Finished"))
     
     ## return hash
     hash
 })
-
-## make uber table
-system(paste0("cp tempOutputs/stages", design$output[1], ".db tempOutputs/uberStages.db"))
-system(paste0("rm tempOutputs/stages", design$output[1], ".db"))
-## next bit must be run in serial
-map(design$output[-1], function(hash) {
-    ## create path
-    path <- paste0("tempOutputs/stages", hash, ".db")
-    cmd <- paste0("sqlite3 \"tempOutputs/uberStages.db\" \".param set :new ", path, "\" \".read mergeSQL.sql\"")
-    system(cmd)
-    system(paste0("rm ", path))
-    return(NULL)
-})
-system("bzip2 -zf tempOutputs/uberStages.db")
-system("mv tempOutputs/uberStages.db.bz2 raw_outputs/")
-system("rm -r tempOutputs")
 
 print("All done.")
 

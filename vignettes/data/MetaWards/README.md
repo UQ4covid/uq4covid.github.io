@@ -28,29 +28,18 @@ file. This uses `convertDesigntoInput()` and `convertInputToDisease()` tools
 that can be found in the `R_tools/dataTools.R` script, and are described in the
 vignette. (These tools also accept designs in $(-1, 1)$ spaces.)
 
-Once the design has been run, the `extractOutputsSQL.R` file provides some code
-to extract some summary measures from the outputs and build an SQL database holding
-the summary measures for each design point / replicate / ward combination. This is
-stored in `raw_outputs/uberStages.db.bz2`.
+Once the design has been run, the `createSummaryOutputSQL.R` file provides some code
+to extract some summary measures from the outputs for each design point / replicate 
+combination, and add these to each existing SQL database. These are stored in each 
+database as an additional table called `weekSums`, which holds weekly average `Hprev`,
+`Cprev` and total `Deaths` for each week / ward combination for every week since just 
+before the first lockdown. 
 
 This SQL database can be queried through any SQLite
 client. The `dplyr` package (or more specifically the `dbplyr` package) provides
 some useful R tools for querying SQL databases using `tidyverse`-type notation. Some
 examples are in the `extractOutputs.R` file, and more details can be found
 [here](https://cran.r-project.org/web/packages/dbplyr/vignettes/dbplyr.html).
-
-There is subsequently a file called `extractOutputs.R` that includes some R code 
-giving examples about how to manipulate and extract information from `uberStages.db`.
-Note that in order to do this you will have to uncompress the `uberStages.db.bz2` file.
-On Linux this can be done on the command line, e.g.
-
-```
-bzip2 -dkf uberStages.db.bz2
-```
-
-For large designs the uncompressed file will be **huge**, and it will take a while to 
-decompress. Whether you choose to store the decompressed file permanently will depend
-on how much storage you have!
 
 ## Animations
 
