@@ -1,12 +1,18 @@
 --.headers on
 .mode csv
 
+-- drop tables just in case
+drop table weeksums;
+drop table temp;
+drop table temp1;
+drop table weeks0;
+drop table weeks;
+drop table wards0;
+drop table wards;
+
 -- import lookups
 .import week_lookup.csv weeks0
 .import ward_lookup.csv wards0
-
--- check no existing table called weeksums
-drop table weeksums;
 
 -- convert lookups to correct type
 alter table weeks0 add column weekI integer;
@@ -25,7 +31,8 @@ drop table wards0;
 
 -- join compact to lookup
 create table temp as select compact.*, weeks.week from compact inner join weeks on compact.day = weeks.day;
-create table temp1 as select ward, week, sum(H) / 7.0 as Hprev, sum(C) / 7.0 as Cprev, max(DH) + max(DC) as Deaths, :id as output, :rep as replicate from temp group by ward, week;
+--create table temp1 as select ward, week, sum(H) / 7.0 as Hprev, sum(C) / 7.0 as Cprev, max(DH) + max(DC) as Deaths, :id as output, :rep as replicate from temp group by ward, week;
+create table temp1 as select ward, week, sum(H) / 7.0 as Hprev, sum(C) / 7.0 as Cprev, max(DH) + max(DC) as Deaths from temp group by ward, week;
 drop table temp;
 drop table weeks;
 create table temp as 
@@ -35,7 +42,7 @@ drop table wards;
 update temp set Hprev = 0 where Hprev is null;
 update temp set Cprev = 0 where Cprev is null;
 update temp set Deaths = 0 where Deaths is null;
-update temp set output = :id where output is null;
-update temp set replicate = :rep where replicate is null;
+--update temp set output = :id where output is null;
+--update temp set replicate = :rep where replicate is null;
 alter table temp rename to weeksums;
 

@@ -1,9 +1,20 @@
-## R script to query database
+## load jaspy to get SQLite3 3.26.0 and 
+## later version of R (3.5.1)
+system("module load jaspy")
+
+## load libraries
 library(dplyr)
 library(purrr)
 library(stringr)
+## need to install before-CCTZ version of lubridate
+## or else it won't compile
+## also then need devtools, so had to install
+## earlier version of a dependency
+#library(versions)
+#install.versions("later", version = "0.7.5")
+#library(devtools)
+#devtools::install_github("tidyverse/lubridate@before-CCTZ")
 library(lubridate)
-library(tidyr)
 library(parallel)
 
 ## may also need to install RSQLite library
@@ -45,39 +56,36 @@ parRanges <- readRDS("inputs/parRanges.rds")
 ## deaths at each week since lockdown
 
 ## extract data
-output <- map2(design$output[1], design$repeats[1], function(hash, reps) {
+map2(design$output, design$repeats, function(hash, reps) {
   
     ## generate output hashes
-    hashes <- map(1:reps, function(i, hash) {
-        c(paste0(hash, ifelse(i > 1, paste0("x", str_pad(i, 3, pad = "0")), "")), i)
-    }, hash = hash)
+    hashes <- map2(hash, 1:reps, c)
     
     ## print progress
     print(paste0("Currently evaluating: ", hash))
     
     ## run through hashes and extract runs
-    output <- lapply(hashes, function(hash) {
-    
-    browser()
+    output <- mclapply(hashes, function(hash) {
     
         ## extract replicate and hash
         replicate <- hash[2]
-        path <- hash[1]
-        hash <- str_replace(path, "x[:digit:]+$", "")
+        hash <- hash[1]
 
         ## create path
+        path <- paste0(hash, ifelse(replicate > 1, paste0("x", str_pad(replicate, 3, pad = "0")), ""))
         path <- paste0("raw_outputs/", path, "/stages.db")
+        system(paste0("bzip2 -dkf ", path, ".bz2"))
         
-        ## run SQL
-        cmd <- paste0("sqlite3 \"", path, "\" \".param set :id ", hash, "\" \".param set :rep ", replicate, "\" \".read extractSQL.sql\"")
+        # run SQL script to produce summary table
+        cmd <- paste0("sqlite3 \"", path, "\" \".read extractSQL.sql\"")
         system(cmd)
         
-    })#, mc.cores = 10)
-       
-    print(paste0(hashes, ": Finished"))
+    }, mc.cores = 20)
+    
+    print(paste0(hash, ": Finished"))
     
     ## return hash
-    hash
+    NULL
 })
 
 print("All done.")
