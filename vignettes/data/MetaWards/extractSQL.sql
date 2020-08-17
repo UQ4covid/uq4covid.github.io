@@ -1,15 +1,6 @@
 --.headers on
 .mode csv
 
--- drop tables just in case
-drop table weeksums;
-drop table temp;
-drop table temp1;
-drop table weeks0;
-drop table weeks;
-drop table wards0;
-drop table wards;
-
 -- import lookups
 .import week_lookup.csv weeks0
 .import ward_lookup.csv wards0
