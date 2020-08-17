@@ -7,8 +7,8 @@ design <- readRDS("inputs/design.rds")
 parRanges <- readRDS("inputs/parRanges.rds")
 
 ## set path to server
-#mainPath <- "https://gws-access.jasmin.ac.uk/public/covid19/"
-mainPath <- "public/raw_outputs/"
+mainPath <- "https://gws-access.jasmin.ac.uk/public/covid19/raw_outputs/"
+#mainPath <- "public/raw_outputs/"
 
 ## extract data
 system.time(output <- map2(design$output, design$repeats, function(hash, reps, mainpath) {

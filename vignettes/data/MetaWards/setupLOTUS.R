@@ -88,7 +88,7 @@ paths <- map2(design$output, design$repeats, function(hash, reps) {
 paths <- reduce(paths, c)
 
 ## write paths to file
-code <- readLines("submit_job_template.sh")
+code <- readLines("submit_job_template.bsub")
 code <- gsub("REPLACE_STUFF", paste(paths, collapse = "\n"), code)
 writeLines(code, "submit_job.bsub")
 
