@@ -76,7 +76,7 @@ paths <- map2(design$output, design$repeats, function(hash, reps) {
 
         ## create path
         path <- paste0(hash, ifelse(replicate > 1, paste0("x", str_pad(replicate, 3, pad = "0")), ""))
-        path <- paste0("./createSum.sh raw_outputs/", path, "/stages.db")
+        path <- paste0("./createSum.sh ", path)
         path
     })
     

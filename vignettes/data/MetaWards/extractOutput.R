@@ -1,26 +1,17 @@
-## load jaspy to get SQLite3 3.26.0 and 
-## later version of R (3.5.1)
-system("module load jaspy")
-
 ## R script to query database
-library(dplyr)
-library(purrr)
-library(stringr)
-## later versions of tidyr won't compile
-#library(versions)
-#install.versions("tidyr", version = "1.0.0")
-library(tidyr)
+library(tidyverse)
 library(parallel)
-
-## may also need to install RSQLite library
-## e.g. install.packages("RSQLite")
 
 ## read in inputs
 design <- readRDS("inputs/design.rds")
 parRanges <- readRDS("inputs/parRanges.rds")
 
+## set path to server
+#mainPath <- "https://gws-access.jasmin.ac.uk/public/covid19/"
+mainPath <- "public/raw_outputs/"
+
 ## extract data
-system.time(output <- map2(design$output, design$repeats, function(hash, reps) {
+system.time(output <- map2(design$output, design$repeats, function(hash, reps, mainpath) {
   
     ## generate output hashes
     hashes <- map2(hash, 1:reps, c)
@@ -29,7 +20,7 @@ system.time(output <- map2(design$output, design$repeats, function(hash, reps) {
     print(paste0("Currently evaluating: ", hash))
     
     ## run through hashes and extract runs
-    output <- mclapply(hashes, function(hash) {
+    output <- mclapply(hashes, function(hash, mainpath) {
     
         ## extract replicate and hash
         replicate <- hash[2]
@@ -37,21 +28,14 @@ system.time(output <- map2(design$output, design$repeats, function(hash, reps) {
         
         ## create path
         path <- paste0(hash, ifelse(replicate > 1, paste0("x", str_pad(replicate, 3, pad = "0")), ""))
-        path <- paste0("raw_outputs/", path, "/stages.db")
-
-        ## establish connection
-        con <- DBI::dbConnect(RSQLite::SQLite(), path)
+        path <- paste0(mainpath, path, "/weeksums.csv")
 
         ## Hprev in the weeksums table contains the mean hospital counts
-        weeksums <- tbl(con, "weeksums")
-        out <- collect(weeksums)
-
-        ## disconnect from DB
-        DBI::dbDisconnect(con)
+        out <- read_csv(path)
         
         ## return output
         out        
-    }, mc.cores = 20)
+    }, mainpath = mainpath, mc.cores = 20)
     
     ## bind rows
     output <- bind_rows(output) %>%
@@ -79,7 +63,7 @@ system.time(output <- map2(design$output, design$repeats, function(hash, reps) {
     ## return outputs
     unnest(output, cols = data) %>%
         mutate(output = hash)
-}))
+}, mainpath = mainPath))
 
 ## bind rows
 output <- bind_rows(output)

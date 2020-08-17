@@ -37,3 +37,4 @@ update temp set Deaths = 0 where Deaths is null;
 --update temp set replicate = :rep where replicate is null;
 alter table temp rename to weeksums;
 
+
