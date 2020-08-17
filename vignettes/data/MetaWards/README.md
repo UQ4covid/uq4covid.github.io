@@ -9,76 +9,189 @@ you can find instructions [here](https://metawards.org/install.html). It also
 assumes that you have cloned the MetaWardsData as detailed 
 [here](https://metawards.org/model_data.html).
 
-The current code is written to run on Linux, but it should also run happily 
-on a Mac (not tested yet). It should also run on Windows, but you will have to convert
-`runscript.sh` to a Windows batch file (Pull Requests gratefully received).
-
-In `runscript.sh` you will need to amend the line:
-
-```
-export METAWARDSDATA=$HOME/Documents/covid/MetaWardsData
-```
-
-to point to your installation on the MetaWardsData repository.
+# Setting up design
 
 The R script `convertDesign.R` contains a simple example of sampling
 from a $(0, 1)$ LHS sampler, and then converting the design into
 the correct format for MetaWards, which is written into the `inputs/disease.dat`
 file. This uses `convertDesigntoInput()` and `convertInputToDisease()` tools
 that can be found in the `R_tools/dataTools.R` script, and are described in the
-vignette. (These tools also accept designs in $(-1, 1)$ spaces.)
+vignette. (These tools also accept designs in $(-1, 1)$ spaces as long as you
+set the `scale` argument to `convertDesignToInput()`.)
 
-Once the design has been run, the `createSummaryOutputSQL.R` file provides some code
-to extract some summary measures from the outputs for each design point / replicate 
-combination, and add these to each existing SQL database. These are stored in each 
-database as an additional table called `weekSums`, which holds weekly average `Hprev`,
-`Cprev` and total `Deaths` for each week / ward combination for every week since just 
-before the first lockdown. 
+## Running the model on Catalyst
 
-This SQL database can be queried through any SQLite
-client. The `dplyr` package (or more specifically the `dbplyr` package) provides
-some useful R tools for querying SQL databases using `tidyverse`-type notation. Some
-examples are in the `extractOutputs.R` file, and more details can be found
-[here](https://cran.r-project.org/web/packages/dbplyr/vignettes/dbplyr.html).
+Once the design has been generated and the `inputs/disease.dat` file specified, the
+whole folder can be zipped and sent to Christopher, who will run it using the
+`jobscript.sh` script. 
 
-## Animations
+You can amend this script if you want to change anything (for example, the 
+`--nsteps 177` default number of days to run the model for might want amending).
 
-In the `images` folder there are some R scripts to produce animations. The `plotAnimation.R` script accesses weekly counts from the `uberStages.db` database. It takes three inputs:
+Once the model has been run, Christopher will transfer to the AWS server.
 
-* ID (Ensemble ID, e.g. "Ens0000")
-* REP (Replicate number)
-* VAR (Variable you wish to animate---must be in `uberStages.db`)
+## Copying files to JASMIN
 
-So the command:
+Assuming you're set up on JASMIN, and have access to the GWS for the `covid19`
+project. Then you need to login to a transfer server to copy the files across.
+If you're not on the University network, then something like the following should 
+work (of course, replacing relevant login details and paths):
 
 ```
-R CMD BATCH --no-restore --no-save --slave "--args Ens0000 1 Hprev" plotAnimation.R
+eval $(ssh-agent -s)
+ssh-add PATH_TO_PUBLIC_KEY
+ssh -A USERNAME@jasmin-login2.ceda.ac.uk
 ```
 
-will produce an animation of the weekly `Hprev` values for replicate 1 of design point `Ens0000`. **Note: it helps to have set an index on the `output` column of `uberStages.db`**---see the comments in `plotAnimation.R` for more details.
-
-Alternatively, the `plotAnimation_stages.R` script accesses daily counts from an individual the `stages.db.bz2` file. It takes three inputs:
-
-* ID (Ensemble ID, e.g. "Ens0000")
-* REP (Replicate number)
-* VAR (Variable you wish to animate---must be in `stages.db`)
-
-So the command:
+Once you're connected to the login node, you can `ssh` into the transfer node as:
 
 ```
-R CMD BATCH --no-restore --no-save --slave "--args Ens0000 1 H" plotAnimation_stages.R
+ssh USERNAME@jasmin-xfer1.ceda.ac.uk
 ```
 
-will produce an animation of the daily `H` values for replicate 1 of design point `Ens0000`. This is quicker due to using base R plotting, rather than `gganimate`.
+From here, change directory to the `covid19` GWS workspace:
 
-## Possible extensions / to-do
+```
+cd /gws/nopw/j04/covid19/
+```
 
-* Lockdown cut-off for distance travelled.
-* Amend lockdown iterator to model weekdays and weekends during lockdown.
-* Superspreaders / supershedders?
-* Possible additional hospital workers class?
-* Change names of outputs to something easier to understand.
-* Sort out how to generically unzip files rather than using `system()` (hopefully Chris' extractor will solve this).
-* Need some checks of inputs in R tools.
-* Perhaps come up with a better way to store the data (maybe only store days where some events have changed,
-  and then post-process to fill in the gaps where necessary).
+Now you can transfer the relevant folder from the AWS machine across (making sure 
+it's not overwriting anything by changing folder paths if necessary). Note that
+the `aws_exeter.pem` key is already in this folder for ease.
+
+```
+scp -i ~/aws_exeter.pem ubuntu@35.178.206.202:/home/ubuntu/FOLDERNAME .
+```
+
+Once this is done, disconnect from the `xfer*` node.
+
+```
+exit
+```
+
+## Extracting outputs and producing summary tables on JASMIN
+
+This next step can be done in parallel, and can be run by submitting a batch
+job script via LSF.
+
+Firstly, form the login node, log in to one of the `sci*` servers e.g.
+
+```
+ssh USERNAME@jasmin-sci3.ceda.ac.uk
+```
+
+Then change directory to the relevant folder:
+
+```
+cd /gws/nopw/j04/covid19/FOLDER
+```
+
+Now load the `jaspy` module:
+
+```
+module load jaspy
+```
+
+Now run the `setupLOTUS.R` script:
+
+```
+R CMD BATCH --no-restore --no-save --slave setupLOTUS.R
+```
+
+This will create a file called `submit_job.bsub` that we can submit to LOTUS. Before
+you do that, edit the `createSum.sh` file and change the line:
+
+```
+filedir = "/gws/nopw/j04/covid19/public/raw_outputs"
+```
+
+to point to the correct output folder that we wish other people to access. This must
+be a sub-directory of `/gws/nopw/j04/covid19/public`. Once this is done, you can
+submit the job file to LOTUS:
+
+```
+bsub < submit_job.bsub
+```
+
+This will run once the scheduler allows. If you want to change any of the settings (like
+the number of nodes / wall time etc., then either edit the `submit_job.bsub` file directly,
+or alter the `submit_job_template.bsub` template file and then re-run `setupLOTUS.R` as
+above.
+
+## Querying files from external sources
+
+**This can be done from any machine, as long as the user has a copy of the `design.rds`
+and `parRanges.rds` that were used in the design.**
+
+The above should copy all relevant files to a server than can be directly accessed
+at [https://gws-access.jasmin.ac.uk/public/covid19/](https://gws-access.jasmin.ac.uk/public/covid19/). You cannot query an SQLite database from a server like this, you can only
+download files. Thus the `stages.db` databases in each sub-directory contain the
+raw outputs, but the summary measures are in the `weeksums.csv` files. These holds 
+weekly average `Hprev`, `Cprev` and total `Deaths` for each week / ward combination 
+for every week since just before the first lockdown. 
+
+The R script `extractOutput.R` provides some parallel code that can be run from 
+any user machine to download the weekly summary data, and produce relevant 
+quantiles and concatenate accordingly. Just change the line:
+
+```
+mainPath <- "https://gws-access.jasmin.ac.uk/public/covid19/raw_outputs/"
+```
+
+to point to the correct directory, and make sure you run this from the directory 
+containing the script, ensuring that the `inputs` folder contains the `design.rds` and `parRanges.rds` files that were used in the design e.g.
+
+```
+R CMD BATCH --no-restore --no-save --slave extractOutput.R
+```
+
+
+
+
+
+
+
+
+
+<!--## Animations-->
+
+<!--In the `images` folder there are some R scripts to produce animations. The `plotAnimation.R` script accesses weekly counts from the `uberStages.db` database. It takes three inputs:-->
+
+<!--* ID (Ensemble ID, e.g. "Ens0000")-->
+<!--* REP (Replicate number)-->
+<!--* VAR (Variable you wish to animate---must be in `uberStages.db`)-->
+
+<!--So the command:-->
+
+<!--```-->
+<!--R CMD BATCH --no-restore --no-save --slave "--args Ens0000 1 Hprev" plotAnimation.R-->
+<!--```-->
+
+<!--will produce an animation of the weekly `Hprev` values for replicate 1 of design point `Ens0000`. **Note: it helps to have set an index on the `output` column of `uberStages.db`**---see the comments in `plotAnimation.R` for more details.-->
+
+<!--Alternatively, the `plotAnimation_stages.R` script accesses daily counts from an individual the `stages.db.bz2` file. It takes three inputs:-->
+
+<!--* ID (Ensemble ID, e.g. "Ens0000")-->
+<!--* REP (Replicate number)-->
+<!--* VAR (Variable you wish to animate---must be in `stages.db`)-->
+
+<!--So the command:-->
+
+<!--```-->
+<!--R CMD BATCH --no-restore --no-save --slave "--args Ens0000 1 H" plotAnimation_stages.R-->
+<!--```-->
+
+<!--will produce an animation of the daily `H` values for replicate 1 of design point `Ens0000`. This is quicker due to using base R plotting, rather than `gganimate`.-->
+
+<!--## Possible extensions / to-do-->
+
+<!--* Lockdown cut-off for distance travelled.-->
+<!--* Amend lockdown iterator to model weekdays and weekends during lockdown.-->
+<!--* Superspreaders / supershedders?-->
+<!--* Possible additional hospital workers class?-->
+<!--* Change names of outputs to something easier to understand.-->
+<!--* Sort out how to generically unzip files rather than using `system()` (hopefully Chris' extractor will solve this).-->
+<!--* Need some checks of inputs in R tools.-->
+<!--* Perhaps come up with a better way to store the data (maybe only store days where some events have changed,-->
+<!--  and then post-process to fill in the gaps where necessary).-->
+<!--  -->
