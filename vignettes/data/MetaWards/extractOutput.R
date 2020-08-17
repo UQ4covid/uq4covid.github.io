@@ -44,9 +44,7 @@ system.time(output <- map2(design$output, design$repeats, function(hash, reps) {
 
         ## Hprev in the weeksums table contains the mean hospital counts
         weeksums <- tbl(con, "weeksums")
-        out <- filter(weeksums, week == 12) %>%
-            select(ward, Hprev) %>%
-            collect()
+        out <- collect(weeksums)
 
         ## disconnect from DB
         DBI::dbDisconnect(con)
@@ -56,29 +54,47 @@ system.time(output <- map2(design$output, design$repeats, function(hash, reps) {
     }, mc.cores = 20)
     
     ## bind rows
-    output <- bind_rows(output, .id = "replicate")
+    output <- bind_rows(output) %>%
+        group_by(ward) %>%
+        nest() %>%
+        ungroup()
         
-    ## extract quantiles (this is faster than using 
-    ## multiple "quantile()" calls in "summarise()")
-    output <- group_by(output, ward) %>%
-        summarise(
-            q = list(quantile(Hprev, probs = c(0.025, 0.25, 0.5, 0.75, 0.975)))
-        ) %>%
-        mutate(q = map(q, ~as_tibble(t(.)))) %>%
-        mutate(q = map(q, ~set_names(., c("q025", "q25", "q5", "q75", "q975")))) %>%
-        unnest(cols = q) %>%
-        mutate(output = hash)
+    output$data <- mclapply(output$data, function(output) {
+        ## extract quantiles (this is faster than using 
+        ## multiple "quantile()" calls in "summarise()")
+        group_by(output, week) %>%
+        summarise_all(~{
+            q = list(quantile(., probs = c(0.025, 0.25, 0.5, 0.75, 0.975)))
+        }, .groups = "drop") %>%
+        mutate_at(-1, function(q) {
+            map(q, ~as_tibble(t(.))) %>%
+            map(~set_names(., c("q025", "q25", "q5", "q75", "q975")))
+        }) %>%
+        gather(out, value, -week) %>%
+        unnest(cols = value)
+    }, mc.cores = 20)
     
     print(paste0(hash, ": Finished"))
     
     ## return outputs
-    output
+    unnest(output, cols = data) %>%
+        mutate(output = hash)
 }))
 
 ## bind rows
 output <- bind_rows(output)
 
-## save output
-saveRDS(output, "Hprev_12.rds")
+## extract outputs of interest
+Hprev <- filter(output, out == "Hprev") %>%
+    select(-out)
+saveRDS(Hprev, "Hprev.rds")
+
+Cprev <- filter(output, out == "Cprev") %>%
+    select(-out)
+saveRDS(Cprev, "Cprev.rds")
+
+Deaths <- filter(output, out == "Deaths") %>%
+    select(-out)
+saveRDS(Deaths, "Deaths.rds")
 
 
