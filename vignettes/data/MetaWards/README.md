@@ -9,7 +9,7 @@ you can find instructions [here](https://metawards.org/install.html). It also
 assumes that you have cloned the MetaWardsData as detailed 
 [here](https://metawards.org/model_data.html).
 
-# Setting up design
+## Setting up design
 
 The R script `convertDesign.R` contains a simple example of sampling
 from a $(0, 1)$ LHS sampler, and then converting the design into
@@ -39,7 +39,7 @@ work (of course, replacing relevant login details and paths):
 
 ```
 eval $(ssh-agent -s)
-ssh-add PATH_TO_PUBLIC_KEY
+ssh-add PATH_TO_PRIVATE_KEY
 ssh -A USERNAME@jasmin-login2.ceda.ac.uk
 ```
 
@@ -69,15 +69,12 @@ Once this is done, disconnect from the `xfer*` node.
 exit
 ```
 
-## Extracting outputs and producing summary tables on JASMIN
+## Create scripts
 
-This next step can be done in parallel, and can be run by submitting a batch
-job script via LSF.
-
-Firstly, form the login node, log in to one of the `sci*` servers e.g.
+Firstly, from the login node, log in to `jasmin-sci1.ceda.ac.uk` e.g.
 
 ```
-ssh USERNAME@jasmin-sci3.ceda.ac.uk
+ssh USERNAME@jasmin-sci1.ceda.ac.uk
 ```
 
 Then change directory to the relevant folder:
@@ -98,24 +95,57 @@ Now run the `setupLOTUS.R` script:
 R CMD BATCH --no-restore --no-save --slave setupLOTUS.R
 ```
 
-This will create a file called `submit_job.bsub` that we can submit to LOTUS. Before
-you do that, edit the `createSum.sh` file and change the line:
+This will create a file called `submit_job.sbatch` that we can submit to LOTUS.
+Before you do that, edit the `createSum.sh` file and change the line:
 
 ```
 filedir = "/gws/nopw/j04/covid19/public/raw_outputs"
 ```
 
 to point to the correct output folder that we wish other people to access. This must
-be a sub-directory of `/gws/nopw/j04/covid19/public`. Once this is done, you can
-submit the job file to LOTUS:
+be a sub-directory of `/gws/nopw/j04/covid19/public`. 
+
+Once this is done, disconnect from the node.
 
 ```
-bsub < submit_job.bsub
+exit
+```
+
+## Extracting outputs and producing summary tables on JASMIN
+
+This next step can be done in parallel, and can be run by submitting a batch
+job script via SLURM.
+
+Firstly, from the login node, log in to one of the following servers (note these are not the same as above):
+
+```
+sci1.jasmin.ac.uk
+sci2.jasmin.ac.uk
+sci4.jasmin.ac.uk
+sci5.jasmin.ac.uk
+```
+
+e.g.
+
+```
+ssh USERNAME@sci1.jasmin.ac.uk
+```
+
+Then change directory to the relevant folder:
+
+```
+cd /gws/nopw/j04/covid19/FOLDER
+```
+
+Submit the job file to LOTUS:
+
+```
+sbatch submit_job.sbatch
 ```
 
 This will run once the scheduler allows. If you want to change any of the settings (like
-the number of nodes / wall time etc., then either edit the `submit_job.bsub` file directly,
-or alter the `submit_job_template.bsub` template file and then re-run `setupLOTUS.R` as
+wall time etc.), then either edit the `submit_job.sbatch` file directly,
+or alter the `submit_job_template.sbatch` template file and then re-run `setupLOTUS.R` as
 above.
 
 ## Querying files from external sources
@@ -135,7 +165,7 @@ any user machine to download the weekly summary data, and produce relevant
 quantiles and concatenate accordingly. Just change the line:
 
 ```
-mainPath <- "https://gws-access.jasmin.ac.uk/public/covid19/raw_outputs/"
+mainPath <- "https://gws-access.jasmin.ac.uk/public/covid19/"
 ```
 
 to point to the correct directory, and make sure you run this from the directory 
