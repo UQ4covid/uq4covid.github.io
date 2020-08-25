@@ -42,11 +42,11 @@ WEEKS <- c(min(WEEKS) - 1, WEEKS)
 ## create week/day lookup table
 week_lookup <- data.frame(day = as.numeric(dates - startdate), week = tweeks)
 week_lookup <- filter(week_lookup, week %in% WEEKS)
-write.csv(week_lookup, "week_lookup.csv", row.names = FALSE)
+write.table(week_lookup, "week_lookup.csv", row.names = FALSE, col.names = FALSE, sep = ",")
 
 ## create ward lookup table
 ward_lookup <- expand.grid(ward = 1:8588, week = unique(week_lookup$week))
-write.csv(ward_lookup, "ward_lookup.csv", row.names = FALSE)
+write.table(ward_lookup, "ward_lookup.csv", row.names = FALSE, col.names = FALSE, sep = ",")
 
 ## read in inputs
 design <- readRDS("inputs/design.rds")
@@ -76,7 +76,6 @@ paths <- map2(design$output, design$repeats, function(hash, reps) {
 
         ## create path
         path <- paste0(hash, ifelse(replicate > 1, paste0("x", str_pad(replicate, 3, pad = "0")), ""))
-        path <- paste0("./createSum.sh ", path)
         path
     })
     
@@ -87,10 +86,14 @@ paths <- map2(design$output, design$repeats, function(hash, reps) {
 })
 paths <- reduce(paths, c)
 
-## write paths to file
-code <- readLines("submit_job_template.bsub")
-code <- gsub("REPLACE_STUFF", paste(paths, collapse = "\n"), code)
-writeLines(code, "submit_job.bsub")
+## write number of jobs to file
+code <- readLines("submit_job_template.sbatch")
+code <- gsub("RANGES", paste0("1-", length(paths)), code)
+writeLines(code, "submit_job.sbatch")
+
+## write csv to query
+paths <- data.frame(path = paths)
+write.table(paths, "job_lookup.txt", col.names = FALSE, row.names = FALSE, quote = FALSE)
 
 print("All done.")
 

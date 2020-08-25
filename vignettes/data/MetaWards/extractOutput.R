@@ -2,16 +2,22 @@
 library(tidyverse)
 library(parallel)
 
+## set path to server
+mainPath <- "https://gws-access.jasmin.ac.uk/public/covid19/"
+
+## set cores
+ncores <- 4
+
 ## read in inputs
 design <- readRDS("inputs/design.rds")
 parRanges <- readRDS("inputs/parRanges.rds")
 
 ## set path to server
-mainPath <- "https://gws-access.jasmin.ac.uk/public/covid19/raw_outputs/"
+mainPath <- paste0(mainPath, "raw_outputs/")
 #mainPath <- "public/raw_outputs/"
 
 ## extract data
-system.time(output <- map2(design$output, design$repeats, function(hash, reps, mainpath) {
+system.time(output <- map2(design$output, design$repeats, function(hash, reps, mainpath, ncores) {
   
     ## generate output hashes
     hashes <- map2(hash, 1:reps, c)
@@ -35,7 +41,7 @@ system.time(output <- map2(design$output, design$repeats, function(hash, reps, m
         
         ## return output
         out        
-    }, mainpath = mainpath, mc.cores = 20)
+    }, mainpath = mainpath, mc.cores = ncores)
     
     ## bind rows
     output <- bind_rows(output) %>%
@@ -56,14 +62,14 @@ system.time(output <- map2(design$output, design$repeats, function(hash, reps, m
         }) %>%
         gather(out, value, -week) %>%
         unnest(cols = value)
-    }, mc.cores = 20)
+    }, mc.cores = ncores)
     
     print(paste0(hash, ": Finished"))
     
     ## return outputs
     unnest(output, cols = data) %>%
         mutate(output = hash)
-}, mainpath = mainPath))
+}, mainpath = mainPath, ncores = ncores))
 
 ## bind rows
 output <- bind_rows(output)
