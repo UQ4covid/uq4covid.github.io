@@ -10,22 +10,28 @@ echo $jobname
 ## set directory to copy files to
 filedir="/gws/nopw/j04/covid19/public/raw_outputs"
 
-## unzip archive
-bzip2 -dkf raw_outputs/${jobname}/stages.db.bz2
+## check directory exists
+if [ ! -d "${filedir}/${jobname}" ]; then
 
-sleep 5s
+    ## unzip archive
+    bzip2 -dkf raw_outputs/${jobname}/stages.db.bz2
 
-## run SQL script to produce summary table
-sqlite3 "raw_outputs/${jobname}/stages.db" ".read extractSQL.sql"
+    sleep 60s
 
-sleep 5s
+    ## run SQL script to produce summary table
+    sqlite3 "raw_outputs/${jobname}/stages.db" ".read extractSQL.sql"
 
-sqlite3 "raw_outputs/${jobname}/stages.db" -cmd ".mode csv" -cmd ".headers on" -cmd ".output raw_outputs/${jobname}/weeksums.csv" "select * from weeksums;" -cmd ".exit"
+    sleep 60s
 
-sleep 5s
+    sqlite3 "raw_outputs/${jobname}/stages.db" -cmd ".mode csv" -cmd ".headers on" -cmd ".output raw_outputs/${jobname}/weeksums.csv" "select * from weeksums;" -cmd ".exit"
 
-#mv ${jobname}stages.db ${jobname}stages.db
-mkdir -p ${filedir}/${jobname}
-mv raw_outputs/${jobname}/stages.db ${filedir}/${jobname}/
-mv raw_outputs/${jobname}/weeksums.csv ${filedir}/${jobname}/
+    sleep 60s
+
+    mkdir -p ${filedir}/${jobname}
+    mv raw_outputs/${jobname}/stages.db ${filedir}/${jobname}/
+    mv raw_outputs/${jobname}/weeksums.csv ${filedir}/${jobname}/
+ else
+    echo "${jobfile} directory already exists"
+ fi
+echo "Complete"
 
