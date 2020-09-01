@@ -95,5 +95,14 @@ writeLines(code, "submit_job.sbatch")
 paths <- data.frame(path = paths)
 write.table(paths, "job_lookup.txt", col.names = FALSE, row.names = FALSE, quote = FALSE)
 
+## write number of jobs to file
+code <- readLines("submit_R_template.sbatch")
+code <- gsub("RANGES", paste0("1-", length(design$output)), code)
+writeLines(code, "submit_R.sbatch")
+
+## write csv to query
+paths <- select(design, output)
+write.table(paths, "job_lookup_R.txt", col.names = FALSE, row.names = FALSE, quote = FALSE)
+
 print("All done.")
 

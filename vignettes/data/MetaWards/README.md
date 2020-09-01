@@ -95,15 +95,17 @@ Now run the `setupLOTUS.R` script:
 R CMD BATCH --no-restore --no-save --slave setupLOTUS.R
 ```
 
-This will create a file called `submit_job.sbatch` that we can submit to LOTUS.
-Before you do that, edit the `createSum.sh` file and change the line:
+This will create two files called `submit_job.sbatch` and `submit_R.sbatch`
+that we can submit to LOTUS. Before you do that, edit the `createSum.sh` and 
+`createQuantiles.sh` files and change the lines:
 
 ```
 filedir = "/gws/nopw/j04/covid19/public/raw_outputs"
 ```
 
-to point to the correct output folder that we wish other people to access. This must
-be a sub-directory of `/gws/nopw/j04/covid19/public`. 
+to point to the correct output folder that we wish other people to access (note no
+trailing `/` is on the file path). This must be a sub-directory of 
+`/gws/nopw/j04/covid19/public`. 
 
 Once this is done, disconnect from the node.
 
@@ -144,9 +146,31 @@ sbatch submit_job.sbatch
 ```
 
 This will run once the scheduler allows. If you want to change any of the settings (like
-wall time etc.), then either edit the `submit_job.sbatch` file directly,
-or alter the `submit_job_template.sbatch` template file and then re-run `setupLOTUS.R` as
+wall time etc.), then either edit the `submit_job/R.sbatch` files directly,
+or alter the `submit_job/R_template.sbatch` template files and then re-run `setupLOTUS.R` as
 above.
+
+### Checking runs
+
+In case some runs don't complete, the script `checkRuns.sh` can be run that will produce
+a file called `job_check.txt` that contains job names that didn't complete. You might 
+need to amend the wall time or suchlike in `submit_job.sbatch` (and change the line
+`#SBATCH --array=...` to match the number of lines in `job_check.txt`. Then:
+
+```
+mv job_check.txt job_lookup.txt
+sbatch submit_job.sbatch
+```
+
+and repeat this process as required.
+
+## Extracting summary CSV files
+
+Once the above has been done, submit the following job file to LOTUS:
+
+```
+sbatch submit_R.sbatch
+```
 
 ## Querying files from external sources
 
