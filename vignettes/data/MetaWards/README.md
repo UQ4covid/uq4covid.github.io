@@ -146,19 +146,45 @@ sbatch submit_job.sbatch
 ```
 
 This will run once the scheduler allows. If you want to change any of the settings (like
-wall time etc.), then either edit the `submit_job/R.sbatch` files directly,
-or alter the `submit_job/R_template.sbatch` template files and then re-run `setupLOTUS.R` as
+wall time etc.), then either edit the `submit_job.sbatch` file directly,
+or alter the `submit_job_template.sbatch` template file and then re-run `setupLOTUS.R` as
 above.
 
 ### Checking runs
 
 In case some runs don't complete, the script `checkRuns.sh` can be run that will produce
-a file called `job_check.txt` that contains job names that didn't complete. You might 
-need to amend the wall time or suchlike in `submit_job.sbatch` (and change the line
-`#SBATCH --array=...` to match the number of lines in `job_check.txt`. Then:
+a file called `job_check.txt` that contains job names that didn't complete. For example,
+if the `.out` and `.err` files have names such as:
 
 ```
-mv job_check.txt job_lookup.txt
+13011568_1.out
+13011568_1.err
+```
+
+then you would run e.g.
+
+```
+./checkJobs.sh 13011568
+```
+
+The `job_check.txt` file then has a first column, which is the line number of `job_lookup.txt`
+where the erroneous job resides, and the second column (separated by a comma) is the unique 
+hash for that job. If the file is empty, then all jobs have completed satisfactorily.
+
+You can use these to search the `.err` and `.out` files manually, but if you want to rerun
+results, you can generate a new `job_lookup.txt` as:
+
+```
+mv job_lookup.txt job_lookup_orig.txt
+cut -d, -f2 job_check.txt > job_lookup.txt
+wc -l job_lookup.txt
+``` 
+
+This last command gives you the number of lines/entries in the new `job_lookup.txt` file. 
+You might need to amend the wall time or suchlike in `submit_job.sbatch` (and change the line
+`#SBATCH --array=...` to match the number of lines in `job_lookup.txt`). Then:
+
+```
 sbatch submit_job.sbatch
 ```
 
@@ -171,6 +197,12 @@ Once the above has been done, submit the following job file to LOTUS:
 ```
 sbatch submit_R.sbatch
 ```
+
+This will run once the scheduler allows. If you want to change any of the settings (like
+wall time etc.), then either edit the `submit_R.sbatch` file directly,
+or alter the `submit_R_template.sbatch` template file and then re-run `setupLOTUS.R` as
+above.
+
 
 ## Querying files from external sources
 
