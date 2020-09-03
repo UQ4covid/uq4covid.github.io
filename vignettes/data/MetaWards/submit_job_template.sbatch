@@ -4,7 +4,6 @@
 #SBATCH -o %A_%a.out
 #SBATCH -e %A_%a.err
 #SBATCH --array=RANGES
-#SBATCH --time 02:00:00
 
 module add jaspy
 

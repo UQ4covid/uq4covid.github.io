@@ -66,19 +66,22 @@ output$data <- mclapply(output$data, function(output) {
 ## return outputs
 output <- unnest(output, cols = data) %>%
     mutate(output = hash)
+    
+## set up output directories
+system(paste0("mkdir -p ", filedir, "/", hash))
 
 ## extract outputs of interest
 Hprev <- filter(output, out == "Hprev") %>%
     select(-out)
-saveRDS(Hprev, paste0(filedir, "/", hash, "_Hprev.rds"))
+write_csv(Hprev, paste0(filedir, "/", hash, "/Hprev.csv"))
 
 Cprev <- filter(output, out == "Cprev") %>%
     select(-out)
-saveRDS(Cprev, paste0(filedir, "/", hash, "_Cprev.rds"))
+write_csv(Cprev, paste0(filedir, "/", hash, "/Cprev.csv"))
 
 Deaths <- filter(output, out == "Deaths") %>%
     select(-out)
-saveRDS(Deaths, paste0(filedir, "/", hash, "_Deaths.rds"))
+write_csv(Deaths, paste0(filedir, "/", hash, "/Deaths.csv"))
 
 print(paste0(hash, ": Finished"))
 
