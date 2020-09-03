@@ -5,10 +5,12 @@
 print("HAVE YOU LOADED jaspy?")
 
 ## set directory to save outputs to
-filedir="/gws/nopw/j04/covid19/public/"
+filedir <- "/gws/nopw/j04/covid19/public/wave0/"
+system(paste0("mkdir -p ", filedir))
 
 ## load libraries
 library(dplyr)
+library(readr)
 library(purrr)
 library(stringr)
 ## need to install before-CCTZ version of lubridate

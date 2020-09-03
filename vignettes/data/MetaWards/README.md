@@ -71,10 +71,10 @@ exit
 
 ## Create scripts
 
-Firstly, from the login node, log in to `jasmin-sci1.ceda.ac.uk` e.g.
+Firstly, from the login node, log in to `sci1.ceda.ac.uk` e.g.
 
 ```
-ssh USERNAME@jasmin-sci1.ceda.ac.uk
+ssh USERNAME@sci1.ceda.ac.uk
 ```
 
 Then change directory to the relevant folder:
@@ -89,57 +89,33 @@ Now load the `jaspy` module:
 module load jaspy
 ```
 
-Now run the `setupLOTUS.R` script:
+Now edit the `setupLOTUS.R` script and change `filedir` to point to the public
+directory that you want the files saved into (with trailing `/`) e.g.
+
+```
+filedir <- "/gws/nopw/j04/covid19/public/wave0/"
+```
+This must be a sub-directory of `/gws/nopw/j04/covid19/public`. Then run the script:
 
 ```
 R CMD BATCH --no-restore --no-save --slave setupLOTUS.R
 ```
 
 This will create two files called `submit_job.sbatch` and `submit_comb.sbatch`
-that we can submit to LOTUS. Before you do that, edit the `createSum.sh` and 
+that we can submit to LOTUS. Edit the `createSum.sh` and 
 `createQuantiles.sh` files and change the lines:
 
 ```
-filedir = "/gws/nopw/j04/covid19/public/raw_outputs"
+filedir="/gws/nopw/j04/covid19/public/wave0/"
 ```
 
-to point to the correct output folder that we wish other people to access (note no
-trailing `/` is on the file path). This must be a sub-directory of 
-`/gws/nopw/j04/covid19/public`. 
-
-Once this is done, disconnect from the node.
-
-```
-exit
-```
+to point to the correct output folder that we wish other people to access (with
+trailing `/` as before).
 
 ## Extracting outputs and producing summary tables on JASMIN
 
 This next step can be done in parallel, and can be run by submitting a batch
-job script via SLURM.
-
-Firstly, from the login node, log in to one of the following servers (note these are not the same as above):
-
-```
-sci1.jasmin.ac.uk
-sci2.jasmin.ac.uk
-sci4.jasmin.ac.uk
-sci5.jasmin.ac.uk
-```
-
-e.g.
-
-```
-ssh USERNAME@sci1.jasmin.ac.uk
-```
-
-Then change directory to the relevant folder:
-
-```
-cd /gws/nopw/j04/covid19/FOLDER
-```
-
-Submit the job file to LOTUS:
+job script via SLURM:
 
 ```
 sbatch submit_job.sbatch
@@ -152,7 +128,7 @@ above.
 
 ## Extracting quantiles
 
-Once the above has been done, submit the following job file to LOTUS:
+Once the above has been done, submit the following job file via SLURM:
 
 ```
 sbatch submit_quantile.sbatch
@@ -166,26 +142,37 @@ above.
 
 ## Querying files from external sources
 
-**This can be done from any machine, as long as the user has a copy of the `design.rds`
-and `parRanges.rds` that were used in the design.**
-
-The above should copy all relevant files to a server than can be directly accessed
+All relevant files should be accessible on a server than can be directly accessed
 at [https://gws-access.jasmin.ac.uk/public/covid19/](https://gws-access.jasmin.ac.uk/public/covid19/). You cannot query an SQLite database from a server like this, you can only
 download files. Thus the `stages.db` databases in each sub-directory contain the
-raw outputs, but the summary measures are in the `weeksums.csv` files. These holds 
+raw outputs, but the summary measures are in the `weeksums.csv` files. These hold 
 weekly average `Hprev`, `Cprev` and total `Deaths` for each week / ward combination 
 for every week since just before the first lockdown. 
 
+In the baseline directory for each design point (e.g. `Ens0000` and not `Ens0000x001` etc.)
+there are three files: `Hprev.csv`, `Cprev.csv` and `Deaths.csv` that contain the
+quantiles of the different outputs over the replicates for each design point.
+
 The R script `downloadQuantiles.R` provides some parallel code that can be run from 
-any user machine to download the weekly summary data, and produce relevant 
-quantiles and concatenate accordingly. Just change the line:
+any user machine to download these and concatentae the outputs across the design
+points accordingly. Just change the lines:
 
 ```
-filedir <- "https://gws-access.jasmin.ac.uk/public/covid19/"
+filedir <- "https://gws-access.jasmin.ac.uk/public/covid19/wave0/"
+week <- 12
+output <- "Hprev"
+ncores <- 24
 ```
 
-to point to the correct directory on the server.
+accordingly. The first line needs to point to the correct directory on the server 
+(with trailing `/`). The `week` object can either be a vector of weeks to extract,
+or `NA`, in which case it will extract all weeks. The `output` object is the name
+of the output to extract (it must be one of: `Hprev`, `Cprev` or `Deaths`). Finally,
+the `ncores` object gives the number of cores to use to read entries in parallel
+(Windows user will have to set this to be 1).
 
+If you want to extract for a subset of design points, then swap `design$output` in 
+the `mclapply()` function for a vector of design hashes.
 
 
 <!--## Animations-->
