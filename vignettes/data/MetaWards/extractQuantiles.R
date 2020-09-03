@@ -33,9 +33,7 @@ output <- mclapply(hashes, function(hash, filedir) {
     
     ## create path
     path <- paste0(hash, ifelse(replicate > 1, paste0("x", str_pad(replicate, 3, pad = "0")), ""))
-    path <- paste0(filedir, "/", path, "/weeksums.csv")
-
-    ## Hprev in the weeksums table contains the mean hospital counts
+    path <- paste0(filedir, "raw_outputs/", path, "/weeksums.csv")
     out <- read_csv(path)
     
     ## return output
@@ -68,20 +66,20 @@ output <- unnest(output, cols = data) %>%
     mutate(output = hash)
     
 ## set up output directories
-system(paste0("mkdir -p ", filedir, "/", hash))
+system(paste0("mkdir -p ", filedir, "raw_outputs/", hash))
 
 ## extract outputs of interest
 Hprev <- filter(output, out == "Hprev") %>%
     select(-out)
-write_csv(Hprev, paste0(filedir, "/", hash, "/Hprev.csv"))
+write_csv(Hprev, paste0(filedir, "raw_outputs/", hash, "/Hprev.csv"))
 
 Cprev <- filter(output, out == "Cprev") %>%
     select(-out)
-write_csv(Cprev, paste0(filedir, "/", hash, "/Cprev.csv"))
+write_csv(Cprev, paste0(filedir, "raw_outputs/", hash, "/Cprev.csv"))
 
 Deaths <- filter(output, out == "Deaths") %>%
     select(-out)
-write_csv(Deaths, paste0(filedir, "/", hash, "/Deaths.csv"))
+write_csv(Deaths, paste0(filedir, "raw_outputs/", hash, "/Deaths.csv"))
 
 print(paste0(hash, ": Finished"))
 

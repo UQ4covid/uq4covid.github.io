@@ -53,9 +53,9 @@ output <- left_join(wards, output, by = c("ward", "week")) %>%
     mutate_all(~replace_na(., 0))
 
 ## write table out
-system(paste0("mkdir -p ", filedir, "/", hash))
-system(paste0("mv ", path, " ", filedir, "/", hash))
-write_csv(output, paste0(filedir, "/", hash, "/weeksums.csv"))
+system(paste0("mkdir -p ", filedir, "raw_outputs/", hash))
+system(paste0("mv ", path, " ", filedir, "raw_outputs/", hash))
+write_csv(output, paste0(filedir, "raw_outputs/", hash, "/weeksums.csv"))
  
 print(paste0(hash, ": Finished"))
 
