@@ -4,6 +4,9 @@
 # system("module load jaspy")
 print("HAVE YOU LOADED jaspy?")
 
+## set directory to save outputs to
+filedir="/gws/nopw/j04/covid19/public/"
+
 ## load libraries
 library(dplyr)
 library(purrr)
@@ -52,6 +55,11 @@ write.table(ward_lookup, "ward_lookup.csv", row.names = FALSE, col.names = FALSE
 design <- readRDS("inputs/design.rds")
 parRanges <- readRDS("inputs/parRanges.rds")
 
+## write out as csvs
+system(paste0("mkdir -p ", filedir, "inputs"))
+write_csv(design, paste0(filedir, "inputs/design.csv"))
+write_csv(parRanges, paste0(filedir, "inputs/parRanges.csv"))
+
 ## here we are going to extract cumulative hospital counts
 ## hospital deaths, critical care counts and critical care
 ## deaths at each week since lockdown
@@ -96,13 +104,13 @@ paths <- data.frame(path = paths)
 write.table(paths, "job_lookup.txt", col.names = FALSE, row.names = FALSE, quote = FALSE)
 
 ## write number of jobs to file
-code <- readLines("submit_R_template.sbatch")
+code <- readLines("submit_quantile_template.sbatch")
 code <- gsub("RANGES", paste0("1-", length(design$output)), code)
-writeLines(code, "submit_R.sbatch")
+writeLines(code, "submit_quantile.sbatch")
 
 ## write csv to query
 paths <- select(design, output)
-write.table(paths, "job_lookup_R.txt", col.names = FALSE, row.names = FALSE, quote = FALSE)
+write.table(paths, "quantile_lookup.txt", col.names = FALSE, row.names = FALSE, quote = FALSE)
 
 print("All done.")
 

@@ -1,7 +1,7 @@
 #!/bin/bash
 
 ## read in jobs
-readarray -t jobs < "job_lookup_R.txt"
+readarray -t jobs < "quantile_lookup.txt"
 
 ## extract path name
 jobname=${jobs[$1-1]}
@@ -11,6 +11,6 @@ echo $jobname
 filedir="/gws/nopw/j04/covid19/public/raw_outputs"
 
 ## run R script
-cmd="R CMD BATCH --no-restore --no-save --slave '--args ${filedir} ${jobname} $2 $3' extractOutput.R extractOutput_${jobname}.Rout"
+cmd="R CMD BATCH --no-restore --no-save --slave '--args ${filedir} ${jobname} $2 $3' extractQuantiles.R extractQuantiles_${jobname}.Rout"
 eval $cmd
 
