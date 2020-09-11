@@ -11,7 +11,7 @@
 
 <meta name="author" content="TJ McKinley" />
 
-<meta name="date" content="2020-07-06" />
+<meta name="date" content="2020-09-11" />
 
 <title>Model Description</title>
 
@@ -1711,7 +1711,7 @@ summary {
 
 <h1 class="title toc-ignore">Model Description</h1>
 <h4 class="author">TJ McKinley</h4>
-<h4 class="date">06 July 2020</h4>
+<h4 class="date">11 September 2020</h4>
 
 </div>
 
@@ -1731,8 +1731,8 @@ summary {
 <li><span class="math inline">\(R\)</span>: recovered and immune;</li>
 <li><span class="math inline">\(D\)</span>: died.</li>
 </ul>
-<div id="htmlwidget-46ff6192dccf8b45d1f4" style="width:100%;height:100%;" class="grViz html-widget"></div>
-<script type="application/json" data-for="htmlwidget-46ff6192dccf8b45d1f4">{"x":{"diagram":"digraph simpmod {\n    graph[layout = dot, rankdir = LR]\n    node [shape = rectangle]\n    \n    S [group = gp]; E [group = gp]; I [group = gp]; RI [label = <R<FONT POINT-SIZE=\"8\"><SUB>I<\/SUB><\/FONT>>, group = gp]; DI [label = <D<FONT POINT-SIZE=\"8\"><SUB>I<\/SUB><\/FONT>>, group = gp]; \n    A [group = as]; RA [label = <R<FONT POINT-SIZE=\"8\"><SUB>A<\/SUB><\/FONT>>, group = as];\n    H [group = hos]; RH [label = <R<FONT POINT-SIZE=\"8\"><SUB>H<\/SUB><\/FONT>>, group = hos]; DH [label = <D<FONT POINT-SIZE=\"8\"><SUB>H<\/SUB><\/FONT>>, group = hos]; \n    C [group = crit]; RC [label = <R<FONT POINT-SIZE=\"8\"><SUB>C<\/SUB><\/FONT>>, group = crit]; DC [label = <D<FONT POINT-SIZE=\"8\"><SUB>C<\/SUB><\/FONT>>, group = crit];\n    genpop [label = \"Gen. Pop.\", group = gp]\n    asymp [label = \"Asymptomatics\", group = as]\n    hospital [label = \"Hospital Patient\", group = hos]\n    critical [label = \"Critical Care\", group = crit]\n    St00 [style = \"invis\", group = st]; St0 [label = \"Stage 0\", group = st]; \n    St1 [label = \"Stage 1\", group = st]; \n    St2 [label = \"Stage 2\", group = st]; St3 [label = \"Stage 3\", group = st]; \n    \n    genpop -> S [style = \"invis\"]\n    hospital -> H [style = \"invis\"]\n    critical -> C [style = \"invis\"]\n    asymp -> A [style = \"invis\"]\n    S -> E -> I -> RI\n    I -> DI [weight = 0]\n    I -> H -> C -> RC \n    C -> DC [weight = 0]\n    H -> RH \n    H -> DH [weight = 0] \n    RI -> DI [style = \"invis\"]\n    RH -> DH [style = \"invis\"]\n    RC -> DC [style = \"invis\"]\n    E -> A [weight = 0]\n    A -> RA \n    St00 -> St0 -> St1 -> St2 -> St3 [style = \"invis\"]\n    subgraph {\n      rank = same; St0; E;\n    }\n    subgraph {\n      rank = same; St00 -> asymp -> genpop -> hospital -> critical [style = \"invis\"]\n    }\n    subgraph cluster {\n      subgraph {\n        rank = same; A -> I -> H -> C [style = \"invis\"]\n      }\n      style = filled;\n      color = lightgrey;\n      label = \"Infectious Classes\"\n    }\n    subgraph {\n      rank = same; St2; RA, RI, RC; RH;\n    }\n    subgraph {\n      rank = same; St3; DI; DH; DC;\n    }\n    \n}","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
+<div id="htmlwidget-210095a79e5bc07ad0bf" style="width:100%;height:100%;" class="grViz html-widget"></div>
+<script type="application/json" data-for="htmlwidget-210095a79e5bc07ad0bf">{"x":{"diagram":"digraph simpmod {\n    graph[layout = dot, rankdir = LR]\n    node [shape = rectangle]\n    \n    S [group = gp]; E [group = gp]; I [group = gp]; RI [label = <R<FONT POINT-SIZE=\"8\"><SUB>I<\/SUB><\/FONT>>, group = gp]; DI [label = <D<FONT POINT-SIZE=\"8\"><SUB>I<\/SUB><\/FONT>>, group = gp]; \n    A [group = as]; RA [label = <R<FONT POINT-SIZE=\"8\"><SUB>A<\/SUB><\/FONT>>, group = as];\n    H [group = hos]; RH [label = <R<FONT POINT-SIZE=\"8\"><SUB>H<\/SUB><\/FONT>>, group = hos]; DH [label = <D<FONT POINT-SIZE=\"8\"><SUB>H<\/SUB><\/FONT>>, group = hos]; \n    C [group = crit]; RC [label = <R<FONT POINT-SIZE=\"8\"><SUB>C<\/SUB><\/FONT>>, group = crit]; DC [label = <D<FONT POINT-SIZE=\"8\"><SUB>C<\/SUB><\/FONT>>, group = crit];\n    genpop [label = \"Gen. Pop.\", group = gp]\n    asymp [label = \"Asymptomatics\", group = as]\n    hospital [label = \"Hospital Patient\", group = hos]\n    critical [label = \"Critical Care\", group = crit]\n    St00 [style = \"invis\", group = st]; St0 [label = \"Stage 0\", group = st]; \n    St1 [label = \"Stage 1\", group = st]; \n    St2 [label = \"Stage 2\", group = st]; St3 [label = \"Stage 3\", group = st]; \n    \n    genpop -> S [style = \"invis\"]\n    hospital -> H [style = \"invis\"]\n    critical -> C [style = \"invis\"]\n    asymp -> A [style = \"invis\"]\n    S -> E -> I -> RI\n    I -> DI [weight = 0]\n    I -> H -> C -> RC \n    C -> DC [weight = 0]\n    H -> RH \n    H -> DH [weight = 0] \n    RI -> DI [style = \"invis\"]\n    RH -> DH [style = \"invis\"]\n    RC -> DC [style = \"invis\"]\n    E -> A [weight = 0]\n    A -> RA \n    St00 -> St0 -> St1 -> St2 -> St3 [style = \"invis\"]\n    subgraph {\n      rank = same; St0; E;\n    }\n    subgraph {\n      rank = same; St00 -> asymp -> genpop -> hospital -> critical [style = \"invis\"]\n    }\n    subgraph cluster {\n      subgraph {\n        rank = same; A -> I -> H -> C [style = \"invis\"]\n      }\n      style = filled;\n      color = lightgrey;\n      label = \"Infectious Classes\"\n    }\n    subgraph {\n      rank = same; St2; RA, RI, RC; RH;\n    }\n    subgraph {\n      rank = same; St3; DI; DH; DC;\n    }\n    \n}","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
 <div id="metawards-setup" class="section level2">
 <h2>MetaWards setup</h2>
 <p>The model structure above allows for different progression pathways. MetaWards deals with this by assigning individuals to different “demographics”, where each demographic can be used to represent different progression pathways. There are also <code>mover</code> functions that can be used to move individuals between demographics, and <code>mixer</code> functions that scale the force-of-infection (FOI) terms between the different demographics (explained later). There are currently seven pathways, which will be described below, but can be summarised as:</p>
@@ -2170,151 +2170,152 @@ Click for MetaWards <code>extractor</code> file
 <a class="sourceLine" id="cb7-13" title="13">    <span class="co">## set specific column names</span></a>
 <a class="sourceLine" id="cb7-14" title="14">    col_names <span class="op">=</span> [<span class="st">&quot;Einc&quot;</span>, <span class="st">&quot;E&quot;</span>, <span class="st">&quot;Iinc&quot;</span>, <span class="st">&quot;I&quot;</span>, <span class="st">&quot;RI&quot;</span>, <span class="st">&quot;DI&quot;</span>, <span class="st">&quot;Ainc&quot;</span>, <span class="st">&quot;A&quot;</span>, <span class="st">&quot;RA&quot;</span>, <span class="st">&quot;Hinc&quot;</span>, <span class="st">&quot;H&quot;</span>,<span class="op">\</span></a>
 <a class="sourceLine" id="cb7-15" title="15">        <span class="st">&quot;RH&quot;</span>, <span class="st">&quot;DH&quot;</span>, <span class="st">&quot;Cinc&quot;</span>, <span class="st">&quot;C&quot;</span>, <span class="st">&quot;RC&quot;</span>, <span class="st">&quot;DC&quot;</span>]</a>
-<a class="sourceLine" id="cb7-16" title="16">    col_str <span class="op">=</span> <span class="st">&#39;,&#39;</span>.join(col_names)</a>
-<a class="sourceLine" id="cb7-17" title="17"></a>
-<a class="sourceLine" id="cb7-18" title="18">    <span class="kw">def</span> initialise(conn):</a>
-<a class="sourceLine" id="cb7-19" title="19">        c <span class="op">=</span> conn.cursor()</a>
-<a class="sourceLine" id="cb7-20" title="20">        table_name: <span class="bu">str</span> <span class="op">=</span> <span class="st">&quot;compact&quot;</span></a>
-<a class="sourceLine" id="cb7-21" title="21">        values: List[<span class="bu">str</span>] <span class="op">=</span> []</a>
-<a class="sourceLine" id="cb7-22" title="22">        c.execute(<span class="ss">f&quot;create table </span><span class="sc">{</span>table_name<span class="sc">}</span><span class="ss">(day int not null, ward int not null, </span><span class="sc">{</span>col_str<span class="sc">}</span><span class="ss">, &quot;</span></a>
-<a class="sourceLine" id="cb7-23" title="23">                  <span class="ss">f&quot;primary key (day, ward))&quot;</span>)</a>
-<a class="sourceLine" id="cb7-24" title="24">        conn.commit()</a>
-<a class="sourceLine" id="cb7-25" title="25"></a>
-<a class="sourceLine" id="cb7-26" title="26">    <span class="cf">return</span> initialise</a>
-<a class="sourceLine" id="cb7-27" title="27"></a>
+<a class="sourceLine" id="cb7-16" title="16">    col_names <span class="op">=</span> [<span class="ss">f&quot;</span><span class="sc">{i}</span><span class="ss"> int&quot;</span> <span class="cf">for</span> i <span class="kw">in</span> col_names]</a>
+<a class="sourceLine" id="cb7-17" title="17">    col_str <span class="op">=</span> <span class="st">&#39;,&#39;</span>.join(col_names)</a>
+<a class="sourceLine" id="cb7-18" title="18"></a>
+<a class="sourceLine" id="cb7-19" title="19">    <span class="kw">def</span> initialise(conn):</a>
+<a class="sourceLine" id="cb7-20" title="20">        c <span class="op">=</span> conn.cursor()</a>
+<a class="sourceLine" id="cb7-21" title="21">        table_name: <span class="bu">str</span> <span class="op">=</span> <span class="st">&quot;compact&quot;</span></a>
+<a class="sourceLine" id="cb7-22" title="22">        values: List[<span class="bu">str</span>] <span class="op">=</span> []</a>
+<a class="sourceLine" id="cb7-23" title="23">        c.execute(<span class="ss">f&quot;create table </span><span class="sc">{</span>table_name<span class="sc">}</span><span class="ss">(day int not null, ward int not null, </span><span class="sc">{</span>col_str<span class="sc">}</span><span class="ss">, &quot;</span></a>
+<a class="sourceLine" id="cb7-24" title="24">                  <span class="ss">f&quot;primary key (day, ward))&quot;</span>)</a>
+<a class="sourceLine" id="cb7-25" title="25">        conn.commit()</a>
+<a class="sourceLine" id="cb7-26" title="26"></a>
+<a class="sourceLine" id="cb7-27" title="27">    <span class="cf">return</span> initialise</a>
 <a class="sourceLine" id="cb7-28" title="28"></a>
-<a class="sourceLine" id="cb7-29" title="29"><span class="kw">def</span> output_db(population: Population, network: Networks,</a>
-<a class="sourceLine" id="cb7-30" title="30">              workspace: Workspace, output_dir: OutputFiles, <span class="op">**</span>kwargs):</a>
-<a class="sourceLine" id="cb7-31" title="31">    Console.<span class="bu">print</span>(<span class="ss">f&quot;Calling output_db for a </span><span class="sc">{</span>network<span class="sc">.</span>__class__<span class="sc">}</span><span class="ss"> object&quot;</span>)</a>
-<a class="sourceLine" id="cb7-32" title="32">    conn3 <span class="op">=</span> output_dir.open_db(<span class="st">&quot;stages.db&quot;</span>, initialise<span class="op">=</span>create_tables(network))</a>
-<a class="sourceLine" id="cb7-33" title="33">    c3 <span class="op">=</span> conn3.cursor()</a>
-<a class="sourceLine" id="cb7-34" title="34">    </a>
-<a class="sourceLine" id="cb7-35" title="35">    <span class="co">## setup marker for previous daya</span></a>
-<a class="sourceLine" id="cb7-36" title="36">    <span class="cf">for</span> i, subnet <span class="kw">in</span> <span class="bu">enumerate</span>(network.subnets):</a>
-<a class="sourceLine" id="cb7-37" title="37">        <span class="co">## if first day, then create a copy of the ward data</span></a>
-<a class="sourceLine" id="cb7-38" title="38">        <span class="co">## these should all be zero at day 0 and so not affect incidence</span></a>
-<a class="sourceLine" id="cb7-39" title="39">        <span class="cf">if</span> <span class="kw">not</span> <span class="bu">hasattr</span>(workspace.subspaces[i], <span class="st">&quot;output_previous&quot;</span>):</a>
-<a class="sourceLine" id="cb7-40" title="40">            workspace.subspaces[i].output_previous <span class="op">=</span> deepcopy(workspace.subspaces[i].ward_inf_tot)</a>
-<a class="sourceLine" id="cb7-41" title="41">            <span class="cf">for</span> j, sub <span class="kw">in</span> <span class="bu">enumerate</span>(workspace.subspaces[i].output_previous):</a>
-<a class="sourceLine" id="cb7-42" title="42">                <span class="cf">for</span> k, sub1 <span class="kw">in</span> <span class="bu">enumerate</span>(workspace.subspaces[i].output_previous[j]):</a>
-<a class="sourceLine" id="cb7-43" title="43">                   workspace.subspaces[i].output_previous[j][k] <span class="op">=</span> <span class="dv">0</span></a>
-<a class="sourceLine" id="cb7-44" title="44">    </a>
-<a class="sourceLine" id="cb7-45" title="45">    <span class="co">## extract Rprime and Dprime in each demographic</span></a>
-<a class="sourceLine" id="cb7-46" title="46">    Rprime <span class="op">=</span> [[] <span class="cf">for</span> _ <span class="kw">in</span> <span class="bu">range</span>(<span class="dv">4</span>)]</a>
-<a class="sourceLine" id="cb7-47" title="47">    Dprime <span class="op">=</span> [[] <span class="cf">for</span> _ <span class="kw">in</span> <span class="bu">range</span>(<span class="dv">4</span>)]</a>
-<a class="sourceLine" id="cb7-48" title="48">    <span class="cf">for</span> i, subnet <span class="kw">in</span> <span class="bu">enumerate</span>(network.subnets):</a>
-<a class="sourceLine" id="cb7-49" title="49"></a>
-<a class="sourceLine" id="cb7-50" title="50">        <span class="co">## get yesterday&#39;s data</span></a>
-<a class="sourceLine" id="cb7-51" title="51">        ward_inf_previous <span class="op">=</span> workspace.subspaces[i].output_previous</a>
-<a class="sourceLine" id="cb7-52" title="52">        <span class="co">## get today&#39;s data</span></a>
-<a class="sourceLine" id="cb7-53" title="53">        ward_inf_tot <span class="op">=</span> workspace.subspaces[i].ward_inf_tot</a>
-<a class="sourceLine" id="cb7-54" title="54">        </a>
-<a class="sourceLine" id="cb7-55" title="55">        <span class="co">## new deaths across wards</span></a>
-<a class="sourceLine" id="cb7-56" title="56">        <span class="cf">if</span> subnet.name <span class="op">!=</span> <span class="st">&quot;asymp&quot;</span>:</a>
-<a class="sourceLine" id="cb7-57" title="57">            <span class="cf">for</span> old, new <span class="kw">in</span> <span class="bu">zip</span>(ward_inf_previous[<span class="dv">3</span>], ward_inf_tot[<span class="dv">3</span>]):</a>
-<a class="sourceLine" id="cb7-58" title="58">                Dprime[i].append(new <span class="op">-</span> old)</a>
-<a class="sourceLine" id="cb7-59" title="59">        </a>
-<a class="sourceLine" id="cb7-60" title="60">        <span class="co">## new removals across wards</span></a>
-<a class="sourceLine" id="cb7-61" title="61">        <span class="cf">for</span> old, new <span class="kw">in</span> <span class="bu">zip</span>(ward_inf_previous[<span class="dv">2</span>], ward_inf_tot[<span class="dv">2</span>]):</a>
-<a class="sourceLine" id="cb7-62" title="62">            Rprime[i].append(new <span class="op">-</span> old)</a>
-<a class="sourceLine" id="cb7-63" title="63">    </a>
-<a class="sourceLine" id="cb7-64" title="64">    <span class="co">## calculate Iprime in each demographic</span></a>
-<a class="sourceLine" id="cb7-65" title="65">    Iprime <span class="op">=</span> [[] <span class="cf">for</span> _ <span class="kw">in</span> <span class="bu">range</span>(<span class="dv">4</span>)]</a>
-<a class="sourceLine" id="cb7-66" title="66">    </a>
-<a class="sourceLine" id="cb7-67" title="67">    <span class="co">## NEED TO DO FOLLOWING CALCULATIONS IN ORDER</span></a>
-<a class="sourceLine" id="cb7-68" title="68">    </a>
-<a class="sourceLine" id="cb7-69" title="69">    <span class="co">## extract subnets names</span></a>
-<a class="sourceLine" id="cb7-70" title="70">    sub_names <span class="op">=</span> [network.subnets[i].name <span class="cf">for</span> i <span class="kw">in</span> <span class="bu">range</span>(<span class="dv">4</span>)]</a>
-<a class="sourceLine" id="cb7-71" title="71">    </a>
-<a class="sourceLine" id="cb7-72" title="72">    <span class="co">## ASYMPTOMATICS</span></a>
-<a class="sourceLine" id="cb7-73" title="73">    ia <span class="op">=</span> sub_names.index(<span class="st">&quot;asymp&quot;</span>)</a>
-<a class="sourceLine" id="cb7-74" title="74">    <span class="co">## get data</span></a>
-<a class="sourceLine" id="cb7-75" title="75">    ward_inf_previous <span class="op">=</span> workspace.subspaces[ia].output_previous</a>
-<a class="sourceLine" id="cb7-76" title="76">    ward_inf_tot <span class="op">=</span> workspace.subspaces[ia].ward_inf_tot</a>
-<a class="sourceLine" id="cb7-77" title="77">    <span class="co">## calculate incidence</span></a>
-<a class="sourceLine" id="cb7-78" title="78">    <span class="cf">for</span> old, new, Rinc <span class="kw">in</span> <span class="bu">zip</span>(ward_inf_previous[<span class="dv">1</span>], ward_inf_tot[<span class="dv">1</span>], Rprime[ia]):</a>
-<a class="sourceLine" id="cb7-79" title="79">        Iprime[ia].append(new <span class="op">-</span> old <span class="op">+</span> Rinc)</a>
-<a class="sourceLine" id="cb7-80" title="80">        </a>
-<a class="sourceLine" id="cb7-81" title="81">    <span class="co">## CRITICAL</span></a>
-<a class="sourceLine" id="cb7-82" title="82">    ic <span class="op">=</span> sub_names.index(<span class="st">&quot;critical&quot;</span>)</a>
-<a class="sourceLine" id="cb7-83" title="83">    <span class="co">## get data</span></a>
-<a class="sourceLine" id="cb7-84" title="84">    ward_inf_previous <span class="op">=</span> workspace.subspaces[ic].output_previous</a>
-<a class="sourceLine" id="cb7-85" title="85">    ward_inf_tot <span class="op">=</span> workspace.subspaces[ic].ward_inf_tot</a>
-<a class="sourceLine" id="cb7-86" title="86">    <span class="co">## calculate incidence</span></a>
-<a class="sourceLine" id="cb7-87" title="87">    <span class="cf">for</span> old, new, Rinc, Dinc <span class="kw">in</span> <span class="bu">zip</span>(ward_inf_previous[<span class="dv">1</span>], ward_inf_tot[<span class="dv">1</span>], Rprime[ic], Dprime[ic]):</a>
-<a class="sourceLine" id="cb7-88" title="88">        Iprime[ic].append(new <span class="op">-</span> old <span class="op">+</span> Rinc <span class="op">+</span> Dinc)</a>
-<a class="sourceLine" id="cb7-89" title="89">        </a>
-<a class="sourceLine" id="cb7-90" title="90">    <span class="co">## HOSPITAL</span></a>
-<a class="sourceLine" id="cb7-91" title="91">    ih <span class="op">=</span> sub_names.index(<span class="st">&quot;hospital&quot;</span>)</a>
-<a class="sourceLine" id="cb7-92" title="92">    <span class="co">## get data</span></a>
-<a class="sourceLine" id="cb7-93" title="93">    ward_inf_previous <span class="op">=</span> workspace.subspaces[ih].output_previous</a>
-<a class="sourceLine" id="cb7-94" title="94">    ward_inf_tot <span class="op">=</span> workspace.subspaces[ih].ward_inf_tot</a>
-<a class="sourceLine" id="cb7-95" title="95">    <span class="co">## calculate incidence</span></a>
-<a class="sourceLine" id="cb7-96" title="96">    <span class="cf">for</span> old, new, Rinc, Dinc, Cinc <span class="kw">in</span> <span class="bu">zip</span>(ward_inf_previous[<span class="dv">1</span>], ward_inf_tot[<span class="dv">1</span>], Rprime[ih], Dprime[ih], Iprime[ic]):</a>
-<a class="sourceLine" id="cb7-97" title="97">        Iprime[ih].append(new <span class="op">-</span> old <span class="op">+</span> Rinc <span class="op">+</span> Dinc <span class="op">+</span> Cinc)</a>
-<a class="sourceLine" id="cb7-98" title="98">        </a>
-<a class="sourceLine" id="cb7-99" title="99">    <span class="co">## GENPOP</span></a>
-<a class="sourceLine" id="cb7-100" title="100">    ig <span class="op">=</span> sub_names.index(<span class="st">&quot;genpop&quot;</span>)</a>
-<a class="sourceLine" id="cb7-101" title="101">    <span class="co">## get data</span></a>
-<a class="sourceLine" id="cb7-102" title="102">    ward_inf_previous <span class="op">=</span> workspace.subspaces[ig].output_previous</a>
-<a class="sourceLine" id="cb7-103" title="103">    ward_inf_tot <span class="op">=</span> workspace.subspaces[ig].ward_inf_tot</a>
-<a class="sourceLine" id="cb7-104" title="104">    <span class="co">## calculate incidence</span></a>
-<a class="sourceLine" id="cb7-105" title="105">    <span class="cf">for</span> old, new, Rinc, Dinc, Hinc <span class="kw">in</span> <span class="bu">zip</span>(ward_inf_previous[<span class="dv">1</span>], ward_inf_tot[<span class="dv">1</span>], Rprime[ig], Dprime[ig], Iprime[ih]):</a>
-<a class="sourceLine" id="cb7-106" title="106">        Iprime[ig].append(new <span class="op">-</span> old <span class="op">+</span> Rinc <span class="op">+</span> Dinc <span class="op">+</span> Hinc)</a>
-<a class="sourceLine" id="cb7-107" title="107">        </a>
-<a class="sourceLine" id="cb7-108" title="108">    <span class="co">## calculate Eprime in GENPOP demographic</span></a>
-<a class="sourceLine" id="cb7-109" title="109">    Eprime <span class="op">=</span> []</a>
-<a class="sourceLine" id="cb7-110" title="110">    <span class="cf">for</span> old, new, Iinc, Ainc <span class="kw">in</span> <span class="bu">zip</span>(ward_inf_previous[<span class="dv">0</span>], ward_inf_tot[<span class="dv">0</span>], Iprime[ig], Iprime[ia]):</a>
-<a class="sourceLine" id="cb7-111" title="111">        Eprime.append(new <span class="op">-</span> old <span class="op">+</span> Iinc <span class="op">+</span> Ainc)</a>
-<a class="sourceLine" id="cb7-112" title="112">        </a>
-<a class="sourceLine" id="cb7-113" title="113">    <span class="co">## loop over wards and write to file</span></a>
-<a class="sourceLine" id="cb7-114" title="114">    wards <span class="op">=</span> <span class="bu">range</span>(<span class="dv">0</span>, workspace.subspaces[<span class="dv">0</span>].nnodes <span class="op">+</span> <span class="dv">1</span>)</a>
-<a class="sourceLine" id="cb7-115" title="115">    day <span class="op">=</span> [population.day] <span class="op">*</span> <span class="bu">len</span>(wards)</a>
-<a class="sourceLine" id="cb7-116" title="116">    <span class="co"># print(workspace.subspaces[0].nnodes)</span></a>
-<a class="sourceLine" id="cb7-117" title="117">    <span class="co"># print(len(day))</span></a>
-<a class="sourceLine" id="cb7-118" title="118">    <span class="co"># print(len(wards))</span></a>
-<a class="sourceLine" id="cb7-119" title="119">    <span class="co"># print(len(Eprime))</span></a>
-<a class="sourceLine" id="cb7-120" title="120">    </a>
-<a class="sourceLine" id="cb7-121" title="121">    <span class="co">## set column names</span></a>
-<a class="sourceLine" id="cb7-122" title="122">    col_names <span class="op">=</span> [<span class="st">&quot;day&quot;</span>, <span class="st">&quot;ward&quot;</span>, <span class="st">&quot;Einc&quot;</span>, <span class="st">&quot;E&quot;</span>, <span class="st">&quot;Iinc&quot;</span>, <span class="st">&quot;I&quot;</span>, <span class="st">&quot;RI&quot;</span>, <span class="st">&quot;DI&quot;</span>, <span class="st">&quot;Ainc&quot;</span>, <span class="st">&quot;A&quot;</span>, <span class="st">&quot;RA&quot;</span>, <span class="st">&quot;Hinc&quot;</span>, <span class="st">&quot;H&quot;</span>,<span class="op">\</span></a>
-<a class="sourceLine" id="cb7-123" title="123">        <span class="st">&quot;RH&quot;</span>, <span class="st">&quot;DH&quot;</span>, <span class="st">&quot;Cinc&quot;</span>, <span class="st">&quot;C&quot;</span>, <span class="st">&quot;RC&quot;</span>, <span class="st">&quot;DC&quot;</span>]</a>
-<a class="sourceLine" id="cb7-124" title="124">    col_str <span class="op">=</span> <span class="st">&#39;,&#39;</span>.join(col_names)</a>
-<a class="sourceLine" id="cb7-125" title="125">    </a>
-<a class="sourceLine" id="cb7-126" title="126">    <span class="co">## extract demographics</span></a>
-<a class="sourceLine" id="cb7-127" title="127">    asymp_ward <span class="op">=</span> workspace.subspaces[ia].ward_inf_tot</a>
-<a class="sourceLine" id="cb7-128" title="128">    genpop_ward <span class="op">=</span> workspace.subspaces[ig].ward_inf_tot</a>
-<a class="sourceLine" id="cb7-129" title="129">    hospital_ward <span class="op">=</span> workspace.subspaces[ih].ward_inf_tot</a>
-<a class="sourceLine" id="cb7-130" title="130">    critical_ward <span class="op">=</span> workspace.subspaces[ic].ward_inf_tot</a>
-<a class="sourceLine" id="cb7-131" title="131">    </a>
-<a class="sourceLine" id="cb7-132" title="132">    <span class="co">## write to file</span></a>
-<a class="sourceLine" id="cb7-133" title="133">    <span class="cf">for</span> day, ward, Einc, E, Iinc, I, RI, DI, Ainc, A, RA, Hinc, H, RH, RD, Cinc, C, RC, DC <span class="kw">in</span><span class="op">\</span></a>
-<a class="sourceLine" id="cb7-134" title="134">    <span class="bu">zip</span>(day, wards, Eprime, genpop_ward[<span class="dv">0</span>], Iprime[ig], genpop_ward[<span class="dv">1</span>], genpop_ward[<span class="dv">2</span>], genpop_ward[<span class="dv">3</span>],<span class="op">\</span></a>
-<a class="sourceLine" id="cb7-135" title="135">    Iprime[ia], asymp_ward[<span class="dv">1</span>], asymp_ward[<span class="dv">2</span>], Iprime[ih], hospital_ward[<span class="dv">1</span>], hospital_ward[<span class="dv">2</span>],<span class="op">\</span></a>
-<a class="sourceLine" id="cb7-136" title="136">    hospital_ward[<span class="dv">3</span>], Iprime[ic], critical_ward[<span class="dv">1</span>], critical_ward[<span class="dv">2</span>], critical_ward[<span class="dv">3</span>]):</a>
-<a class="sourceLine" id="cb7-137" title="137">        <span class="cf">if</span> ward <span class="kw">not</span> <span class="kw">in</span> _zero_crossings:</a>
-<a class="sourceLine" id="cb7-138" title="138">            _zero_crossings[ward] <span class="op">=</span> <span class="va">False</span></a>
-<a class="sourceLine" id="cb7-139" title="139">            </a>
-<a class="sourceLine" id="cb7-140" title="140">        <span class="co">## try to fudge a marker for first infections</span></a>
-<a class="sourceLine" id="cb7-141" title="141">        <span class="cf">if</span> Einc <span class="op">!=</span> <span class="dv">0</span> <span class="kw">and</span> _zero_crossings[ward] <span class="kw">is</span> <span class="va">False</span> <span class="kw">and</span> ward <span class="op">!=</span> <span class="dv">0</span>:</a>
-<a class="sourceLine" id="cb7-142" title="142">            _zero_crossings[ward] <span class="op">=</span> <span class="va">True</span></a>
-<a class="sourceLine" id="cb7-143" title="143">            Console.<span class="bu">print</span>(<span class="ss">f&quot;Got first infection in ward </span><span class="sc">{</span>ward<span class="sc">}</span><span class="ss">&quot;</span>)</a>
-<a class="sourceLine" id="cb7-144" title="144"></a>
-<a class="sourceLine" id="cb7-145" title="145">        val <span class="op">=</span> [day, ward, Einc, E, Iinc, I, RI, DI, Ainc, A, RA, Hinc, H, RH, RD, Cinc, C, RC, DC]</a>
-<a class="sourceLine" id="cb7-146" title="146">        keeps_str <span class="op">=</span> <span class="st">&quot;,&quot;</span>.join([<span class="bu">str</span>(v) <span class="cf">for</span> v <span class="kw">in</span> val])</a>
-<a class="sourceLine" id="cb7-147" title="147">        qstring <span class="op">=</span> <span class="ss">f&quot;insert into compact (</span><span class="sc">{</span>col_str<span class="sc">}</span><span class="ss">) values (</span><span class="sc">{</span>keeps_str<span class="sc">}</span><span class="ss">) &quot;</span></a>
-<a class="sourceLine" id="cb7-148" title="148">        <span class="cf">if</span> _zero_crossings[ward] <span class="kw">is</span> <span class="va">True</span>:</a>
-<a class="sourceLine" id="cb7-149" title="149">            c3.execute(qstring)</a>
-<a class="sourceLine" id="cb7-150" title="150">            </a>
-<a class="sourceLine" id="cb7-151" title="151">    conn3.commit()</a>
-<a class="sourceLine" id="cb7-152" title="152">    </a>
-<a class="sourceLine" id="cb7-153" title="153">    <span class="co">## save today&#39;s data so that it can be used tomorrow</span></a>
-<a class="sourceLine" id="cb7-154" title="154">    <span class="cf">for</span> i, subnet <span class="kw">in</span> <span class="bu">enumerate</span>(network.subnets):</a>
-<a class="sourceLine" id="cb7-155" title="155">        workspace.subspaces[i].output_previous <span class="op">=</span> deepcopy(workspace.subspaces[i].ward_inf_tot)</a>
-<a class="sourceLine" id="cb7-156" title="156"></a>
-<a class="sourceLine" id="cb7-157" title="157"><span class="kw">def</span> extract_db(<span class="op">**</span>kwargs):</a>
-<a class="sourceLine" id="cb7-158" title="158">    funcs <span class="op">=</span> []</a>
-<a class="sourceLine" id="cb7-159" title="159">    funcs.append(output_db)</a>
-<a class="sourceLine" id="cb7-160" title="160">    <span class="cf">return</span> funcs</a></code></pre></div>
+<a class="sourceLine" id="cb7-29" title="29"></a>
+<a class="sourceLine" id="cb7-30" title="30"><span class="kw">def</span> output_db(population: Population, network: Networks,</a>
+<a class="sourceLine" id="cb7-31" title="31">              workspace: Workspace, output_dir: OutputFiles, <span class="op">**</span>kwargs):</a>
+<a class="sourceLine" id="cb7-32" title="32">    Console.<span class="bu">print</span>(<span class="ss">f&quot;Calling output_db for a </span><span class="sc">{</span>network<span class="sc">.</span>__class__<span class="sc">}</span><span class="ss"> object&quot;</span>)</a>
+<a class="sourceLine" id="cb7-33" title="33">    conn3 <span class="op">=</span> output_dir.open_db(<span class="st">&quot;stages.db&quot;</span>, initialise<span class="op">=</span>create_tables(network))</a>
+<a class="sourceLine" id="cb7-34" title="34">    c3 <span class="op">=</span> conn3.cursor()</a>
+<a class="sourceLine" id="cb7-35" title="35">    </a>
+<a class="sourceLine" id="cb7-36" title="36">    <span class="co">## setup marker for previous daya</span></a>
+<a class="sourceLine" id="cb7-37" title="37">    <span class="cf">for</span> i, subnet <span class="kw">in</span> <span class="bu">enumerate</span>(network.subnets):</a>
+<a class="sourceLine" id="cb7-38" title="38">        <span class="co">## if first day, then create a copy of the ward data</span></a>
+<a class="sourceLine" id="cb7-39" title="39">        <span class="co">## these should all be zero at day 0 and so not affect incidence</span></a>
+<a class="sourceLine" id="cb7-40" title="40">        <span class="cf">if</span> <span class="kw">not</span> <span class="bu">hasattr</span>(workspace.subspaces[i], <span class="st">&quot;output_previous&quot;</span>):</a>
+<a class="sourceLine" id="cb7-41" title="41">            workspace.subspaces[i].output_previous <span class="op">=</span> deepcopy(workspace.subspaces[i].ward_inf_tot)</a>
+<a class="sourceLine" id="cb7-42" title="42">            <span class="cf">for</span> j, sub <span class="kw">in</span> <span class="bu">enumerate</span>(workspace.subspaces[i].output_previous):</a>
+<a class="sourceLine" id="cb7-43" title="43">                <span class="cf">for</span> k, sub1 <span class="kw">in</span> <span class="bu">enumerate</span>(workspace.subspaces[i].output_previous[j]):</a>
+<a class="sourceLine" id="cb7-44" title="44">                   workspace.subspaces[i].output_previous[j][k] <span class="op">=</span> <span class="dv">0</span></a>
+<a class="sourceLine" id="cb7-45" title="45">    </a>
+<a class="sourceLine" id="cb7-46" title="46">    <span class="co">## extract Rprime and Dprime in each demographic</span></a>
+<a class="sourceLine" id="cb7-47" title="47">    Rprime <span class="op">=</span> [[] <span class="cf">for</span> _ <span class="kw">in</span> <span class="bu">range</span>(<span class="dv">4</span>)]</a>
+<a class="sourceLine" id="cb7-48" title="48">    Dprime <span class="op">=</span> [[] <span class="cf">for</span> _ <span class="kw">in</span> <span class="bu">range</span>(<span class="dv">4</span>)]</a>
+<a class="sourceLine" id="cb7-49" title="49">    <span class="cf">for</span> i, subnet <span class="kw">in</span> <span class="bu">enumerate</span>(network.subnets):</a>
+<a class="sourceLine" id="cb7-50" title="50"></a>
+<a class="sourceLine" id="cb7-51" title="51">        <span class="co">## get yesterday&#39;s data</span></a>
+<a class="sourceLine" id="cb7-52" title="52">        ward_inf_previous <span class="op">=</span> workspace.subspaces[i].output_previous</a>
+<a class="sourceLine" id="cb7-53" title="53">        <span class="co">## get today&#39;s data</span></a>
+<a class="sourceLine" id="cb7-54" title="54">        ward_inf_tot <span class="op">=</span> workspace.subspaces[i].ward_inf_tot</a>
+<a class="sourceLine" id="cb7-55" title="55">        </a>
+<a class="sourceLine" id="cb7-56" title="56">        <span class="co">## new deaths across wards</span></a>
+<a class="sourceLine" id="cb7-57" title="57">        <span class="cf">if</span> subnet.name <span class="op">!=</span> <span class="st">&quot;asymp&quot;</span>:</a>
+<a class="sourceLine" id="cb7-58" title="58">            <span class="cf">for</span> old, new <span class="kw">in</span> <span class="bu">zip</span>(ward_inf_previous[<span class="dv">3</span>], ward_inf_tot[<span class="dv">3</span>]):</a>
+<a class="sourceLine" id="cb7-59" title="59">                Dprime[i].append(new <span class="op">-</span> old)</a>
+<a class="sourceLine" id="cb7-60" title="60">        </a>
+<a class="sourceLine" id="cb7-61" title="61">        <span class="co">## new removals across wards</span></a>
+<a class="sourceLine" id="cb7-62" title="62">        <span class="cf">for</span> old, new <span class="kw">in</span> <span class="bu">zip</span>(ward_inf_previous[<span class="dv">2</span>], ward_inf_tot[<span class="dv">2</span>]):</a>
+<a class="sourceLine" id="cb7-63" title="63">            Rprime[i].append(new <span class="op">-</span> old)</a>
+<a class="sourceLine" id="cb7-64" title="64">    </a>
+<a class="sourceLine" id="cb7-65" title="65">    <span class="co">## calculate Iprime in each demographic</span></a>
+<a class="sourceLine" id="cb7-66" title="66">    Iprime <span class="op">=</span> [[] <span class="cf">for</span> _ <span class="kw">in</span> <span class="bu">range</span>(<span class="dv">4</span>)]</a>
+<a class="sourceLine" id="cb7-67" title="67">    </a>
+<a class="sourceLine" id="cb7-68" title="68">    <span class="co">## NEED TO DO FOLLOWING CALCULATIONS IN ORDER</span></a>
+<a class="sourceLine" id="cb7-69" title="69">    </a>
+<a class="sourceLine" id="cb7-70" title="70">    <span class="co">## extract subnets names</span></a>
+<a class="sourceLine" id="cb7-71" title="71">    sub_names <span class="op">=</span> [network.subnets[i].name <span class="cf">for</span> i <span class="kw">in</span> <span class="bu">range</span>(<span class="dv">4</span>)]</a>
+<a class="sourceLine" id="cb7-72" title="72">    </a>
+<a class="sourceLine" id="cb7-73" title="73">    <span class="co">## ASYMPTOMATICS</span></a>
+<a class="sourceLine" id="cb7-74" title="74">    ia <span class="op">=</span> sub_names.index(<span class="st">&quot;asymp&quot;</span>)</a>
+<a class="sourceLine" id="cb7-75" title="75">    <span class="co">## get data</span></a>
+<a class="sourceLine" id="cb7-76" title="76">    ward_inf_previous <span class="op">=</span> workspace.subspaces[ia].output_previous</a>
+<a class="sourceLine" id="cb7-77" title="77">    ward_inf_tot <span class="op">=</span> workspace.subspaces[ia].ward_inf_tot</a>
+<a class="sourceLine" id="cb7-78" title="78">    <span class="co">## calculate incidence</span></a>
+<a class="sourceLine" id="cb7-79" title="79">    <span class="cf">for</span> old, new, Rinc <span class="kw">in</span> <span class="bu">zip</span>(ward_inf_previous[<span class="dv">1</span>], ward_inf_tot[<span class="dv">1</span>], Rprime[ia]):</a>
+<a class="sourceLine" id="cb7-80" title="80">        Iprime[ia].append(new <span class="op">-</span> old <span class="op">+</span> Rinc)</a>
+<a class="sourceLine" id="cb7-81" title="81">        </a>
+<a class="sourceLine" id="cb7-82" title="82">    <span class="co">## CRITICAL</span></a>
+<a class="sourceLine" id="cb7-83" title="83">    ic <span class="op">=</span> sub_names.index(<span class="st">&quot;critical&quot;</span>)</a>
+<a class="sourceLine" id="cb7-84" title="84">    <span class="co">## get data</span></a>
+<a class="sourceLine" id="cb7-85" title="85">    ward_inf_previous <span class="op">=</span> workspace.subspaces[ic].output_previous</a>
+<a class="sourceLine" id="cb7-86" title="86">    ward_inf_tot <span class="op">=</span> workspace.subspaces[ic].ward_inf_tot</a>
+<a class="sourceLine" id="cb7-87" title="87">    <span class="co">## calculate incidence</span></a>
+<a class="sourceLine" id="cb7-88" title="88">    <span class="cf">for</span> old, new, Rinc, Dinc <span class="kw">in</span> <span class="bu">zip</span>(ward_inf_previous[<span class="dv">1</span>], ward_inf_tot[<span class="dv">1</span>], Rprime[ic], Dprime[ic]):</a>
+<a class="sourceLine" id="cb7-89" title="89">        Iprime[ic].append(new <span class="op">-</span> old <span class="op">+</span> Rinc <span class="op">+</span> Dinc)</a>
+<a class="sourceLine" id="cb7-90" title="90">        </a>
+<a class="sourceLine" id="cb7-91" title="91">    <span class="co">## HOSPITAL</span></a>
+<a class="sourceLine" id="cb7-92" title="92">    ih <span class="op">=</span> sub_names.index(<span class="st">&quot;hospital&quot;</span>)</a>
+<a class="sourceLine" id="cb7-93" title="93">    <span class="co">## get data</span></a>
+<a class="sourceLine" id="cb7-94" title="94">    ward_inf_previous <span class="op">=</span> workspace.subspaces[ih].output_previous</a>
+<a class="sourceLine" id="cb7-95" title="95">    ward_inf_tot <span class="op">=</span> workspace.subspaces[ih].ward_inf_tot</a>
+<a class="sourceLine" id="cb7-96" title="96">    <span class="co">## calculate incidence</span></a>
+<a class="sourceLine" id="cb7-97" title="97">    <span class="cf">for</span> old, new, Rinc, Dinc, Cinc <span class="kw">in</span> <span class="bu">zip</span>(ward_inf_previous[<span class="dv">1</span>], ward_inf_tot[<span class="dv">1</span>], Rprime[ih], Dprime[ih], Iprime[ic]):</a>
+<a class="sourceLine" id="cb7-98" title="98">        Iprime[ih].append(new <span class="op">-</span> old <span class="op">+</span> Rinc <span class="op">+</span> Dinc <span class="op">+</span> Cinc)</a>
+<a class="sourceLine" id="cb7-99" title="99">        </a>
+<a class="sourceLine" id="cb7-100" title="100">    <span class="co">## GENPOP</span></a>
+<a class="sourceLine" id="cb7-101" title="101">    ig <span class="op">=</span> sub_names.index(<span class="st">&quot;genpop&quot;</span>)</a>
+<a class="sourceLine" id="cb7-102" title="102">    <span class="co">## get data</span></a>
+<a class="sourceLine" id="cb7-103" title="103">    ward_inf_previous <span class="op">=</span> workspace.subspaces[ig].output_previous</a>
+<a class="sourceLine" id="cb7-104" title="104">    ward_inf_tot <span class="op">=</span> workspace.subspaces[ig].ward_inf_tot</a>
+<a class="sourceLine" id="cb7-105" title="105">    <span class="co">## calculate incidence</span></a>
+<a class="sourceLine" id="cb7-106" title="106">    <span class="cf">for</span> old, new, Rinc, Dinc, Hinc <span class="kw">in</span> <span class="bu">zip</span>(ward_inf_previous[<span class="dv">1</span>], ward_inf_tot[<span class="dv">1</span>], Rprime[ig], Dprime[ig], Iprime[ih]):</a>
+<a class="sourceLine" id="cb7-107" title="107">        Iprime[ig].append(new <span class="op">-</span> old <span class="op">+</span> Rinc <span class="op">+</span> Dinc <span class="op">+</span> Hinc)</a>
+<a class="sourceLine" id="cb7-108" title="108">        </a>
+<a class="sourceLine" id="cb7-109" title="109">    <span class="co">## calculate Eprime in GENPOP demographic</span></a>
+<a class="sourceLine" id="cb7-110" title="110">    Eprime <span class="op">=</span> []</a>
+<a class="sourceLine" id="cb7-111" title="111">    <span class="cf">for</span> old, new, Iinc, Ainc <span class="kw">in</span> <span class="bu">zip</span>(ward_inf_previous[<span class="dv">0</span>], ward_inf_tot[<span class="dv">0</span>], Iprime[ig], Iprime[ia]):</a>
+<a class="sourceLine" id="cb7-112" title="112">        Eprime.append(new <span class="op">-</span> old <span class="op">+</span> Iinc <span class="op">+</span> Ainc)</a>
+<a class="sourceLine" id="cb7-113" title="113">        </a>
+<a class="sourceLine" id="cb7-114" title="114">    <span class="co">## loop over wards and write to file</span></a>
+<a class="sourceLine" id="cb7-115" title="115">    wards <span class="op">=</span> <span class="bu">range</span>(<span class="dv">0</span>, workspace.subspaces[<span class="dv">0</span>].nnodes <span class="op">+</span> <span class="dv">1</span>)</a>
+<a class="sourceLine" id="cb7-116" title="116">    day <span class="op">=</span> [population.day] <span class="op">*</span> <span class="bu">len</span>(wards)</a>
+<a class="sourceLine" id="cb7-117" title="117">    <span class="co"># print(workspace.subspaces[0].nnodes)</span></a>
+<a class="sourceLine" id="cb7-118" title="118">    <span class="co"># print(len(day))</span></a>
+<a class="sourceLine" id="cb7-119" title="119">    <span class="co"># print(len(wards))</span></a>
+<a class="sourceLine" id="cb7-120" title="120">    <span class="co"># print(len(Eprime))</span></a>
+<a class="sourceLine" id="cb7-121" title="121">    </a>
+<a class="sourceLine" id="cb7-122" title="122">    <span class="co">## set column names</span></a>
+<a class="sourceLine" id="cb7-123" title="123">    col_names <span class="op">=</span> [<span class="st">&quot;day&quot;</span>, <span class="st">&quot;ward&quot;</span>, <span class="st">&quot;Einc&quot;</span>, <span class="st">&quot;E&quot;</span>, <span class="st">&quot;Iinc&quot;</span>, <span class="st">&quot;I&quot;</span>, <span class="st">&quot;RI&quot;</span>, <span class="st">&quot;DI&quot;</span>, <span class="st">&quot;Ainc&quot;</span>, <span class="st">&quot;A&quot;</span>, <span class="st">&quot;RA&quot;</span>, <span class="st">&quot;Hinc&quot;</span>, <span class="st">&quot;H&quot;</span>,<span class="op">\</span></a>
+<a class="sourceLine" id="cb7-124" title="124">        <span class="st">&quot;RH&quot;</span>, <span class="st">&quot;DH&quot;</span>, <span class="st">&quot;Cinc&quot;</span>, <span class="st">&quot;C&quot;</span>, <span class="st">&quot;RC&quot;</span>, <span class="st">&quot;DC&quot;</span>]</a>
+<a class="sourceLine" id="cb7-125" title="125">    col_str <span class="op">=</span> <span class="st">&#39;,&#39;</span>.join(col_names)</a>
+<a class="sourceLine" id="cb7-126" title="126">    </a>
+<a class="sourceLine" id="cb7-127" title="127">    <span class="co">## extract demographics</span></a>
+<a class="sourceLine" id="cb7-128" title="128">    asymp_ward <span class="op">=</span> workspace.subspaces[ia].ward_inf_tot</a>
+<a class="sourceLine" id="cb7-129" title="129">    genpop_ward <span class="op">=</span> workspace.subspaces[ig].ward_inf_tot</a>
+<a class="sourceLine" id="cb7-130" title="130">    hospital_ward <span class="op">=</span> workspace.subspaces[ih].ward_inf_tot</a>
+<a class="sourceLine" id="cb7-131" title="131">    critical_ward <span class="op">=</span> workspace.subspaces[ic].ward_inf_tot</a>
+<a class="sourceLine" id="cb7-132" title="132">    </a>
+<a class="sourceLine" id="cb7-133" title="133">    <span class="co">## write to file</span></a>
+<a class="sourceLine" id="cb7-134" title="134">    <span class="cf">for</span> day, ward, Einc, E, Iinc, I, RI, DI, Ainc, A, RA, Hinc, H, RH, RD, Cinc, C, RC, DC <span class="kw">in</span><span class="op">\</span></a>
+<a class="sourceLine" id="cb7-135" title="135">    <span class="bu">zip</span>(day, wards, Eprime, genpop_ward[<span class="dv">0</span>], Iprime[ig], genpop_ward[<span class="dv">1</span>], genpop_ward[<span class="dv">2</span>], genpop_ward[<span class="dv">3</span>],<span class="op">\</span></a>
+<a class="sourceLine" id="cb7-136" title="136">    Iprime[ia], asymp_ward[<span class="dv">1</span>], asymp_ward[<span class="dv">2</span>], Iprime[ih], hospital_ward[<span class="dv">1</span>], hospital_ward[<span class="dv">2</span>],<span class="op">\</span></a>
+<a class="sourceLine" id="cb7-137" title="137">    hospital_ward[<span class="dv">3</span>], Iprime[ic], critical_ward[<span class="dv">1</span>], critical_ward[<span class="dv">2</span>], critical_ward[<span class="dv">3</span>]):</a>
+<a class="sourceLine" id="cb7-138" title="138">        <span class="cf">if</span> ward <span class="kw">not</span> <span class="kw">in</span> _zero_crossings:</a>
+<a class="sourceLine" id="cb7-139" title="139">            _zero_crossings[ward] <span class="op">=</span> <span class="va">False</span></a>
+<a class="sourceLine" id="cb7-140" title="140">            </a>
+<a class="sourceLine" id="cb7-141" title="141">        <span class="co">## try to fudge a marker for first infections</span></a>
+<a class="sourceLine" id="cb7-142" title="142">        <span class="cf">if</span> Einc <span class="op">!=</span> <span class="dv">0</span> <span class="kw">and</span> _zero_crossings[ward] <span class="kw">is</span> <span class="va">False</span> <span class="kw">and</span> ward <span class="op">!=</span> <span class="dv">0</span>:</a>
+<a class="sourceLine" id="cb7-143" title="143">            _zero_crossings[ward] <span class="op">=</span> <span class="va">True</span></a>
+<a class="sourceLine" id="cb7-144" title="144">            Console.<span class="bu">print</span>(<span class="ss">f&quot;Got first infection in ward </span><span class="sc">{</span>ward<span class="sc">}</span><span class="ss">&quot;</span>)</a>
+<a class="sourceLine" id="cb7-145" title="145"></a>
+<a class="sourceLine" id="cb7-146" title="146">        val <span class="op">=</span> [day, ward, Einc, E, Iinc, I, RI, DI, Ainc, A, RA, Hinc, H, RH, RD, Cinc, C, RC, DC]</a>
+<a class="sourceLine" id="cb7-147" title="147">        keeps_str <span class="op">=</span> <span class="st">&quot;,&quot;</span>.join([<span class="bu">str</span>(v) <span class="cf">for</span> v <span class="kw">in</span> val])</a>
+<a class="sourceLine" id="cb7-148" title="148">        qstring <span class="op">=</span> <span class="ss">f&quot;insert into compact (</span><span class="sc">{</span>col_str<span class="sc">}</span><span class="ss">) values (</span><span class="sc">{</span>keeps_str<span class="sc">}</span><span class="ss">) &quot;</span></a>
+<a class="sourceLine" id="cb7-149" title="149">        <span class="cf">if</span> _zero_crossings[ward] <span class="kw">is</span> <span class="va">True</span>:</a>
+<a class="sourceLine" id="cb7-150" title="150">            c3.execute(qstring)</a>
+<a class="sourceLine" id="cb7-151" title="151">            </a>
+<a class="sourceLine" id="cb7-152" title="152">    conn3.commit()</a>
+<a class="sourceLine" id="cb7-153" title="153">    </a>
+<a class="sourceLine" id="cb7-154" title="154">    <span class="co">## save today&#39;s data so that it can be used tomorrow</span></a>
+<a class="sourceLine" id="cb7-155" title="155">    <span class="cf">for</span> i, subnet <span class="kw">in</span> <span class="bu">enumerate</span>(network.subnets):</a>
+<a class="sourceLine" id="cb7-156" title="156">        workspace.subspaces[i].output_previous <span class="op">=</span> deepcopy(workspace.subspaces[i].ward_inf_tot)</a>
+<a class="sourceLine" id="cb7-157" title="157"></a>
+<a class="sourceLine" id="cb7-158" title="158"><span class="kw">def</span> extract_db(<span class="op">**</span>kwargs):</a>
+<a class="sourceLine" id="cb7-159" title="159">    funcs <span class="op">=</span> []</a>
+<a class="sourceLine" id="cb7-160" title="160">    funcs.append(output_db)</a>
+<a class="sourceLine" id="cb7-161" title="161">    <span class="cf">return</span> funcs</a></code></pre></div>
 </div>
 </div>
 <div id="code" class="section level2">
@@ -2357,7 +2358,7 @@ Click for MetaWards <code>extractor</code> file
 <a class="sourceLine" id="cb8-8" title="8">    <span class="dt">upper =</span> <span class="kw">c</span>(<span class="dv">4</span>, <span class="dv">6</span>, <span class="dv">4</span>, <span class="dv">12</span>, <span class="dv">12</span>, <span class="kw">rep</span>(<span class="dv">1</span>, <span class="dv">11</span>)),</a>
 <a class="sourceLine" id="cb8-9" title="9">    <span class="dt">stringsAsFactors =</span> <span class="ot">FALSE</span></a>
 <a class="sourceLine" id="cb8-10" title="10">)</a></code></pre></div>
-<p>Firstly we want a function to convert between the <em>design</em> and <em>input</em> spaces. A short R function called <code>convertDesignToInput()</code> which does this is given below. This requires a <code>design</code> data frame with columns denoting each <em>input</em> parameter in <code>parRanges</code> and rows corresponding to design points. There should be an additional column called <code>output</code> that defines a unique identifier for each design point, and a column called <code>repeats</code> that contains the number of repeats for each design point. The <code>convertDesignToInput()</code> function also requires the <code>parRanges</code> data frame (defined above). We use the <code>scale</code> argument to define whether the design is on the <span class="math inline">\((0, 1)\)</span> (<code>scale = &quot;zero_one&quot;</code>) or <span class="math inline">\((-1, 1)\)</span> (<code>scale = &quot;negone_one&quot;</code>) space.</p>
+<p>Firstly we want a function to convert between the <em>design</em> and <em>input</em> spaces. A short R function called <code>convertDesignToInput()</code> which does this is given below and can be found in the <code>R_tools/dataTools.R</code> script file. This requires a <code>design</code> data frame with columns denoting each <em>input</em> parameter in <code>parRanges</code> and rows corresponding to design points. There should be an additional column called <code>output</code> that defines a unique identifier for each design point, and a column called <code>repeats</code> that contains the number of repeats for each design point. The <code>convertDesignToInput()</code> function also requires the <code>parRanges</code> data frame (defined above). We use the <code>scale</code> argument to define whether the design is on the <span class="math inline">\((0, 1)\)</span> (<code>scale = &quot;zero_one&quot;</code>) or <span class="math inline">\((-1, 1)\)</span> (<code>scale = &quot;negone_one&quot;</code>) space.</p>
 <blockquote>
 <p><strong>Note</strong>: this function converts the probabilities correctly for the <code>mover</code> defined <a href="#mover">above</a>.</p>
 </blockquote>
@@ -2388,7 +2389,7 @@ Click for R <code>convertDesignToInput</code> function
 <a class="sourceLine" id="cb9-21" title="21">    input</a>
 <a class="sourceLine" id="cb9-22" title="22">}</a></code></pre></div>
 </div>
-<p>Once we have done this, we need to transform from the <em>input</em> space to the <em>disease</em> space for MetaWards. A <code>convertInputToDisease()</code> R function is given below. This requires an <code>input</code> data frame, with columns denoting each <em>input</em> parameter and rows corresponding to each input points, a number of <code>repeats</code> and a column of unique identifiers (<code>output</code>).</p>
+<p>Once we have done this, we need to transform from the <em>input</em> space to the <em>disease</em> space for MetaWards. A <code>convertInputToDisease()</code> R function is given below and can be found in the <code>R_tools/dataTools.R</code> script file. This requires an <code>input</code> data frame, with columns denoting each <em>input</em> parameter and rows corresponding to each input points, a number of <code>repeats</code> and a column of unique identifiers (<code>output</code>).</p>
 <button data-toggle="collapse" data-target="#convert1">
 Click for R <code>convertInputToDisease</code> function
 </button>
@@ -2448,7 +2449,7 @@ Click for R <code>convertInputToDisease</code> function
 <a class="sourceLine" id="cb10-53" title="53">    disease</a>
 <a class="sourceLine" id="cb10-54" title="54">}</a></code></pre></div>
 </div>
-<p>Also in <code>dataTools.R</code> is a function <code>ensembleIDGen()</code> that creates unique IDs for each design point. So an example of a quick LHS design for five design points and five replicates is:</p>
+<p>Also in <code>R_tools/dataTools.R</code> is a function <code>ensembleIDGen()</code> that creates unique IDs for each design point. So an example of a quick LHS design for five design points and five replicates is given by the <code>convertDesign.R</code> script file:</p>
 <div class="sourceCode" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb11-1" title="1"><span class="co">## load libraries</span></a>
 <a class="sourceLine" id="cb11-2" title="2"><span class="kw">library</span>(lhs)</a>
 <a class="sourceLine" id="cb11-3" title="3"><span class="kw">library</span>(dplyr)</a>
@@ -2494,25 +2495,75 @@ Click for R <code>convertInputToDisease</code> function
 <a class="sourceLine" id="cb11-43" title="43"><span class="co">## save inputs for data for post-simulation runs</span></a>
 <a class="sourceLine" id="cb11-44" title="44"><span class="kw">saveRDS</span>(design, <span class="st">&quot;inputs/design.rds&quot;</span>)</a>
 <a class="sourceLine" id="cb11-45" title="45"><span class="kw">saveRDS</span>(parRanges, <span class="st">&quot;inputs/parRanges.rds&quot;</span>)</a></code></pre></div>
-<p>This produces a file <code>inputs/disease.dat</code> that can be passed to MetaWards to run the model. The <code>runscript.sh</code> batch file provides the command line instructions needed to the model using these inputs. This is written for Linux, and should be able to be run directly from the downloaded folder. If you don’t run Linux, then the file should give you an idea of how to run the model on your own system.</p>
+<p>This produces a file <code>inputs/disease.dat</code> that can be passed to MetaWards to run the model. The batch code below provides the command line instructions needed to the model using these inputs. If you don’t run Linux, then the file should give you an idea of how to run the model on your own system.</p>
 <button data-toggle="collapse" data-target="#run">
-Click for <code>runscript.sh</code> file
+Click to show code
 </button>
 <div id="run" class="collapse">
-<div class="sourceCode" id="cb12"><pre class="sourceCode bash"><code class="sourceCode bash"><a class="sourceLine" id="cb12-1" title="1"><span class="co">#!/bin/bash</span></a>
+<div class="sourceCode" id="cb12"><pre class="sourceCode bash"><code class="sourceCode bash"><a class="sourceLine" id="cb12-1" title="1"><span class="fu">mkdir</span> -p raw_outputs</a>
 <a class="sourceLine" id="cb12-2" title="2"></a>
-<a class="sourceLine" id="cb12-3" title="3"><span class="fu">mkdir</span> -p raw_outputs</a>
+<a class="sourceLine" id="cb12-3" title="3"><span class="ex">R</span> CMD BATCH --no-restore --slave --no-save convertDesign.R </a>
 <a class="sourceLine" id="cb12-4" title="4"></a>
-<a class="sourceLine" id="cb12-5" title="5"><span class="ex">R</span> CMD BATCH --no-restore --slave --no-save convertDesign.R </a>
+<a class="sourceLine" id="cb12-5" title="5"><span class="bu">export</span> <span class="va">METAWARDSDATA=$HOME</span>/Documents/covid/MetaWardsData</a>
 <a class="sourceLine" id="cb12-6" title="6"></a>
-<a class="sourceLine" id="cb12-7" title="7"><span class="bu">export</span> <span class="va">METAWARDSDATA=$HOME</span>/Documents/covid/MetaWardsData</a>
-<a class="sourceLine" id="cb12-8" title="8"></a>
-<a class="sourceLine" id="cb12-9" title="9"><span class="ex">metawards</span> -d model_code/ncov.json -D model_code/demographics.json --mixer model_code/mix_pathways --mover model_code/move_pathways --input inputs/disease.dat -a ExtraSeedsLondon.dat -u model_code/lockdown_states.txt -o raw_outputs --force-overwrite-output --iterator model_code/iterate --extractor model_code/ward_extractor --start-date 2020/01/01 --theme simple --nsteps 100</a></code></pre></div>
+<a class="sourceLine" id="cb12-7" title="7"><span class="ex">metawards</span> -d model_code/ncov.json -D model_code/demographics.json --mixer model_code/mix_pathways --mover model_code/move_pathways --input inputs/disease.dat -a ExtraSeedsLondon.dat -u model_code/lockdown_states.txt -o raw_outputs --force-overwrite-output --iterator model_code/iterate --extractor model_code/ward_extractor --start-date 2020/01/01 --theme simple --nsteps 100</a></code></pre></div>
 </div>
 <div id="outputs" class="section level3">
 <h3>Outputs</h3>
-<p>As described <a href="#extractor">above</a> each model run produces a file called <code>stages.db.bz2</code>, which is a compressed database containing the outputs. As an example of how to manipulate this, migrate to an output folder containing <code>stages.db.bz2</code>. To access the outputs you will first have to unzip this file. I do this on the command line e.g.</p>
-<div class="sourceCode" id="cb13"><pre class="sourceCode bash"><code class="sourceCode bash"><a class="sourceLine" id="cb13-1" title="1"><span class="fu">bzip2</span> -dkf stages.db.bz2</a></code></pre></div>
+<p>As described <a href="#extractor">above</a> each model run produces a file called <code>stages.db.bz2</code>, which is a compressed database containing the outputs. In practice, it is time-consuming to unzip and extract all of these outputs for all design points, and extract and collate the various quantities we need for our emulation and history matching process. To this end we have been kindly offered a processing and data storage solution on <a href="https://www.jasmin.ac.uk/">JASMIN</a>.</p>
+<p>The simulation outputs from our model are stored at the public repository:</p>
+<p><a href="https://gws-access.jasmin.ac.uk/public/covid19/">https://gws-access.jasmin.ac.uk/public/covid19/</a></p>
+<p>These are stored in the format:</p>
+<pre><code>wave
++-- inputs
++-- raw_outputs
+| +-- EnsID
+| | +-- stages.db
+| | +-- weeksums.csv
+| | +-- Cprev.csv
+| | +-- Hprev.csv
+| | +-- Deaths.csv
+| +-- EnsIDx002
+| | +-- stages.db
+| | +-- weeksums.csv
+| +-- EnsIDx003
+| | +-- stages.db
+| | +-- weeksums.csv
+| +-- ...</code></pre>
+<p>The <code>stages.db</code> files are the unzipped raw outputs for that design point (described above). The <code>weeksums.csv</code> files are weekly summaries of mean hospital prevalence (<code>Hprev</code> column), mean critical care prevalence (<code>Cprev</code> column) and total hospital + critical care deaths (<code>Deaths</code> column) on a weekly basis for each ward and week since lockdown.</p>
+<p>For a given ensemble ID (<code>Ens0000</code> say), the folder <code>Ens0000</code> corresponds to the first replicate for that design point. Other replicates are appended with the replicate number e.g. <code>Ens0000x002</code>, <code>Ens0000x003</code> and so on. The <strong>main folder only</strong> (e.g. <code>Ens0000</code>) for each design point also contains three more <code>.csv</code> files: <code>Hprev.csv</code>, <code>Cprev.csv</code> and <code>Deaths.csv</code>. These contain 0.025, 0.25, 0.5, 0.75 and 0.975 quantiles of the <code>Hprev</code>, <code>Cprev</code> and <code>Deaths</code> counts respectively taken across the replicates, and are designed to be used to build our emulators.</p>
+<p>The main repo contains scripts to produce these in parallel on JASMIN, greatly speeding up the post-processing time. However, JASMIN is not open for general use, so these are not useful outside of the current working group. However, the results of this post-processing are detailed above and can be downloaded from the given link. A script file <code>downloadQuantiles.R</code> gives some R code that can be used to download the quantile data from a set of design IDs onto any end-user machine:</p>
+<div class="sourceCode" id="cb14"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb14-1" title="1"><span class="co">## R script to query database</span></a>
+<a class="sourceLine" id="cb14-2" title="2"><span class="kw">library</span>(readr)</a>
+<a class="sourceLine" id="cb14-3" title="3"><span class="kw">library</span>(purrr)</a>
+<a class="sourceLine" id="cb14-4" title="4"><span class="kw">library</span>(dplyr)</a>
+<a class="sourceLine" id="cb14-5" title="5"><span class="kw">library</span>(parallel)</a>
+<a class="sourceLine" id="cb14-6" title="6"></a>
+<a class="sourceLine" id="cb14-7" title="7"><span class="co">## set path to files and week/output to extract</span></a>
+<a class="sourceLine" id="cb14-8" title="8">filedir &lt;-<span class="st"> &quot;https://gws-access.jasmin.ac.uk/public/covid19/wave0/&quot;</span></a>
+<a class="sourceLine" id="cb14-9" title="9">week &lt;-<span class="st"> </span><span class="dv">12</span></a>
+<a class="sourceLine" id="cb14-10" title="10">output &lt;-<span class="st"> &quot;Hprev&quot;</span></a>
+<a class="sourceLine" id="cb14-11" title="11">ncores &lt;-<span class="st"> </span><span class="dv">24</span></a>
+<a class="sourceLine" id="cb14-12" title="12"></a>
+<a class="sourceLine" id="cb14-13" title="13"><span class="co">## read in inputs</span></a>
+<a class="sourceLine" id="cb14-14" title="14">design &lt;-<span class="st"> </span><span class="kw">read_csv</span>(<span class="kw">paste0</span>(filedir, <span class="st">&quot;inputs/design.csv&quot;</span>))</a>
+<a class="sourceLine" id="cb14-15" title="15">parRanges &lt;-<span class="st"> </span><span class="kw">read_csv</span>(<span class="kw">paste0</span>(filedir, <span class="st">&quot;inputs/parRanges.csv&quot;</span>))</a>
+<a class="sourceLine" id="cb14-16" title="16"></a>
+<a class="sourceLine" id="cb14-17" title="17"><span class="co">## run through hashes and extract runs</span></a>
+<a class="sourceLine" id="cb14-18" title="18">out &lt;-<span class="st"> </span><span class="kw">mclapply</span>(design<span class="op">$</span>output, <span class="cf">function</span>(hash, filedir, weekReq, output) {</a>
+<a class="sourceLine" id="cb14-19" title="19">    out &lt;-<span class="st"> </span><span class="kw">read_csv</span>(<span class="kw">paste0</span>(filedir, <span class="st">&quot;raw_outputs/&quot;</span>, hash, <span class="st">&quot;/&quot;</span>, output, <span class="st">&quot;.csv&quot;</span>))</a>
+<a class="sourceLine" id="cb14-20" title="20">    <span class="cf">if</span>(<span class="op">!</span><span class="kw">is.na</span>(weekReq[<span class="dv">1</span>])) {</a>
+<a class="sourceLine" id="cb14-21" title="21">        out &lt;-<span class="st"> </span><span class="kw">filter</span>(out, week <span class="op">%in%</span><span class="st"> </span>weekReq)</a>
+<a class="sourceLine" id="cb14-22" title="22">    }</a>
+<a class="sourceLine" id="cb14-23" title="23">    out</a>
+<a class="sourceLine" id="cb14-24" title="24">}, <span class="dt">filedir =</span> filedir, <span class="dt">weekReq =</span> week, <span class="dt">output =</span> output, <span class="dt">mc.cores =</span> ncores)</a>
+<a class="sourceLine" id="cb14-25" title="25"></a>
+<a class="sourceLine" id="cb14-26" title="26"><span class="co">## bind rows</span></a>
+<a class="sourceLine" id="cb14-27" title="27">out &lt;-<span class="st"> </span><span class="kw">bind_rows</span>(out)</a></code></pre></div>
+<div id="more-detail-on-manipulating-model-outputs" class="section level4">
+<h4>More detail on manipulating model outputs</h4>
+<p>If you’ve run the model yourselves, or want to use the data differently, then as an example of how to manipulate the raw outputs, migrate to an output folder containing <code>stages.db.bz2</code> (or download one from the repo above). If this is a zipped file, then you will have to unzip it. In Linux this can be done on the command line e.g.</p>
+<div class="sourceCode" id="cb15"><pre class="sourceCode bash"><code class="sourceCode bash"><a class="sourceLine" id="cb15-1" title="1"><span class="fu">bzip2</span> -dkf stages.db.bz2</a></code></pre></div>
 <p>You will notice that the unzipped <code>stages.db</code> file is larger than the compressed version, though Chris has done a great job in storing the outputs in a memory efficient way. As such, you might need to remove <code>stages.db</code> at the end if you have limited hard drive space (to this end, the <code>bzip -dkf</code> flag I used above ensures that the original compressed file is not deleted when uncompressed).</p>
 <p>The database contains a single table called <code>compact</code>. To store the outputs efficiently, we have introduced various tricks, described <a href="#extractor">above</a>. To clarify, the <code>stages.db</code> database contains a table called <code>compact</code> with entries:</p>
 <ul>
@@ -2523,20 +2574,20 @@ Click for <code>runscript.sh</code> file
 <li><code>Cinc</code>, <code>C</code>, <code>RC</code>, <code>DC</code></li>
 </ul>
 <p>If you’re happy with SQL, you can query these directly with e.g. SQLite. If you are an R user, then the <code>dplyr</code> package (or more specifically the <code>dbplyr</code> package) provides some useful R tools for querying SQL databases using <code>tidyverse</code>-type notation. More details about these tools can be found <a href="https://cran.r-project.org/web/packages/dbplyr/vignettes/dbplyr.html">here</a>.</p>
-<p>As a quick example, imagine that we want to extract the <strong>cumulative hospital cases</strong> on say day 100. Here we will need to extract the <strong>new hospital cases</strong> from day 1–100, and then sum them up for each ward. Therefore we need to extract <code>day</code>, <code>ward</code> and <code>Hinc</code> from the <code>compact</code> table.</p>
-<div class="sourceCode" id="cb14"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb14-1" title="1"><span class="co">## load library</span></a>
-<a class="sourceLine" id="cb14-2" title="2"><span class="co">## (you might also need to install the &#39;RSQLite&#39; </span></a>
-<a class="sourceLine" id="cb14-3" title="3"><span class="co">## and `dbplyr` packages which &#39;dplyr&#39; calls)</span></a>
-<a class="sourceLine" id="cb14-4" title="4"><span class="kw">library</span>(dplyr)</a>
-<a class="sourceLine" id="cb14-5" title="5"></a>
-<a class="sourceLine" id="cb14-6" title="6"><span class="co">## establish connection to database</span></a>
-<a class="sourceLine" id="cb14-7" title="7">con &lt;-<span class="st"> </span>DBI<span class="op">::</span><span class="kw">dbConnect</span>(RSQLite<span class="op">::</span><span class="kw">SQLite</span>(), <span class="st">&quot;stages.db&quot;</span>)</a>
-<a class="sourceLine" id="cb14-8" title="8"></a>
-<a class="sourceLine" id="cb14-9" title="9"><span class="co">## connect to the &#39;compact&#39; table</span></a>
-<a class="sourceLine" id="cb14-10" title="10">compact &lt;-<span class="st"> </span><span class="kw">tbl</span>(con, <span class="st">&quot;compact&quot;</span>)</a>
-<a class="sourceLine" id="cb14-11" title="11"></a>
-<a class="sourceLine" id="cb14-12" title="12"><span class="co">## examine</span></a>
-<a class="sourceLine" id="cb14-13" title="13">compact</a></code></pre></div>
+<p>As a quick example, imagine that we want to extract the <strong>cumulative hospital cases</strong> on say day 100 from R. Here we will need to extract the <strong>new hospital cases</strong> from day 1–100, and then sum them up for each ward. Therefore we need to extract <code>day</code>, <code>ward</code> and <code>Hinc</code> from the <code>compact</code> table.</p>
+<div class="sourceCode" id="cb16"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb16-1" title="1"><span class="co">## load library</span></a>
+<a class="sourceLine" id="cb16-2" title="2"><span class="co">## (you might also need to install the &#39;RSQLite&#39; </span></a>
+<a class="sourceLine" id="cb16-3" title="3"><span class="co">## and `dbplyr` packages which &#39;dplyr&#39; calls)</span></a>
+<a class="sourceLine" id="cb16-4" title="4"><span class="kw">library</span>(dplyr)</a>
+<a class="sourceLine" id="cb16-5" title="5"></a>
+<a class="sourceLine" id="cb16-6" title="6"><span class="co">## establish connection to database</span></a>
+<a class="sourceLine" id="cb16-7" title="7">con &lt;-<span class="st"> </span>DBI<span class="op">::</span><span class="kw">dbConnect</span>(RSQLite<span class="op">::</span><span class="kw">SQLite</span>(), <span class="st">&quot;stages.db&quot;</span>)</a>
+<a class="sourceLine" id="cb16-8" title="8"></a>
+<a class="sourceLine" id="cb16-9" title="9"><span class="co">## connect to the &#39;compact&#39; table</span></a>
+<a class="sourceLine" id="cb16-10" title="10">compact &lt;-<span class="st"> </span><span class="kw">tbl</span>(con, <span class="st">&quot;compact&quot;</span>)</a>
+<a class="sourceLine" id="cb16-11" title="11"></a>
+<a class="sourceLine" id="cb16-12" title="12"><span class="co">## examine</span></a>
+<a class="sourceLine" id="cb16-13" title="13">compact</a></code></pre></div>
 <pre><code>## # Source:   table&lt;compact&gt; [?? x 19]
 ## # Database: sqlite 3.30.1
 ## #   [/home/tj/Documents/covid/uq4covid.github.io/vignettes/data/MetaWards/vignette/stages.db]
@@ -2554,17 +2605,17 @@ Click for <code>runscript.sh</code> file
 ## 10     6   255     0     3     0     0     0     0     0     1     0     0     1
 ## # … with more rows, and 6 more variables: RH &lt;int&gt;, DH &lt;int&gt;, Cinc &lt;int&gt;,
 ## #   C &lt;int&gt;, RC &lt;int&gt;, DC &lt;int&gt;</code></pre>
-<p>By default, the package only pulls down enough data from the database to produce a summary on the screen (notice that it prints the dimensions as <code>?? x 19</code>). If the database is small enough, then the <code>collect()</code> function can be used to import tables directly into R as a <code>tibble</code>. Alternatively, the <code>dbplyr</code> package can convert <code>tidyverse</code>-style commands into SQL and run these directly within the database. For large databases this is likely to be much more efficient, in terms of speed and memory usage. You can then <code>collect()</code> the results of the query into R.</p>
+<p>By default, the package only pulls enough data from the database to produce a summary on the screen (notice that it prints the dimensions as <code>?? x 19</code>). If the database is small enough, then the <code>collect()</code> function can be used to import tables directly into R as a <code>tibble</code>. Alternatively, the <code>dbplyr</code> package can convert <code>tidyverse</code>-style commands into SQL and run these directly within the database. For large databases this is likely to be much more efficient, in terms of speed and memory usage. You can then <code>collect()</code> the results of the query into R.</p>
 <p>As an example of this latter approach, we will set up a query that sums the <strong>new</strong> hospital cases over the first 100 days in each ward. <strong>Remember</strong>: for each ward the database only contains days after the initial infection occurs. For cumulative <em>incidence</em> counts this is fine, since the missing data will be zero in each case, so we just need to filter first to remove all time points <span class="math inline">\(&gt; 100\)</span>. To set up the query:</p>
-<div class="sourceCode" id="cb16"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb16-1" title="1"><span class="co">## Hinc contains the new cases, so sum these</span></a>
-<a class="sourceLine" id="cb16-2" title="2"><span class="co">## over each ward for days 1--100</span></a>
-<a class="sourceLine" id="cb16-3" title="3">hosp_db &lt;-<span class="st"> </span><span class="kw">filter</span>(compact, day <span class="op">&lt;=</span><span class="st"> </span><span class="dv">100</span>) <span class="op">%&gt;%</span></a>
-<a class="sourceLine" id="cb16-4" title="4"><span class="st">    </span><span class="kw">select</span>(ward, Hinc) <span class="op">%&gt;%</span></a>
-<a class="sourceLine" id="cb16-5" title="5"><span class="st">    </span><span class="kw">group_by</span>(ward) <span class="op">%&gt;%</span></a>
-<a class="sourceLine" id="cb16-6" title="6"><span class="st">    </span><span class="kw">summarise</span>(<span class="dt">Hcum =</span> <span class="kw">sum</span>(Hinc))</a></code></pre></div>
+<div class="sourceCode" id="cb18"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb18-1" title="1"><span class="co">## Hinc contains the new cases, so sum these</span></a>
+<a class="sourceLine" id="cb18-2" title="2"><span class="co">## over each ward for days 1--100</span></a>
+<a class="sourceLine" id="cb18-3" title="3">hosp_db &lt;-<span class="st"> </span><span class="kw">filter</span>(compact, day <span class="op">&lt;=</span><span class="st"> </span><span class="dv">100</span>) <span class="op">%&gt;%</span></a>
+<a class="sourceLine" id="cb18-4" title="4"><span class="st">    </span><span class="kw">select</span>(ward, Hinc) <span class="op">%&gt;%</span></a>
+<a class="sourceLine" id="cb18-5" title="5"><span class="st">    </span><span class="kw">group_by</span>(ward) <span class="op">%&gt;%</span></a>
+<a class="sourceLine" id="cb18-6" title="6"><span class="st">    </span><span class="kw">summarise</span>(<span class="dt">Hcum =</span> <span class="kw">sum</span>(Hinc))</a></code></pre></div>
 <p>This hasn’t run any commands yet, rather <code>hosp_db</code> contains a parsed SQL query that can be run through the database connection. If you like, you can view the generated SQL query using:</p>
-<div class="sourceCode" id="cb17"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb17-1" title="1"><span class="co">## view query</span></a>
-<a class="sourceLine" id="cb17-2" title="2"><span class="kw">show_query</span>(hosp_db)</a></code></pre></div>
+<div class="sourceCode" id="cb19"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb19-1" title="1"><span class="co">## view query</span></a>
+<a class="sourceLine" id="cb19-2" title="2"><span class="kw">show_query</span>(hosp_db)</a></code></pre></div>
 <pre><code>## &lt;SQL&gt;</code></pre>
 <pre><code>## Warning: Missing values are always removed in SQL.
 ## Use `SUM(x, na.rm = TRUE)` to silence this warning
@@ -2576,14 +2627,14 @@ Click for <code>runscript.sh</code> file
 ## WHERE (`day` &lt;= 100.0)))
 ## GROUP BY `ward`</code></pre>
 <p>Now let’s run the query and return the results to R by passing <code>hosp_db</code> to the <code>collect()</code> function:</p>
-<div class="sourceCode" id="cb21"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb21-1" title="1"><span class="co">## run query and pull to R</span></a>
-<a class="sourceLine" id="cb21-2" title="2">hosp &lt;-<span class="st"> </span><span class="kw">collect</span>(hosp_db)</a>
-<a class="sourceLine" id="cb21-3" title="3"></a>
-<a class="sourceLine" id="cb21-4" title="4"><span class="co">## disconnect from database</span></a>
-<a class="sourceLine" id="cb21-5" title="5">DBI<span class="op">::</span><span class="kw">dbDisconnect</span>(con)</a>
-<a class="sourceLine" id="cb21-6" title="6"></a>
-<a class="sourceLine" id="cb21-7" title="7"><span class="co">## print to screen</span></a>
-<a class="sourceLine" id="cb21-8" title="8">hosp</a></code></pre></div>
+<div class="sourceCode" id="cb23"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb23-1" title="1"><span class="co">## run query and pull to R</span></a>
+<a class="sourceLine" id="cb23-2" title="2">hosp &lt;-<span class="st"> </span><span class="kw">collect</span>(hosp_db)</a>
+<a class="sourceLine" id="cb23-3" title="3"></a>
+<a class="sourceLine" id="cb23-4" title="4"><span class="co">## disconnect from database</span></a>
+<a class="sourceLine" id="cb23-5" title="5">DBI<span class="op">::</span><span class="kw">dbDisconnect</span>(con)</a>
+<a class="sourceLine" id="cb23-6" title="6"></a>
+<a class="sourceLine" id="cb23-7" title="7"><span class="co">## print to screen</span></a>
+<a class="sourceLine" id="cb23-8" title="8">hosp</a></code></pre></div>
 <pre><code>## # A tibble: 8,587 x 2
 ##     ward  Hcum
 ##    &lt;int&gt; &lt;int&gt;
@@ -2599,17 +2650,7 @@ Click for <code>runscript.sh</code> file
 ## 10    10  1167
 ## # … with 8,577 more rows</code></pre>
 <p>Now you can play with <code>hosp</code> as much as you like. <strong>Note</strong> that <code>hosp</code> here only contains information about wards that have some infections, and only from the time since initial infection. Hence for calibration you might need to expand to fill in the missing wards. Fortunately, R (especially <code>tidyverse</code>) has lots of tools for doing this.</p>
-<p>Note that after you’ve pulled the correct outputs down, you might want to delete the <code>stages.db</code> (<strong>NOT</strong> the <code>stages.db.bz2</code>) file. I did this on the Unix command line using:</p>
-<div class="sourceCode" id="cb23"><pre class="sourceCode bash"><code class="sourceCode bash"><a class="sourceLine" id="cb23-1" title="1"><span class="fu">rm</span> stages.db</a></code></pre></div>
-<blockquote>
-<p><strong>Be careful</strong>: remember that <code>rm</code> removes completely, so not to the recycle bin. However, as long as you don’t remove <code>stages.db.bz2</code> then you can always recover.</p>
-</blockquote>
-<p>You can very easily wrap these ideas into an R function that can scroll through the design IDs, extract relevant outputs and bind to the inputs. Some examples are described below.</p>
-<div id="sql-outputs" class="section level4">
-<h4>SQL outputs</h4>
-<p>The file <code>extractOutputsSQL.R</code> provides code that extracts mean hospital prevalence, mean critical care prevalence, and total deaths from critical care and hospitals during each week since lockdown, for each ward. This output is large, so the code produces a compressed SQL database: <code>raw_outputs/uberStages.db.bz2</code>. (This also depends on two other files <code>extractSQL.sql</code> and <code>mergeSQL.sql</code>, which are both available in the code <a href="./metawards.zip">zip</a> file.) This does include some OS-specific code that might not work on your machine. Please view this as an illustration, which you might have to amend depending on your own setup.</p>
-<p>There is subsequently a file called <code>extractOutputs.R</code> that includes some R code giving examples about how to manipulate and extract information from <code>uberStages.db</code>. Note that in order to do this you will have to uncompress the <code>uberStages.db.bz2</code> file. On Linux this can be done on the command line as above, but bear in mind that for large designs the uncompressed file will be <strong>huge</strong>, and it will take a while to decompress. Whether you choose to store the decompressed file permanently will depend on how much storage you have!</p>
-<p>Please feel free to amend these output files as you see fit, or write your own depending on what you want to extract!</p>
+<p>You can very easily wrap these ideas into an R function that can scroll through the design IDs, extract relevant outputs and bind to the inputs. Note that this data processing takes a lot of time, so running in parallel is very helpful. Hence why we do all this on JASMIN.</p>
 </div>
 </div>
 </div>
