@@ -282,7 +282,7 @@ parRanges <- data.frame(
 )
 ```
 
-Firstly we want a function to convert between the *design* and *input* spaces. A short R function called `convertDesignToInput()` which does this is given below. This requires a `design` data frame with columns denoting each *input* parameter in `parRanges` and rows corresponding to design points. There should be an additional column called `output` that defines a unique identifier for each design point, and a column called `repeats` that contains the number of repeats for each design point. The `convertDesignToInput()` function also requires the `parRanges` data frame (defined above). We use the `scale` argument to define whether the design is on the $(0, 1)$ (`scale = "zero_one"`) or $(-1, 1)$ (`scale = "negone_one"`) space.
+Firstly we want a function to convert between the *design* and *input* spaces. A short R function called `convertDesignToInput()` which does this is given below and can be found in the `R_tools/dataTools.R` script file. This requires a `design` data frame with columns denoting each *input* parameter in `parRanges` and rows corresponding to design points. There should be an additional column called `output` that defines a unique identifier for each design point, and a column called `repeats` that contains the number of repeats for each design point. The `convertDesignToInput()` function also requires the `parRanges` data frame (defined above). We use the `scale` argument to define whether the design is on the $(0, 1)$ (`scale = "zero_one"`) or $(-1, 1)$ (`scale = "negone_one"`) space.
 
 > **Note**: this function converts the probabilities correctly for the `mover` defined [above](#mover).
 
@@ -299,7 +299,7 @@ read_chunk("../R_tools/dataTools.R")
 
 </div>
 
-Once we have done this, we need to transform from the *input* space to the *disease* space for MetaWards. A `convertInputToDisease()` R function is given below. This requires an `input` data frame, with columns denoting each *input* parameter and rows corresponding to each input points, a number of `repeats` and a column of unique identifiers (`output`).
+Once we have done this, we need to transform from the *input* space to the *disease* space for MetaWards. A `convertInputToDisease()` R function is given below and can be found in the `R_tools/dataTools.R` script file. This requires an `input` data frame, with columns denoting each *input* parameter and rows corresponding to each input points, a number of `repeats` and a column of unique identifiers (`output`).
 
 <button data-toggle="collapse" data-target="#convert1">Click for R <code>convertInputToDisease</code> function</button>
 <div id="convert1" class="collapse">
@@ -309,24 +309,69 @@ Once we have done this, we need to transform from the *input* space to the *dise
 
 </div>
 
-Also in `dataTools.R` is a function `ensembleIDGen()` that creates unique IDs for each design point. So an example of a quick LHS design for five design points and five replicates is:
+Also in `R_tools/dataTools.R` is a function `ensembleIDGen()` that creates unique IDs for each design point. So an example of a quick LHS design for five design points and five replicates is given by the `convertDesign.R` script file:
 
 ```{r, code = readLines("../convertDesign.R"), eval = FALSE}
 ```
 
-This produces a file `inputs/disease.dat` that can be passed to MetaWards to run the model. The `runscript.sh` batch file provides the command line instructions needed to the model using these inputs. This is written for Linux, and should be able to be run directly from the downloaded folder. If you don't run Linux, then the file should give you an idea of how to run the model on your own system.
+This produces a file `inputs/disease.dat` that can be passed to MetaWards to run the model. The batch code below provides the command line instructions needed to the model using these inputs. If you don't run Linux, then the file should give you an idea of how to run the model on your own system.
 
-<button data-toggle="collapse" data-target="#run">Click for <code>runscript.sh</code> file</button>
+<button data-toggle="collapse" data-target="#run">Click to show code</button>
 <div id="run" class="collapse">
 
-```{bash, code = readLines("../runscript.sh"), eval = FALSE}
+```{bash, eval = FALSE}
+mkdir -p raw_outputs
+
+R CMD BATCH --no-restore --slave --no-save convertDesign.R 
+
+export METAWARDSDATA=$HOME/Documents/covid/MetaWardsData
+
+metawards -d model_code/ncov.json -D model_code/demographics.json --mixer model_code/mix_pathways --mover model_code/move_pathways --input inputs/disease.dat -a ExtraSeedsLondon.dat -u model_code/lockdown_states.txt -o raw_outputs --force-overwrite-output --iterator model_code/iterate --extractor model_code/ward_extractor --start-date 2020/01/01 --theme simple --nsteps 100
 ```
 
 </div>
 
 ### Outputs 
 
-As described [above](#extractor) each model run produces a file called `stages.db.bz2`, which is a compressed database containing the outputs. As an example of how to manipulate this, migrate to an output folder containing `stages.db.bz2`. To access the outputs you will first have to unzip this file. I do this on the command line e.g.
+As described [above](#extractor) each model run produces a file called `stages.db.bz2`, which is a compressed database containing the outputs. In practice, it is time-consuming to unzip and extract all of these outputs for all design points, and extract and collate the various quantities we need for our emulation and history matching process. To this end we have been kindly offered a processing and data storage solution on [JASMIN](https://www.jasmin.ac.uk/). 
+
+The simulation outputs from our model are stored at the public repository:
+
+[https://gws-access.jasmin.ac.uk/public/covid19/](https://gws-access.jasmin.ac.uk/public/covid19/)
+
+These are stored in the format:
+
+```
+wave
++-- inputs
++-- raw_outputs
+| +-- EnsID
+| | +-- stages.db
+| | +-- weeksums.csv
+| | +-- Cprev.csv
+| | +-- Hprev.csv
+| | +-- Deaths.csv
+| +-- EnsIDx002
+| | +-- stages.db
+| | +-- weeksums.csv
+| +-- EnsIDx003
+| | +-- stages.db
+| | +-- weeksums.csv
+| +-- ...
+```
+
+The `stages.db` files are the unzipped raw outputs for that design point (described above). The `weeksums.csv` files are weekly summaries of mean hospital prevalence (`Hprev` column), mean critical care prevalence (`Cprev` column) and total hospital + critical care deaths (`Deaths` column) on a weekly basis for each ward and week since lockdown. 
+
+For a given ensemble ID (`Ens0000` say), the folder `Ens0000` corresponds to the first replicate for that design point. Other replicates are appended with the replicate number e.g. `Ens0000x002`, `Ens0000x003` and so on. The **main folder only** (e.g. `Ens0000`) for each design point also contains three more `.csv` files: `Hprev.csv`, `Cprev.csv` and `Deaths.csv`. These contain 0.025, 0.25, 0.5, 0.75 and 0.975 quantiles of the `Hprev`, `Cprev` and `Deaths` counts respectively taken across the replicates, and are designed to be used to build our emulators.
+
+The main repo contains scripts to produce these in parallel on JASMIN, greatly speeding up the post-processing time. However, JASMIN is not open for general use, so these are not useful outside of the current working group. However, the results of this post-processing are detailed above and can be downloaded from the given link. A script file `downloadQuantiles.R` gives some R code that can be used to download the quantile data from a set of design IDs onto any end-user machine:
+
+```{r, code = readLines("../downloadQuantiles.R"), eval = FALSE}
+```
+
+#### More detail on manipulating model outputs
+
+If you've run the model yourselves, or want to use the data differently, then as an example of how to manipulate the raw outputs, migrate to an output folder containing `stages.db.bz2` (or download one from the repo above). If this is a zipped file, then you will have to unzip it. In Linux this can be done on the command line e.g.
 
 ```{bash}
 bzip2 -dkf stages.db.bz2
@@ -344,7 +389,7 @@ The database contains a single table called `compact`. To store the outputs effi
 
 If you're happy with SQL, you can query these directly with e.g. SQLite. If you are an R user, then the `dplyr` package (or more specifically the `dbplyr` package) provides some useful R tools for querying SQL databases using `tidyverse`-type notation. More details about these tools can be found [here](https://cran.r-project.org/web/packages/dbplyr/vignettes/dbplyr.html).
 
-As a quick example, imagine that we want to extract the **cumulative hospital cases** on say day 100. Here we will need to extract the **new hospital cases** from day 1--100, and then sum them up for each ward. Therefore we need to extract `day`, `ward` and `Hinc` from the `compact` table.
+As a quick example, imagine that we want to extract the **cumulative hospital cases** on say day 100 from R. Here we will need to extract the **new hospital cases** from day 1--100, and then sum them up for each ward. Therefore we need to extract `day`, `ward` and `Hinc` from the `compact` table.
 
 ```{r, message = FALSE, warning = FALSE}
 ## load library
@@ -362,7 +407,7 @@ compact <- tbl(con, "compact")
 compact
 ```
 
-By default, the package only pulls down enough data from the database to produce a summary on the screen (notice that it prints the dimensions as `?? x 19`). If the database is small enough, then the `collect()` function can be used to import tables directly into R as a `tibble`. Alternatively, the `dbplyr` package can convert `tidyverse`-style commands into SQL and run these directly within the database. For large databases this is likely to be much more efficient, in terms of speed and memory usage. You can then `collect()` the results of the query into R.
+By default, the package only pulls enough data from the database to produce a summary on the screen (notice that it prints the dimensions as `?? x 19`). If the database is small enough, then the `collect()` function can be used to import tables directly into R as a `tibble`. Alternatively, the `dbplyr` package can convert `tidyverse`-style commands into SQL and run these directly within the database. For large databases this is likely to be much more efficient, in terms of speed and memory usage. You can then `collect()` the results of the query into R.
 
 As an example of this latter approach, we will set up a query that sums the **new** hospital cases over the first 100 days in each ward. **Remember**: for each ward the database only contains days after the initial infection occurs. For cumulative *incidence* counts this is fine, since the missing data will be zero in each case, so we just need to filter first to remove all time points $> 100$. To set up the query:
 
@@ -397,21 +442,13 @@ hosp
 
 Now you can play with `hosp` as much as you like. **Note** that `hosp` here only contains information about wards that have some infections, and only from the time since initial infection. Hence for calibration you might need to expand to fill in the missing wards. Fortunately, R (especially `tidyverse`) has lots of tools for doing this. 
 
-Note that after you've pulled the correct outputs down, you might want to delete the `stages.db` (**NOT** the `stages.db.bz2`) file. I did this on the Unix command line using:
-
-```{bash, eval = TRUE}
-rm stages.db
-```
-
-> **Be careful**: remember that `rm` removes completely, so not to the recycle bin. However, as long as you don't remove `stages.db.bz2` then you can always recover.
-
-You can very easily wrap these ideas into an R function that can scroll through the design IDs, extract relevant outputs and bind to the inputs. An example that you are free to edit at will can be found in the `extractOutputs.R` file in the repo.
+You can very easily wrap these ideas into an R function that can scroll through the design IDs, extract relevant outputs and bind to the inputs. Note that this data processing takes a lot of time, so running in parallel is very helpful. Hence why we do all this on JASMIN.
 
 ```{r, echo = FALSE, message = FALSE, warning = FALSE}
 tempdir <- getwd()
 setwd("..")
 source("convertDesign.R")
-system("zip metawards.zip model_code/* R_tools/* vignette/* convertDesign.R extractOutput.R runscript.sh README.sh")
+system("zip metawards.zip model_code/* R_tools/* vignette/* convertDesign.R downloadQuantiles.R runscript.sh README.sh")
 setwd(tempdir)
 ```
 

@@ -13,6 +13,7 @@ def create_tables(network: Networks):
     ## set specific column names
     col_names = ["Einc", "E", "Iinc", "I", "RI", "DI", "Ainc", "A", "RA", "Hinc", "H",\
         "RH", "DH", "Cinc", "C", "RC", "DC"]
+    col_names = [f"{i} int" for i in col_names]
     col_str = ','.join(col_names)
 
     def initialise(conn):

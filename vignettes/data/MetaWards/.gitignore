@@ -3,4 +3,9 @@ tests/*.Rout
 tests/raw_outputs
 tests/disease.dat
 
+images/*.gif
+images/*.Rout
+data/trustDeathsAdmissionsIcuExtract20200624.csv
 
+schematics
+public
