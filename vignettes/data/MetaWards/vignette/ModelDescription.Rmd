@@ -10,7 +10,7 @@ output:
 
 <center>
 
-**Requires MetaWards 1.2.0**
+**Requires MetaWards 1.4.1**
 
 Please download files for running the model from **[here](metawards.zip)**.
 
@@ -27,6 +27,8 @@ The basic model structure is:
 * $C$: in critical care (ICU) and infectious;
 * $R$: recovered and immune;
 * $D$: died.
+
+**Each of these classes will be split into $J$ age-classes, with interactions between the classes described in detail below.**
 
 ```{r, echo = FALSE}
 library(DiagrammeR)
@@ -100,77 +102,208 @@ The model structure above allows for different progression pathways. MetaWards d
 
 Individuals in the `genpop` demographic move through the $SEIR$ and $SEID$ pathways; the `asymp` demographic moves through the `SEAR` pathway; some individuals in the `genpop` demographic can be moved to the `hospital` demographic, and thus follow the `SEIHR` and `SEIHD` pathways; and finally, some individuals in the `hospital` demographic can be moved to the `critical` demographic, and thus follow the `SEIHCR` and `SEIHCD` pathways.
 
-We need to specify initial proportions of individuals in each pathway such that $\sum_{i \in \mathcal{P}} p_i = 1$, where $\mathcal{P} = \{GP, A, H, C\}$.
+We need to specify initial proportions of individuals in each pathway such that $\sum_{i \in \mathcal{P}}\sum_{j = 1}^J p_{ij} = 1$, where $\mathcal{P} = \{GP, A, H, C\}$ and $j = 1, \dots, J$ define the $J$ mutually exclusive age-classes. Here we define the proportions of individuals in each age class from the data in the `inputs/Pop by CTRY.csv` file from Rob:
+
+```{r, warning = FALSE, message = FALSE, echo = FALSE, results = "asis"}
+library(tidyverse)
+
+## read in age-bands by country
+ages <- read_csv("../inputs/Pop\ by\ CTRY.csv") %>%
+  filter(!is.na(ageCat)) %>%
+  filter(code == "E92000001") %>%
+  select(-gender, -code) %>%
+  slice(1:2) %>%
+  mutate(prop = round(count / sum(count), 3))
+stopifnot(sum(ages$prop) == 1)
+C <- read.csv("../inputs/contact_matrix.csv", header = FALSE)
+stopifnot(all(dim(C) == nrow(ages)))
+knitr::kable(ages)
+```
 
 > Here we assume the same ratios in the `work` and `play` populations, but in practice these could be changed.
+
+```{r, warning = FALSE, message = FALSE, echo = FALSE}
+## create demographics file
+demo <- "{"
+demo <- c(demo, paste0("\t\"demographics\" : [", paste0(paste0("\"genpop", 1:nrow(ages), "\""), collapse = ", "), ","))
+demo <- c(demo, paste0("\t\t", paste0(paste0("\"asymp", 1:nrow(ages), "\""), collapse = ", "), ","))
+demo <- c(demo, paste0("\t\t", paste0(paste0("\"hospital", 1:nrow(ages), "\""), collapse = ", "), ","))
+demo <- c(demo, paste0("\t\t", paste0(paste0("\"critical", 1:nrow(ages), "\""), collapse = ", "), "],"))
+demo <- c(demo, paste0("\t\"work_ratios\" : [", paste0(ages$prop, collapse = ", "), ","))
+demo <- c(demo, paste0("\t\t", paste0(rep("0.0", nrow(ages)), collapse = ", "), ","))
+demo <- c(demo, paste0("\t\t", paste0(rep("0.0", nrow(ages)), collapse = ", "), ","))
+demo <- c(demo, paste0("\t\t", paste0(rep("0.0", nrow(ages)), collapse = ", "), "],"))
+demo <- c(demo, paste0("\t\"play_ratios\" : [", paste0(ages$prop, collapse = ", "), ","))
+demo <- c(demo, paste0("\t\t", paste0(rep("0.0", nrow(ages)), collapse = ", "), ","))
+demo <- c(demo, paste0("\t\t", paste0(rep("0.0", nrow(ages)), collapse = ", "), ","))
+demo <- c(demo, paste0("\t\t", paste0(rep("0.0", nrow(ages)), collapse = ", "), "],"))
+demo <- c(demo, paste0("\t\"diseases\" : [", paste0(rep("\"ncov_genpop\"", nrow(ages)), collapse = ", "), ","))
+demo <- c(demo, paste0("\t\t", paste0(rep("\"ncov_asymp\"", nrow(ages)), collapse = ", "), ","))
+demo <- c(demo, paste0("\t\t", paste0(rep("\"ncov_hospital\"", nrow(ages)), collapse = ", "), ","))
+demo <- c(demo, paste0("\t\t", paste0(rep("\"ncov_critical\"", nrow(ages)), collapse = ", "), "]"))
+demo <- c(demo, "}")
+writeLines(demo, "../model_code/demographics.json")
+```
+
+```{r, warning = FALSE, message = FALSE, echo = FALSE}
+user <- "# Normal status" %>%
+  c(".can_work[0]  = True") %>%
+  c("") %>%
+  c("# Lockdown 1") %>%
+  c(".can_work[1]  = False") %>%
+  c("") %>%
+  c("# Lockdown 2") %>%
+  c(".can_work[2]  = True") %>%
+  c("") %>%
+  c("# Lockdown dates") %>%
+  c(".lockdown_date_1_year = 2020") %>%
+  c(".lockdown_date_1_month = 3") %>%
+  c(".lockdown_date_1_day = 21") %>%
+  c(".lockdown_date_2_year = 2020") %>%
+  c(".lockdown_date_2_month = 5") %>%
+  c(".lockdown_date_2_day = 13") %>%
+  c("") %>%
+  c("# Database control") %>%
+  c(".deltas = True") %>%
+  c("") %>%
+  c("# contact matrix") %>%
+  c(".contact_matrix_filename = \"inputs/contact_matrix.csv\"") %>%
+  c("") %>%
+  c("# number of age classes") %>%
+  c(paste0(".nage = ", nrow(ages)))
+writeLines(user, "../inputs/user_inputs.txt")
+```
+
+<p style="color:red">NEED TO CHECK WORK / PLAY RATIOS IN DIFFERENT AGE CLASSES AND ALSO CHECK LOWER AGE GROUPS</p>
+
+<p style="color:red">NEED TO CHECK WORK / PLAY RATIOS IN E.G. HOSPITALS AND ICUS</p>
 
 The demographics in MetaWards is set up using the `demographics.json` file.
 
 <button data-toggle="collapse" data-target="#demographics">Click for MetaWards <code>demographics</code> file</button>
-<div id="demographics" class="collapse">
+<div id="demographics" class="collapse boxed">
 
 ```{js, code = readLines("../model_code/demographics.json"), eval = FALSE}
 ```
 
 </div>
 
-The number of stages can be set with the MetaWards disease file, called `ncov.json` here.
+<p style="color:red">CURRENTLY MODEL SEEDS IN THE FIRST DEMOGRAPHIC (KIDS) - NEED TO CHANGE THIS IN THE SEED. DISCUSS HOW BEST TO DO THIS.</p>
 
-<button data-toggle="collapse" data-target="#disease">Click for MetaWards <code>disease</code> file</button>
-<div id="disease" class="collapse">
+The number of stages can be set with the MetaWards disease files, called `ncov_*.json` here.
 
-All pathways have an $SEI(R/D)$ structure, so `ncov.json` contains:
+<button data-toggle="collapse" data-target="#disease">Click for MetaWards <code>disease</code> files</button>
+<div id="disease" class="collapse boxed">
 
-```{js, code = readLines("../model_code/ncov.json"), eval = FALSE}
+Here `ncov_overall.json` contains:
+
+```{js, code = readLines("../model_code/ncov_overall.json"), eval = FALSE}
 ```
 
-We will discuss these choices in more detail in the subsequent sections, in particular the role of the `beta` parameters in the next section. Note that the `progress` parameters are all set to zero here, since all movements will be controlled via the custom `mover` function.
+Here `ncov_genpop.json` contains:
+
+```{js, code = readLines("../model_code/ncov_genpop.json"), eval = FALSE}
+```
+
+Here `ncov_asymp.json` contains:
+
+```{js, code = readLines("../model_code/ncov_asymp.json"), eval = FALSE}
+```
+
+Here `ncov_hospital.json` contains:
+
+```{js, code = readLines("../model_code/ncov_hospital.json"), eval = FALSE}
+```
+
+Here `ncov_critical.json` contains:
+
+```{js, code = readLines("../model_code/ncov_critical.json"), eval = FALSE}
+```
+
+Notice that individuals in hospital and ICU have `too_ill_to_move = 1.0`, so all individuals are too ill to move.
+
+<p style="color:red">HOW SHOULD WE SCALE `too_ill_to_move` FOR SYMPTOMATICS?</p>
+<p style="color:red">HOW DO WE REMOVE INDIVIDUALS FROM THE MODEL ENTIRELY (I.E. AFTER THEY DIE)?</p>
+
+We will discuss these choices in more detail in the subsequent sections. Note that the `progress` parameters are all set to zero here, since all movements will be controlled via the custom `mover` function, and all `beta` parameters are set to one because the scaling of the force-of-infection between the demographics will be controlled by a custom `mixer` function.
 
 </div>
 
 ## Parameters {#parameters}
 
-For generic states $X$ and $Y$ say, the progress of an individual from state $X$ to state $Y$ in a given day is governed by probability $q_{XY}$, where:
+For generic states $X$ and $Y$ say, the progress of an individual in age-class $j$ from state $X$ to state $Y$ in a given day is governed by probability $q^j_{XY}$, where:
 
-* $q_{SE}$ driven by $\beta$ parameters, defined by $R_0$ and length of infectious period (see [here](#code));
-* $q_{EA} = p_{EA}\left(1 - e^{-\gamma_{E}}\right)$ where $\gamma_E = \frac{1}{T_E}$ with $T_E$ the mean incubation period;
-* $q_{EI} = \left(1 - p_{EA}\right)\left(1 - e^{-\gamma_{E}}\right)$;
-* $q_{AR} = 1 - e^{-\gamma_I}$ where $\gamma_I = \frac{1}{T_I}$ with $T_I$ the mean infectious period;
-* $q_{IH} = p_{IH}\left(1 - e^{-\gamma_{I}}\right)$;
-* $q_{IR} = p_{IR}\left(1 - e^{-\gamma_{I}}\right)$;
-* $q_{ID} = \left(1 - p_{IH} - p_{IR}\right)\left(1 - e^{-\gamma_{I}}\right)$;
-* $q_{HC} = p_{HC}\left(1 - e^{-\gamma_{H}}\right)$ where $\gamma_{H} = \frac{1}{T_H}$ with $T_H$ the mean length of a hospital stay;
-* $q_{HR} = p_{HR}\left(1 - e^{-\gamma_{H}}\right)$;
-* $q_{HD} = \left(1 - p_{HC} - p_{HR}\right)\left(1 - e^{-\gamma_{H}}\right)$;
-* $q_{CR} = p_{CR}\left(1 - e^{-\gamma_{C}}\right)$ where $\gamma_C = \frac{1}{T_C}$ with $T_C$ is the mean length of time spent in ICU;
-* $q_{CD} = \left(1 - p_{CR}\right)\left(1 - e^{-\gamma_{C}}\right)$.
+* $q^j_{SE}$ driven by $\beta_{kj}$ parameters ($k = 1, \dots, J$), defined by $R_0$, the mean length of the infectious period ($1 / \gamma_I$), and the population contact matrix, $C$, between age-classes (see [here](#trans) for details);
+* $q^j_{EA} = p_{EA}\left(1 - e^{-\gamma_{E}}\right)$ where $\gamma_E = \frac{1}{T_E}$ with $T_E$ the mean incubation period;
+* $q^j_{EI} = \left(1 - p_{EA}\right)\left(1 - e^{-\gamma_{E}}\right)$;
+* $q^j_{AR} = 1 - e^{-\gamma_I}$ where $\gamma_I = \frac{1}{T_I}$ with $T_I$ the mean infectious period;
+* $q^j_{IH} = p_{IH}\left(1 - e^{-\gamma_{I}}\right)$;
+* $q^j_{IR} = p_{IR}\left(1 - e^{-\gamma_{I}}\right)$;
+* $q^j_{ID} = \left(1 - p_{IH} - p_{IR}\right)\left(1 - e^{-\gamma_{I}}\right)$;
+* $q^j_{HC} = p_{HC}\left(1 - e^{-\gamma_{H}}\right)$ where $\gamma_{H} = \frac{1}{T_H}$ with $T_H$ the mean length of a hospital stay;
+* $q^j_{HR} = p_{HR}\left(1 - e^{-\gamma_{H}}\right)$;
+* $q^j_{HD} = \left(1 - p_{HC} - p_{HR}\right)\left(1 - e^{-\gamma_{H}}\right)$;
+* $q^j_{CR} = p_{CR}\left(1 - e^{-\gamma_{C}}\right)$ where $\gamma_C = \frac{1}{T_C}$ with $T_C$ is the mean length of time spent in ICU;
+* $q^j_{CD} = \left(1 - p_{CR}\right)\left(1 - e^{-\gamma_{C}}\right)$.
 
-Lockdown can be controlled either by constraining movements over a certain distance, or by scaling the $\beta$ parameters. We do the latter at the moment. 
+Lockdown can be controlled either by constraining movements over a certain distance, or by scaling the $\beta_{kj}$ parameters. We do the latter at the moment. 
 
-MetaWards has a specific structure in terms of how it progresses movements between the stages. To get the correct splits between the pathways specified above we do all non-infection movements through a custom `mover` function specified [below](#mover). Note that in the `ncov.json` file specified [above](#diseasefile), we set all `progress` parameters to be 0. Thus, all transition probabilities other than new infections are driven by user-defined parameters that are passed to the `mover` function, which we call `move_pathways.py` here.
+<button data-toggle="collapse" data-target="#trans">Click for details on transmission terms</button>
+<div id="trans" class="collapse boxed">
+
+In a standard single population model with age-structure, the force-of-infection acting on susceptibles in age-class $j$ at a given time $t$ is:
+$$
+    \lambda_{j} = \sum_{k = 1}^J  \beta_{kj}\frac{I_k}{N_k},
+$$
+where $\beta_{kj}$ is the transmission rate from class $k$ to class $j$, $I_k$ is the number of infectives in class $k$ and $N_k$ is the total number of individuals in class $k$ at time $t$ (the $t$ subscript has been dropped for brevity).
+
+In practice we model the transmission parameters as:
+$$
+  \beta_{kj} = \nu c_{kj},
+$$
+where $0 < \nu < 1$ is a probability of infection per contact, and $c_{kj}$ is the **population contact rate** that an individual in class$j$ has with individuals in class $k$. We use the population contact matric $C = \{c_{kj}; k = 1, \dots, J; j = 1, \dots, J\}$ from the **CoMix** survey, since we are modelling from the end of the first lockdown, where contact rates are not the same as before the pandemic (where something like the BBC Pandemic Contact Survey or POLYMOD would be more appropriate).
+
+A challenge is that we parameterise our model in terms of $R_0$, not $\nu$, and thus we need a way to derive $\nu$ from $R_0$ for a given run.
+
+If we ignore the incubation period, and assume the model is $SIR$, then $R_0$ can be derived as the **maximum eigenvalue** of the **next-generation matrix** (NGM), thus:
+\begin{align}
+    R_0 &= \mbox{eig}_M\left(\frac{\nu}{\gamma_I}C\right)\\
+    \Rightarrow \nu &= \frac{R_0 \gamma_I}{\mbox{eig}_M\left(C\right)},
+\end{align}
+where $\mbox{eig}_M\left(C\right)$ denotes the maximum eigenvalue of $C$.
+
+<p style="color:red">NEED TO CHECK $\nu$ IS A PROBABILITY</p>
+
+<p style="color:red">NEED TO ADD INCUBATION PERIOD TO NGM</p>
+
+</div>
+
+MetaWards has a specific structure in terms of how it progresses movements between the stages. To get the correct splits between the **pathways** specified above we do all non-infection movements through a custom `mover` function specified [below](#mover). Note that in the `ncov.json` file specified [above](#diseasefile), we set all `progress` parameters to be 0. Thus, all transition probabilities other than new infections are driven by user-defined parameters that are passed to the `mover` function, which we call `move_pathways.py` here.
 
 <button data-toggle="collapse" data-target="#mover">Click for MetaWards <code>mover</code> file</button>
-<div id="mover" class="collapse">
+<div id="mover" class="collapse boxed">
 
 The `mover` function applies movements in order, and so it is important to get the order correct. In particular we need to reverse the order of the stage movements (e.g. do movements out of the $C$ demographic *before* movements out of the $H$ demographic). This is to ensure that individuals that move from $H \to C$ say, can't then immediately move out of $C$. The file `move_pathways.py` contains the code below.
 
-```{python, code = readLines("../model_code/move_pathways.py"), eval = FALSE}
-```
-
-> **Additional note**: The functions in the `mover` file operate in turn. Therefore the movement probabilities [above](#parameters) must be altered between each function, in order to get the correct proportions moved. For example, consider that we have $n$ individuals in the $I$ class and we want to move a proportion $p_Ip_{IH}$ from $I \to H$, a proportion $p_Ip_{IR}$ from $I \to R_I$, and a proportion $p_I\left(1 - p_{IH} - p_{IR}\right)$ from $I \to D_I$, where $p_I = 1 - e^{-\gamma_I}$.
+> **Additional note**: The functions in the `mover` file operate in turn. Therefore the movement probabilities below must be altered between each function, in order to get the correct proportions moved. For example, consider that we have $n$ individuals in the $I$ class and we want to move a proportion $p_Ip_{IH}$ from $I \to H$, a proportion $p_Ip_{IR}$ from $I \to R_I$, and a proportion $p_I\left(1 - p_{IH} - p_{IR}\right)$ from $I \to D_I$, where $p_I = 1 - e^{-\gamma_I}$.
 > 
 > In this case the first `mover` function takes a random binomial sample from the $n$ individuals with probability $p_Ip_{IH}$ as requested, resulting in $n_{IH}$ moves. However, the second `mover` function now operates on the $n - n_{IH}$ individuals, so we need to adjust the sampling probabilities to adjust for this. Hence the second `mover` function needs to sample from the $n - n_{IH}$ individuals with probability $\frac{p_Ip_{IR}}{1 - p_Ip_{IH}}$ in order to generate the correct proportions of moves that we would expect, resulting in $n_{IR}$ moves. Similarly, the third `mover` function now operates on the $n - n_{IH} - n_{IR}$ remaining individuals, and thus we would need to adjust the sampling probability to $\frac{p_I\left(1 - p_{IH} - p_{IR}\right)}{1 - p_I\left(p_{IH} + p_{IR}\right)}$. The remaining individuals remain in $I$.
+
+```{python, code = readLines("../model_code/move_pathways.py"), eval = FALSE}
+```
 
 </div>
 
 ## Interaction matrices
 
-The **interaction matrix** scales the force-of-infection (FOI) that different demographics have on other demographics. We have three free parameters here: $\beta^S_{A \to GP}$, $\beta^S_{H \to GP}$ and $\beta^S_{C \to GP}$ which scale the impact of aymptomatics, hospital cases and critical care cases on the FOI to the general population. We store this information in a file called `mix_pathways.py`. 
+<p style="color:red">CHECK TRANSPOSE IN INTERACTION</p>
+
+The **interaction matrix** scales the force-of-infection (FOI) that different demographics have on other demographics. We will use this to capture the effect of each age-class on the FOI for the other age-classes (see [here](#trans)). We also have three further free parameters: $\beta^S_{A \to GP}$, $\beta^S_{H \to GP}$ and $\beta^S_{C \to GP}$ which scale the impact of aymptomatics, hospital cases and critical care cases on the FOI to the general population. We store this information in a file called `mix_pathways.py`. 
 
 <button data-toggle="collapse" data-target="#mixer">Click for MetaWards <code>mixing</code> file</button>
-<div id="mixer" class="collapse">
+<div id="mixer" class="collapse boxed">
 
-Since most of the classes are already infected, it's only the first row that has to contain non-zero entries. Here the `GP_A`, `GP_H` and `GP_C` parameters scale the impact of aymptomatics, hospital cases and critical care cases on the force-of-infection to the general population. All demographics other than `genpop` are already infected, so have no further force-of-infection acting on them, and thus the other parameters can be set to zero. These parameters are all $> 0$.
+Since most of the classes are already infected, it's only the rows corresponding to the general population age-classes that have to contain non-zero entries. Here the `GP_A`, `GP_H` and `GP_C` parameters scale the impact of aymptomatics, hospital cases and critical care cases on the force-of-infection to the general population. All demographics other than `genpop` are already infected, so have no further force-of-infection acting on them, and thus the other parameters can be set to zero. These parameters are all $> 0$.
 
 ```{python, code = readLines("../model_code/mix_pathways.py"), eval = FALSE}
 ```
@@ -179,39 +312,51 @@ Since most of the classes are already infected, it's only the first row that has
 
 ## Lockdown
 
-Chris Fenton wrote a neat custom `iterator` function, that models lockdown by scaling the FOI terms for different time periods, which each represent a different stage of interventions. We store this information in a custom `iterator` function (specified in `iterator.py` here), with the corresponding parameters in `lockdown_states.txt`.
+<p style="color:red">HAVEN'T TOUCHED THIS YET</p>
+<p style="color:red">LOCKDOWN TO SCALE WORK AND PLAY - TURN MOVEMENTS OF IN HOSPITALS AND ICUS</p>
+<p style="color:red">TURN LOCAL MOVEMENTS OFF</p>
+<p style="color:red">GOOGLE MOBILITY?</p>
+
+Chris Fenton wrote a neat custom `iterator` function, that models lockdown by scaling the FOI terms for different time periods, which each represent a different stage of interventions. We store this information in a custom `iterator` function (specified in `iterator.py` here), with the corresponding parameters in `inputs/user_inputs.txt`.
 
 <button data-toggle="collapse" data-target="#ldown">Click for MetaWards <code>iterator</code> files</button>
-<div id="ldown" class="collapse">
+<div id="ldown" class="collapse boxed">
 
 The custom iterator is in the `iterate.py` file:
 
 ```{python, code = readLines("../model_code/iterate.py"), eval = FALSE}
 ```
 
-This requires an additional input file containing the dates of the different stages (which are fixed parameters here). This is stored in the `lockdown_states.txt` file:
+This requires an additional input file containing the dates of the different stages (which are fixed parameters here). This is stored in the `user_inputs.txt` file:
 
-```{python, code = readLines("../model_code/lockdown_states.txt"), eval = FALSE}
+```{python, code = readLines("../inputs/user_inputs.txt"), eval = FALSE}
 ```
 
 </div>
 
 ## Extractor {#extractor}
 
-We also have a custom `extractor` function, that saves the outputs as a compressed SQL database called `stages.db.bz2`. This is important since the outputs are very large (all classes across all days and all wards, for multiple replicates of each design point). 
+<div style="color:red">
+Need to discuss this some more. Currently this stores all classes at all time points for each demographic once a ward is infected (so doesn't store any information before the first time point affected). Further options include:
 
-The database for a given run contains a single table called `compact`. To store the outputs efficiently, we have introduced various tricks:
+* Only store demographic information once a **demographic** is affected (so if a ward never has individuals in hospital, then no hospital information is recorded).
+* Only store time points where something changes.
+* Only store a subset of results (we may not need I, E etc. since these can be reconstructed from Iprime, Eprime, R and D for example).
 
-1. Extraneous classes are removed where not relevant for different demographics. For example, for the `genpop` demographic we return `stage_0`--`stage_3`. However, for the `asymp` demographic we only return `stage_1` and `stage_2`, and for the `hospital` and `critical` demographics, we return `stage_1`--`stage_3`.
-2. We only return data for time points *after initial infection in a ward*. This also means that wards that are not infected do not return any results. 
+All of these ideas swap storage for additional post-processing requirements.
+</div>
 
-These tricks **hugely** reduce the size of the output data, but means that we have to do some **post-processing** in order to extract quantities of interest. Since the data are stored as an SQL database, we can either query the database directly, or use some of the tools in e.g. R (see below) to interface with it. So, to clarify, the `stages.db` database contains a table called `compact` with entries:
+We also have a custom `extractor` function, that saves the outputs as a compressed SQL database for each age-class, called `stages*.db.bz2` (where `*` varies by age-class). This is important since the outputs are very large (all classes across all days and all wards, for multiple replicates of each design point). 
+
+The database for a given run contains a single table called `compact`. To store the outputs efficiently, we only return data for time points *after initial infection in a ward*. This also means that wards that are not infected do not return any results. 
+
+This trick **hugely** reduces the size of the output data, but means that we have to do some **post-processing** in order to extract quantities of interest. Since the data are stored as an SQL database, we can either query the database directly, or use some of the tools in e.g. R (see below) to interface with it. So, to clarify, the `stages*.db` databases each contain a table called `compact` with entries:
 
 * `day`, `ward`
-* `Einc`, `E`, `Iinc`, `I`, `RI`, `DI`
-* `Ainc`, `A`, `RA`
-* `Hinc`, `H`, `RH`, `DH`
-* `Cinc`, `C`, `RC`, `DC`
+* `Einc`, `E`, `Iinc`, `I`, `R`, `D`
+* `IAinc`, `IA`, `RA`
+* `IHinc`, `IH`, `RH`, `DH`
+* `ICinc`, `IC`, `RC`, `DC`
 
 For the `genpop` demographic, these entries correspond to:
 
@@ -219,15 +364,15 @@ For the `genpop` demographic, these entries correspond to:
 * `E`: current infections on each day (i.e. number of individuals in $E$)
 * `Iinc`: **new** infectious individuals on each day (i.e. new moves into $I$)
 * `I`: current infectious individuals on each day (i.e. number of individuals in $I$)
-* `RI`: current removals on each day (i.e. number of individuals in $R$)
-* `DI`: current deaths on each day (i.e. number of individuals in $D$)
+* `R`: current removals on each day (i.e. number of individuals in $R$)
+* `D`: current deaths on each day (i.e. number of individuals in $D$)
 
 Similarly for the other demographics (refer to the model structure [here](#model)).
 
 We save this custom `extractor` function in the file `ward_extractor.py`.
 
 <button data-toggle="collapse" data-target="#ext">Click for MetaWards <code>extractor</code> file</button>
-<div id="ext" class="collapse">
+<div id="ext" class="collapse boxed">
 
 ```{python, code = readLines("../model_code/ward_extractor.py"), eval = FALSE}
 ```
@@ -235,6 +380,8 @@ We save this custom `extractor` function in the file `ward_extractor.py`.
 </div>
 
 ## Input and output code {#code}
+
+### Inputs
 
 To run designs, we need to generate a `disease.csv` file containing different parameters to use for different runs. For consistency, we will define three spaces:
 
@@ -292,7 +439,7 @@ read_chunk("../R_tools/dataTools.R")
 ```
 
 <button data-toggle="collapse" data-target="#convert">Click for R <code>convertDesignToInput</code> function</button>
-<div id="convert" class="collapse">
+<div id="convert" class="collapse boxed">
 
 ```{r, convertDesignToInput}
 ```
@@ -302,7 +449,7 @@ read_chunk("../R_tools/dataTools.R")
 Once we have done this, we need to transform from the *input* space to the *disease* space for MetaWards. A `convertInputToDisease()` R function is given below and can be found in the `R_tools/dataTools.R` script file. This requires an `input` data frame, with columns denoting each *input* parameter and rows corresponding to each input points, a number of `repeats` and a column of unique identifiers (`output`).
 
 <button data-toggle="collapse" data-target="#convert1">Click for R <code>convertInputToDisease</code> function</button>
-<div id="convert1" class="collapse">
+<div id="convert1" class="collapse boxed">
 
 ```{r, convertInputToDisease}
 ```
@@ -317,7 +464,7 @@ Also in `R_tools/dataTools.R` is a function `ensembleIDGen()` that creates uniqu
 This produces a file `inputs/disease.dat` that can be passed to MetaWards to run the model. The batch code below provides the command line instructions needed to the model using these inputs. If you don't run Linux, then the file should give you an idea of how to run the model on your own system.
 
 <button data-toggle="collapse" data-target="#run">Click to show code</button>
-<div id="run" class="collapse">
+<div id="run" class="collapse boxed">
 
 ```{bash, eval = FALSE}
 mkdir -p raw_outputs
@@ -326,12 +473,18 @@ R CMD BATCH --no-restore --slave --no-save convertDesign.R
 
 export METAWARDSDATA=$HOME/Documents/covid/MetaWardsData
 
-metawards -d model_code/ncov.json -D model_code/demographics.json --mixer model_code/mix_pathways --mover model_code/move_pathways --input inputs/disease.dat -a ExtraSeedsLondon.dat -u model_code/lockdown_states.txt -o raw_outputs --force-overwrite-output --iterator model_code/iterate --extractor model_code/ward_extractor --start-date 2020/01/01 --theme simple --nsteps 100
+metawards -d model_code/ncov_overall.json -D model_code/demographics.json --mixer model_code/mix_pathways\
+  --mover model_code/move_pathways --input inputs/disease.dat -a ExtraSeedsLondon.dat \
+  -u inputs/user_inputs.txt -o raw_outputs --force-overwrite-output \
+  --iterator model_code/iterate --extractor model_code/ward_extractor --start-date 2020/01/01 \
+  --theme simple --nsteps 100
 ```
 
 </div>
 
 ### Outputs 
+
+<p style="color:red">HAVEN'T TOUCHED ANYTHING BELOW UNTIL WE FINALISE EXTRACTORS</p>
 
 As described [above](#extractor) each model run produces a file called `stages.db.bz2`, which is a compressed database containing the outputs. In practice, it is time-consuming to unzip and extract all of these outputs for all design points, and extract and collate the various quantities we need for our emulation and history matching process. To this end we have been kindly offered a processing and data storage solution on [JASMIN](https://www.jasmin.ac.uk/). 
 

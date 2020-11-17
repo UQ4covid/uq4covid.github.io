@@ -17,8 +17,11 @@ parRanges <- data.frame(
     stringsAsFactors = FALSE
 )
 
+## read in contact matrix
+C <- as.matrix(read.csv("inputs/contact_matrix.csv", header = FALSE))
+
 ## generate LHS design
-design <- randomLHS(5, nrow(parRanges))
+design <- randomLHS(1, nrow(parRanges))
 colnames(design) <- parRanges$parameter
 design <- as_tibble(design)
 
@@ -26,13 +29,13 @@ design <- as_tibble(design)
 ## (at the moment don't use "a0" type ensembleID, because MetaWards
 ## parses to dates)
 design$output <- ensembleIDGen(ensembleID = "Ens0", nrow(design))
-design$repeats <- 2
+design$repeats <- 1
 
 ## convert to input space
 input <- convertDesignToInput(design, parRanges, "zero_one")
 
 ## convert input to disease
-disease <- convertInputToDisease(input)
+disease <- convertInputToDisease(input, C)
 
 ## write to external files
 dir.create("inputs", showWarnings = FALSE)
