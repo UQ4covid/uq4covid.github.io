@@ -1,9 +1,13 @@
 from metawards.movers import go_stage
+from metawards.utils import Console
 
 def move_pathways(network, **kwargs):
 
     # extract user defined parameters
     params = network.params
+    
+    ## extract number of age-classes
+    nage = params.user_params["nage"]
 
     ## moves out of E class
     pE = params.user_params["pE"]
@@ -31,16 +35,21 @@ def move_pathways(network, **kwargs):
     ## movers in reverse order through the stages to 
     ## ensure correct mapping
     
+    ## NOTE: looping over the age ranges don't work unless you use a 
+    ## default parameter k = j in the lambda - solution derived from:
+    ## https://stackoverflow.com/questions/10452770/python-lambdas-binding-to-local-values
+    
     #######################################################
     #########              C MOVES                #########
     #######################################################
                                       
     ## move C critical to R critical
     tpCR = pC * pCR
-    func.append(lambda **kwargs: go_stage(go_from="critical",
-                                      go_to="critical",
-                                      from_stage=1,
-                                      to_stage=2,
+    for j in range(nage):
+        func.append(lambda k = j, **kwargs: go_stage(go_from=f'critical{k + 1}',
+                                      go_to=f'critical{k + 1}',
+                                      from_stage="IC",
+                                      to_stage="RC",
                                       fraction=tpCR,
                                       **kwargs))
                                       
@@ -51,10 +60,11 @@ def move_pathways(network, **kwargs):
     tpCD = pC * (1.0 - pCR) / (1.0 - tpCR)
     tpCD = 1.0 if tpCD > 1.0 else tpCD
     tpCD = 0.0 if tpCD < 0.0 else tpCD
-    func.append(lambda **kwargs: go_stage(go_from="critical",
-                                      go_to="critical",
-                                      from_stage=1,
-                                      to_stage=3,
+    for j in range(nage):
+        func.append(lambda k = j, **kwargs: go_stage(go_from=f'critical{k + 1}',
+                                      go_to=f'critical{k + 1}',
+                                      from_stage="IC",
+                                      to_stage="DC",
                                       fraction=tpCD,
                                       **kwargs))
                                       
@@ -64,10 +74,11 @@ def move_pathways(network, **kwargs):
     
     ## move H hospital to C critical
     tpHC = pH * pHC
-    func.append(lambda **kwargs: go_stage(go_from="hospital",
-                                      go_to="critical",
-                                      from_stage=1,
-                                      to_stage=1,
+    for j in range(nage):
+        func.append(lambda k = j, **kwargs: go_stage(go_from=f'hospital{k + 1}',
+                                      go_to=f'critical{k + 1}',
+                                      from_stage="IH",
+                                      to_stage="IC",
                                       fraction=tpHC,
                                       **kwargs))
                                       
@@ -78,10 +89,11 @@ def move_pathways(network, **kwargs):
     tpHR = pH * pHR / (1.0 - tpHC)
     tpHR = 1.0 if tpHR > 1.0 else tpHR
     tpHR = 0.0 if tpHR < 0.0 else tpHR
-    func.append(lambda **kwargs: go_stage(go_from="hospital",
-                                      go_to="hospital",
-                                      from_stage=1,
-                                      to_stage=2,
+    for j in range(nage):
+        func.append(lambda k = j, **kwargs: go_stage(go_from=f'hospital{k + 1}',
+                                      go_to=f'hospital{k + 1}',
+                                      from_stage="IH",
+                                      to_stage="RH",
                                       fraction=tpHR,
                                       **kwargs))
                                       
@@ -92,10 +104,11 @@ def move_pathways(network, **kwargs):
     tpHD = pH * (1.0 - pHC - pHR) / (1.0 - pH * (pHC + pHR))
     tpHD = 1.0 if tpHD > 1.0 else tpHD
     tpHD = 0.0 if tpHD < 0.0 else tpHD
-    func.append(lambda **kwargs: go_stage(go_from="hospital",
-                                      go_to="hospital",
-                                      from_stage=1,
-                                      to_stage=3,
+    for j in range(nage):
+        func.append(lambda k = j, **kwargs: go_stage(go_from=f'hospital{k + 1}',
+                                      go_to=f'hospital{k + 1}',
+                                      from_stage="IH",
+                                      to_stage="DH",
                                       fraction=tpHD,
                                       **kwargs))
     
@@ -105,10 +118,11 @@ def move_pathways(network, **kwargs):
 
     ## move I genpop to H hospital
     tpIH = pI * pIH
-    func.append(lambda **kwargs: go_stage(go_from="genpop",
-                                      go_to="hospital",
-                                      from_stage=1,
-                                      to_stage=1,
+    for j in range(nage):
+        func.append(lambda k = j, **kwargs: go_stage(go_from=f'genpop{k + 1}',
+                                      go_to=f'hospital{k + 1}',
+                                      from_stage="I",
+                                      to_stage="IH",
                                       fraction=tpIH,
                                       **kwargs))
 
@@ -119,10 +133,11 @@ def move_pathways(network, **kwargs):
     tpIR = pI * pIR / (1.0 - tpIH)
     tpIR = 1.0 if tpIR > 1.0 else tpIR
     tpIR = 0.0 if tpIR < 0.0 else tpIR
-    func.append(lambda **kwargs: go_stage(go_from="genpop",
-                                      go_to="genpop",
-                                      from_stage=1,
-                                      to_stage=2,
+    for j in range(nage):
+        func.append(lambda k = j, **kwargs: go_stage(go_from=f'genpop{k + 1}',
+                                      go_to=f'genpop{k + 1}',
+                                      from_stage="I",
+                                      to_stage="R",
                                       fraction=tpIR,
                                       **kwargs))
 
@@ -133,10 +148,11 @@ def move_pathways(network, **kwargs):
     tpID = pI * (1 - pIH - pIR) / (1.0 - pI * (pIH + pIR))
     tpID = 1.0 if tpID > 1.0 else tpID
     tpID = 0.0 if tpID < 0.0 else tpID
-    func.append(lambda **kwargs: go_stage(go_from="genpop",
-                                      go_to="genpop",
-                                      from_stage=1,
-                                      to_stage=3,
+    for j in range(nage):
+        func.append(lambda k = j, **kwargs: go_stage(go_from=f'genpop{k + 1}',
+                                      go_to=f'genpop{k + 1}',
+                                      from_stage="I",
+                                      to_stage="D",
                                       fraction=tpID,
                                       **kwargs))
     
@@ -146,10 +162,11 @@ def move_pathways(network, **kwargs):
 
     ## move A asymp to R asymp
     tpAR = pA
-    func.append(lambda **kwargs: go_stage(go_from="asymp",
-                                      go_to="asymp",
-                                      from_stage=1,
-                                      to_stage=2,
+    for j in range(nage):
+        func.append(lambda k = j, **kwargs: go_stage(go_from=f'asymp{k + 1}',
+                                      go_to=f'asymp{k + 1}',
+                                      from_stage="IA",
+                                      to_stage="RA",
                                       fraction=tpAR,
                                       **kwargs))
     
@@ -159,10 +176,11 @@ def move_pathways(network, **kwargs):
 
     ## move E genpop to A asymp
     tpEA = pE * pEA
-    func.append(lambda **kwargs: go_stage(go_from="genpop",
-                                      go_to="asymp",
-                                      from_stage=0,
-                                      to_stage=1,
+    for j in range(nage):
+        func.append(lambda k = j, **kwargs: go_stage(go_from=f'genpop{k + 1}',
+                                      go_to=f'asymp{k + 1}',
+                                      from_stage="E",
+                                      to_stage="IA",
                                       fraction=tpEA,
                                       **kwargs))
 
@@ -173,10 +191,11 @@ def move_pathways(network, **kwargs):
     tpEI = pE * (1.0 - pEA) / (1.0 - tpEA)
     tpEI = 1.0 if tpEI > 1.0 else tpEI
     tpEI = 0.0 if tpEI < 0.0 else tpEI
-    func.append(lambda **kwargs: go_stage(go_from="genpop",
-                                      go_to="genpop",
-                                      from_stage=0,
-                                      to_stage=1,
+    for j in range(nage):
+        func.append(lambda k = j, **kwargs: go_stage(go_from=f'genpop{k + 1}',
+                                      go_to=f'genpop{k + 1}',
+                                      from_stage="E",
+                                      to_stage="I",
                                       fraction=tpEI,
                                       **kwargs))
 

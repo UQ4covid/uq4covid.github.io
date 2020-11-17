@@ -72,3 +72,9 @@ button {
 .wrapper {
     text-align: center;
 }
+.boxed {
+  margin: 10px 0px 10px 0px;
+  padding: 1em;
+  font-size: 1em;
+  border: 2px solid #555;
+}

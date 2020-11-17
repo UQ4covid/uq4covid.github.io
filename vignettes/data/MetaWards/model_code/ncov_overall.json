@@ -1,0 +1,4 @@
+{ 
+  "name"  : "SARS-Cov-2",
+  "stage" : ["E", "I", "R", "D", "IA", "RA", "IH", "RH", "DH", "IC", "RC", "DC"]
+}

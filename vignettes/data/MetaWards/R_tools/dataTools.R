@@ -24,12 +24,13 @@ convertDesignToInput <- function(design, parRanges, scale = c("zero_one", "negon
 
 ## @knitr convertInputToDisease
 ## function to convert from input to disease space
-convertInputToDisease <- function(input) {
+convertInputToDisease <- function(input, C) {
    
     require(dplyr)
     
-    ## common parameters to all pathways
-    disease <- tibble(`beta[1]` = input$r_zero / input$infectious_time)
+    ## transmission parameter
+    disease <- tibble(`.nu` = (input$r_zero / (max(eigen(C)$values) * input$infectious_time)))
+    
     ## progressions out of the E class
     ## (adjusting in the way described in the vignette for
     ## order of movers)
