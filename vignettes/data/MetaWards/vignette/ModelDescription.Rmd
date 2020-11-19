@@ -112,7 +112,6 @@ ages <- read_csv("../inputs/Pop\ by\ CTRY.csv") %>%
   filter(!is.na(ageCat)) %>%
   filter(code == "E92000001") %>%
   select(-gender, -code) %>%
-  slice(1:2) %>%
   mutate(prop = round(count / sum(count), 3))
 stopifnot(sum(ages$prop) == 1)
 C <- read.csv("../inputs/contact_matrix.csv", header = FALSE)
