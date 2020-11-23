@@ -30,6 +30,7 @@ convertInputToDisease <- function(input, C) {
     
     ## transmission parameter
     disease <- tibble(`.nu` = (input$r_zero / (max(eigen(C)$values) * input$infectious_time)))
+    stopifnot(all(disease$`.nu` > 0 & disease$`.nu` < 1))
     
     ## progressions out of the E class
     ## (adjusting in the way described in the vignette for
