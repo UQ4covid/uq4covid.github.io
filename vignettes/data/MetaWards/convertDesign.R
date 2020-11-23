@@ -21,7 +21,7 @@ parRanges <- data.frame(
 C <- as.matrix(read.csv("inputs/contact_matrix.csv", header = FALSE))
 
 ## generate LHS design
-design <- randomLHS(1, nrow(parRanges))
+design <- randomLHS(5, nrow(parRanges))
 colnames(design) <- parRanges$parameter
 design <- as_tibble(design)
 
@@ -29,7 +29,7 @@ design <- as_tibble(design)
 ## (at the moment don't use "a0" type ensembleID, because MetaWards
 ## parses to dates)
 design$output <- ensembleIDGen(ensembleID = "Ens0", nrow(design))
-design$repeats <- 1
+design$repeats <- 2
 
 ## convert to input space
 input <- convertDesignToInput(design, parRanges, "zero_one")
