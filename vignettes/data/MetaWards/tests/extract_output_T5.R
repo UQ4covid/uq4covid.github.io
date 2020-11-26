@@ -3,59 +3,65 @@
 # library(RSQLite)
 library(tidyverse)
 
-## establish connection
-system("bzip2 -dkf raw_outputs/stages.db.bz2")
-con <- DBI::dbConnect(RSQLite::SQLite(), "raw_outputs/stages.db")
+## set up proportions in each age class
+ageprop <- c(0.06, 0.154, 0.154, 0.134, 0.128, 0.134, 0.105, 0.131)
 
-## extract data
-compact <- tbl(con, "compact")
+## loop over age classes
+for(i in 1:8) {
+    ## establish connection
+    system(paste0("bzip2 -dkf raw_outputs/stages", i, ".db.bz2"))
+    con <- DBI::dbConnect(RSQLite::SQLite(), paste0("raw_outputs/stages", i, ".db"))
 
-## the commands above don't pull down from the database
-## until you run a 'collect()' pull, but it allows
-## you to use 'tidyverse'-esque notation, which is converts
-## to SQL if you're not used to SQL
+    ## extract data
+    compact <- tbl(con, "compact")
 
-## see e.g. https://db.rstudio.com/dplyr
+    ## the commands above don't pull down from the database
+    ## until you run a 'collect()' pull, but it allows
+    ## you to use 'tidyverse'-esque notation, which is converts
+    ## to SQL if you're not used to SQL
 
-## check all demographics other than genpop are empty
-stopifnot(
-    select(compact, -day, -ward, -Einc, -E, -Iinc, -I, -RI, -DI) %>%
-    collect() %>%
-    sum() == 0
-)
+    ## see e.g. https://db.rstudio.com/dplyr
 
-## plot infection counts
-p <- select(compact, day, ward, I) %>%
-    group_by(day) %>%
-    summarise(I = sum(I)) %>%
-    collect() %>%
-    ggplot(aes(x = day, y = I)) +
-        geom_line() +
-        xlab("Day") + ylab("Infections") +
-        ggtitle("R0 = 3.5 Inc./Inf. period = 2 days")
-ggsave("infections_T5.pdf", p)
+    ## check all demographics other than genpop are empty
+    stopifnot(
+        select(compact, -day, -ward, -Einc, -E, -Iinc, -I, -R, -D) %>%
+        collect() %>%
+        sum() == 0
+    )
 
-## calculate number of wards infected
-wards <- select(compact, ward) %>%
-    collect() %>%
-    pluck("ward") %>%
-    unique()
-print(paste0("Number of infected wards = ", length(wards)))
+    ## plot infection counts
+    p <- select(compact, day, ward, I) %>%
+        group_by(day) %>%
+        summarise(I = sum(I)) %>%
+        collect() %>%
+        ggplot(aes(x = day, y = I)) +
+            geom_line() +
+            xlab("Day") + ylab("Infections") +
+            ggtitle("R0 = 3.5 Inc./Inf. period = 2 days")
+    ggsave(paste0("infections_T5_stage", i, ".pdf"), p)
 
-## extract cumulative infections at day 100
-genpop <- select(compact, day, ward, Iinc) %>%
-    filter(day <= 100) %>%
-    arrange(ward, day) %>%
-    group_by(ward) %>%
-    summarise(Icum = sum(Iinc)) %>%
-    collect()
+    ## calculate number of wards infected
+    wards <- select(compact, ward) %>%
+        collect() %>%
+        pluck("ward") %>%
+        unique()
+    print(paste0("Number of infected wards = ", length(wards)))
 
-## optimise proportion    
-fun <- function(p) abs(1 - exp(-3.5 * p) - p)
-opt <- optimise(fun, interval = c(0, 1))
+    ## extract cumulative infections at day 100
+    genpop <- select(compact, day, ward, Iinc) %>%
+        filter(day <= 100) %>%
+        arrange(ward, day) %>%
+        group_by(ward) %>%
+        summarise(Icum = sum(Iinc)) %>%
+        collect()
 
-## extract national level
-print(paste0("runs: ", sum(genpop$Icum) / 56082077, "pred: ", opt$minimum))
+    ## optimise proportion    
+    fun <- function(p) abs(1 - exp(-3.5 * p) - p)
+    opt <- optimise(fun, interval = c(0, 1))
 
-## remove db
-system("rm raw_outputs/stages.db")
+    ## extract national level
+    print(paste0("runs stage ", i, ": ", sum(genpop$Icum) / (56082077 * ageprop[i]), "pred: ", opt$minimum))
+
+    ## remove db
+    system(paste0("rm raw_outputs/stages", i, ".db"))
+}
