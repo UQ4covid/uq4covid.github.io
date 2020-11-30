@@ -11,8 +11,8 @@ def create_tables(network: Networks):
     ## Primary key needs to be composite here
     
     ## set specific column names
-    col_names = ["Einc", "E", "Iinc", "I", "R", "D", "IAinc", "IA", "RA", "IHinc", "IH",\
-        "RH", "DH", "ICinc", "IC", "RC", "DC"]
+    col_names = ["Einc", "Iinc", "Rinc", "Dinc", "IAinc", "IHinc", \
+        "RHinc", "DHinc", "ICinc", "RCinc", "DCinc"]
     col_names = [f"{i} int" for i in col_names]
     col_str = ','.join(col_names)
 
@@ -149,8 +149,8 @@ def output_db(population: Population, network: Networks,
         day = [population.day] * len(wards)
         
         ## set column names
-        col_names = ["day", "ward", "Einc", "E", "Iinc", "I", "R", "D", "IAinc", "IA", "RA", "IHinc", "IH",\
-            "RH", "DH", "ICinc", "IC", "RC", "DC"]
+        col_names = ["day", "ward", "Einc", "Iinc", "Rinc", "Dinc", "IAinc", "IHinc", \
+            "RHinc", "DHinc", "ICinc", "RCinc", "DCinc"]
         col_str = ','.join(col_names)
         
         ## extract demographics
@@ -160,10 +160,10 @@ def output_db(population: Population, network: Networks,
         critical_ward = workspace.subspaces[ic].ward_inf_tot
         
         ## write to file
-        for day, ward, Einc, E, Iinc, I, R, D, IAinc, IA, RA, IHinc, IH, RH, DH, ICinc, IC, RC, DC in\
-        zip(day, wards, Eprime, genpop_ward[0], Iprime[ig], genpop_ward[1], genpop_ward[2], genpop_ward[3],\
-        Iprime[ia], asymp_ward[0], asymp_ward[1], Iprime[ih], hospital_ward[0], hospital_ward[1],\
-        hospital_ward[2], Iprime[ic], critical_ward[0], critical_ward[1], critical_ward[2]):
+        for day, ward, Einc, Iinc, Rinc, Dinc, IAinc, IHinc, RHinc, DHinc, ICinc, RCinc, DCinc in\
+        zip(day, wards, Eprime, Iprime[ig], Rprime[ig], Dprime[ig], Iprime[ia],\
+        Iprime[ih], Rprime[ih], Dprime[ih],\
+        Iprime[ic], Rprime[ic], Dprime[ic]):
             if ward not in _zero_crossings:
                 _zero_crossings[ward] = False
                 
@@ -171,11 +171,14 @@ def output_db(population: Population, network: Networks,
             if Einc != 0 and _zero_crossings[ward] is False and ward != 0:
                 _zero_crossings[ward] = True
                 Console.print(f"Got first infection in ward {ward}")
-    
-            val = [day, ward, Einc, E, Iinc, I, R, D, IAinc, IA, RA, IHinc, IH, RH, DH, ICinc, IC, RC, DC]
+                
+            ## set up list of changes
+            val = [day, ward, Einc, Iinc, Rinc, Dinc, IAinc, IHinc, RHinc, DHinc, ICinc, RCinc, DCinc]
             keeps_str = ",".join([str(v) for v in val])
             qstring = f"insert into compact ({col_str}) values ({keeps_str}) "
-            if _zero_crossings[ward] is True:
+            
+            ## check for any changes in ward    
+            if _zero_crossings[ward] is True and any([ v > 0 for v in val[2:] ]):
                 c[j].execute(qstring)
                 
         conn[j].commit()
