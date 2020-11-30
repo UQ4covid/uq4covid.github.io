@@ -11,7 +11,7 @@ def create_tables(network: Networks):
     ## Primary key needs to be composite here
     
     ## set specific column names
-    col_names = ["Einc", "Iinc", "Rinc", "Dinc", "IAinc", "IHinc", \
+    col_names = ["Einc", "Iinc", "Rinc", "Dinc", "IAinc", "RAinc", "IHinc", \
         "RHinc", "DHinc", "ICinc", "RCinc", "DCinc"]
     col_names = [f"{i} int" for i in col_names]
     col_str = ','.join(col_names)
@@ -149,7 +149,7 @@ def output_db(population: Population, network: Networks,
         day = [population.day] * len(wards)
         
         ## set column names
-        col_names = ["day", "ward", "Einc", "Iinc", "Rinc", "Dinc", "IAinc", "IHinc", \
+        col_names = ["day", "ward", "Einc", "Iinc", "Rinc", "Dinc", "IAinc", "RAinc", "IHinc", \
             "RHinc", "DHinc", "ICinc", "RCinc", "DCinc"]
         col_str = ','.join(col_names)
         
@@ -160,8 +160,8 @@ def output_db(population: Population, network: Networks,
         critical_ward = workspace.subspaces[ic].ward_inf_tot
         
         ## write to file
-        for day, ward, Einc, Iinc, Rinc, Dinc, IAinc, IHinc, RHinc, DHinc, ICinc, RCinc, DCinc in\
-        zip(day, wards, Eprime, Iprime[ig], Rprime[ig], Dprime[ig], Iprime[ia],\
+        for day, ward, Einc, Iinc, Rinc, Dinc, IAinc, RAinc, IHinc, RHinc, DHinc, ICinc, RCinc, DCinc in\
+        zip(day, wards, Eprime, Iprime[ig], Rprime[ig], Dprime[ig], Iprime[ia], Rprime[ia],\
         Iprime[ih], Rprime[ih], Dprime[ih],\
         Iprime[ic], Rprime[ic], Dprime[ic]):
             if ward not in _zero_crossings:
@@ -173,7 +173,7 @@ def output_db(population: Population, network: Networks,
                 Console.print(f"Got first infection in ward {ward}")
                 
             ## set up list of changes
-            val = [day, ward, Einc, Iinc, Rinc, Dinc, IAinc, IHinc, RHinc, DHinc, ICinc, RCinc, DCinc]
+            val = [day, ward, Einc, Iinc, Rinc, Dinc, IAinc, RAinc, IHinc, RHinc, DHinc, ICinc, RCinc, DCinc]
             keeps_str = ",".join([str(v) for v in val])
             qstring = f"insert into compact ({col_str}) values ({keeps_str}) "
             
