@@ -56,6 +56,9 @@ for(file in files) {
             collect() %>%
             group_by(ward) %>%
             summarise(min = min(day), max = maxT)
+        
+        ## disconnect from database
+        DBI::dbDisconnect(con)
     }
     ## old extractor only updated stages after a ward was initialised
     ## so mirror that here
@@ -125,6 +128,10 @@ for(file in files) {
         
         ## compare reconstruction to original
         stopifnot(all((compact - compactO) == 0))
+        
+        ## disconnect from databases
+        DBI::dbDisconnect(con)
+        DBI::dbDisconnect(conO)
 
         print(paste0("All OK - file ", file, " stage ", i))
     }
