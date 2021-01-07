@@ -8,4 +8,5 @@ vignettes/data/MetaWards/raw_outputs/
 vignettes/data/MetaWards/tests/*.pdf
 vignettes/data/MetaWards/TierData/Ward*
 vignettes/data/MetaWards/TierData/*.csv
+vignettes/data/MetaWards/MetaWards.Rproj
 .Rproj.user
