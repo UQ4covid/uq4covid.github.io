@@ -1,0 +1,357 @@
+## load libraries
+library(tidyverse)
+library(lubridate)
+library(sf)
+library(areal)
+
+#############################################################
+######  FIND SHAPEFILE INTERSECTIONS AND SHARED AREAS  ######
+#############################################################
+
+## load shapefiles
+ward11 <- st_read("Wards__December_2011__Boundaries_EW_BFC-shp/Wards__December_2011__Boundaries_EW_BFC.shp")
+ward19 <- st_read("Wards__December_2019__Boundaries_EW_BFC-shp/Wards__December_2019__Boundaries_EW_BFC.shp")
+
+## make shapefiles valid for matching (solves error if not done)
+ward19 <- st_make_valid(ward19)
+ward11 <- st_make_valid(ward11)
+
+## extract intersection areas and weights, where weights are proportional
+## to area of overlap between wards
+wardweights <- ward19 %>%
+  aw_intersect(source = ward11, areaVar = "area") %>%
+  aw_total(source = ward11, id = wd11cd, areaVar = "area", totalVar = "totalArea",
+           type = "extensive", weight = "sum") %>%
+  aw_weight(areaVar = "area", totalVar = "totalArea", areaWeight = "areaWeight") %>%
+  st_drop_geometry()
+
+##################################################
+######        READ IN MOVEMENT DATA         ######
+##################################################
+
+## set path
+pathToMetaWardsData <- "../../../../../MetaWardsData"
+path <- paste0(pathToMetaWardsData, "/model_data/2011Data/")
+
+## load different data sets
+CBB2011 <- read_table2(paste0(path, "CBB2011.dat"), col_names = FALSE)
+EW1 <- read_table2(paste0(path, "EW1.dat"), col_names = FALSE)
+PlayMatrix <- read_table2(paste0(path, "PlayMatrix.dat"), col_names = FALSE)
+PlaySize <- read_table2(paste0(path, "PlaySize.dat"), col_names = FALSE)
+# seeds <- read_table2(paste0(path, "seeds.dat"), col_names = FALSE) ## not currently used
+Ward_Lookup <- read_csv(paste0(path, "Ward_Lookup.csv"), guess_max = 3000) %>%
+  arrange(FID)
+WorkSize <- read_table2(paste0(path, "WorkSize.dat"), col_names = FALSE)
+
+## CBB2011, Ward_Lookup, WorkSize and PlaySize correspond to a
+## ward, indexed by the first column, and some movements of 
+## positions in the other columns (I think)
+
+## full details here: https://metawards.org/fileformats/network.html
+
+## check EW1 numbers match to WorkSize
+temp <- group_by(EW1, X1) %>%
+  summarise(X3 = sum(X3)) %>%
+  full_join(WorkSize, by = "X1") %>%
+  full_join(PlaySize, by = "X1")
+stopifnot(all(temp$X3 == temp$X2.x))
+rm(temp)
+
+## check PlayMatrix proportions add up to one across wards
+temp <- PlayMatrix %>%
+  group_by(X1) %>%
+  summarise(X3 = sum(X3)) %>%
+  mutate(eq = map_lgl(X3, ~all.equal(., 1)))
+stopifnot(all(temp$eq))
+rm(temp)
+
+## check for wards with no players
+temp_noplay <- EW1 %>%
+  select(X1) %>%
+  distinct() %>%
+  anti_join(
+    PlayMatrix %>%
+      select(X1) %>%
+      distinct(), 
+    by = "X1") %>%
+  mutate(noplay = 1)
+
+## check generation of PlayMatrix
+temp <- full_join(EW1, WorkSize, by = "X1") %>%
+  rename(X2 = X2.x) %>%
+  mutate(play = X3 / X2.y) %>%
+  full_join(PlayMatrix, by = c("X1", "X2")) %>%
+  left_join(temp_noplay, by = "X1")
+stopifnot(
+    filter(temp, !is.na(noplay)) %>%
+      pluck("X3.y") %>%
+      is.na() %>%
+      all()
+)
+temp <- filter(temp, is.na(noplay))
+stopifnot(all.equal(temp$play, temp$X3.y))
+rm(temp, temp_noplay)
+
+##################################################
+######  MATCH WARDS LOOKUPS TO SHAPEFILES   ######
+##################################################
+
+## check ward lookup
+stopifnot(
+  group_by(Ward_Lookup, WD11CD) %>%
+    count() %>%
+    pluck("n") %>%
+    {all(. == 1)}
+)
+stopifnot(all((Ward_Lookup$FID - 1:nrow(Ward_Lookup)) == 0))
+
+## load Ward19 lookup
+Ward19_Lookup <- read_csv("Ward_to_Local_Authority_District_(December_2019)_Lookup_in_the_United_Kingdom.csv")
+stopifnot(
+  group_by(Ward19_Lookup, WD19CD) %>%
+    count() %>%
+    pluck("n") %>%
+    {all(. == 1)}
+)
+stopifnot(all((Ward19_Lookup$FID - 1:nrow(Ward19_Lookup)) == 0))
+
+## remove NI and Scottish wards
+Ward19_Lookup <- filter(Ward19_Lookup, !str_detect(WD19CD, "^N")) %>%
+  filter(!str_detect(WD19CD, "^S")) %>%
+  arrange(FID) %>%
+  mutate(FID = 1:n())
+
+## check wards match to lookups
+temp <- wardweights %>%
+  select(wd11cd, wd11nm) %>%
+  distinct() %>%
+  full_join(Ward_Lookup, by = c("wd11cd" = "WD11CD", "wd11nm" = "WD11NM"), keep = TRUE)
+
+## check mismatches
+filter(temp, is.na(wd11cd))
+filter(temp, is.na(WD11CD))
+
+## these are typos and can be fixed manually
+Ward_Lookup <- mutate(Ward_Lookup, WD11NM = ifelse(WD11NM == "Ockbrook and Borrowash", "Ockbrook And Borrowash", WD11NM)) %>%
+  mutate(WD11NM = ifelse(WD11NM == "Felin-fâch", "Felin-fƒch", WD11NM))
+
+## check wards match to lookups
+temp <- wardweights %>%
+  select(wd11cd, wd11nm) %>%
+  distinct() %>%
+  full_join(Ward_Lookup, by = c("wd11cd" = "WD11CD", "wd11nm" = "WD11NM"), keep = TRUE)
+
+## check for mismatches
+filter(temp, is.na(wd11cd))
+filter(temp, is.na(WD11CD))
+
+## check wards 19 match to lookups
+temp <- wardweights %>%
+  select(wd19cd, wd19nm) %>%
+  distinct() %>%
+  full_join(Ward19_Lookup, by = c("wd19cd" = "WD19CD", "wd19nm" = "WD19NM"), keep = TRUE)
+
+## check mismatches
+filter(temp, is.na(wd19cd))
+filter(temp, is.na(WD19CD))
+
+## these are typos and can be fixed manually
+Ward19_Lookup <- mutate(Ward19_Lookup, WD19NM = ifelse(WD19NM == "Canolbarth Môn", "Canolbarth Mwn", WD19NM)) %>%
+  mutate(WD19NM = ifelse(WD19NM == "Felin-fâch", "Felin-fach", WD19NM)) %>%
+  mutate(WD19NM = ifelse(WD19NM == "Llifôn", "Llifon", WD19NM))
+
+## check wards 19 match to lookups
+temp <- wardweights %>%
+  select(wd19cd, wd19nm) %>%
+  distinct() %>%
+  full_join(Ward19_Lookup, by = c("wd19cd" = "WD19CD", "wd19nm" = "WD19NM"), keep = TRUE)
+
+## check for mismatches
+filter(temp, is.na(wd19cd))
+filter(temp, is.na(WD19CD))
+rm(temp)
+
+##################################################
+######  AGGREGATE 2011 DATA TO 2019 WARDS   ######
+##################################################
+
+## solution to round numbers preserving sum
+## adapted from:
+## https://stackoverflow.com/questions/32544646/round-vector-of-numerics-to-integer-while-preserving-their-sum
+smart_round <- function(x) {
+  y <- floor(x)
+  indices <- tail(order(x - y), round(sum(x)) - sum(y))
+  y[indices] <- y[indices] + 1
+  y
+}
+
+## aggregate WorkSize
+WorkSize_new <- WorkSize %>%
+  left_join(Ward_Lookup, by = c("X1" = "FID")) %>%
+  inner_join(wardweights, by = c("WD11CD" = "wd11cd", "WD11NM" = "wd11nm")) %>%
+  mutate(X2 = smart_round(areaWeight * X2)) %>%
+  group_by(wd19cd, wd19nm) %>%
+  summarise(X2 = sum(X2)) %>%
+  ungroup() %>%
+  inner_join(Ward19_Lookup, by = c("wd19cd" = "WD19CD", "wd19nm" = "WD19NM")) %>%
+  select(X1 = FID, X2) %>%
+  filter(X2 > 0) %>%
+  arrange(X1)
+
+## check sums match
+stopifnot(sum(WorkSize$X2) == sum(WorkSize_new$X2))
+stopifnot(all(WorkSize_new$X1 == Ward19_Lookup$FID))
+
+## aggregate PlaySize
+PlaySize_new <- PlaySize %>%
+  left_join(Ward_Lookup, by = c("X1" = "FID")) %>%
+  inner_join(wardweights, by = c("WD11CD" = "wd11cd", "WD11NM" = "wd11nm")) %>%
+  mutate(X2 = smart_round(X2 * areaWeight)) %>%
+  group_by(wd19cd, wd19nm) %>%
+  summarise(X2 = sum(X2)) %>%
+  ungroup() %>%
+  inner_join(Ward19_Lookup, by = c("wd19cd" = "WD19CD", "wd19nm" = "WD19NM")) %>%
+  select(X1 = FID, X2) %>%
+  filter(X2 > 0) %>%
+  arrange(X1)
+
+## check sums match
+stopifnot(sum(PlaySize$X2) == sum(PlaySize_new$X2))
+## there were some missing wards in PlaySize in original data
+## which is carried over here
+
+## aggregate EW1 (split into multiple pipes because of large memory constraints)
+
+## firstly, map X1 from WD11 to WD19
+## (smart_round() ensures total no. of movements match as
+## long as grouping is done, even though grouping
+## takes a long time)
+EW1_new <- EW1 %>%
+  left_join(
+    select(Ward_Lookup, FID, WD11CD, WD11NM),
+    by = c("X1" = "FID")) %>%
+  inner_join(
+    select(wardweights, wd11cd, wd11nm, wd19cd, wd19nm, areaWeight),
+    by = c("WD11CD" = "wd11cd", "WD11NM" = "wd11nm")) %>%
+  group_by(X1, X2) %>%
+  mutate(X3 = smart_round(X3 * areaWeight)) %>%
+  ungroup() %>%
+  filter(X3 > 0) %>%
+  select(wd19cd, wd19nm, X1, X2, X3)
+
+## check total number of movements out of old X1s match
+## after redistributing
+stopifnot(group_by(EW1_new, X1) %>% 
+  summarise(X3 = sum(X3)) %>%
+  inner_join(WorkSize, by = "X1") %>%
+  mutate(diff = abs(X3 - X2)) %>%
+  pluck("diff") %>%
+  {all(. == 0)})
+
+## convert to new X1 based on WD19
+EW1_new <- EW1_new %>%
+  inner_join(Ward19_Lookup, by = c("wd19cd" = "WD19CD", "wd19nm" = "WD19NM")) %>%
+  select(X1 = FID, X2, X3) %>%
+  group_by(X1, X2) %>%
+  summarise(X3 = sum(X3)) %>%
+  ungroup()
+
+## secondly, map X2 from WD11 to WD19
+## (smart_round() ensures total no. of movements match as
+## long as grouping is done, even though grouping
+## takes a long time)
+EW1_new <- EW1_new %>%
+  left_join(
+    select(Ward_Lookup, FID, WD11CD, WD11NM),
+    by = c("X2" = "FID")) %>%
+  inner_join(
+    select(wardweights, wd11cd, wd11nm, wd19cd, wd19nm, areaWeight),
+    by = c("WD11CD" = "wd11cd", "WD11NM" = "wd11nm")) %>%
+  group_by(X1, X2) %>%
+  mutate(X3 = smart_round(X3 * areaWeight)) %>%
+  ungroup() %>%
+  filter(X3 > 0) %>%
+  select(wd19cd, wd19nm, X1, X2, X3)
+
+## check total number of movements into old X2s match
+## after redistributing
+stopifnot(group_by(EW1_new, X2) %>% 
+  summarise(X3 = sum(X3)) %>%
+  inner_join(
+      EW1 %>%
+        group_by(X2) %>%
+        summarise(X3 = sum(X3)), 
+    by = "X2") %>%
+  mutate(diff = abs(X3.x - X3.y)) %>%
+  pluck("diff") %>%
+  {all(. == 0)})
+
+## convert to new X2 based on WD19
+EW1_new <- EW1_new %>%
+  inner_join(Ward19_Lookup, by = c("wd19cd" = "WD19CD", "wd19nm" = "WD19NM")) %>%
+  select(X1, X2 = FID, X3) %>%
+  group_by(X1, X2) %>%
+  summarise(X3 = sum(X3)) %>%
+  ungroup() %>%
+  arrange(X1, X2)
+
+## check total movements match
+stopifnot(sum(EW1_new$X3) == sum(EW1$X3))
+
+## create PlayMatrix
+PlayMatrix_new <- EW1_new %>%
+  group_by(X1) %>%
+  mutate(X3 = X3 / sum(X3)) %>%
+  ungroup() %>%
+  arrange(X1, X2)
+
+## create centroid dataset
+CBB2019 <- st_centroid(ward19) %>%
+  cbind(st_coordinates(.)) %>%
+  st_drop_geometry() %>%
+  full_join(Ward19_Lookup, by = c("wd19cd" = "WD19CD", "wd19nm" = "WD19NM"), keep = TRUE)
+
+## check no missing matches
+stopifnot(all(!is.na(CBB2019$wd19cd)))
+stopifnot(all(!is.na(CBB2019$WD19CD)))
+
+## now order according to the lookup
+CBB2019 <- arrange(CBB2019, FID) %>%
+  select(X1 = FID, X2 = X, X3 = Y)
+
+## create directory to write out data
+pathToNewData <- "2011to2019Data"
+dir.create(pathToNewData)
+
+## create description file
+description <- c(
+"{ \"name\"               : \"2011to2019Data\",",
+" \"version\"            : \"Jan 7 2021\",",
+" \"author(s)\"          : \"TJ McKinley\",",
+"  \"contact(s)\"         : \"t.mckinley@exeter.ac.uk\",",
+"  \"reference(s)\"       : \"...\",",
+"  \"work\"               : \"EW19.dat\",",
+"  \"work_size\"          : \"WorkSize19.dat\",",
+"  \"play\"               : \"PlayMatrix19.dat\",",
+"  \"play_size\"          : \"PlaySize19.dat\",",
+"  \"position\"           : \"CBB2019.dat\",",
+"  \"coordinates\"        : \"x/y\",",
+"  \"lookup\"             : \"Ward19_Lookup.csv\",",
+"  \"lookup_columns\"     : {\"code\":1, \"name\":2,",
+"    \"authority_code\":3, \"authority_name\":4},",
+"  \"seed\"               : \"seeds.dat\",",
+"  \"nodes_to_track\"     : \"seeds.dat\",",
+"  \"uv\"                 : null,",
+"  \"weekend\"            : null,",
+"  \"identifier\"         : null,",
+"  \"identifier2\"        : null",
+"}")
+writeLines(description, paste0(pathToNewData, "/description.json"))
+
+## write all other files
+write_delim(EW1_new, paste0(pathToNewData, "/EW19.dat"), col_names = FALSE)
+write_delim(WorkSize_new, paste0(pathToNewData, "/WorkSize19.dat"), col_names = FALSE)
+write_delim(PlayMatrix_new, paste0(pathToNewData, "/PlayMatrix19.dat"), col_names = FALSE)
+write_delim(PlaySize_new, paste0(pathToNewData, "/PlaySize19.dat"), col_names = FALSE)
+write_delim(CBB2019, paste0(pathToNewData, "/CBB2019.dat"), col_names = FALSE)
+write_csv(Ward19_Lookup, paste0(pathToNewData, "/Ward19_Lookup.csv"))

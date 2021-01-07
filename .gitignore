@@ -6,3 +6,6 @@ vignettes/_knitr_cache
 vignettes/data/MetaWards/inputs/
 vignettes/data/MetaWards/raw_outputs/
 vignettes/data/MetaWards/tests/*.pdf
+vignettes/data/MetaWards/TierData/Ward*
+vignettes/data/MetaWards/TierData/*.csv
+.Rproj.user
