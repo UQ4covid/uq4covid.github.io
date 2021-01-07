@@ -9,6 +9,13 @@ you can find instructions [here](https://metawards.org/install.html). It also
 assumes that you have cloned the MetaWardsData as detailed 
 [here](https://metawards.org/model_data.html).
 
+## Setting up data
+
+The file `README.md` in the `TierData` folder contains information about
+where to download the relevant shapefiles and lookup tables to convert
+the 2011 ward-level commuter data to the 2019 wards and LADs. There is also
+code to generate the relevant data for use in the MetaWards model runs.
+
 ## Setting up design
 
 The R script `convertDesign.R` contains a simple example of sampling
