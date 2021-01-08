@@ -24,7 +24,6 @@ The basic model structure is:
 * $A$: asymptomatic and infectious;
 * $I$: symptomatic and infectious;
 * $H$: hospitalised and infectious;
-* $C$: in critical care (ICU) and infectious;
 * $R$: recovered and immune;
 * $D$: died.
 
@@ -38,29 +37,24 @@ grViz("digraph simpmod {
     
     S [group = gp]; E [group = gp]; I [group = gp]; RI [label = 'R@_{I}', group = gp]; DI [label = 'D@_{I}', group = gp]; 
     A [group = as]; RA [label = 'R@_{A}', group = as];
-    H [group = hos]; RH [label = 'R@_{H}', group = hos]; DH [label = 'D@_{H}', group = hos]; 
-    C [group = crit]; RC [label = 'R@_{C}', group = crit]; DC [label = 'D@_{C}', group = crit];
+    H [group = hos]; RH [label = 'R@_{H}', group = hos]; DH [label = 'D@_{H}', group = hos];
     genpop [label = 'Gen. Pop.', group = gp]
     asymp [label = 'Asymptomatics', group = as]
     hospital [label = 'Hospital Patient', group = hos]
-    critical [label = 'Critical Care', group = crit]
     St00 [style = 'invis', group = st]; St0 [label = 'Stage 0', group = st]; 
     St1 [label = 'Stage 1', group = st]; 
     St2 [label = 'Stage 2', group = st]; St3 [label = 'Stage 3', group = st]; 
     
     genpop -> S [style = 'invis']
     hospital -> H [style = 'invis']
-    critical -> C [style = 'invis']
     asymp -> A [style = 'invis']
     S -> E -> I -> RI
     I -> DI [weight = 0]
-    I -> H -> C -> RC 
-    C -> DC [weight = 0]
+    I -> H
     H -> RH 
     H -> DH [weight = 0] 
     RI -> DI [style = 'invis']
     RH -> DH [style = 'invis']
-    RC -> DC [style = 'invis']
     E -> A [weight = 0]
     A -> RA 
     St00 -> St0 -> St1 -> St2 -> St3 [style = 'invis']
@@ -68,21 +62,21 @@ grViz("digraph simpmod {
       rank = same; St0; E;
     }
     subgraph {
-      rank = same; St00 -> asymp -> genpop -> hospital -> critical [style = 'invis']
+      rank = same; St00 -> asymp -> genpop -> hospital [style = 'invis']
     }
     subgraph cluster {
       subgraph {
-        rank = same; A -> I -> H -> C [style = 'invis']
+        rank = same; A -> I -> H [style = 'invis']
       }
       style = filled;
       color = lightgrey;
       label = 'Infectious Classes'
     }
     subgraph {
-      rank = same; St2; RA, RI, RC; RH;
+      rank = same; St2; RA, RI, RH;
     }
     subgraph {
-      rank = same; St3; DI; DH; DC;
+      rank = same; St3; DI; DH;
     }
     
 }", height = '100%', width = '100%')
@@ -97,12 +91,10 @@ The model structure above allows for different progression pathways. MetaWards d
 * `SEID`: symptomatic infections, leading to death.
 * `SEIHR`: symptomatic infections, leading to hospital and then recovery.
 * `SEIHD`: symptomatic infections, leading to hospital and then death.
-* `SEIHCR`: symptomatic infections, leading to hospital, then critical care (ICU) and then recovery.
-* `SEIHCD`: symptomatic infections, leading to hospital, then critical care (ICU) and then death.
 
-Individuals in the `genpop` demographic move through the $SEIR$ and $SEID$ pathways; the `asymp` demographic moves through the `SEAR` pathway; some individuals in the `genpop` demographic can be moved to the `hospital` demographic, and thus follow the `SEIHR` and `SEIHD` pathways; and finally, some individuals in the `hospital` demographic can be moved to the `critical` demographic, and thus follow the `SEIHCR` and `SEIHCD` pathways.
+Individuals in the `genpop` demographic move through the $SEIR$ and $SEID$ pathways; the `asymp` demographic moves through the `SEAR` pathway; some individuals in the `genpop` demographic can be moved to the `hospital` demographic, and thus follow the `SEIHR` and `SEIHD` pathways.
 
-We need to specify initial proportions of individuals in each pathway such that $\sum_{i \in \mathcal{P}}\sum_{j = 1}^J p_{ij} = 1$, where $\mathcal{P} = \{GP, A, H, C\}$ and $j = 1, \dots, J$ define the $J$ mutually exclusive age-classes. Here we define the proportions of individuals in each age class from the data in the `inputs/Pop by CTRY.csv` file from Rob:
+We need to specify initial proportions of individuals in each pathway such that $\sum_{i \in \mathcal{P}}\sum_{j = 1}^J p_{ij} = 1$, where $\mathcal{P} = \{GP, A, H\}$ and $j = 1, \dots, J$ define the $J$ mutually exclusive age-classes. Here we define the proportions of individuals in each age class from the data in the `inputs/Pop by CTRY.csv` file from Rob:
 
 ```{r, warning = FALSE, message = FALSE, echo = FALSE, results = "asis"}
 library(tidyverse)
@@ -119,28 +111,22 @@ stopifnot(all(dim(C) == nrow(ages)))
 knitr::kable(ages)
 ```
 
-> Here we assume the same ratios in the `work` and `play` populations, but in practice these could be changed.
-
 ```{r, warning = FALSE, message = FALSE, echo = FALSE}
 ## create demographics file
-demo <- "{"
-demo <- c(demo, paste0("\t\"demographics\" : [", paste0(paste0("\"genpop", 1:nrow(ages), "\""), collapse = ", "), ","))
-demo <- c(demo, paste0("\t\t", paste0(paste0("\"asymp", 1:nrow(ages), "\""), collapse = ", "), ","))
-demo <- c(demo, paste0("\t\t", paste0(paste0("\"hospital", 1:nrow(ages), "\""), collapse = ", "), ","))
-demo <- c(demo, paste0("\t\t", paste0(paste0("\"critical", 1:nrow(ages), "\""), collapse = ", "), "],"))
-demo <- c(demo, paste0("\t\"work_ratios\" : [", paste0(ages$prop, collapse = ", "), ","))
-demo <- c(demo, paste0("\t\t", paste0(rep("0.0", nrow(ages)), collapse = ", "), ","))
-demo <- c(demo, paste0("\t\t", paste0(rep("0.0", nrow(ages)), collapse = ", "), ","))
-demo <- c(demo, paste0("\t\t", paste0(rep("0.0", nrow(ages)), collapse = ", "), "],"))
-demo <- c(demo, paste0("\t\"play_ratios\" : [", paste0(ages$prop, collapse = ", "), ","))
-demo <- c(demo, paste0("\t\t", paste0(rep("0.0", nrow(ages)), collapse = ", "), ","))
-demo <- c(demo, paste0("\t\t", paste0(rep("0.0", nrow(ages)), collapse = ", "), ","))
-demo <- c(demo, paste0("\t\t", paste0(rep("0.0", nrow(ages)), collapse = ", "), "],"))
-demo <- c(demo, paste0("\t\"diseases\" : [", paste0(rep("\"ncov_genpop\"", nrow(ages)), collapse = ", "), ","))
-demo <- c(demo, paste0("\t\t", paste0(rep("\"ncov_asymp\"", nrow(ages)), collapse = ", "), ","))
-demo <- c(demo, paste0("\t\t", paste0(rep("\"ncov_hospital\"", nrow(ages)), collapse = ", "), ","))
-demo <- c(demo, paste0("\t\t", paste0(rep("\"ncov_critical\"", nrow(ages)), collapse = ", "), "]"))
-demo <- c(demo, "}")
+demo <- "{" %>%
+  c(paste0("\t\"demographics\" : [", paste0(paste0("\"genpop", 1:nrow(ages), "\""), collapse = ", "), ",")) %>%
+  c(paste0("\t\t", paste0(paste0("\"asymp", 1:nrow(ages), "\""), collapse = ", "), ",")) %>%
+  c(paste0("\t\t", paste0(paste0("\"hospital", 1:nrow(ages), "\""), collapse = ", "), "],")) %>%
+  c(paste0("\t\"work_ratios\" : [", paste0(ages$prop, collapse = ", "), ",")) %>%
+  c(paste0("\t\t", paste0(rep("0.0", nrow(ages)), collapse = ", "), ",")) %>%
+  c(paste0("\t\t", paste0(rep("0.0", nrow(ages)), collapse = ", "), "],")) %>%
+  c(paste0("\t\"play_ratios\" : [", paste0(ages$prop, collapse = ", "), ",")) %>%
+  c(paste0("\t\t", paste0(rep("0.0", nrow(ages)), collapse = ", "), ",")) %>%
+  c(paste0("\t\t", paste0(rep("0.0", nrow(ages)), collapse = ", "), "],")) %>%
+  c(paste0("\t\"diseases\" : [", paste0(rep("\"ncov_genpop\"", nrow(ages)), collapse = ", "), ",")) %>%
+  c(paste0("\t\t", paste0(rep("\"ncov_asymp\"", nrow(ages)), collapse = ", "), ",")) %>%
+  c(paste0("\t\t", paste0(rep("\"ncov_hospital\"", nrow(ages)), collapse = ", "), "]")) %>%
+  c("}")
 writeLines(demo, "../model_code/demographics.json")
 ```
 
@@ -175,7 +161,7 @@ writeLines(user, "../inputs/user_inputs.txt")
 
 <p style="color:red">NEED TO CHECK WORK / PLAY RATIOS IN DIFFERENT AGE CLASSES AND ALSO CHECK LOWER AGE GROUPS</p>
 
-<p style="color:red">NEED TO CHECK WORK / PLAY RATIOS IN E.G. HOSPITALS AND ICUS</p>
+<p style="color:red">NEED TO CHECK WORK / PLAY RATIOS IN E.G. HOSPITALS</p>
 
 The demographics in MetaWards is set up using the `demographics.json` file.
 
@@ -214,12 +200,7 @@ Here `ncov_hospital.json` contains:
 ```{js, code = readLines("../model_code/ncov_hospital.json"), eval = FALSE}
 ```
 
-Here `ncov_critical.json` contains:
-
-```{js, code = readLines("../model_code/ncov_critical.json"), eval = FALSE}
-```
-
-Notice that individuals in hospital and ICU have `too_ill_to_move = 1.0`, so all individuals are too ill to move.
+Notice that individuals in hospital have `too_ill_to_move = 1.0`, so all individuals are too ill to move.
 
 <p style="color:red">HOW SHOULD WE SCALE `too_ill_to_move` FOR SYMPTOMATICS?</p>
 <p style="color:red">HOW DO WE REMOVE INDIVIDUALS FROM THE MODEL ENTIRELY (I.E. AFTER THEY DIE)?</p>
@@ -232,7 +213,7 @@ We will discuss these choices in more detail in the subsequent sections. Note th
 
 For generic states $X$ and $Y$ say, the progress of an individual in age-class $j$ from state $X$ to state $Y$ in a given day is governed by probability $q^j_{XY}$, where:
 
-* $q^j_{SE}$ driven by $\beta_{kj}$ parameters ($k = 1, \dots, J$), defined by $R_0$, the mean length of the infectious period ($1 / \gamma_I$), and the population contact matrix, $C$, between age-classes (see [here](#trans) for details);
+* $q^j_{SE}$ driven by $\beta_{kj}$ parameters ($j = 1, \dots, J$), defined by $R_0$, the mean length of the infectious period ($1 / \gamma_I$), and the population contact matrix, $C$, between age-classes (see [here](#trans) for details);
 * $q^j_{EA} = p^j_{EA}\left(1 - e^{-\gamma_{E}}\right)$ where $\gamma_E = \frac{1}{T_E}$ with $T_E$ the mean incubation period;
 * We model: $\log\left(p^j_{EA}\right) = \alpha_{EA} + \eta_{EA} \mbox{age}_j$, where $\eta_{EA} > 0$ and $\alpha_{EA} < -\eta_{EA} \max\left(\mbox{age}_j\right)$ to ensure than $0 < p^j_{EA} \leq 1$. The $\mbox{age}_j$ term is the middle age in age-class $j$.
 * $q^j_{EI} = \left(1 - p^j_{EA}\right)\left(1 - e^{-\gamma_{E}}\right)$;
@@ -241,13 +222,9 @@ For generic states $X$ and $Y$ say, the progress of an individual in age-class $
 * $q^j_{IR} = p^j_{IR}\left(1 - e^{-\gamma_{I}}\right)$;
 * $q^j_{ID} = \left(1 - p^j_{IH} - p^j_{IR}\right)\left(1 - e^{-\gamma_{I}}\right)$;
 * Similarly to before, we model: $\log\left(p^j_{IH/R}\right) = \alpha_{IH/R} + \eta_{IH/R} \mbox{age}_j$, where $\eta_{IH/R} > 0$ and $\alpha_{IH/R} < -\eta_{IH/R} \max\left(\mbox{age}_j\right)$ to ensure than $0 < p^j_{IH/R} \leq 1$.
-* $q^j_{HC} = p^j_{HC}\left(1 - e^{-\gamma_{H}}\right)$ where $\gamma_{H} = \frac{1}{T_H}$ with $T_H$ the mean length of a hospital stay;
 * $q^j_{HR} = p^j_{HR}\left(1 - e^{-\gamma_{H}}\right)$;
-* $q^j_{HD} = \left(1 - p^j_{HC} - p^j_{HR}\right)\left(1 - e^{-\gamma_{H}}\right)$;
-* Similarly to before, we model: $\log\left(p^j_{HC/R}\right) = \alpha_{HC/R} + \eta_{HC/R} \mbox{age}_j$, where $\eta_{HC/R} > 0$ and $\alpha_{HC/R} < -\eta_{HC/R} \max\left(\mbox{age}_j\right)$ to ensure than $0 < p^j_{HC/R} \leq 1$. 
-* $q^j_{CR} = p^j_{CR}\left(1 - e^{-\gamma_{C}}\right)$ where $\gamma_C = \frac{1}{T_C}$ with $T_C$ is the mean length of time spent in ICU;
-* $q^j_{CD} = \left(1 - p^j_{CR}\right)\left(1 - e^{-\gamma_{C}}\right)$;
-* Finally, we model: $\log\left(p^j_{CR}\right) = \alpha_{CR} + \eta_{CR} \mbox{age}_j$, where $\eta_{CR} > 0$ and $\alpha_{CR} < -\eta_{CR} \max\left(\mbox{age}\right)$ to ensure than $0 < p^j_{CR} \leq 1$. 
+* $q^j_{HD} = \left(1 - p^j_{HR}\right)\left(1 - e^{-\gamma_{H}}\right)$;
+* Similarly to before, we model: $\log\left(p^j_{HR}\right) = \alpha_{HR} + \eta_{HR} \mbox{age}_j$, where $\eta_{HR} > 0$ and $\alpha_{HR} < -\eta_{HR} \max\left(\mbox{age}_j\right)$ to ensure than $0 < p^j_{HR} \leq 1$. 
 
 Lockdown can be controlled either by constraining movements over a certain distance, or by scaling the $\beta_{kj}$ parameters. We do the latter at the moment. 
 
@@ -284,7 +261,7 @@ MetaWards has a specific structure in terms of how it progresses movements betwe
 <button data-toggle="collapse" data-target="#mover">Click for MetaWards <code>mover</code> file</button>
 <div id="mover" class="collapse boxed">
 
-The `mover` function applies movements in order, and so it is important to get the order correct. In particular we need to reverse the order of the stage movements (e.g. do movements out of the $C$ demographic *before* movements out of the $H$ demographic). This is to ensure that individuals that move from $H \to C$ say, can't then immediately move out of $C$. The file `move_pathways.py` contains the code below.
+The `mover` function applies movements in order, and so it is important to get the order correct. In particular we need to reverse the order of the stage movements (e.g. do movements out of the $H$ demographic *before* movements out of the $I$ demographic). This is to ensure that individuals that move from $I \to H$ say, can't then immediately move out of $H$. The file `move_pathways.py` contains the code below.
 
 > **Additional note**: The functions in the `mover` file operate in turn. Therefore the movement probabilities below must be altered between each function, in order to get the correct proportions moved. For example, consider that we have $n$ individuals in the $I$ class and we want to move a proportion $p_Ip_{IH}$ from $I \to H$, a proportion $p_Ip_{IR}$ from $I \to R_I$, and a proportion $p_I\left(1 - p_{IH} - p_{IR}\right)$ from $I \to D_I$, where $p_I = 1 - e^{-\gamma_I}$.
 > 
@@ -299,12 +276,12 @@ The `mover` function applies movements in order, and so it is important to get t
 
 <p style="color:red">CHECK TRANSPOSE IN INTERACTION</p>
 
-The **interaction matrix** scales the force-of-infection (FOI) that different demographics have on other demographics. We will use this to capture the effect of each age-class on the FOI for the other age-classes (see [here](#trans)). We also have three further free parameters: $\beta^S_{A \to GP}$, $\beta^S_{H \to GP}$ and $\beta^S_{C \to GP}$ which scale the impact of aymptomatics, hospital cases and critical care cases on the FOI to the general population. We store this information in a file called `mix_pathways.py`. 
+The **interaction matrix** scales the force-of-infection (FOI) that different demographics have on other demographics. We will use this to capture the effect of each age-class on the FOI for the other age-classes (see [here](#trans)). We also have two further free parameters: $\beta^S_{A \to GP}$ and $\beta^S_{H \to GP}$ which scale the impact of aymptomatics and hospital cases on the FOI to the general population. We store this information in a file called `mix_pathways.py`. 
 
 <button data-toggle="collapse" data-target="#mixer">Click for MetaWards <code>mixing</code> file</button>
 <div id="mixer" class="collapse boxed">
 
-Since most of the classes are already infected, it's only the rows corresponding to the general population age-classes that have to contain non-zero entries. Here the `GP_A`, `GP_H` and `GP_C` parameters scale the impact of aymptomatics, hospital cases and critical care cases on the force-of-infection to the general population. All demographics other than `genpop` are already infected, so have no further force-of-infection acting on them, and thus the other parameters can be set to zero. These parameters are all $> 0$.
+Since most of the classes are already infected, it's only the rows corresponding to the general population age-classes that have to contain non-zero entries. Here the `GP_A` and `GP_H` parameters scale the impact of aymptomatics, hospital cases and critical care cases on the force-of-infection to the general population. All demographics other than `genpop` are already infected, so have no further force-of-infection acting on them, and thus the other parameters can be set to zero. These parameters are all $> 0$.
 
 ```{python, code = readLines("../model_code/mix_pathways.py"), eval = FALSE}
 ```
@@ -354,7 +331,6 @@ So, to clarify, the `stages*.db` databases each contain a table called `compact`
 * `Einc`, `Iinc`, `Rinc`, `Dinc`
 * `IAinc`, `RAinc`
 * `IHinc`, `RHinc`, `DHinc`
-* `ICinc`, `RCinc`, `DCinc`
 
 We save this custom `extractor` function in the file `ward_extractor.py`.
 
@@ -382,7 +358,6 @@ The *input* and *design* spaces are fairly trivial to convert between, but some 
     \mbox{mean incubation period ($T_E$)}&: (4, 6)\\
     \mbox{mean infectious period ($T_I$)}&: (2, 4)\\
     \mbox{mean hospital stay ($T_H$)}&: (4, 12)\\
-    \mbox{mean time in critical care ($T_C$)}&: (4, 12)\\
     \mbox{lockdown 1 restrict}&: (0, 1)\\
     \mbox{lockdown 2 release}&: (0, 1)\\
     \alpha_{EA}&: (?, ?)~\mbox{such that}~\alpha_{EA} < -\eta_{EA} \mbox{age}_M\\
@@ -391,15 +366,10 @@ The *input* and *design* spaces are fairly trivial to convert between, but some 
     \eta_{IH}&: (0, ?)\\
     \alpha_{IR}&: (?, ?)~\mbox{such that}~\alpha_{IR} < -\eta_{IR} \mbox{age}_M\\
     \eta_{IR}&: (0, ?)\\
-    \alpha_{HC}&: (?, ?)~\mbox{such that}~\alpha_{HC} < -\eta_{HC} \mbox{age}_M\\
-    \eta_{HC}&: (0, ?)\\
     \alpha_{HR}&: (?, ?)~\mbox{such that}~\alpha_{HR} < -\eta_{HR} \mbox{age}_M\\
     \eta_{HR}&: (0, ?)\\
-    \alpha_{CR}&: (?, ?)~\mbox{such that}~\alpha_{CR} < -\eta_{CR} \mbox{age}_M\\
-    \eta_{CR}&: (0, ?)\\
     \beta^S_{A \to GP}&: (0, 1)\\
-    \beta^S_{H \to GP}&: (0, 1)\\
-    \beta^S_{C \to GP}&: (0, 1).
+    \beta^S_{H \to GP}&: (0, 1).
 \end{align}
 
 In R we can set up the *input* parameter ranges as follows:
@@ -410,12 +380,12 @@ parRanges <- data.frame(
     parameter = c("r_zero", "incubation_time", "infectious_time", "hospital_time",
                   "critical_time", "lock_1_restrict", "lock_2_release",
                   "alphaEA", "etaEA", 
-                  "alphaIH", "etaIH", "alphaIR", "etaIR",
-                  "alphaHC", "etaHC", "alphaHR", "etaHR",
-                  "alphaCR", "etaCR",
-                  "GP_A", "GP_H", "GP_C"),
-    lower = c(2, 4, 2, 4, 4, 0, 0, rep(c("?", 0), 6), rep(0, 3)),
-    upper = c(4, 6, 4, 12, 12, 1, 1, rep(c("?", "?"), 6), rep(1, 3)),
+                  "alphaIH", "etaIH", 
+                  "alphaIR", "etaIR",
+                  "alphaHR", "etaHR",
+                  "GP_A", "GP_H"),
+    lower = c(2, 4, 2, 4, 4, 0, 0, rep(c("?", 0), 4), rep(0, 2)),
+    upper = c(4, 6, 4, 12, 12, 1, 1, rep(c("?", "?"), 4), rep(1, 2)),
     stringsAsFactors = FALSE
 )
 ```
@@ -599,6 +569,9 @@ Now you can play with `hosp` as much as you like. **Note** that `hosp` here only
 You can very easily wrap these ideas into an R function that can scroll through the design IDs, extract relevant outputs and bind to the inputs. Note that this data processing takes a lot of time, so running in parallel is very helpful. Hence why we do all this on JASMIN.
 
 ```{r, echo = FALSE, message = FALSE, warning = FALSE, eval = FALSE}
+## copy data across
+system("cp ../data/contactData/contact_matrix.csv ../inputs/")
+system("cp ../data/populationByAge/Pop\\ by\\ CTRY.csv ../inputs/")
 tempdir <- getwd()
 setwd("..")
 source("convertDesign.R")

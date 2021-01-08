@@ -10,10 +10,13 @@ source("R_tools/dataTools.R")
 parRanges <- data.frame(
     parameter = c("r_zero", "incubation_time", "infectious_time", "hospital_time",
                   "critical_time", "lock_1_restrict", "lock_2_release",
-                  "pEA", "pIH", "pIRprime", "pHC", "pHRprime", "pCR", 
-                  "GP_A", "GP_H", "GP_C"),
-    lower = c(2, 4, 2, 4, 4, rep(0, 11)),
-    upper = c(4, 6, 4, 12, 12, rep(1, 11)),
+                  "alphaEA", "etaEA", 
+                  "alphaIH", "etaIH", 
+                  "alphaIR", "etaIR",
+                  "alphaHR", "etaHR",
+                  "GP_A", "GP_H"),
+    lower = c(2, 4, 2, 4, 4, 0, 0, rep(c("?", 0), 4), rep(0, 2)),
+    upper = c(4, 6, 4, 12, 12, 1, 1, rep(c("?", "?"), 4), rep(1, 2)),
     stringsAsFactors = FALSE
 )
 
