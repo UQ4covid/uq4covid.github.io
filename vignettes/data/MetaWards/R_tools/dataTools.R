@@ -22,9 +22,7 @@ convertDesignToInput <- function(design, parRanges, ageM, scale = c("zero_one", 
     input <- filter(input, alphaEA < -etaEA * ageM) %>%
       filter(alphaIH < -etaIH * ageM) %>%
       filter(alphaIR < -etaIR * ageM) %>%
-      filter(alphaHC < -etaHC * ageM) %>%
-      filter(alphaHR < -etaHR * ageM) %>%
-      filter(alphaCR < -etaCR * ageM)
+      filter(alphaHR < -etaHR * ageM)
     
     ## return inputs
     input
@@ -79,15 +77,6 @@ convertInputToDisease <- function(input, C, ages) {
     ## progressions out of the H class
     disease$`.pH` <- 1 - exp(-1 / input$hospital_time)
     disease <- mutate(disease, 
-        temp = map2(input$alphaHC, input$etaHC, function(alpha, eta, ages) {
-            out <- exp(alpha + eta * ages) %>%
-                as.matrix(nrow = 1) %>%
-                as_tibble()
-            colnames(out) <- paste0(".pHC_", 1:length(ages))
-            out
-        }, ages = ages)) %>%
-        unnest(cols = temp)
-    disease <- mutate(disease, 
         temp = map2(input$alphaHR, input$etaHR, function(alpha, eta, ages) {
             out <- exp(alpha + eta * ages) %>%
                 as.matrix(nrow = 1) %>%
@@ -97,18 +86,6 @@ convertInputToDisease <- function(input, C, ages) {
         }, ages = ages)) %>%
         unnest(cols = temp)
     
-    ## progressions out of the C class
-    disease$`.pC` <- 1 - exp(-1 / input$critical_time)
-    disease <- mutate(disease, 
-          temp = map2(input$alphaCR, input$etaCR, function(alpha, eta, ages) {
-          out <- exp(alpha + eta * ages) %>%
-              as.matrix(nrow = 1) %>%
-              as_tibble()
-          colnames(out) <- paste0(".pCR_", 1:length(ages))
-          out
-      }, ages = ages)) %>%
-      unnest(cols = temp)
-    
     ## lockdown scalings
     disease$`.lock_1_restrict` <- input$lock_1_restrict
     disease$`.lock_2_release` <- input$lock_2_release
@@ -116,7 +93,6 @@ convertInputToDisease <- function(input, C, ages) {
     ## set up scaling for mixing matrix
     disease$`.GP_A` <- input$GP_A
     disease$`.GP_H` <- input$GP_H
-    disease$`.GP_C` <- input$GP_C
     
     ## finalise number of repeats
     disease$repeats <- input$repeats
@@ -160,17 +136,16 @@ ensembleIDGen <- function(ensembleID = "a0", ensembleSize) {
 library(Rcpp)
 cppFunction('IntegerMatrix reconstruct(IntegerVector Einc, IntegerVector Iinc, IntegerVector Rinc,
     IntegerVector Dinc, IntegerVector IAinc, IntegerVector RAinc, IntegerVector IHinc, IntegerVector RHinc, 
-    IntegerVector DHinc, IntegerVector ICinc, IntegerVector RCinc, IntegerVector DCinc) {
+    IntegerVector DHinc) {
     
     // extract sizes
     int n = Einc.size();
     
     // set up output matrix
-    IntegerMatrix output(n, 17);
+    IntegerMatrix output(n, 13);
     
     // reconstruct counts
-    int E = 0, I = 0, R = 0, D = 0, IA = 0, RA = 0, IH = 0;
-    int RH = 0, DH = 0, IC = 0, RC = 0, DC = 0;
+    int E = 0, I = 0, R = 0, D = 0, IA = 0, RA = 0, IH = 0, RH = 0, DH = 0;
     for(int i = 0; i < n; i++) {
     
         E += Einc[i] - Iinc[i] - IAinc[i];
@@ -194,7 +169,7 @@ cppFunction('IntegerMatrix reconstruct(IntegerVector Einc, IntegerVector Iinc, I
         RA += RAinc[i];
         output(i, 8) = RA;
         
-        IH += IHinc[i] - ICinc[i] - RHinc[i] - DHinc[i];
+        IH += IHinc[i] - RHinc[i] - DHinc[i];
         output(i, 9) = IHinc[i];
         output(i, 10) = IH;
         
@@ -203,16 +178,6 @@ cppFunction('IntegerMatrix reconstruct(IntegerVector Einc, IntegerVector Iinc, I
         
         DH += DHinc[i];
         output(i, 12) = DH;
-        
-        IC += ICinc[i] - RCinc[i] - DCinc[i];
-        output(i, 13) = ICinc[i];
-        output(i, 14) = IC;
-        
-        RC += RCinc[i];
-        output(i, 15) = RC;
-        
-        DC += DCinc[i];
-        output(i, 16) = DC;
     }
     
     // return counts

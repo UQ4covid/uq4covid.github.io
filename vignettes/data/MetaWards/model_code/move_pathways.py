@@ -23,12 +23,7 @@ def move_pathways(network, **kwargs):
     
     ## moves out of H class
     pH = params.user_params["pH"]
-    pHC = params.user_params["pHC"]
     pHR = params.user_params["pHR"]
-    
-    ## moves out of C class
-    pC = params.user_params["pC"]
-    pCR = params.user_params["pCR"]
         
     func = []
     
@@ -38,55 +33,16 @@ def move_pathways(network, **kwargs):
     ## NOTE: looping over the age ranges don't work unless you use a 
     ## default parameter k = j in the lambda - solution derived from:
     ## https://stackoverflow.com/questions/10452770/python-lambdas-binding-to-local-values
-    
-    #######################################################
-    #########              C MOVES                #########
-    #######################################################
-                                      
-    ## move C critical to R critical
-    tpCR = pC * pCR
-    for j in range(nage):
-        func.append(lambda k = j, **kwargs: go_stage(go_from=f'critical{k + 1}',
-                                      go_to=f'critical{k + 1}',
-                                      from_stage="IC",
-                                      to_stage="RC",
-                                      fraction=tpCR,
-                                      **kwargs))
-                                      
-    ## move C critical to D critical
-    ## (denominator adjustment is due to operating on remainder
-    ## as described in the vignette, also includes correction
-    ## in case of rounding error)
-    tpCD = pC * (1.0 - pCR) / (1.0 - tpCR)
-    tpCD = 1.0 if tpCD > 1.0 else tpCD
-    tpCD = 0.0 if tpCD < 0.0 else tpCD
-    for j in range(nage):
-        func.append(lambda k = j, **kwargs: go_stage(go_from=f'critical{k + 1}',
-                                      go_to=f'critical{k + 1}',
-                                      from_stage="IC",
-                                      to_stage="DC",
-                                      fraction=tpCD,
-                                      **kwargs))
                                       
     #######################################################
     #########              H MOVES                #########
     #######################################################
-    
-    ## move H hospital to C critical
-    tpHC = pH * pHC
-    for j in range(nage):
-        func.append(lambda k = j, **kwargs: go_stage(go_from=f'hospital{k + 1}',
-                                      go_to=f'critical{k + 1}',
-                                      from_stage="IH",
-                                      to_stage="IC",
-                                      fraction=tpHC,
-                                      **kwargs))
                                       
     ## move H hospital to R hospital
     ## (denominator adjustment is due to operating on remainder
     ## as described in the vignette, also includes correction
     ## in case of rounding error)
-    tpHR = pH * pHR / (1.0 - tpHC)
+    tpHR = pH * pHR
     tpHR = 1.0 if tpHR > 1.0 else tpHR
     tpHR = 0.0 if tpHR < 0.0 else tpHR
     for j in range(nage):
@@ -101,7 +57,8 @@ def move_pathways(network, **kwargs):
     ## (denominator adjustment is due to operating on remainder
     ## as described in the vignette, also includes correction
     ## in case of rounding error)
-    tpHD = pH * (1.0 - pHC - pHR) / (1.0 - pH * (pHC + pHR))
+    tpHD = pH * (1.0 - pHR) / (1.0 - tpHR)
+    tpHD = 0.0 if tpHR == 1.0 else tpHD
     tpHD = 1.0 if tpHD > 1.0 else tpHD
     tpHD = 0.0 if tpHD < 0.0 else tpHD
     for j in range(nage):
@@ -118,6 +75,8 @@ def move_pathways(network, **kwargs):
 
     ## move I genpop to H hospital
     tpIH = pI * pIH
+    tpIH = 1.0 if tpIH > 1.0 else tpIH
+    tpIH = 0.0 if tpIH < 0.0 else tpIH
     for j in range(nage):
         func.append(lambda k = j, **kwargs: go_stage(go_from=f'genpop{k + 1}',
                                       go_to=f'hospital{k + 1}',
@@ -131,6 +90,7 @@ def move_pathways(network, **kwargs):
     ## as described in the vignette, also includes correction
     ## in case of rounding error)
     tpIR = pI * pIR / (1.0 - tpIH)
+    tpIR = 0.0 if tpIH == 1.0 else tpIR
     tpIR = 1.0 if tpIR > 1.0 else tpIR
     tpIR = 0.0 if tpIR < 0.0 else tpIR
     for j in range(nage):
@@ -146,6 +106,7 @@ def move_pathways(network, **kwargs):
     ## as described in the vignette, also includes correction
     ## in case of rounding error)
     tpID = pI * (1 - pIH - pIR) / (1.0 - pI * (pIH + pIR))
+    tpID = 0.0 if (pI * (pIH + pIR)) == 1.0 else tpID
     tpID = 1.0 if tpID > 1.0 else tpID
     tpID = 0.0 if tpID < 0.0 else tpID
     for j in range(nage):
@@ -176,6 +137,8 @@ def move_pathways(network, **kwargs):
 
     ## move E genpop to A asymp
     tpEA = pE * pEA
+    tpEA = 1.0 if tpEA > 1.0 else tpEA
+    tpEA = 0.0 if tpEA < 0.0 else tpEA
     for j in range(nage):
         func.append(lambda k = j, **kwargs: go_stage(go_from=f'genpop{k + 1}',
                                       go_to=f'asymp{k + 1}',
@@ -189,6 +152,7 @@ def move_pathways(network, **kwargs):
     ## as described in the vignette, also includes correction
     ## in case of rounding error)
     tpEI = pE * (1.0 - pEA) / (1.0 - tpEA)
+    tpEI = 0.0 if tpEA == 1.0 else tpEI
     tpEI = 1.0 if tpEI > 1.0 else tpEI
     tpEI = 0.0 if tpEI < 0.0 else tpEI
     for j in range(nage):
