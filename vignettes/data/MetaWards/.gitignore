@@ -9,3 +9,11 @@ data/trustDeathsAdmissionsIcuExtract20200624.csv
 
 schematics
 public
+
+inputs/
+raw_outputs/
+tests/*.pdf
+data/tierData/Ward*
+data/tierData/*.csv
+data/hospitalStays/*.pdf
+MetaWards.Rproj
