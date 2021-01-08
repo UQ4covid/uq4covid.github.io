@@ -533,12 +533,12 @@ The database contains a single table called `compact`. To store the outputs effi
 
 If you're happy with SQL, you can query these directly with e.g. SQLite. If you are an R user, then the `dplyr` package (or more specifically the `dbplyr` package) provides some useful R tools for querying SQL databases using `tidyverse`-type notation. More details about these tools can be found [here](https://cran.r-project.org/web/packages/dbplyr/vignettes/dbplyr.html).
 
-If required, we have provided a script `R_tools/reconstruct.R`, that provides a function called `reconstruct()` that is written using `Rcpp` and can be used to reconstruct the time-series counts from the incidence data.
+If required, the script `R_tools/dataTools.R`, that provides a function called `reconstruct()` that is written using `Rcpp` and can be used to reconstruct the time-series counts from the incidence data.
 
 <button data-toggle="collapse" data-target="#reconrcpp">Click for R <code>reconstruct</code> function</button>
 <div id="reconrcpp" class="collapse boxed">
 
-```{r, code = readLines("../R_tools/reconstruct.R"), eval = FALSE}
+```{r, reconstruct}
 ```
 
 </div>
@@ -598,7 +598,7 @@ Now you can play with `hosp` as much as you like. **Note** that `hosp` here only
 
 You can very easily wrap these ideas into an R function that can scroll through the design IDs, extract relevant outputs and bind to the inputs. Note that this data processing takes a lot of time, so running in parallel is very helpful. Hence why we do all this on JASMIN.
 
-```{r, echo = FALSE, message = FALSE, warning = FALSE}
+```{r, echo = FALSE, message = FALSE, warning = FALSE, eval = FALSE}
 tempdir <- getwd()
 setwd("..")
 source("convertDesign.R")
