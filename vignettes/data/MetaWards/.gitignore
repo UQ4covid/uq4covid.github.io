@@ -15,5 +15,6 @@ raw_outputs/
 tests/*.pdf
 data/tierData/Ward*
 data/tierData/*.csv
+data/tierData/*.pdf
 data/hospitalStays/*.pdf
 MetaWards.Rproj
