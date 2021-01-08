@@ -233,17 +233,21 @@ We will discuss these choices in more detail in the subsequent sections. Note th
 For generic states $X$ and $Y$ say, the progress of an individual in age-class $j$ from state $X$ to state $Y$ in a given day is governed by probability $q^j_{XY}$, where:
 
 * $q^j_{SE}$ driven by $\beta_{kj}$ parameters ($k = 1, \dots, J$), defined by $R_0$, the mean length of the infectious period ($1 / \gamma_I$), and the population contact matrix, $C$, between age-classes (see [here](#trans) for details);
-* $q^j_{EA} = p_{EA}\left(1 - e^{-\gamma_{E}}\right)$ where $\gamma_E = \frac{1}{T_E}$ with $T_E$ the mean incubation period;
-* $q^j_{EI} = \left(1 - p_{EA}\right)\left(1 - e^{-\gamma_{E}}\right)$;
+* $q^j_{EA} = p^j_{EA}\left(1 - e^{-\gamma_{E}}\right)$ where $\gamma_E = \frac{1}{T_E}$ with $T_E$ the mean incubation period;
+* We model: $\log\left(p^j_{EA}\right) = \alpha_{EA} + \eta_{EA} \mbox{age}_j$, where $\eta_{EA} > 0$ and $\alpha_{EA} < -\eta_{EA} \max\left(\mbox{age}_j\right)$ to ensure than $0 < p^j_{EA} \leq 1$. The $\mbox{age}_j$ term is the middle age in age-class $j$.
+* $q^j_{EI} = \left(1 - p^j_{EA}\right)\left(1 - e^{-\gamma_{E}}\right)$;
 * $q^j_{AR} = 1 - e^{-\gamma_I}$ where $\gamma_I = \frac{1}{T_I}$ with $T_I$ the mean infectious period;
-* $q^j_{IH} = p_{IH}\left(1 - e^{-\gamma_{I}}\right)$;
-* $q^j_{IR} = p_{IR}\left(1 - e^{-\gamma_{I}}\right)$;
-* $q^j_{ID} = \left(1 - p_{IH} - p_{IR}\right)\left(1 - e^{-\gamma_{I}}\right)$;
-* $q^j_{HC} = p_{HC}\left(1 - e^{-\gamma_{H}}\right)$ where $\gamma_{H} = \frac{1}{T_H}$ with $T_H$ the mean length of a hospital stay;
-* $q^j_{HR} = p_{HR}\left(1 - e^{-\gamma_{H}}\right)$;
-* $q^j_{HD} = \left(1 - p_{HC} - p_{HR}\right)\left(1 - e^{-\gamma_{H}}\right)$;
-* $q^j_{CR} = p_{CR}\left(1 - e^{-\gamma_{C}}\right)$ where $\gamma_C = \frac{1}{T_C}$ with $T_C$ is the mean length of time spent in ICU;
-* $q^j_{CD} = \left(1 - p_{CR}\right)\left(1 - e^{-\gamma_{C}}\right)$.
+* $q^j_{IH} = p^j_{IH}\left(1 - e^{-\gamma_{I}}\right)$;
+* $q^j_{IR} = p^j_{IR}\left(1 - e^{-\gamma_{I}}\right)$;
+* $q^j_{ID} = \left(1 - p^j_{IH} - p^j_{IR}\right)\left(1 - e^{-\gamma_{I}}\right)$;
+* Similarly to before, we model: $\log\left(p^j_{IH/R}\right) = \alpha_{IH/R} + \eta_{IH/R} \mbox{age}_j$, where $\eta_{IH/R} > 0$ and $\alpha_{IH/R} < -\eta_{IH/R} \max\left(\mbox{age}_j\right)$ to ensure than $0 < p^j_{IH/R} \leq 1$.
+* $q^j_{HC} = p^j_{HC}\left(1 - e^{-\gamma_{H}}\right)$ where $\gamma_{H} = \frac{1}{T_H}$ with $T_H$ the mean length of a hospital stay;
+* $q^j_{HR} = p^j_{HR}\left(1 - e^{-\gamma_{H}}\right)$;
+* $q^j_{HD} = \left(1 - p^j_{HC} - p^j_{HR}\right)\left(1 - e^{-\gamma_{H}}\right)$;
+* Similarly to before, we model: $\log\left(p^j_{HC/R}\right) = \alpha_{HC/R} + \eta_{HC/R} \mbox{age}_j$, where $\eta_{HC/R} > 0$ and $\alpha_{HC/R} < -\eta_{HC/R} \max\left(\mbox{age}_j\right)$ to ensure than $0 < p^j_{HC/R} \leq 1$. 
+* $q^j_{CR} = p^j_{CR}\left(1 - e^{-\gamma_{C}}\right)$ where $\gamma_C = \frac{1}{T_C}$ with $T_C$ is the mean length of time spent in ICU;
+* $q^j_{CD} = \left(1 - p^j_{CR}\right)\left(1 - e^{-\gamma_{C}}\right)$;
+* Finally, we model: $\log\left(p^j_{CR}\right) = \alpha_{CR} + \eta_{CR} \mbox{age}_j$, where $\eta_{CR} > 0$ and $\alpha_{CR} < -\eta_{CR} \max\left(\mbox{age}\right)$ to ensure than $0 < p^j_{CR} \leq 1$. 
 
 Lockdown can be controlled either by constraining movements over a certain distance, or by scaling the $\beta_{kj}$ parameters. We do the latter at the moment. 
 
@@ -270,8 +274,6 @@ If we ignore the incubation period, and assume the model is $SIR$, then $R_0$ ca
     \Rightarrow \nu &= \frac{R_0 \gamma_I}{\mbox{eig}_M\left(C\right)},
 \end{align}
 where $\mbox{eig}_M\left(C\right)$ denotes the maximum eigenvalue of $C$.
-
-<p style="color:red">NEED TO CHECK $\nu$ IS A PROBABILITY</p>
 
 <p style="color:red">NEED TO ADD INCUBATION PERIOD TO NGM</p>
 
@@ -335,38 +337,24 @@ This requires an additional input file containing the dates of the different sta
 
 ## Extractor {#extractor}
 
-<div style="color:red">
-Need to discuss this some more. Currently this stores all classes at all time points for each demographic once a ward is infected (so doesn't store any information before the first time point affected). Further options include:
+We also have a custom `extractor` function, that saves the outputs as a compressed SQL database for each age-class, called `stages*.db.bz2` (where `*` varies by age-class). 
 
-* Only store demographic information once a **demographic** is affected (so if a ward never has individuals in hospital, then no hospital information is recorded).
-* Only store time points where something changes.
-* Only store a subset of results (we may not need I, E etc. since these can be reconstructed from Iprime, Eprime, R and D for example).
+Each database for a given run contains a single table called `compact`. For efficiency we:
 
-All of these ideas swap storage for additional post-processing requirements.
-</div>
+* only store time points where an event happens within that age-class;
+* only store the *incidence* data (i.e. new cases), and not the time-series counts.
 
-We also have a custom `extractor` function, that saves the outputs as a compressed SQL database for each age-class, called `stages*.db.bz2` (where `*` varies by age-class). This is important since the outputs are very large (all classes across all days and all wards, for multiple replicates of each design point). 
+This also means that wards and/or age-classes that are not infected do not return any results. 
 
-The database for a given run contains a single table called `compact`. To store the outputs efficiently, we only return data for time points *after initial infection in a ward*. This also means that wards that are not infected do not return any results. 
+This trick **hugely** reduces the size of the output data, but means that we have to do some **post-processing** in order to extract quantities of interest. Since the data are stored as an SQL database, we can either query the database directly, or use some of the tools in e.g. R (see [below](#recon)) to interface with it and to reconstruct time-series counts if required. 
 
-This trick **hugely** reduces the size of the output data, but means that we have to do some **post-processing** in order to extract quantities of interest. Since the data are stored as an SQL database, we can either query the database directly, or use some of the tools in e.g. R (see below) to interface with it. So, to clarify, the `stages*.db` databases each contain a table called `compact` with entries:
+So, to clarify, the `stages*.db` databases each contain a table called `compact` with entries:
 
 * `day`, `ward`
-* `Einc`, `E`, `Iinc`, `I`, `R`, `D`
-* `IAinc`, `IA`, `RA`
-* `IHinc`, `IH`, `RH`, `DH`
-* `ICinc`, `IC`, `RC`, `DC`
-
-For the `genpop` demographic, these entries correspond to:
-
-* `Einc`: **new** infections on each day (i.e. new moves into $E$)
-* `E`: current infections on each day (i.e. number of individuals in $E$)
-* `Iinc`: **new** infectious individuals on each day (i.e. new moves into $I$)
-* `I`: current infectious individuals on each day (i.e. number of individuals in $I$)
-* `R`: current removals on each day (i.e. number of individuals in $R$)
-* `D`: current deaths on each day (i.e. number of individuals in $D$)
-
-Similarly for the other demographics (refer to the model structure [here](#model)).
+* `Einc`, `Iinc`, `Rinc`, `Dinc`
+* `IAinc`, `RAinc`
+* `IHinc`, `RHinc`, `DHinc`
+* `ICinc`, `RCinc`, `DCinc`
 
 We save this custom `extractor` function in the file `ward_extractor.py`.
 
@@ -388,12 +376,7 @@ To run designs, we need to generate a `disease.csv` file containing different pa
 * *design* space: this will usually be in $(0, 1)$ or $(-1, 1)$ space;
 * *disease* space: this relates to parameters that are fed into MetaWards.
 
-The *input* and *design* spaces are fairly trivial to convert between, but some more work has to be done to convert between the *input* space and the *disease* space. To ensure orthogonality, we reparameterise a couple of the parameters such that:
-\begin{align}
-    p_{IR} &= \left(1 - p_{IH}\right) p^\prime_{IR}\\
-    p_{HR} &= \left(1 - p_{HC}\right) p^\prime_{HR}
-\end{align}
-and thus we have parameter ranges:
+The *input* and *design* spaces are fairly trivial to convert between, but some more work has to be done to convert between the *input* space and the *disease* space. Thus we have parameter ranges:
 \begin{align}
     \mbox{$R_0$}&: (2, 4)\\
     \mbox{mean incubation period ($T_E$)}&: (4, 6)\\
@@ -402,12 +385,18 @@ and thus we have parameter ranges:
     \mbox{mean time in critical care ($T_C$)}&: (4, 12)\\
     \mbox{lockdown 1 restrict}&: (0, 1)\\
     \mbox{lockdown 2 release}&: (0, 1)\\
-    p_{EA}&: (0, 1)\\
-    p_{IH}&: (0, 1)\\
-    p^\prime_{IR}&: (0, 1)\\
-    p_{HC}&: (0, 1)\\
-    p^\prime_{HR}&: (0, 1)\\
-    p_{CR}&: (0, 1)\\
+    \alpha_{EA}&: (?, ?)~\mbox{such that}~\alpha_{EA} < -\eta_{EA} \mbox{age}_M\\
+    \eta_{EA}&: (0, ?)\\
+    \alpha_{IH}&: (?, ?)~\mbox{such that}~\alpha_{IH} < -\eta_{IH} \mbox{age}_M\\
+    \eta_{IH}&: (0, ?)\\
+    \alpha_{IR}&: (?, ?)~\mbox{such that}~\alpha_{IR} < -\eta_{IR} \mbox{age}_M\\
+    \eta_{IR}&: (0, ?)\\
+    \alpha_{HC}&: (?, ?)~\mbox{such that}~\alpha_{HC} < -\eta_{HC} \mbox{age}_M\\
+    \eta_{HC}&: (0, ?)\\
+    \alpha_{HR}&: (?, ?)~\mbox{such that}~\alpha_{HR} < -\eta_{HR} \mbox{age}_M\\
+    \eta_{HR}&: (0, ?)\\
+    \alpha_{CR}&: (?, ?)~\mbox{such that}~\alpha_{CR} < -\eta_{CR} \mbox{age}_M\\
+    \eta_{CR}&: (0, ?)\\
     \beta^S_{A \to GP}&: (0, 1)\\
     \beta^S_{H \to GP}&: (0, 1)\\
     \beta^S_{C \to GP}&: (0, 1).
@@ -420,10 +409,13 @@ In R we can set up the *input* parameter ranges as follows:
 parRanges <- data.frame(
     parameter = c("r_zero", "incubation_time", "infectious_time", "hospital_time",
                   "critical_time", "lock_1_restrict", "lock_2_release",
-                  "pEA", "pIH", "pIRprime", "pHC", "pHRprime", "pCR", 
+                  "alphaEA", "etaEA", 
+                  "alphaIH", "etaIH", "alphaIR", "etaIR",
+                  "alphaHC", "etaHC", "alphaHR", "etaHR",
+                  "alphaCR", "etaCR",
                   "GP_A", "GP_H", "GP_C"),
-    lower = c(2, 4, 2, 4, 4, rep(0, 11)),
-    upper = c(4, 6, 4, 12, 12, rep(1, 11)),
+    lower = c(2, 4, 2, 4, 4, 0, 0, rep(c("?", 0), 6), rep(0, 3)),
+    upper = c(4, 6, 4, 12, 12, 1, 1, rep(c("?", "?"), 6), rep(1, 3)),
     stringsAsFactors = FALSE
 )
 ```
@@ -485,7 +477,7 @@ metawards -d model_code/ncov_overall.json -D model_code/demographics.json --mixe
 
 <p style="color:red">HAVEN'T TOUCHED ANYTHING BELOW UNTIL WE FINALISE EXTRACTORS</p>
 
-As described [above](#extractor) each model run produces a file called `stages.db.bz2`, which is a compressed database containing the outputs. In practice, it is time-consuming to unzip and extract all of these outputs for all design points, and extract and collate the various quantities we need for our emulation and history matching process. To this end we have been kindly offered a processing and data storage solution on [JASMIN](https://www.jasmin.ac.uk/). 
+As described [above](#extractor) each model run produces a series of files called `stages1.db.bz2`, `stages2.db.bz2` etc., which are compressed databases containing the outputs for each age-class. In practice, it is time-consuming to unzip and extract all of these outputs for all design points, and extract and collate the various quantities we need for our emulation and history matching process. To this end we have been kindly offered a processing and data storage solution on [JASMIN](https://www.jasmin.ac.uk/). 
 
 The simulation outputs from our model are stored at the public repository:
 
@@ -512,7 +504,7 @@ wave
 | +-- ...
 ```
 
-The `stages.db` files are the unzipped raw outputs for that design point (described above). The `weeksums.csv` files are weekly summaries of mean hospital prevalence (`Hprev` column), mean critical care prevalence (`Cprev` column) and total hospital + critical care deaths (`Deaths` column) on a weekly basis for each ward and week since lockdown. 
+The `stages*.db` files are the unzipped raw outputs for that design point (described above). The `weeksums.csv` files are weekly summaries of mean hospital prevalence (`Hprev` column), mean critical care prevalence (`Cprev` column) and total hospital + critical care deaths (`Deaths` column) on a weekly basis for each ward and week since lockdown. 
 
 For a given ensemble ID (`Ens0000` say), the folder `Ens0000` corresponds to the first replicate for that design point. Other replicates are appended with the replicate number e.g. `Ens0000x002`, `Ens0000x003` and so on. The **main folder only** (e.g. `Ens0000`) for each design point also contains three more `.csv` files: `Hprev.csv`, `Cprev.csv` and `Deaths.csv`. These contain 0.025, 0.25, 0.5, 0.75 and 0.975 quantiles of the `Hprev`, `Cprev` and `Deaths` counts respectively taken across the replicates, and are designed to be used to build our emulators.
 
@@ -521,27 +513,37 @@ The main repo contains scripts to produce these in parallel on JASMIN, greatly s
 ```{r, code = readLines("../downloadQuantiles.R"), eval = FALSE}
 ```
 
-#### More detail on manipulating model outputs
+#### More detail on manipulating model outputs {#recon}
 
 If you've run the model yourselves, or want to use the data differently, then as an example of how to manipulate the raw outputs, migrate to an output folder containing `stages.db.bz2` (or download one from the repo above). If this is a zipped file, then you will have to unzip it. In Linux this can be done on the command line e.g.
 
 ```{bash}
-bzip2 -dkf stages.db.bz2
+bzip2 -dkf stages1.db.bz2
 ```
 
-You will notice that the unzipped `stages.db` file is larger than the compressed version, though Chris has done a great job in storing the outputs in a memory efficient way. As such, you might need to remove `stages.db` at the end if you have limited hard drive space (to this end, the `bzip -dkf` flag I used above ensures that the original compressed file is not deleted when uncompressed). 
+You will notice that the unzipped `stages1.db` file is larger than the compressed version. As such, you might need to remove `stages1.db` at the end if you have limited hard drive space (to this end, the `bzip -dkf` flag I used above ensures that the original compressed file is not deleted when uncompressed). 
 
-The database contains a single table called `compact`. To store the outputs efficiently, we have introduced various tricks, described [above](#extractor). To clarify, the `stages.db` database contains a table called `compact` with entries:
+The database contains a single table called `compact`. To store the outputs efficiently, we have introduced various tricks, described [above](#extractor). To clarify, each `stages*.db` database contains a table called `compact` with entries:
 
 * `day`, `ward`
-* `Einc`, `E`, `Iinc`, `I`, `RI`, `DI`
-* `Ainc`, `A`, `RA`
-* `Hinc`, `H`, `RH`, `DH`
-* `Cinc`, `C`, `RC`, `DC`
+* `Einc`, `Iinc`, `Rinc`, `Dinc`
+* `IAinc`, `RAinc`
+* `IHinc`, `RHinc`, `DHinc`
+* `ICinc`, `RCinc`, `DCinc`
 
 If you're happy with SQL, you can query these directly with e.g. SQLite. If you are an R user, then the `dplyr` package (or more specifically the `dbplyr` package) provides some useful R tools for querying SQL databases using `tidyverse`-type notation. More details about these tools can be found [here](https://cran.r-project.org/web/packages/dbplyr/vignettes/dbplyr.html).
 
-As a quick example, imagine that we want to extract the **cumulative hospital cases** on say day 100 from R. Here we will need to extract the **new hospital cases** from day 1--100, and then sum them up for each ward. Therefore we need to extract `day`, `ward` and `Hinc` from the `compact` table.
+If required, we have provided a script `R_tools/reconstruct.R`, that provides a function called `reconstruct()` that is written using `Rcpp` and can be used to reconstruct the time-series counts from the incidence data.
+
+<button data-toggle="collapse" data-target="#reconrcpp">Click for R <code>reconstruct</code> function</button>
+<div id="reconrcpp" class="collapse boxed">
+
+```{r, code = readLines("../R_tools/reconstruct.R"), eval = FALSE}
+```
+
+</div>
+
+As a quick example, imagine that we want to extract the **cumulative hospital cases** on say day 100 from R for the lowest age-class. (**Note that we do not need the time-series counts for this, only the incidence data.**) Here we will need to extract the **new hospital cases** from day 1--100, and then sum them up for each ward. Therefore we need to extract `day`, `ward` and `IHinc` from the `compact` table.
 
 ```{r, message = FALSE, warning = FALSE}
 ## load library
@@ -550,7 +552,7 @@ As a quick example, imagine that we want to extract the **cumulative hospital ca
 library(dplyr)
 
 ## establish connection to database
-con <- DBI::dbConnect(RSQLite::SQLite(), "stages.db")
+con <- DBI::dbConnect(RSQLite::SQLite(), "stages1.db")
 
 ## connect to the 'compact' table
 compact <- tbl(con, "compact")
@@ -561,15 +563,15 @@ compact
 
 By default, the package only pulls enough data from the database to produce a summary on the screen (notice that it prints the dimensions as `?? x 19`). If the database is small enough, then the `collect()` function can be used to import tables directly into R as a `tibble`. Alternatively, the `dbplyr` package can convert `tidyverse`-style commands into SQL and run these directly within the database. For large databases this is likely to be much more efficient, in terms of speed and memory usage. You can then `collect()` the results of the query into R.
 
-As an example of this latter approach, we will set up a query that sums the **new** hospital cases over the first 100 days in each ward. **Remember**: for each ward the database only contains days after the initial infection occurs. For cumulative *incidence* counts this is fine, since the missing data will be zero in each case, so we just need to filter first to remove all time points $> 100$. To set up the query:
+As an example of this latter approach, we will set up a query that sums the **new** hospital cases over the first 100 days in each ward. **Remember**: for each ward the database only contains days when some event happens. For cumulative *incidence* counts this is fine, since the missing data will be zero in each case, so we just need to filter first to remove all time points $> 100$. To set up the query:
 
 ```{r}
-## Hinc contains the new cases, so sum these
+## IHinc contains the new cases, so sum these
 ## over each ward for days 1--100
 hosp_db <- filter(compact, day <= 100) %>%
-    select(ward, Hinc) %>%
+    select(ward, IHinc) %>%
     group_by(ward) %>%
-    summarise(Hcum = sum(Hinc))
+    summarise(IHcum = sum(IHinc))
 ```
 
 This hasn't run any commands yet, rather `hosp_db` contains a parsed SQL query that can be run through the database connection. If you like, you can view the generated SQL query using:
