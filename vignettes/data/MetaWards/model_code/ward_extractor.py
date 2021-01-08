@@ -109,8 +109,8 @@ def output_db(population: Population, network: Networks,
         ward_inf_previous = workspace.subspaces[ih].output_previous
         ward_inf_tot = workspace.subspaces[ih].ward_inf_tot
         ## calculate incidence
-        for old, new, Rinc, Dinc, Cinc in zip(ward_inf_previous[0], ward_inf_tot[0], Rprime[ih], Dprime[ih], Iprime[ic]):
-            Iprime[ih].append(new - old + Rinc + Dinc + Cinc)
+        for old, new, Rinc, Dinc in zip(ward_inf_previous[0], ward_inf_tot[0], Rprime[ih], Dprime[ih]):
+            Iprime[ih].append(new - old + Rinc + Dinc)
         
         ## GENPOP
         ig = sub_names.index(f'genpop{j + 1}')
