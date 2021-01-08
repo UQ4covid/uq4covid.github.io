@@ -16,6 +16,9 @@ where to download the relevant shapefiles and lookup tables to convert
 the 2011 ward-level commuter data to the 2019 wards and LADs. There is also
 code to generate the relevant data for use in the MetaWards model runs.
 
+The file `README.md` in the `data/hospitalStays` folder contains information about
+how to inform the length of hospital stays from line list data.
+
 ## Setting up design
 
 The R script `convertDesign.R` contains a simple example of sampling
