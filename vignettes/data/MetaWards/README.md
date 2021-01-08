@@ -17,7 +17,13 @@ the 2011 ward-level commuter data to the 2019 wards and LADs. There is also
 code to generate the relevant data for use in the MetaWards model runs.
 
 The file `README.md` in the `data/hospitalStays` folder contains information about
-how to inform the length of hospital stays from line list data.
+how to inform the length of hospital stays from line list data provided by Rob Challen.
+
+The input data `data/populationByAge/Pop by CTRY.csv` is from Rob Challen and contains 
+population counts in different age-classes in different countries.
+
+The file `README.md` in the `data/contactData` folder contains information about
+how to download and generate the contact matrix data used in the model.
 
 ## Setting up design
 

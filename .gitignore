@@ -8,5 +8,6 @@ vignettes/data/MetaWards/raw_outputs/
 vignettes/data/MetaWards/tests/*.pdf
 vignettes/data/MetaWards/data/tierData/Ward*
 vignettes/data/MetaWards/data/tierData/*.csv
+vignettes/data/MetaWards/data/hospitalStays/*.pdf
 vignettes/data/MetaWards/MetaWards.Rproj
 .Rproj.user
