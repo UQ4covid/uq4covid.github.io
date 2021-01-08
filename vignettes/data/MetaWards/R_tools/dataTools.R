@@ -1,6 +1,6 @@
 ## @knitr convertDesignToInput
 ## function to convert from design to input space
-convertDesignToInput <- function(design, parRanges, scale = c("zero_one", "negone_one")) {
+convertDesignToInput <- function(design, parRanges, ageM, scale = c("zero_one", "negone_one")) {
   
     require(dplyr)
     require(tidyr)
@@ -18,13 +18,21 @@ convertDesignToInput <- function(design, parRanges, scale = c("zero_one", "negon
         arrange(ind) %>%
         dplyr::select(-ind)
     
+    ## remove design points that don't adhere to necessary criteria
+    input <- filter(input, alphaEA < -etaEA * ageM) %>%
+      filter(alphaIH < -etaIH * ageM) %>%
+      filter(alphaIR < -etaIR * ageM) %>%
+      filter(alphaHC < -etaHC * ageM) %>%
+      filter(alphaHR < -etaHR * ageM) %>%
+      filter(alphaCR < -etaCR * ageM)
+    
     ## return inputs
     input
 }
 
 ## @knitr convertInputToDisease
 ## function to convert from input to disease space
-convertInputToDisease <- function(input, C) {
+convertInputToDisease <- function(input, C, ages) {
    
     require(dplyr)
     
@@ -33,33 +41,73 @@ convertInputToDisease <- function(input, C) {
     stopifnot(all(disease$`.nu` > 0 & disease$`.nu` < 1))
     
     ## progressions out of the E class
-    ## (adjusting in the way described in the vignette for
-    ## order of movers)
     disease$`.pE` <- 1 - exp(-1 / input$incubation_time)
-    disease$`.pEA` <- input$pEA
+    disease <- mutate(disease, 
+        temp = map2(input$alphaEA, input$etaEA, function(alpha, eta, ages) {
+            out <- exp(alpha + eta * ages) %>%
+                as.matrix(nrow = 1) %>%
+                as_tibble()
+            colnames(out) <- paste0(".pEA_", 1:length(ages))
+            out
+        }, ages = ages)) %>%
+        unnest(cols = temp)
     
     ## progressions out of the A class
     disease$`.pA` <- 1 - exp(-1 / input$infectious_time)
     
     ## progressions out of the I class
-    ## (adjusting in the way described in the vignette for
-    ## order of movers)
     disease$`.pI` <- 1 - exp(-1 / input$infectious_time)
-    disease$`.pIH` <- input$pIH
-    disease$`.pIR` <- (1 - input$pIH) * input$pIRprime
+    disease <- mutate(disease, 
+        temp = map2(input$alphaIH, input$etaIH, function(alpha, eta, ages) {
+            out <- exp(alpha + eta * ages) %>%
+                as.matrix(nrow = 1) %>%
+                as_tibble()
+            colnames(out) <- paste0(".pIH_", 1:length(ages))
+            out
+        }, ages = ages)) %>%
+        unnest(cols = temp)
+    disease <- mutate(disease, 
+        temp = map2(input$alphaIR, input$etaIR, function(alpha, eta, ages) {
+            out <- exp(alpha + eta * ages) %>%
+                as.matrix(nrow = 1) %>%
+                as_tibble()
+            colnames(out) <- paste0(".pIR_", 1:length(ages))
+            out
+        }, ages = ages)) %>%
+        unnest(cols = temp)
     
     ## progressions out of the H class
-    ## (adjusting in the way described in the vignette for
-    ## order of movers)
     disease$`.pH` <- 1 - exp(-1 / input$hospital_time)
-    disease$`.pHC` <- input$pHC
-    disease$`.pHR` <- (1 - input$pHC) * input$pHRprime
+    disease <- mutate(disease, 
+        temp = map2(input$alphaHC, input$etaHC, function(alpha, eta, ages) {
+            out <- exp(alpha + eta * ages) %>%
+                as.matrix(nrow = 1) %>%
+                as_tibble()
+            colnames(out) <- paste0(".pHC_", 1:length(ages))
+            out
+        }, ages = ages)) %>%
+        unnest(cols = temp)
+    disease <- mutate(disease, 
+        temp = map2(input$alphaHR, input$etaHR, function(alpha, eta, ages) {
+            out <- exp(alpha + eta * ages) %>%
+                as.matrix(nrow = 1) %>%
+                as_tibble()
+            colnames(out) <- paste0(".pHR_", 1:length(ages))
+            out
+        }, ages = ages)) %>%
+        unnest(cols = temp)
     
     ## progressions out of the C class
-    ## (adjusting in the way described in the vignette for
-    ## order of movers)
     disease$`.pC` <- 1 - exp(-1 / input$critical_time)
-    disease$`.pCR` <- input$pCR
+    disease <- mutate(disease, 
+          temp = map2(input$alphaCR, input$etaCR, function(alpha, eta, ages) {
+          out <- exp(alpha + eta * ages) %>%
+              as.matrix(nrow = 1) %>%
+              as_tibble()
+          colnames(out) <- paste0(".pCR_", 1:length(ages))
+          out
+      }, ages = ages)) %>%
+      unnest(cols = temp)
     
     ## lockdown scalings
     disease$`.lock_1_restrict` <- input$lock_1_restrict
@@ -106,3 +154,68 @@ ensembleIDGen <- function(ensembleID = "a0", ensembleSize) {
     stopifnot(!any(duplicated(tIDs)))
     tIDs
 }
+
+## @knitr reconstruct
+## write Rcpp function to reconstruct counts from incidence
+library(Rcpp)
+cppFunction('IntegerMatrix reconstruct(IntegerVector Einc, IntegerVector Iinc, IntegerVector Rinc,
+    IntegerVector Dinc, IntegerVector IAinc, IntegerVector RAinc, IntegerVector IHinc, IntegerVector RHinc, 
+    IntegerVector DHinc, IntegerVector ICinc, IntegerVector RCinc, IntegerVector DCinc) {
+    
+    // extract sizes
+    int n = Einc.size();
+    
+    // set up output matrix
+    IntegerMatrix output(n, 17);
+    
+    // reconstruct counts
+    int E = 0, I = 0, R = 0, D = 0, IA = 0, RA = 0, IH = 0;
+    int RH = 0, DH = 0, IC = 0, RC = 0, DC = 0;
+    for(int i = 0; i < n; i++) {
+    
+        E += Einc[i] - Iinc[i] - IAinc[i];
+        output(i, 0) = Einc[i];
+        output(i, 1) = E;
+        
+        I += Iinc[i] - IHinc[i] - Rinc[i] - Dinc[i];
+        output(i, 2) = Iinc[i];
+        output(i, 3) = I;
+        
+        R += Rinc[i];
+        output(i, 4) = R;
+        
+        D += Dinc[i];
+        output(i, 5) = D;
+        
+        IA += IAinc[i] - RAinc[i];
+        output(i, 6) = IAinc[i];
+        output(i, 7) = IA;
+        
+        RA += RAinc[i];
+        output(i, 8) = RA;
+        
+        IH += IHinc[i] - ICinc[i] - RHinc[i] - DHinc[i];
+        output(i, 9) = IHinc[i];
+        output(i, 10) = IH;
+        
+        RH += RHinc[i];
+        output(i, 11) = RH;
+        
+        DH += DHinc[i];
+        output(i, 12) = DH;
+        
+        IC += ICinc[i] - RCinc[i] - DCinc[i];
+        output(i, 13) = ICinc[i];
+        output(i, 14) = IC;
+        
+        RC += RCinc[i];
+        output(i, 15) = RC;
+        
+        DC += DCinc[i];
+        output(i, 16) = DC;
+    }
+    
+    // return counts
+    return(output);
+}')
+
