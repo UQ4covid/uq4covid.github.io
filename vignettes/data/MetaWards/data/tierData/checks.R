@@ -2,7 +2,6 @@
 library(tidyverse)
 library(lubridate)
 library(sf)
-library(areal)
 library(patchwork)
 library(viridis)
 
@@ -36,11 +35,13 @@ ward11 <- inner_join(ward11, WorkSize, by = c("FID" = "X1"))
 ## some general checks at the LAD level
 
 ## extract matching LADs
-temp19 <- inner_join(Ward19_Lookup, WorkSize19, by = c("FID" = "X1"))
-temp11 <- inner_join(Ward_Lookup, WorkSize, by = c("FID" = "X1"))
+temp19 <- inner_join(Ward19_Lookup, WorkSize19, by = c("FID" = "X1")) %>%
+    group_by(LAD19NM, LAD19CD) %>%
+    summarise(WK19 = sum(X2))
+temp11 <- inner_join(Ward_Lookup, WorkSize, by = c("FID" = "X1")) %>%
+    group_by(LAD11NM, LAD11CD) %>%
+    summarise(WK11 = sum(X2))
 temp <- inner_join(temp19, temp11, by = c("LAD19NM" = "LAD11NM")) %>%
-    group_by(LAD19NM) %>%
-    summarise(WK11 = sum(X2.y), WK19 = sum(X2.x)) %>%
     mutate(propdiff = WK11 / WK19) %>%
     mutate(propdiff = ifelse(propdiff < 1, 1 / propdiff, propdiff)) %>%
     arrange(-propdiff)
@@ -54,13 +55,13 @@ for(i in 1:length(LADs)) {
         ggplot() + geom_sf(aes(fill = X2)) + 
         scale_fill_viridis(
             limits = range(c(ward11$X2[ward11$LAD11NM == LADs[i]], ward19$X2[ward19$LAD19NM == LADs[i]]))
-        ) + ggtitle(LADs[i])
+        ) + ggtitle(paste0(LADs[i], " - 2011")) + labs(fill = "WorkSize")
     j <- j + 1
     p[[j]] <- filter(ward19, LAD19NM == LADs[i]) %>%
         ggplot() + geom_sf(aes(fill = X2)) + 
         scale_fill_viridis(
             limits = range(c(ward11$X2[ward11$LAD11NM == LADs[i]], ward19$X2[ward19$LAD19NM == LADs[i]]))
-        ) + ggtitle(LADs[i])
+        ) + ggtitle(paste0(LADs[i], " - 2019")) + labs(fill = "WorkSize")
     j <- j + 1
 }
 wrap_plots(p, ncol = 2)
