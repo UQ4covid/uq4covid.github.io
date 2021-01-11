@@ -281,7 +281,7 @@ The **interaction matrix** scales the force-of-infection (FOI) that different de
 <button data-toggle="collapse" data-target="#mixer">Click for MetaWards <code>mixing</code> file</button>
 <div id="mixer" class="collapse boxed">
 
-Since most of the classes are already infected, it's only the rows corresponding to the general population age-classes that have to contain non-zero entries. Here the `GP_A` and `GP_H` parameters scale the impact of aymptomatics, hospital cases and critical care cases on the force-of-infection to the general population. All demographics other than `genpop` are already infected, so have no further force-of-infection acting on them, and thus the other parameters can be set to zero. These parameters are all $> 0$.
+Since most of the classes are already infected, it's only the rows corresponding to the general population age-classes that have to contain non-zero entries. Here the `GP_A` and `GP_H` parameters scale the impact of aymptomatics and hospital cases on the force-of-infection to the general population. All demographics other than `genpop` are already infected, so have no further force-of-infection acting on them, and thus the other parameters can be set to zero. These parameters are all $> 0$.
 
 ```{python, code = readLines("../model_code/mix_pathways.py"), eval = FALSE}
 ```
@@ -378,14 +378,14 @@ In R we can set up the *input* parameter ranges as follows:
 ## set up parameter ranges
 parRanges <- data.frame(
     parameter = c("r_zero", "incubation_time", "infectious_time", "hospital_time",
-                  "critical_time", "lock_1_restrict", "lock_2_release",
+                  "lock_1_restrict", "lock_2_release",
                   "alphaEA", "etaEA", 
                   "alphaIH", "etaIH", 
                   "alphaIR", "etaIR",
                   "alphaHR", "etaHR",
                   "GP_A", "GP_H"),
-    lower = c(2, 4, 2, 4, 4, 0, 0, rep(c("?", 0), 4), rep(0, 2)),
-    upper = c(4, 6, 4, 12, 12, 1, 1, rep(c("?", "?"), 4), rep(1, 2)),
+    lower = c(2, 4, 2, 4, 0, 0, rep(c("?", 0), 4), rep(0, 2)),
+    upper = c(4, 6, 4, 12, 1, 1, rep(c("?", "?"), 4), rep(1, 2)),
     stringsAsFactors = FALSE
 )
 ```
