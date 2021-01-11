@@ -9,14 +9,14 @@ source("R_tools/dataTools.R")
 ## set up parameter ranges
 parRanges <- data.frame(
     parameter = c("r_zero", "incubation_time", "infectious_time", "hospital_time",
-                  "critical_time", "lock_1_restrict", "lock_2_release",
+                  "lock_1_restrict", "lock_2_release",
                   "alphaEA", "etaEA", 
                   "alphaIH", "etaIH", 
                   "alphaIR", "etaIR",
                   "alphaHR", "etaHR",
                   "GP_A", "GP_H"),
-    lower = c(2, 4, 2, 4, 4, 0, 0, rep(c("?", 0), 4), rep(0, 2)),
-    upper = c(4, 6, 4, 12, 12, 1, 1, rep(c("?", "?"), 4), rep(1, 2)),
+    lower = c(2, 4, 2, 4, 0, 0, rep(c("?", 0), 4), rep(0, 2)),
+    upper = c(4, 6, 4, 12, 1, 1, rep(c("?", "?"), 4), rep(1, 2)),
     stringsAsFactors = FALSE
 )
 
