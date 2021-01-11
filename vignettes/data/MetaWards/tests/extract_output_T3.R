@@ -4,7 +4,7 @@
 library(tidyverse)
 
 ## source reconstruct function
-source("reconstruct.R")
+source("../R_tools/dataTools.R")
 
 ## loop over age classes
 for(i in 1:8) {
@@ -25,13 +25,12 @@ for(i in 1:8) {
             mutate(data = map(data, ~{
                 rec <- reconstruct(
                     .$Einc, .$Iinc, .$Rinc, .$Dinc, .$IAinc, .$RAinc,
-                    .$IHinc, .$RHinc, .$DHinc,.$ICinc, .$RCinc, .$DCinc
+                    .$IHinc, .$RHinc, .$DHinc
                 ) %>%
                     magrittr::set_colnames(c(
                         "Einc", "E", "Iinc", "I", "R", "D",
                         "IAinc", "IA", "RA",
-                        "IHinc", "IH", "RH", "DH",
-                        "ICinc", "IC", "RC", "DC"
+                        "IHinc", "IH", "RH", "DH"
                     )) %>%
                     as_tibble()
                 rec$day <- .$day
@@ -44,8 +43,7 @@ for(i in 1:8) {
         ## now extract and reconstruct by filling in gaps
         compact <- rename(compact, genpop_0 = Einc, genpop_1 = E, genpop_2 = Iinc, genpop_3 = I, genpop_4 = R, genpop_5 = D) %>%
             rename(asymp_2 = IAinc, asymp_3 = IA, asymp_4 = RA) %>%
-            rename(hospital_2 = IHinc, hospital_3 = IH, hospital_4 = RH, hospital_5 = DH) %>%
-            rename(critical_2 = ICinc, critical_3 = IC, critical_4 = RC, critical_5 = DC)
+            rename(hospital_2 = IHinc, hospital_3 = IH, hospital_4 = RH, hospital_5 = DH)
     
         genpop <- select(compact, day, ward, starts_with("genpop_")) %>%
             complete(day = 1:10, nesting(ward)) %>%
@@ -71,16 +69,7 @@ for(i in 1:8) {
             mutate_at(vars(starts_with("hospital_")), ~ifelse(day == 1 & is.na(.), 0, .)) %>%
             fill(starts_with("hospital_"), .direction = "down") %>%
             set_names(c("day", "ward", paste0("stage_", 0:5)))
-        critical <- select(compact, day, ward, starts_with("critical_")) %>%
-            gather(stage, value, -day, -ward) %>%
-            complete(stage = paste0("critical_", 0:5), nesting(ward, day), fill =list(value = 0)) %>%
-            spread(stage, value) %>%
-            complete(day = 1:10, nesting(ward)) %>%
-            arrange(ward, day) %>%
-            mutate_at(vars(starts_with("critical_")), ~ifelse(day == 1 & is.na(.), 0, .)) %>%
-            fill(starts_with("critical_"), .direction = "down") %>%
-            set_names(c("day", "ward", paste0("stage_", 0:5)))
-        results <- list(GP = genpop, A = asymp, H = hospital, C = critical) %>%
+        results <- list(GP = genpop, A = asymp, H = hospital) %>%
             bind_rows(.id = "demo")
     
         ## check that there are no individuals in any
