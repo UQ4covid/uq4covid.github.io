@@ -4,6 +4,10 @@ library(lubridate)
 library(sf)
 library(areal)
 
+## set paths
+pathToMetaWardsData <- "../../../../../../MetaWardsData"
+path <- paste0(pathToMetaWardsData, "/model_data/2011Data/")
+
 #############################################################
 ######  FIND SHAPEFILE INTERSECTIONS AND SHARED AREAS  ######
 #############################################################
@@ -11,6 +15,66 @@ library(areal)
 ## load shapefiles
 ward11 <- st_read("Wards__December_2011__Boundaries_EW_BFC-shp/Wards__December_2011__Boundaries_EW_BFC.shp")
 ward19 <- st_read("Wards__December_2019__Boundaries_EW_BFC-shp/Wards__December_2019__Boundaries_EW_BFC.shp")
+
+## load lookups
+Ward19_Lookup <- read_csv("Ward_to_Local_Authority_District_(December_2019)_Lookup_in_the_United_Kingdom.csv")
+Ward_Lookup <- read_csv(paste0(path, "Ward_Lookup.csv"), guess_max = 3000) %>%
+  arrange(FID)
+
+## check ward lookup has single entry per ward CD and NM
+stopifnot(
+  group_by(Ward_Lookup, WD11CD, WD11NM) %>%
+    count() %>%
+    pluck("n") %>%
+    {all(. == 1)}
+)
+## check FIDs complete
+stopifnot(all((Ward_Lookup$FID - 1:nrow(Ward_Lookup)) == 0))
+
+## load Ward19 lookup has single entry per ward CD and NM
+stopifnot(
+  group_by(Ward19_Lookup, WD19CD, WD19NM) %>%
+    count() %>%
+    pluck("n") %>%
+    {all(. == 1)}
+)
+## check FIDs complete
+stopifnot(all((Ward19_Lookup$FID - 1:nrow(Ward19_Lookup)) == 0))
+
+## check names match between shapefiles and lookups
+temp <- full_join(ward11, Ward_Lookup, by = c("wd11cd" = "WD11CD", "wd11nm" = "WD11NM"), keep = TRUE)
+filter(temp, is.na(wd11cd))
+filter(temp, is.na(WD11CD)) 
+
+## these are typos and can be fixed manually
+Ward_Lookup <- mutate(Ward_Lookup, WD11NM = ifelse(WD11NM == "Ockbrook and Borrowash", "Ockbrook And Borrowash", WD11NM)) %>%
+  mutate(WD11NM = ifelse(WD11NM == "Felin-fâch", "Felin-fƒch", WD11NM))
+
+## check names match between shapefiles and lookups
+temp <- full_join(ward11, Ward_Lookup, by = c("wd11cd" = "WD11CD", "wd11nm" = "WD11NM"), keep = TRUE)
+stopifnot(nrow(filter(temp, is.na(wd11cd))) == 0)
+stopifnot(nrow(filter(temp, is.na(WD11CD))) == 0)
+
+## remove NI and Scottish wards
+Ward19_Lookup <- filter(Ward19_Lookup, !str_detect(WD19CD, "^N")) %>%
+  filter(!str_detect(WD19CD, "^S")) %>%
+  arrange(FID) %>%
+  mutate(FID = 1:n())
+
+## check names match between shapefiles and lookups
+temp <- full_join(ward19, Ward19_Lookup, by = c("wd19cd" = "WD19CD", "wd19nm" = "WD19NM"), keep = TRUE)
+filter(temp, is.na(wd19cd))
+filter(temp, is.na(WD19CD))
+
+## these are typos and can be fixed manually
+Ward19_Lookup <- mutate(Ward19_Lookup, WD19NM = ifelse(WD19NM == "Canolbarth Môn", "Canolbarth Mwn", WD19NM)) %>%
+  mutate(WD19NM = ifelse(WD19NM == "Felin-fâch", "Felin-fach", WD19NM)) %>%
+  mutate(WD19NM = ifelse(WD19NM == "Llifôn", "Llifon", WD19NM))
+
+## check names match between shapefiles and lookups
+temp <- full_join(ward19, Ward19_Lookup, by = c("wd19cd" = "WD19CD", "wd19nm" = "WD19NM"), keep = TRUE)
+stopifnot(nrow(filter(temp, is.na(wd19cd))) == 0)
+stopifnot(nrow(filter(temp, is.na(WD19CD))) == 0)
 
 ## make shapefiles valid for matching (solves error if not done)
 ward19 <- st_make_valid(ward19)
@@ -29,18 +93,12 @@ wardweights <- ward19 %>%
 ######        READ IN MOVEMENT DATA         ######
 ##################################################
 
-## set path
-pathToMetaWardsData <- "../../../../../MetaWardsData"
-path <- paste0(pathToMetaWardsData, "/model_data/2011Data/")
-
 ## load different data sets
 CBB2011 <- read_table2(paste0(path, "CBB2011.dat"), col_names = FALSE)
 EW1 <- read_table2(paste0(path, "EW1.dat"), col_names = FALSE)
 PlayMatrix <- read_table2(paste0(path, "PlayMatrix.dat"), col_names = FALSE)
 PlaySize <- read_table2(paste0(path, "PlaySize.dat"), col_names = FALSE)
 # seeds <- read_table2(paste0(path, "seeds.dat"), col_names = FALSE) ## not currently used
-Ward_Lookup <- read_csv(paste0(path, "Ward_Lookup.csv"), guess_max = 3000) %>%
-  arrange(FID)
 WorkSize <- read_table2(paste0(path, "WorkSize.dat"), col_names = FALSE)
 
 ## CBB2011, Ward_Lookup, WorkSize and PlaySize correspond to a
@@ -93,85 +151,6 @@ stopifnot(all.equal(temp$play, temp$X3.y))
 rm(temp, temp_noplay)
 
 ##################################################
-######  MATCH WARDS LOOKUPS TO SHAPEFILES   ######
-##################################################
-
-## check ward lookup
-stopifnot(
-  group_by(Ward_Lookup, WD11CD) %>%
-    count() %>%
-    pluck("n") %>%
-    {all(. == 1)}
-)
-stopifnot(all((Ward_Lookup$FID - 1:nrow(Ward_Lookup)) == 0))
-
-## load Ward19 lookup
-Ward19_Lookup <- read_csv("Ward_to_Local_Authority_District_(December_2019)_Lookup_in_the_United_Kingdom.csv")
-stopifnot(
-  group_by(Ward19_Lookup, WD19CD) %>%
-    count() %>%
-    pluck("n") %>%
-    {all(. == 1)}
-)
-stopifnot(all((Ward19_Lookup$FID - 1:nrow(Ward19_Lookup)) == 0))
-
-## remove NI and Scottish wards
-Ward19_Lookup <- filter(Ward19_Lookup, !str_detect(WD19CD, "^N")) %>%
-  filter(!str_detect(WD19CD, "^S")) %>%
-  arrange(FID) %>%
-  mutate(FID = 1:n())
-
-## check wards match to lookups
-temp <- wardweights %>%
-  select(wd11cd, wd11nm) %>%
-  distinct() %>%
-  full_join(Ward_Lookup, by = c("wd11cd" = "WD11CD", "wd11nm" = "WD11NM"), keep = TRUE)
-
-## check mismatches
-filter(temp, is.na(wd11cd))
-filter(temp, is.na(WD11CD))
-
-## these are typos and can be fixed manually
-Ward_Lookup <- mutate(Ward_Lookup, WD11NM = ifelse(WD11NM == "Ockbrook and Borrowash", "Ockbrook And Borrowash", WD11NM)) %>%
-  mutate(WD11NM = ifelse(WD11NM == "Felin-fâch", "Felin-fƒch", WD11NM))
-
-## check wards match to lookups
-temp <- wardweights %>%
-  select(wd11cd, wd11nm) %>%
-  distinct() %>%
-  full_join(Ward_Lookup, by = c("wd11cd" = "WD11CD", "wd11nm" = "WD11NM"), keep = TRUE)
-
-## check for mismatches
-filter(temp, is.na(wd11cd))
-filter(temp, is.na(WD11CD))
-
-## check wards 19 match to lookups
-temp <- wardweights %>%
-  select(wd19cd, wd19nm) %>%
-  distinct() %>%
-  full_join(Ward19_Lookup, by = c("wd19cd" = "WD19CD", "wd19nm" = "WD19NM"), keep = TRUE)
-
-## check mismatches
-filter(temp, is.na(wd19cd))
-filter(temp, is.na(WD19CD))
-
-## these are typos and can be fixed manually
-Ward19_Lookup <- mutate(Ward19_Lookup, WD19NM = ifelse(WD19NM == "Canolbarth Môn", "Canolbarth Mwn", WD19NM)) %>%
-  mutate(WD19NM = ifelse(WD19NM == "Felin-fâch", "Felin-fach", WD19NM)) %>%
-  mutate(WD19NM = ifelse(WD19NM == "Llifôn", "Llifon", WD19NM))
-
-## check wards 19 match to lookups
-temp <- wardweights %>%
-  select(wd19cd, wd19nm) %>%
-  distinct() %>%
-  full_join(Ward19_Lookup, by = c("wd19cd" = "WD19CD", "wd19nm" = "WD19NM"), keep = TRUE)
-
-## check for mismatches
-filter(temp, is.na(wd19cd))
-filter(temp, is.na(WD19CD))
-rm(temp)
-
-##################################################
 ######  AGGREGATE 2011 DATA TO 2019 WARDS   ######
 ##################################################
 
@@ -189,6 +168,7 @@ smart_round <- function(x) {
 WorkSize_new <- WorkSize %>%
   left_join(Ward_Lookup, by = c("X1" = "FID")) %>%
   inner_join(wardweights, by = c("WD11CD" = "wd11cd", "WD11NM" = "wd11nm")) %>%
+  group_by(X1) %>%
   mutate(X2 = smart_round(areaWeight * X2)) %>%
   group_by(wd19cd, wd19nm) %>%
   summarise(X2 = sum(X2)) %>%
@@ -206,6 +186,7 @@ stopifnot(all(WorkSize_new$X1 == Ward19_Lookup$FID))
 PlaySize_new <- PlaySize %>%
   left_join(Ward_Lookup, by = c("X1" = "FID")) %>%
   inner_join(wardweights, by = c("WD11CD" = "wd11cd", "WD11NM" = "wd11nm")) %>%
+  group_by(X1) %>%
   mutate(X2 = smart_round(X2 * areaWeight)) %>%
   group_by(wd19cd, wd19nm) %>%
   summarise(X2 = sum(X2)) %>%
