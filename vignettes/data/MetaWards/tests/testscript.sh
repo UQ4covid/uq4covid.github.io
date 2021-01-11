@@ -17,12 +17,10 @@ printf '0.2939086 0.5 0 ' >> disease.dat
 printf '0 ' >> disease.dat
 ## .pI .pIH .pIR 
 printf '0.5 0 0 ' >> disease.dat
-## .pH .pHC .pHR 
-printf '0 0 0 ' >> disease.dat
-## .pC .pCR
+## .pH .pHR 
 printf '0 0 ' >> disease.dat
-## .lock_1_restrict .lock_2_release .GP_A .GP_H .GP_C repeats 
-printf '0 0 0 0 0 1' >> disease.dat
+## .lock_1_restrict .lock_2_release .GP_A .GP_H repeats 
+printf '0 0 0 0 1' >> disease.dat
 
 ## run MetaWards
 metawards --nproc $nprocessors --nthreads $nthreads -d ../model_code/ncov_overall.json\
@@ -46,12 +44,10 @@ printf '0.2939086 0.5 0 ' >> disease.dat
 printf '0 ' >> disease.dat
 ## .pI .pIH .pIR 
 printf '0.5 0.5 0 ' >> disease.dat
-## .pH .pHC .pHR 
-printf '0.5 0 0 ' >> disease.dat
-## .pC .pCR
-printf '0 0 ' >> disease.dat
-## .lock_1_restrict .lock_2_release .GP_A .GP_H .GP_C repeats 
-printf '0 0 0 0 0 1' >> disease.dat
+## .pH .pHR 
+printf '0.5 0 ' >> disease.dat
+## .lock_1_restrict .lock_2_release .GP_A .GP_H repeats 
+printf '0 0 0 0 1' >> disease.dat
 
 ## run MetaWards
 metawards --nproc $nprocessors --nthreads $nthreads -d ../model_code/ncov_overall.json\
@@ -75,12 +71,10 @@ printf '0.2939086 0.5 1 ' >> disease.dat
 printf '0.5 ' >> disease.dat
 ## .pI .pIH .pIR 
 printf '0 0 0 ' >> disease.dat
-## .pH .pHC .pHR 
-printf '0 0 0 ' >> disease.dat
-## .pC .pCR
+## .pH .pHR 
 printf '0 0 ' >> disease.dat
-## .lock_1_restrict .lock_2_release .GP_A .GP_H .GP_C repeats 
-printf '0 0 0 0 0 1' >> disease.dat
+## .lock_1_restrict .lock_2_release .GP_A .GP_H repeats 
+printf '0 0 0 0 1' >> disease.dat
 
 ## run MetaWards
 metawards --nproc $nprocessors --nthreads $nthreads -d ../model_code/ncov_overall.json\
@@ -105,12 +99,10 @@ printf '0.4 0.5 0.5 ' >> disease.dat
 printf '0.5 ' >> disease.dat
 ## .pI .pIH .pIR 
 printf '0.5 0.7 0.1 ' >> disease.dat
-## .pH .pHC .pHR 
-printf '0.8 0.8 0.1 ' >> disease.dat
-## .pC .pCR
-printf '0.5 0.1 ' >> disease.dat
-## .lock_1_restrict .lock_2_release .GP_A .GP_H .GP_C repeats 
-printf '0 0 0.2 0.2 0.2 1' >> disease.dat
+## .pH .pHR 
+printf '0.8 0.1 ' >> disease.dat
+## .lock_1_restrict .lock_2_release .GP_A .GP_H repeats 
+printf '0 0 0.2 0.2 1' >> disease.dat
 
 ## run MetaWards
 metawards --nproc $nprocessors --nthreads $nthreads -d ../model_code/ncov_overall.json\
@@ -135,12 +127,10 @@ printf '0.5143401 0.5 0 ' >> disease.dat
 printf '0 ' >> disease.dat
 ## .pI .pIH .pIR 
 printf '0.5 0 1 ' >> disease.dat
-## .pH .pHC .pHR 
-printf '0 0 0 ' >> disease.dat
-## .pC .pCR
+## .pH .pHR 
 printf '0 0 ' >> disease.dat
-## .lock_1_restrict .lock_2_release .GP_A .GP_H .GP_C repeats 
-printf '0 0 0 0 0 1' >> disease.dat
+## .lock_1_restrict .lock_2_release .GP_A .GP_H repeats 
+printf '0 0 0 0 1' >> disease.dat
 
 ## run MetaWards
 metawards --nproc $nprocessors --nthreads $nthreads -d ../model_code/ncov_overall.json\
@@ -165,12 +155,10 @@ printf '0.2939086 0.5 0 ' >> disease.dat
 printf '0 ' >> disease.dat
 ## .pI .pIH .pIR 
 printf '0.5 0 1 ' >> disease.dat
-## .pH .pHC .pHR 
-printf '0 0 0 ' >> disease.dat
-## .pC .pCR
+## .pH .pHR 
 printf '0 0 ' >> disease.dat
-## .lock_1_restrict .lock_2_release .GP_A .GP_H .GP_C repeats 
-printf '0 0 0 0 0 1' >> disease.dat
+## .lock_1_restrict .lock_2_release .GP_A .GP_H repeats 
+printf '0 0 0 0 1' >> disease.dat
 
 ## run MetaWards
 metawards --nproc $nprocessors --nthreads $nthreads -d ../model_code/ncov_overall.json\

@@ -4,7 +4,7 @@
 library(tidyverse)
 
 ## source reconstruct function
-source("reconstruct.R")
+source("../R_tools/dataTools.R")
 
 ## set up proportions in each age class
 ageprop <- c(0.06, 0.154, 0.154, 0.134, 0.128, 0.134, 0.105, 0.131)
@@ -27,13 +27,12 @@ for(i in 1:8) {
         mutate(data = map(data, ~{
             rec <- reconstruct(
                 .$Einc, .$Iinc, .$Rinc, .$Dinc, .$IAinc, .$RAinc,
-                .$IHinc, .$RHinc, .$DHinc,.$ICinc, .$RCinc, .$DCinc
+                .$IHinc, .$RHinc, .$DHinc
             ) %>%
                 magrittr::set_colnames(c(
                     "Einc", "E", "Iinc", "I", "R", "D",
                     "IAinc", "IA", "RA",
-                    "IHinc", "IH", "RH", "DH",
-                    "ICinc", "IC", "RC", "DC"
+                    "IHinc", "IH", "RH", "DH"
                 )) %>%
                 as_tibble()
             rec$day <- .$day
