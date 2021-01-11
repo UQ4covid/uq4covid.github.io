@@ -4,7 +4,7 @@ This directory contains the information necessary to hopefully run the
 specific version of the MetaWards model specified. The details of the model
 and explanations of the code can be found in the accompanying vignette.
 
-This assumes you have **MetaWards version 1.2.0** installed; if you don't then
+This assumes you have **MetaWards version 1.4.1** installed; if you don't then
 you can find instructions [here](https://metawards.org/install.html). It also
 assumes that you have cloned the MetaWardsData as detailed 
 [here](https://metawards.org/model_data.html).
@@ -35,6 +35,12 @@ that can be found in the `R_tools/dataTools.R` script, and are described in the
 vignette. (These tools also accept designs in $(-1, 1)$ spaces as long as you
 set the `scale` argument to `convertDesignToInput()`.)
 
+### Tests
+
+There are some tests in the `tests/` folder. The `bash` script file `testScript.sh`
+gives details. These are mostly brute force sense checks on the outputs. Paths to
+the `MetaWardsData` folder will have to be updated on different machines.
+
 ## Running the model on Catalyst
 
 Once the design has been generated and the `inputs/disease.dat` file specified, the
@@ -44,7 +50,7 @@ whole folder can be zipped and sent to Christopher, who will run it using the
 You can amend this script if you want to change anything (for example, the 
 `--nsteps 177` default number of days to run the model for might want amending).
 
-Once the model has been run, Christopher will transfer to the AWS server.
+Once the model has been run, Christopher will transfer to JASMIN.
 
 ## Copying files to JASMIN
 
