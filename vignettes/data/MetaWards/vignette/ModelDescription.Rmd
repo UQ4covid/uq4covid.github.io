@@ -214,7 +214,7 @@ We will discuss these choices in more detail in the subsequent sections. Note th
 For generic states $X$ and $Y$ say, the progress of an individual in age-class $j$ from state $X$ to state $Y$ in a given day is governed by probability $q^j_{XY}$, where:
 
 * $q^j_{SE}$ driven by $\beta_{kj}$ parameters ($j = 1, \dots, J$), defined by $R_0$, the mean length of the infectious period ($1 / \gamma_I$), and the population contact matrix, $C$, between age-classes (see [here](#trans) for details);
-* $q^j_{EA} = p^j_{EA}\left(1 - e^{-\gamma_{E}}\right)$ where $\gamma_E = \frac{1}{T_E}$ with $T_E$ the mean incubation period;
+* $q^j_{EA} = p^j_{EA}\left(1 - e^{-\gamma_{E}}\right)$ where $\gamma_E = \frac{1}{T_E}$ with $T_E$ the mean latent period;
 * We model: $\log\left(p^j_{EA}\right) = \alpha_{EA} + \eta_{EA} \mbox{age}_j$, where $\eta_{EA} > 0$ and $\alpha_{EA} < -\eta_{EA} \max\left(\mbox{age}_j\right)$ to ensure than $0 < p^j_{EA} \leq 1$. The $\mbox{age}_j$ term is the middle age in age-class $j$.
 * $q^j_{EI} = \left(1 - p^j_{EA}\right)\left(1 - e^{-\gamma_{E}}\right)$;
 * $q^j_{AR} = 1 - e^{-\gamma_I}$ where $\gamma_I = \frac{1}{T_I}$ with $T_I$ the mean infectious period;
@@ -245,14 +245,14 @@ where $0 < \nu < 1$ is a probability of infection per contact, and $c_{kj}$ is t
 
 A challenge is that we parameterise our model in terms of $R_0$, not $\nu$, and thus we need a way to derive $\nu$ from $R_0$ for a given run.
 
-If we ignore the incubation period, and assume the model is $SIR$, then $R_0$ can be derived as the **maximum eigenvalue** of the **next-generation matrix** (NGM), thus:
+If we ignore the latent period, and assume the model is $SIR$, then $R_0$ can be derived as the **maximum eigenvalue** of the **next-generation matrix** (NGM), thus:
 \begin{align}
     R_0 &= \mbox{eig}_M\left(\frac{\nu}{\gamma_I}C\right)\\
     \Rightarrow \nu &= \frac{R_0 \gamma_I}{\mbox{eig}_M\left(C\right)},
 \end{align}
 where $\mbox{eig}_M\left(C\right)$ denotes the maximum eigenvalue of $C$.
 
-<p style="color:red">NEED TO ADD INCUBATION PERIOD TO NGM</p>
+<p style="color:red">NEED TO ADD LATENT PERIOD TO NGM</p>
 
 </div>
 
@@ -355,7 +355,7 @@ To run designs, we need to generate a `disease.csv` file containing different pa
 The *input* and *design* spaces are fairly trivial to convert between, but some more work has to be done to convert between the *input* space and the *disease* space. Thus we have parameter ranges:
 \begin{align}
     \mbox{$R_0$}&: (2, 4)\\
-    \mbox{mean incubation period ($T_E$)}&: (4, 6)\\
+    \mbox{mean latent period ($T_E$)}&: (4, 6)\\
     \mbox{mean infectious period ($T_I$)}&: (2, 4)\\
     \mbox{mean hospital stay ($T_H$)}&: (4, 12)\\
     \mbox{lockdown 1 restrict}&: (0, 1)\\
@@ -377,7 +377,7 @@ In R we can set up the *input* parameter ranges as follows:
 ```{r}
 ## set up parameter ranges
 parRanges <- data.frame(
-    parameter = c("r_zero", "incubation_time", "infectious_time", "hospital_time",
+    parameter = c("r_zero", "latent_time", "infectious_time", "hospital_time",
                   "lock_1_restrict", "lock_2_release",
                   "alphaEA", "etaEA", 
                   "alphaIH", "etaIH", 
