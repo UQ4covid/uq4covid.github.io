@@ -110,9 +110,8 @@ WorkSize <- read_table2(paste0(path, "WorkSize.dat"), col_names = FALSE)
 ## check EW1 numbers match to WorkSize
 temp <- group_by(EW1, X1) %>%
   summarise(X3 = sum(X3)) %>%
-  full_join(WorkSize, by = "X1") %>%
-  full_join(PlaySize, by = "X1")
-stopifnot(all(temp$X3 == temp$X2.x))
+  full_join(WorkSize, by = "X1")
+stopifnot(all(temp$X3 == temp$X2))
 rm(temp)
 
 ## check PlayMatrix proportions add up to one across wards
@@ -122,33 +121,6 @@ temp <- PlayMatrix %>%
   mutate(eq = map_lgl(X3, ~all.equal(., 1)))
 stopifnot(all(temp$eq))
 rm(temp)
-
-## check for wards with no players
-temp_noplay <- EW1 %>%
-  select(X1) %>%
-  distinct() %>%
-  anti_join(
-    PlayMatrix %>%
-      select(X1) %>%
-      distinct(), 
-    by = "X1") %>%
-  mutate(noplay = 1)
-
-## check generation of PlayMatrix
-temp <- full_join(EW1, WorkSize, by = "X1") %>%
-  rename(X2 = X2.x) %>%
-  mutate(play = X3 / X2.y) %>%
-  full_join(PlayMatrix, by = c("X1", "X2")) %>%
-  left_join(temp_noplay, by = "X1")
-stopifnot(
-    filter(temp, !is.na(noplay)) %>%
-      pluck("X3.y") %>%
-      is.na() %>%
-      all()
-)
-temp <- filter(temp, is.na(noplay))
-stopifnot(all.equal(temp$play, temp$X3.y))
-rm(temp, temp_noplay)
 
 ##################################################
 ######  AGGREGATE 2011 DATA TO 2019 WARDS   ######
@@ -164,42 +136,12 @@ smart_round <- function(x) {
   y
 }
 
-## aggregate WorkSize
-WorkSize_new <- WorkSize %>%
-  left_join(Ward_Lookup, by = c("X1" = "FID")) %>%
-  inner_join(wardweights, by = c("WD11CD" = "wd11cd", "WD11NM" = "wd11nm")) %>%
-  group_by(X1) %>%
-  mutate(X2 = smart_round(areaWeight * X2)) %>%
-  group_by(wd19cd, wd19nm) %>%
-  summarise(X2 = sum(X2)) %>%
-  ungroup() %>%
-  inner_join(Ward19_Lookup, by = c("wd19cd" = "WD19CD", "wd19nm" = "WD19NM")) %>%
-  select(X1 = FID, X2) %>%
-  filter(X2 > 0) %>%
-  arrange(X1)
-
-## check sums match
-stopifnot(sum(WorkSize$X2) == sum(WorkSize_new$X2))
-stopifnot(all(WorkSize_new$X1 == Ward19_Lookup$FID))
-
-## aggregate PlaySize
-PlaySize_new <- PlaySize %>%
-  left_join(Ward_Lookup, by = c("X1" = "FID")) %>%
-  inner_join(wardweights, by = c("WD11CD" = "wd11cd", "WD11NM" = "wd11nm")) %>%
-  group_by(X1) %>%
-  mutate(X2 = smart_round(X2 * areaWeight)) %>%
-  group_by(wd19cd, wd19nm) %>%
-  summarise(X2 = sum(X2)) %>%
-  ungroup() %>%
-  inner_join(Ward19_Lookup, by = c("wd19cd" = "WD19CD", "wd19nm" = "WD19NM")) %>%
-  select(X1 = FID, X2) %>%
-  filter(X2 > 0) %>%
-  arrange(X1)
-
-## check sums match
-stopifnot(sum(PlaySize$X2) == sum(PlaySize_new$X2))
-## there were some missing wards in PlaySize in original data
-## which is carried over here
+## IMPLEMENTATION NOTE: due to rounding errors it is challenging to get all the 
+## movements converted whilst still matching across the different sources
+## of data - the approach we use here is to work with the movements (EW1 / PlayMatrix)
+## and convert those, and then re-construct the WorkSize and PlaySize from those
+## to make sure everything matches up in MetaWards. Otherwise, converting e.g. WorkSize
+## and then EW1 separately, means that the total counts won't quite match up
 
 ## aggregate EW1 (split into multiple pipes because of large memory constraints)
 
@@ -279,8 +221,115 @@ EW1_new <- EW1_new %>%
 ## check total movements match
 stopifnot(sum(EW1_new$X3) == sum(EW1$X3))
 
-## create PlayMatrix
-PlayMatrix_new <- EW1_new %>%
+## now generate new WorkSize
+WorkSize_new <- EW1_new %>%
+  group_by(X1) %>%
+  summarise(X3 = sum(X3)) %>%
+  select(X1, X2 = X3) %>%
+  arrange(X1)
+
+## create new PlayMatrix (split into multiple pipes because of large memory constraints)
+
+## firstly, create equivalent of EW1 for Players
+PW1 <- inner_join(PlayMatrix, PlaySize, by = "X1") %>%
+  group_by(X1) %>%
+  mutate(X3 = smart_round(X2.y * X3)) %>%
+  ungroup() %>%
+  select(X1, X2 = X2.x, X3) %>%
+  arrange(X1, X2)
+
+## check PW1 numbers match to PlaySize in case of rounding errors
+temp <- group_by(PW1, X1) %>%
+  summarise(X3 = sum(X3)) %>%
+  full_join(PlaySize, by = "X1")
+stopifnot(all(temp$X3 == temp$X2))
+rm(temp)
+
+## firstly, map X1 from WD11 to WD19
+## (smart_round() ensures total no. of movements match as
+## long as grouping is done, even though grouping
+## takes a long time)
+PW1_new <- PW1 %>%
+  left_join(
+    select(Ward_Lookup, FID, WD11CD, WD11NM),
+    by = c("X1" = "FID")) %>%
+  inner_join(
+    select(wardweights, wd11cd, wd11nm, wd19cd, wd19nm, areaWeight),
+    by = c("WD11CD" = "wd11cd", "WD11NM" = "wd11nm")) %>%
+  group_by(X1, X2) %>%
+  mutate(X3 = smart_round(X3 * areaWeight)) %>%
+  ungroup() %>%
+  filter(X3 > 0) %>%
+  select(wd19cd, wd19nm, X1, X2, X3)
+
+## check total number of movements out of old X1s match
+## after redistributing
+stopifnot(group_by(PW1_new, X1) %>% 
+  summarise(X3 = sum(X3)) %>%
+  inner_join(PlaySize, by = "X1") %>%
+  mutate(diff = abs(X3 - X2)) %>%
+  pluck("diff") %>%
+  {all(. == 0)})
+
+## convert to new X1 based on WD19
+PW1_new <- PW1_new %>%
+  inner_join(Ward19_Lookup, by = c("wd19cd" = "WD19CD", "wd19nm" = "WD19NM")) %>%
+  select(X1 = FID, X2, X3) %>%
+  group_by(X1, X2) %>%
+  summarise(X3 = sum(X3)) %>%
+  ungroup()
+
+## secondly, map X2 from WD11 to WD19
+## (smart_round() ensures total no. of movements match as
+## long as grouping is done, even though grouping
+## takes a long time)
+PW1_new <- PW1_new %>%
+  left_join(
+    select(Ward_Lookup, FID, WD11CD, WD11NM),
+    by = c("X2" = "FID")) %>%
+  inner_join(
+    select(wardweights, wd11cd, wd11nm, wd19cd, wd19nm, areaWeight),
+    by = c("WD11CD" = "wd11cd", "WD11NM" = "wd11nm")) %>%
+  group_by(X1, X2) %>%
+  mutate(X3 = smart_round(X3 * areaWeight)) %>%
+  ungroup() %>%
+  filter(X3 > 0) %>%
+  select(wd19cd, wd19nm, X1, X2, X3)
+
+## check total number of movements into old X2s match
+## after redistributing
+stopifnot(group_by(PW1_new, X2) %>% 
+  summarise(X3 = sum(X3)) %>%
+  inner_join(
+    PW1 %>%
+      group_by(X2) %>%
+      summarise(X3 = sum(X3)), 
+    by = "X2") %>%
+  mutate(diff = abs(X3.x - X3.y)) %>%
+  pluck("diff") %>%
+  {all(. == 0)})
+
+## convert to new X2 based on WD19
+PW1_new <- PW1_new %>%
+  inner_join(Ward19_Lookup, by = c("wd19cd" = "WD19CD", "wd19nm" = "WD19NM")) %>%
+  select(X1, X2 = FID, X3) %>%
+  group_by(X1, X2) %>%
+  summarise(X3 = sum(X3)) %>%
+  ungroup() %>%
+  arrange(X1, X2)
+
+## check total movements match
+stopifnot(sum(PW1_new$X3) == sum(PW1$X3))
+
+## now generate new PlaySize
+PlaySize_new <- PW1_new %>%
+  group_by(X1) %>%
+  summarise(X3 = sum(X3)) %>%
+  select(X1, X2 = X3) %>%
+  arrange(X1)
+
+## create new PlayMatrix as proportions
+PlayMatrix_new <- PW1_new %>%
   group_by(X1) %>%
   mutate(X3 = X3 / sum(X3)) %>%
   ungroup() %>%
