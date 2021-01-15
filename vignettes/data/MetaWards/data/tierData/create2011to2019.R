@@ -307,25 +307,19 @@ dir.create(pathToNewData)
 ## create description file
 description <- c(
 "{ \"name\"               : \"2011to2019Data\",",
-" \"version\"            : \"Jan 7 2021\",",
+" \"version\"            : \"Jan 11 2021\",",
 " \"author(s)\"          : \"TJ McKinley\",",
 "  \"contact(s)\"         : \"t.mckinley@exeter.ac.uk\",",
-"  \"reference(s)\"       : \"...\",",
 "  \"work\"               : \"EW19.dat\",",
 "  \"work_size\"          : \"WorkSize19.dat\",",
 "  \"play\"               : \"PlayMatrix19.dat\",",
 "  \"play_size\"          : \"PlaySize19.dat\",",
 "  \"position\"           : \"CBB2019.dat\",",
 "  \"coordinates\"        : \"x/y\",",
+"  \"coordinate_units\"   : \"m\",",
 "  \"lookup\"             : \"Ward19_Lookup.csv\",",
 "  \"lookup_columns\"     : {\"code\":1, \"name\":2,",
-"    \"authority_code\":3, \"authority_name\":4},",
-"  \"seed\"               : \"seeds.dat\",",
-"  \"nodes_to_track\"     : \"seeds.dat\",",
-"  \"uv\"                 : null,",
-"  \"weekend\"            : null,",
-"  \"identifier\"         : null,",
-"  \"identifier2\"        : null",
+"    \"authority_code\":3, \"authority_name\":4}",
 "}")
 writeLines(description, paste0(pathToNewData, "/description.json"))
 
