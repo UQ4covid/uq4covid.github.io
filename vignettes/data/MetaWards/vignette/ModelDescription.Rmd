@@ -434,7 +434,8 @@ R CMD BATCH --no-restore --slave --no-save convertDesign.R
 
 export METAWARDSDATA=$HOME/Documents/covid/MetaWardsData
 
-metawards -d model_code/ncov_overall.json -D model_code/demographics.json --mixer model_code/mix_pathways\
+metawards -d model_code/ncov_overall.json -m 2011to2019Data\
+  -D model_code/demographics.json --mixer model_code/mix_pathways\
   --mover model_code/move_pathways --input inputs/disease.dat -a ExtraSeedsLondon.dat \
   -u inputs/user_inputs.txt -o raw_outputs --force-overwrite-output \
   --iterator model_code/iterate --extractor model_code/ward_extractor --start-date 2020/01/01 \
