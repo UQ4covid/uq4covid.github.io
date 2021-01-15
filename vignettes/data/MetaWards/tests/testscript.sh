@@ -23,7 +23,8 @@ printf '0 0 ' >> disease.dat
 printf '0 0 0 0 1' >> disease.dat
 
 ## run MetaWards
-metawards --nproc $nprocessors --nthreads $nthreads -d ../model_code/ncov_overall.json\
+metawards --nproc $nprocessors --nthreads $nthreads -m 2011to2019Data\
+    -d ../model_code/ncov_overall.json\
     -D ../model_code/demographics.json --mixer ../model_code/mix_pathways\
     --mover ../model_code/move_pathways --input disease.dat -a ExtraSeedsLondon.dat\
     -u user_inputs.txt -o raw_outputs --force-overwrite-output \
@@ -50,7 +51,8 @@ printf '0.5 0 ' >> disease.dat
 printf '0 0 0 0 1' >> disease.dat
 
 ## run MetaWards
-metawards --nproc $nprocessors --nthreads $nthreads -d ../model_code/ncov_overall.json\
+metawards --nproc $nprocessors --nthreads $nthreads -m 2011to2019Data\
+    -d ../model_code/ncov_overall.json\
     -D ../model_code/demographics.json --mixer ../model_code/mix_pathways\
     --mover ../model_code/move_pathways --input disease.dat -a ExtraSeedsLondon.dat\
     -u user_inputs.txt -o raw_outputs --force-overwrite-output\
@@ -77,7 +79,8 @@ printf '0 0 ' >> disease.dat
 printf '0 0 0 0 1' >> disease.dat
 
 ## run MetaWards
-metawards --nproc $nprocessors --nthreads $nthreads -d ../model_code/ncov_overall.json\
+metawards --nproc $nprocessors --nthreads $nthreads -m 2011to2019Data\
+    -d ../model_code/ncov_overall.json\
     -D ../model_code/demographics.json --mixer ../model_code/mix_pathways\
     --mover ../model_code/move_pathways --input disease.dat -a ExtraSeedsLondon.dat\
     -u user_inputs.txt -o raw_outputs --force-overwrite-output\
@@ -105,7 +108,8 @@ printf '0.8 0.1 ' >> disease.dat
 printf '0 0 0.2 0.2 1' >> disease.dat
 
 ## run MetaWards
-metawards --nproc $nprocessors --nthreads $nthreads -d ../model_code/ncov_overall.json\
+metawards --nproc $nprocessors --nthreads $nthreads -m 2011to2019Data\
+    -d ../model_code/ncov_overall.json\
     -D ../model_code/demographics.json --mixer ../model_code/mix_pathways\
     --mover ../model_code/move_pathways --input disease.dat -a ExtraSeedsLondon.dat\
     -u user_inputs.txt -o raw_outputs --force-overwrite-output\
@@ -133,7 +137,8 @@ printf '0 0 ' >> disease.dat
 printf '0 0 0 0 1' >> disease.dat
 
 ## run MetaWards
-metawards --nproc $nprocessors --nthreads $nthreads -d ../model_code/ncov_overall.json\
+metawards --nproc $nprocessors --nthreads $nthreads -m 2011to2019Data\
+    -d ../model_code/ncov_overall.json\
     -D ../model_code/demographics.json --mixer ../model_code/mix_pathways\
     --mover ../model_code/move_pathways --input disease.dat -a ExtraSeedsLondon.dat\
     -u user_inputs.txt -o raw_outputs --force-overwrite-output\
@@ -161,7 +166,8 @@ printf '0 0 ' >> disease.dat
 printf '0 0 0 0 1' >> disease.dat
 
 ## run MetaWards
-metawards --nproc $nprocessors --nthreads $nthreads -d ../model_code/ncov_overall.json\
+metawards --nproc $nprocessors --nthreads $nthreads -m 2011to2019Data\
+    -d ../model_code/ncov_overall.json\
     -D ../model_code/demographics.json --mixer ../model_code/mix_pathways\
     --mover ../model_code/move_pathways --input disease.dat -a ExtraSeedsLondon.dat\
     -u user_inputs.txt -o raw_outputs --force-overwrite-output\
