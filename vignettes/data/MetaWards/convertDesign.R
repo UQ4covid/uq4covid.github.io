@@ -8,7 +8,7 @@ source("R_tools/dataTools.R")
 
 ## set up parameter ranges
 parRanges <- data.frame(
-    parameter = c("r_zero", "incubation_time", "infectious_time", "hospital_time",
+    parameter = c("r_zero", "latent_time", "infectious_time", "hospital_time",
                   "lock_1_restrict", "lock_2_release",
                   "alphaEA", "etaEA", 
                   "alphaIH", "etaIH", 
