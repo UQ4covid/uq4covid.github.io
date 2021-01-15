@@ -39,7 +39,7 @@ convertInputToDisease <- function(input, C, ages) {
     stopifnot(all(disease$`.nu` > 0 & disease$`.nu` < 1))
     
     ## progressions out of the E class
-    disease$`.pE` <- 1 - exp(-1 / input$incubation_time)
+    disease$`.pE` <- 1 - exp(-1 / input$latent_time)
     disease <- mutate(disease, 
         temp = map2(input$alphaEA, input$etaEA, function(alpha, eta, ages) {
             out <- exp(alpha + eta * ages) %>%
