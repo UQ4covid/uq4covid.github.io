@@ -10,7 +10,8 @@ def read_file(filename, nage, nu, GP_GP, GP_A, GP_H):
     if filename not in file_cache:
         with open(filename, "r") as FILE:
             contact_matrix = [[num for num in line.split(',')] for line in FILE]
-            # set up interaction matrix
+            # set up interaction matrix (transpose is to match contact matrix
+            # setup with MetaWards requirements)
             matrix = [[0.0 for i in range(nage * 3)] for j in range(nage * 3)]
             for i in range(nage):
                 for j in range(nage):

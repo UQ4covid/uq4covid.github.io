@@ -35,11 +35,13 @@ convertInputToDisease <- function(input, C, ages) {
     require(dplyr)
     
     ## transmission parameter
-    disease <- tibble(`.nu` = (input$r_zero / (max(eigen(C)$values) * input$infectious_time)))
+    disease <- tibble(`.nu` = (input$r_zero / (max(eigen(C)$values) * input$infectious1_time)))
     stopifnot(all(disease$`.nu` > 0 & disease$`.nu` < 1))
     
     ## progressions out of the E class
-    disease$`.pE` <- 1 - exp(-1 / input$latent_time)
+    for(j in 1:length(ages)) {
+        disease <- mutate(disease, ".pE_{j}" := 1 - exp(-1 / input$latent_time))
+    }
     disease <- mutate(disease, 
         temp = map2(input$alphaEA, input$etaEA, function(alpha, eta, ages) {
             out <- exp(alpha + eta * ages) %>%
@@ -51,31 +53,42 @@ convertInputToDisease <- function(input, C, ages) {
         unnest(cols = temp)
     
     ## progressions out of the A class
-    disease$`.pA` <- 1 - exp(-1 / input$infectious_time)
+    for(j in 1:length(ages)) {
+        disease <- mutate(disease, ".pA_{j}" := 1 - exp(-1 / input$infectious1_time))
+    }
     
-    ## progressions out of the I class
-    disease$`.pI` <- 1 - exp(-1 / input$infectious_time)
+    ## progressions out of the I1 class
+    for(j in 1:length(ages)) {
+        disease <- mutate(disease, ".pI1_{j}" := 1 - exp(-1 / input$infectious1_time))
+    }
     disease <- mutate(disease, 
-        temp = map2(input$alphaIH, input$etaIH, function(alpha, eta, ages) {
+        temp = map2(input$alphaI1H, input$etaI1H, function(alpha, eta, ages) {
             out <- exp(alpha + eta * ages) %>%
                 as.matrix(nrow = 1) %>%
                 as_tibble()
-            colnames(out) <- paste0(".pIH_", 1:length(ages))
+            colnames(out) <- paste0(".pI1H_", 1:length(ages))
             out
         }, ages = ages)) %>%
         unnest(cols = temp)
     disease <- mutate(disease, 
-        temp = map2(input$alphaIR, input$etaIR, function(alpha, eta, ages) {
+        temp = map2(input$alphaI1I2, input$etaI1I2, function(alpha, eta, ages) {
             out <- exp(alpha + eta * ages) %>%
                 as.matrix(nrow = 1) %>%
                 as_tibble()
-            colnames(out) <- paste0(".pIR_", 1:length(ages))
+            colnames(out) <- paste0(".pI1I2_", 1:length(ages))
             out
         }, ages = ages)) %>%
         unnest(cols = temp)
+    
+    ## progressions out of the I2 class
+    for(j in 1:length(ages)) {
+        disease <- mutate(disease, ".pI2_{j}" := 1 - exp(-1 / input$infectious2_time))
+    }
     
     ## progressions out of the H class
-    disease$`.pH` <- 1 - exp(-1 / input$hospital_time)
+    for(j in 1:length(ages)) {
+        disease <- mutate(disease, ".pH_{j}" := 1 - exp(-1 / input$hospital_time))
+    }
     disease <- mutate(disease, 
         temp = map2(input$alphaHR, input$etaHR, function(alpha, eta, ages) {
             out <- exp(alpha + eta * ages) %>%

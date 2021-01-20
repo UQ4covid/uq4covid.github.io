@@ -35,28 +35,33 @@ grViz("digraph simpmod {
     graph[layout = dot, rankdir = LR]
     node [shape = rectangle]
     
-    S [group = gp]; E [group = gp]; I [group = gp]; RI [label = 'R@_{I}', group = gp]; DI [label = 'D@_{I}', group = gp]; 
+    S [group = gp]; E [group = gp]; I [label = 'I@_{1}', group = gp]; I2 [label = 'I@_{2}', group = gp]; 
+    RI [label = 'R@_{I}', group = as]; DI [label = 'D@_{I}', group = gp]; 
     A [group = as]; RA [label = 'R@_{A}', group = as];
     H [group = hos]; RH [label = 'R@_{H}', group = hos]; DH [label = 'D@_{H}', group = hos];
     genpop [label = 'Gen. Pop.', group = gp]
     asymp [label = 'Asymptomatics', group = as]
     hospital [label = 'Hospital Patient', group = hos]
-    St00 [style = 'invis', group = st]; St0 [label = 'Stage 0', group = st]; 
-    St1 [label = 'Stage 1', group = st]; 
-    St2 [label = 'Stage 2', group = st]; St3 [label = 'Stage 3', group = st]; 
+    St00 [style = 'invis', group = st]; St0 [style = 'invis', label = 'Stage 0', group = st]; 
+    St1 [style = 'invis', label = 'Stage 1', group = st]; 
+    St2 [style = 'invis', label = 'Stage 2', group = st]; 
+    St3 [style = 'invis', label = 'Stage 3', group = st];
     
     genpop -> S [style = 'invis']
     hospital -> H [style = 'invis']
     asymp -> A [style = 'invis']
-    S -> E -> I -> RI
-    I -> DI [weight = 0]
-    I -> H
-    H -> RH 
-    H -> DH [weight = 0] 
+    S -> E 
+    E -> I [label = 'T@_{E}']
+    I -> I2 [label = 'T@_{I1}']
+    I2 -> RI [weight = 0, label = 'T@_{I2}']
+    I -> DI [weight = 0, label = 'T@_{I1}']
+    I -> H [label = 'T@_{I1}']
+    H -> RH [label = 'T@_{H}']
+    H -> DH [weight = 0, label = 'T@_{H}'] 
     RI -> DI [style = 'invis']
     RH -> DH [style = 'invis']
     E -> A [weight = 0]
-    A -> RA 
+    A -> RA [label = 'T@_{I1}']
     St00 -> St0 -> St1 -> St2 -> St3 [style = 'invis']
     subgraph {
       rank = same; St0; E;
@@ -73,10 +78,10 @@ grViz("digraph simpmod {
       label = 'Infectious Classes'
     }
     subgraph {
-      rank = same; St2; RA, RI, RH;
+      rank = same; St2; RA; I2; RH;
     }
     subgraph {
-      rank = same; St3; DI; DH;
+      rank = same; St3; DI; DH; RI;
     }
     
 }", height = '100%', width = '100%')
@@ -84,15 +89,17 @@ grViz("digraph simpmod {
 
 ## MetaWards setup
 
-The model structure above allows for different progression pathways. MetaWards deals with this by assigning individuals to different "demographics", where each demographic can be used to represent different progression pathways. There are also `mover` functions that can be used to move individuals between demographics, and `mixer` functions that scale the force-of-infection (FOI) terms between the different demographics (explained later). There are currently seven pathways, which will be described below, but can be summarised as:
+The model structure above allows for different progression pathways. MetaWards deals with this by assigning individuals to different "demographics", where each demographic can be used to represent different progression pathways. There are also `mover` functions that can be used to move individuals between demographics, and `mixer` functions that scale the force-of-infection (FOI) terms between the different demographics (explained later). There are currently five pathways, which will be described below, but can be summarised as:
 
-* `SEAR`: asymptomatic infections, always recover.
-* `SEIR`: symptomatic infections, leading to recovery.
-* `SEID`: symptomatic infections, leading to death.
-* `SEIHR`: symptomatic infections, leading to hospital and then recovery.
-* `SEIHD`: symptomatic infections, leading to hospital and then death.
+* $SEAR$: asymptomatic infections, always recover.
+* $SEI_1I_2R$: symptomatic infections, leading to recovery.
+* $SEI_1D$: symptomatic infections, leading to death.
+* $SEI_1HR$: symptomatic infections, leading to hospital and then recovery.
+* $SEI_1HD$: symptomatic infections, leading to hospital and then death.
 
-Individuals in the `genpop` demographic move through the $SEIR$ and $SEID$ pathways; the `asymp` demographic moves through the `SEAR` pathway; some individuals in the `genpop` demographic can be moved to the `hospital` demographic, and thus follow the `SEIHR` and `SEIHD` pathways.
+Individuals start in the `genpop` demographic. Those that move through the $SEI_1I_2R$ and $SEI_1D$ pathways remain in the `genpop` demographic, whereas those that progress through the `SEAR` pathway move into the `asymp` demographic. Furthermore, some individuals in the `genpop` demographic can be moved to the `hospital` demographic if they follow the `SEI_1HR` and `SEI_1HD` pathways.
+
+We assume that symptomatic individuals in $I_1$ who get very sick either die or get transferred to hospital for care. Individuals who are symptomatic but not severe transition to the $I_2$ class from which they eventually recover.
 
 We need to specify initial proportions of individuals in each pathway such that $\sum_{i \in \mathcal{P}}\sum_{j = 1}^J p_{ij} = 1$, where $\mathcal{P} = \{GP, A, H\}$ and $j = 1, \dots, J$ define the $J$ mutually exclusive age-classes. Here we define the proportions of individuals in each age class from the data in the `inputs/Pop by CTRY.csv` file from Rob:
 
@@ -163,6 +170,10 @@ writeLines(user, "../inputs/user_inputs.txt")
 
 <p style="color:red">NEED TO CHECK WORK / PLAY RATIOS IN E.G. HOSPITALS</p>
 
+<p style="color:red">NEED TO CHECK IF WORKERS AND PLAYERS SUM TO POPULATION SIZE</p>
+
+<p style="color:red">to_ill_to_move for I1/I2</p>
+
 The demographics in MetaWards is set up using the `demographics.json` file.
 
 <button data-toggle="collapse" data-target="#demographics">Click for MetaWards <code>demographics</code> file</button>
@@ -203,7 +214,6 @@ Here `ncov_hospital.json` contains:
 Notice that individuals in hospital have `too_ill_to_move = 1.0`, so all individuals are too ill to move.
 
 <p style="color:red">HOW SHOULD WE SCALE `too_ill_to_move` FOR SYMPTOMATICS?</p>
-<p style="color:red">HOW DO WE REMOVE INDIVIDUALS FROM THE MODEL ENTIRELY (I.E. AFTER THEY DIE)?</p>
 
 We will discuss these choices in more detail in the subsequent sections. Note that the `progress` parameters are all set to zero here, since all movements will be controlled via the custom `mover` function, and all `beta` parameters are set to one because the scaling of the force-of-infection between the demographics will be controlled by a custom `mixer` function.
 
@@ -213,16 +223,17 @@ We will discuss these choices in more detail in the subsequent sections. Note th
 
 For generic states $X$ and $Y$ say, the progress of an individual in age-class $j$ from state $X$ to state $Y$ in a given day is governed by probability $q^j_{XY}$, where:
 
-* $q^j_{SE}$ driven by $\beta_{kj}$ parameters ($j = 1, \dots, J$), defined by $R_0$, the mean length of the infectious period ($1 / \gamma_I$), and the population contact matrix, $C$, between age-classes (see [here](#trans) for details);
+* $q^j_{SE}$ driven by $\beta_{kj}$ parameters ($j = 1, \dots, J$), defined by $R_0$, the mean length of the infectious period ($T_I$), and the population contact matrix, $C$, between age-classes (see [here](#trans) for details);
 * $q^j_{EA} = p^j_{EA}\left(1 - e^{-\gamma_{E}}\right)$ where $\gamma_E = \frac{1}{T_E}$ with $T_E$ the mean latent period;
 * We model: $\log\left(p^j_{EA}\right) = \alpha_{EA} + \eta_{EA} \mbox{age}_j$, where $\eta_{EA} > 0$ and $\alpha_{EA} < -\eta_{EA} \max\left(\mbox{age}_j\right)$ to ensure than $0 < p^j_{EA} \leq 1$. The $\mbox{age}_j$ term is the middle age in age-class $j$.
-* $q^j_{EI} = \left(1 - p^j_{EA}\right)\left(1 - e^{-\gamma_{E}}\right)$;
-* $q^j_{AR} = 1 - e^{-\gamma_I}$ where $\gamma_I = \frac{1}{T_I}$ with $T_I$ the mean infectious period;
-* $q^j_{IH} = p^j_{IH}\left(1 - e^{-\gamma_{I}}\right)$;
-* $q^j_{IR} = p^j_{IR}\left(1 - e^{-\gamma_{I}}\right)$;
-* $q^j_{ID} = \left(1 - p^j_{IH} - p^j_{IR}\right)\left(1 - e^{-\gamma_{I}}\right)$;
-* Similarly to before, we model: $\log\left(p^j_{IH/R}\right) = \alpha_{IH/R} + \eta_{IH/R} \mbox{age}_j$, where $\eta_{IH/R} > 0$ and $\alpha_{IH/R} < -\eta_{IH/R} \max\left(\mbox{age}_j\right)$ to ensure than $0 < p^j_{IH/R} \leq 1$.
-* $q^j_{HR} = p^j_{HR}\left(1 - e^{-\gamma_{H}}\right)$;
+* $q^j_{EI_1} = \left(1 - p^j_{EA}\right)\left(1 - e^{-\gamma_{E}}\right)$;
+* $q^j_{AR} = 1 - e^{-\gamma_I}$ where $\gamma_I = \frac{1}{T_I}$ with $T_I = T_{I_1} + T_{I_2}$ the mean infectious period (assuming $T_{I_j}$ is the mean length of stay in class $I_j$);
+* $q^j_{I_1I_2} = p^j_{I_1I_2}\left(1 - e^{-\gamma_{I_1}}\right)$ where $\gamma_{I_1} = \frac{1}{T_{I_1}}$;
+* $q^j_{I_1H} = p^j_{I_1H}\left(1 - e^{-\gamma_{I_1}}\right)$;
+* $q^j_{I_1D} = \left(1 - p^j_{I_1H} - p^j_{I_1I_2}\right)\left(1 - e^{-\gamma_{I_1}}\right)$;
+* $q^j_{I_2R} = p^j_{I_2R}\left(1 - e^{-\gamma_{I_2}}\right)$ where $\gamma_{I_1} = \frac{1}{T_{I_1}}$;
+* Similarly to before, we model: $\log\left(p^j_{I_1I_2/H/R}\right) = \alpha_{I_1I_2/H/R} + \eta_{I_1I_2/H/R} \mbox{age}_j$, where $\eta_{I_1I_2/H/R} > 0$ and $\alpha_{I_1I_2/H/R} < -\eta_{I_1I_2/H/R} \max\left(\mbox{age}_j\right)$ to ensure than $0 < p^j_{I_1I_2/H/R} \leq 1$.
+* $q^j_{HR} = p^j_{HR}\left(1 - e^{-\gamma_{H}}\right)$ where $\gamma_H = \frac{1}{T_H}$ with $T_H$ the mean length of hospital stay;
 * $q^j_{HD} = \left(1 - p^j_{HR}\right)\left(1 - e^{-\gamma_{H}}\right)$;
 * Similarly to before, we model: $\log\left(p^j_{HR}\right) = \alpha_{HR} + \eta_{HR} \mbox{age}_j$, where $\eta_{HR} > 0$ and $\alpha_{HR} < -\eta_{HR} \max\left(\mbox{age}_j\right)$ to ensure than $0 < p^j_{HR} \leq 1$. 
 
@@ -256,16 +267,36 @@ where $\mbox{eig}_M\left(C\right)$ denotes the maximum eigenvalue of $C$.
 
 </div>
 
+<br>
+
+<button data-toggle="collapse" data-target="#constraints">Click for details on constraints</button>
+<div id="constraints" class="collapse boxed">
+
+The parameters we need to bound are:
+
+* $R_0$: (2, 4.5)---from Leon and Rob;
+* $T_E$ (the mean latent period): (1, 3)---bounded through generation time distribution estimated in Challen et al. (2020);
+* $\alpha_{EA}$ and $\eta_{EA}$, where $\eta_{EA} > 0$ and $\alpha_{EA} < -\eta_{EA} \max\left(\mbox{age}_j\right)$;
+* $T_E + T_{I_1}$ bounded by incubation period from Rob's paper maybe?
+* $T_I = T_{I_1} + T_{I_2}$;
+* $\alpha_{I_1I_2}$ and $\eta_{I_1I_2}$, where $\eta_{I_1I_2} > 0$ and $\alpha_{I_1I_2} < -\eta_{I_1I_2} \max\left(\mbox{age}_j\right)$;
+* $\alpha_{I_1H}$ and $\eta_{I_1H}$, where $\eta_{I_1H} > 0$ and $\alpha_{I_1H} < -\eta_{I_1H} \max\left(\mbox{age}_j\right)$;
+* $\alpha_{I_1D}$ and $\eta_{I_1D}$, where $\eta_{I_1D} > 0$ and $\alpha_{I_1D} < -\eta_{I_1D} \max\left(\mbox{age}_j\right)$;
+* $T_H$ the mean length of hospital stay;
+* $\alpha_{HR}$ and $\eta_{HR}$, where $\eta_{HR} > 0$ and $\alpha_{HR} < -\eta_{HR} \max\left(\mbox{age}_j\right)$.
+
+</div>
+
 MetaWards has a specific structure in terms of how it progresses movements between the stages. To get the correct splits between the **pathways** specified above we do all non-infection movements through a custom `mover` function specified [below](#mover). Note that in the `ncov.json` file specified [above](#diseasefile), we set all `progress` parameters to be 0. Thus, all transition probabilities other than new infections are driven by user-defined parameters that are passed to the `mover` function, which we call `move_pathways.py` here.
 
 <button data-toggle="collapse" data-target="#mover">Click for MetaWards <code>mover</code> file</button>
 <div id="mover" class="collapse boxed">
 
-The `mover` function applies movements in order, and so it is important to get the order correct. In particular we need to reverse the order of the stage movements (e.g. do movements out of the $H$ demographic *before* movements out of the $I$ demographic). This is to ensure that individuals that move from $I \to H$ say, can't then immediately move out of $H$. The file `move_pathways.py` contains the code below.
+The `mover` function applies movements in order, and so it is important to get the order correct. In particular we need to reverse the order of the stage movements (e.g. do movements out of the $H$ demographic *before* movements out of the $I_1$ demographic). This is to ensure that individuals that move from $I_1 \to H$ say, can't then immediately move out of $H$. The file `move_pathways.py` contains the code below.
 
-> **Additional note**: The functions in the `mover` file operate in turn. Therefore the movement probabilities below must be altered between each function, in order to get the correct proportions moved. For example, consider that we have $n$ individuals in the $I$ class and we want to move a proportion $p_Ip_{IH}$ from $I \to H$, a proportion $p_Ip_{IR}$ from $I \to R_I$, and a proportion $p_I\left(1 - p_{IH} - p_{IR}\right)$ from $I \to D_I$, where $p_I = 1 - e^{-\gamma_I}$.
+> **Additional note**: The functions in the `mover` file operate in turn. Therefore the movement probabilities below must be altered between each function, in order to get the correct proportions moved. For example, consider that we have $n$ individuals in the $I_1$ class and we want to move a proportion $p_{I_1}p_{I_1H}$ from $I_1 \to H$, a proportion $p_{I_1}p_{I_1I_2}$ from $I_1 \to I_2$, and a proportion $p_{I_1}\left(1 - p_{I_1H} - p_{I_1I_2}\right)$ from $I \to D_I$, where $p_{I_1} = 1 - e^{-\gamma_{I_1}}$.
 > 
-> In this case the first `mover` function takes a random binomial sample from the $n$ individuals with probability $p_Ip_{IH}$ as requested, resulting in $n_{IH}$ moves. However, the second `mover` function now operates on the $n - n_{IH}$ individuals, so we need to adjust the sampling probabilities to adjust for this. Hence the second `mover` function needs to sample from the $n - n_{IH}$ individuals with probability $\frac{p_Ip_{IR}}{1 - p_Ip_{IH}}$ in order to generate the correct proportions of moves that we would expect, resulting in $n_{IR}$ moves. Similarly, the third `mover` function now operates on the $n - n_{IH} - n_{IR}$ remaining individuals, and thus we would need to adjust the sampling probability to $\frac{p_I\left(1 - p_{IH} - p_{IR}\right)}{1 - p_I\left(p_{IH} + p_{IR}\right)}$. The remaining individuals remain in $I$.
+> In this case the first `mover` function takes a random binomial sample from the $n$ individuals with probability $p_{I_1}p_{I_1H}$ as requested, resulting in $n_{I_1H}$ moves. However, the second `mover` function now operates on the $n - n_{I_1H}$ individuals, so we need to adjust the sampling probabilities to adjust for this. Hence the second `mover` function needs to sample from the $n - n_{I_1H}$ individuals with probability $\frac{p_{I_1}p_{I_1I_2}}{1 - p_{I_1}p_{I_1H}}$ in order to generate the correct proportions of moves that we would expect, resulting in $n_{I_1I_2}$ moves. Similarly, the third `mover` function now operates on the $n - n_{I_1H} - n_{I_1I_2}$ remaining individuals, and thus we would need to adjust the sampling probability to $\frac{p_{I_1}\left(1 - p_{I_1H} - p_{I_1I_2}\right)}{1 - p_{I_1}\left(p_{I_1H} + p_{I_1I_2}\right)}$. The remaining individuals remain in $I_1$.
 
 ```{python, code = readLines("../model_code/move_pathways.py"), eval = FALSE}
 ```
@@ -290,7 +321,7 @@ Since most of the classes are already infected, it's only the rows corresponding
 
 ## Lockdown
 
-<p style="color:red">HAVEN'T TOUCHED THIS YET</p>
+<p style="color:red">CAN SKIP THIS FOR FIRST RUNS SINCE WE RUN UP TO BEFORE LOCKDOWN</p>
 <p style="color:red">LOCKDOWN TO SCALE WORK AND PLAY - TURN MOVEMENTS OF IN HOSPITALS AND ICUS</p>
 <p style="color:red">TURN LOCAL MOVEMENTS OFF</p>
 <p style="color:red">GOOGLE MOBILITY?</p>
@@ -354,7 +385,7 @@ To run designs, we need to generate a `disease.csv` file containing different pa
 
 The *input* and *design* spaces are fairly trivial to convert between, but some more work has to be done to convert between the *input* space and the *disease* space. Thus we have parameter ranges:
 \begin{align}
-    \mbox{$R_0$}&: (2, 4)\\
+    \mbox{$R_0$}&: (2, 4.5)\\
     \mbox{mean latent period ($T_E$)}&: (4, 6)\\
     \mbox{mean infectious period ($T_I$)}&: (2, 4)\\
     \mbox{mean hospital stay ($T_H$)}&: (4, 12)\\
@@ -377,15 +408,17 @@ In R we can set up the *input* parameter ranges as follows:
 ```{r}
 ## set up parameter ranges
 parRanges <- data.frame(
-    parameter = c("r_zero", "latent_time", "infectious_time", "hospital_time",
+    parameter = c("r_zero", "latent_time", "infectious1_time", 
+                  "infectious1_time", "hospital_time",
                   "lock_1_restrict", "lock_2_release",
                   "alphaEA", "etaEA", 
-                  "alphaIH", "etaIH", 
-                  "alphaIR", "etaIR",
+                  "alphaI1H", "etaI1H", 
+                  "alphaI1I2", "etaI1I2",
+                  "alphaI2", "etaI2",
                   "alphaHR", "etaHR",
                   "GP_A", "GP_H"),
-    lower = c(2, 4, 2, 4, 0, 0, rep(c("?", 0), 4), rep(0, 2)),
-    upper = c(4, 6, 4, 12, 1, 1, rep(c("?", "?"), 4), rep(1, 2)),
+    lower = c(2, 4, 2, 2, 4, 0, 0, rep(c("?", 0), 5), rep(0, 2)),
+    upper = c(4, 6, 4, 4, 12, 1, 1, rep(c("?", "?"), 5), rep(1, 2)),
     stringsAsFactors = FALSE
 )
 ```
