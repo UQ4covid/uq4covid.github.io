@@ -24,15 +24,16 @@ for(i in 1:8) {
             nest() %>%
             mutate(data = map(data, ~{
                 rec <- reconstruct(
-                    .$Einc, .$Iinc, .$Rinc, .$Dinc, .$IAinc, .$RAinc,
+                    .$Einc, .$I1inc, .$I2inc, .$Rinc, .$Dinc, .$IAinc, .$RAinc,
                     .$IHinc, .$RHinc, .$DHinc
                 ) %>%
-                    magrittr::set_colnames(c(
-                        "Einc", "E", "Iinc", "I", "R", "D",
-                        "IAinc", "IA", "RA",
-                        "IHinc", "IH", "RH", "DH"
-                    )) %>%
-                    as_tibble()
+                magrittr::set_colnames(c(
+                    "Einc", "E", "I1inc", "I1", "I2inc", "I2", 
+                    "R", "D",
+                    "IAinc", "IA", "RA",
+                    "IHinc", "IH", "RH", "DH"
+                )) %>%
+                as_tibble()
                 rec$day <- .$day
                 rec
             })) %>%
@@ -40,90 +41,77 @@ for(i in 1:8) {
             select(day, everything()) %>%
             ungroup()
         
-        ## now extract and reconstruct by filling in gaps
-        compact <- rename(compact, genpop_0 = Einc, genpop_1 = E, genpop_2 = Iinc, genpop_3 = I, genpop_4 = R, genpop_5 = D) %>%
-            rename(asymp_2 = IAinc, asymp_3 = IA, asymp_4 = RA) %>%
-            rename(hospital_2 = IHinc, hospital_3 = IH, hospital_4 = RH, hospital_5 = DH)
-    
-        genpop <- select(compact, day, ward, starts_with("genpop_")) %>%
+        ## now extract and reconstruct by filling in gaps    
+        genpop <- select(compact, day, ward, Einc, E, I1inc, I1, I2inc, I2, R, D) %>%
             complete(day = 1:10, nesting(ward)) %>%
             arrange(ward, day) %>%
-            mutate_at(vars(starts_with("genpop_")), ~ifelse(day == 1 & is.na(.), 0, .)) %>%
-            fill(starts_with("genpop_"), .direction = "down") %>%
-            set_names(c("day", "ward", paste0("stage_", 0:5)))
-        asymp <- select(compact, day, ward, starts_with("asymp_")) %>%
-            gather(stage, value, -day, -ward) %>%
-            complete(stage = paste0("asymp_", 0:5), nesting(ward, day), fill =list(value = 0)) %>%
-            spread(stage, value) %>%
+            mutate_at(-c(1:2), ~ifelse(day == 1 & is.na(.), 0, .)) %>%
+            fill(-c(1:2), .direction = "down")
+        asymp <- select(compact, day, ward, IAinc, IA, RA) %>%
             complete(day = 1:10, nesting(ward)) %>%
             arrange(ward, day) %>%
-            mutate_at(vars(starts_with("asymp_")), ~ifelse(day == 1 & is.na(.), 0, .)) %>%
-            fill(starts_with("asymp_"), .direction = "down") %>%
-            set_names(c("day", "ward", paste0("stage_", 0:5)))
-        hospital <- select(compact, day, ward, starts_with("hospital_")) %>%
-            gather(stage, value, -day, -ward) %>%
-            complete(stage = paste0("hospital_", 0:5), nesting(ward, day), fill =list(value = 0)) %>%
-            spread(stage, value) %>%
+            mutate_at(-c(1:2), ~ifelse(day == 1 & is.na(.), 0, .)) %>%
+            fill(-c(1:2), .direction = "down")
+        hospital <- select(compact, day, ward, IHinc, IH, RH, DH) %>%
             complete(day = 1:10, nesting(ward)) %>%
             arrange(ward, day) %>%
-            mutate_at(vars(starts_with("hospital_")), ~ifelse(day == 1 & is.na(.), 0, .)) %>%
-            fill(starts_with("hospital_"), .direction = "down") %>%
-            set_names(c("day", "ward", paste0("stage_", 0:5)))
-        results <- list(GP = genpop, A = asymp, H = hospital) %>%
-            bind_rows(.id = "demo")
-    
-        ## check that there are no individuals in any
-        ## class they shouldn't be
-        stopifnot(
-            filter(results, demo != "GP") %>%
-            select(stage_0, stage_1) %>% 
-            summarise_all(~all(. == 0)) %>%
-            unlist() %>%
-            all()
-        )
+            mutate_at(-c(1:2), ~ifelse(day == 1 & is.na(.), 0, .)) %>%
+            fill(-c(1:2), .direction = "down")
     
         ## check that there are infections, removals and deaths
-        ## except in asymptomatics
         stopifnot(
-            filter(results, demo != "A") %>%
-            select(demo, stage_2, stage_3, stage_4, stage_5) %>%
-            group_by(demo) %>%
-            summarise_all(~any(. > 0)) %>%
-            gather(stage, value, -demo) %>%
-            pluck("value") %>%
-            all()
+            select(genpop, I1, I2, R, D) %>%
+                summarise_all(~any(. > 0)) %>%
+                unlist() %>%
+                all()
         )
-        ## check that there are infections and removals
-        ## in asymptomatics
         stopifnot(
-            filter(results, demo == "A") %>%
-            select(stage_2, stage_3, stage_4) %>%
-            summarise_all(~any(. > 0)) %>%
-            gather(stage, value) %>%
-            pluck("value") %>%
-            all()
+            select(asymp, IA, RA) %>%
+                summarise_all(~any(. > 0)) %>%
+                unlist() %>%
+                all()
         )
-        ## check for no deaths in asymptomatics
         stopifnot(
-            filter(results, demo == "A") %>%
-            select(stage_5) %>%
-            summarise_all(~all(. == 0)) %>%
-            pluck("stage_5")
+            select(hospital, IH, RH, DH) %>%
+                summarise_all(~any(. > 0)) %>%
+                unlist() %>%
+                all()
         )
-        
+    
         ## check for non-decreasing R
         stopifnot(
-            mutate(results, lg = lag(stage_4)) %>%
-            mutate(diff = stage_4 - lg) %>%
+            mutate(genpop, lg = lag(R)) %>%
+            mutate(diff = R - lg) %>%
             mutate(diff = ifelse(day == 1, NA, diff)) %>%
             pluck("diff") %>% 
-                {all(.[!is.na(.)] >= 0)}
+            {all(.[!is.na(.)] >= 0)}
         )
-        
+        stopifnot(
+            mutate(asymp, lg = lag(RA)) %>%
+            mutate(diff = RA - lg) %>%
+            mutate(diff = ifelse(day == 1, NA, diff)) %>%
+            pluck("diff") %>% 
+            {all(.[!is.na(.)] >= 0)}
+        )
+        stopifnot(
+            mutate(hospital, lg = lag(RH)) %>%
+            mutate(diff = RH - lg) %>%
+            mutate(diff = ifelse(day == 1, NA, diff)) %>%
+            pluck("diff") %>% 
+            {all(.[!is.na(.)] >= 0)}
+        )
+    
         ## check for non-decreasing D
         stopifnot(
-            mutate(results, lg = lag(stage_5)) %>%
-            mutate(diff = stage_5 - lg) %>%
+            mutate(genpop, lg = lag(D)) %>%
+            mutate(diff = D - lg) %>%
+            mutate(diff = ifelse(day == 1, NA, diff)) %>%
+            pluck("diff") %>% 
+            {all(.[!is.na(.)] >= 0)}
+        )
+        stopifnot(
+            mutate(hospital, lg = lag(DH)) %>%
+            mutate(diff = DH - lg) %>%
             mutate(diff = ifelse(day == 1, NA, diff)) %>%
             pluck("diff") %>% 
             {all(.[!is.na(.)] >= 0)}

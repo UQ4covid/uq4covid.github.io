@@ -26,37 +26,85 @@ for(i in 1:8) {
         nest() %>%
         mutate(data = map(data, ~{
             rec <- reconstruct(
-                .$Einc, .$Iinc, .$Rinc, .$Dinc, .$IAinc, .$RAinc,
+                .$Einc, .$I1inc, .$I2inc, .$Rinc, .$Dinc, .$IAinc, .$RAinc,
                 .$IHinc, .$RHinc, .$DHinc
             ) %>%
-                magrittr::set_colnames(c(
-                    "Einc", "E", "Iinc", "I", "R", "D",
-                    "IAinc", "IA", "RA",
-                    "IHinc", "IH", "RH", "DH"
-                )) %>%
-                as_tibble()
+            magrittr::set_colnames(c(
+                "Einc", "E", "I1inc", "I1", "I2inc", "I2", 
+                "R", "D",
+                "IAinc", "IA", "RA",
+                "IHinc", "IH", "RH", "DH"
+            )) %>%
+            as_tibble()
             rec$day <- .$day
             rec
         })) %>%
         unnest(cols = data) %>%
         select(day, everything()) %>%
         ungroup()
+        
+    ## now extract and reconstruct by filling in gaps    
+    genpop <- select(compact, day, ward, Einc, E, I1inc, I1, I2inc, I2, R, D) %>%
+        complete(day = 1:10, nesting(ward)) %>%
+        arrange(ward, day) %>%
+        mutate_at(-c(1:2), ~ifelse(day == 1 & is.na(.), 0, .)) %>%
+        fill(-c(1:2), .direction = "down")
+    asymp <- select(compact, day, ward, IAinc, IA, RA) %>%
+        complete(day = 1:10, nesting(ward)) %>%
+        arrange(ward, day) %>%
+        mutate_at(-c(1:2), ~ifelse(day == 1 & is.na(.), 0, .)) %>%
+        fill(-c(1:2), .direction = "down")
+    hospital <- select(compact, day, ward, IHinc, IH, RH, DH) %>%
+        complete(day = 1:10, nesting(ward)) %>%
+        arrange(ward, day) %>%
+        mutate_at(-c(1:2), ~ifelse(day == 1 & is.na(.), 0, .)) %>%
+        fill(-c(1:2), .direction = "down")
     
-    ## check all demographics other than genpop are empty
+    ## check no demographics are empty
     stopifnot(
-        select(compact, -day, -ward, -Einc, -E, -Iinc, -I, -R, -D) %>%
-        sum() == 0
+        select(genpop, -day, -ward) %>%
+        summarise_all(~any(. > 0)) %>%
+        unlist() %>%
+        all()
+    )
+    stopifnot(
+        select(asymp, -day, -ward) %>%
+        summarise_all(~any(. > 0)) %>%
+        unlist() %>%
+        all()
+    )
+    stopifnot(
+        select(hospital, -day, -ward) %>%
+        summarise_all(~any(. > 0)) %>%
+        unlist() %>%
+        all()
     )
 
     ## plot infection counts
-    p <- select(compact, day, ward, I) %>%
-        group_by(day) %>%
+    p <- select(genpop, day, ward, I1, I2) %>%
+        mutate(I = I1 + I2) %>%
+        mutate(type = "genpop") %>%
+        select(-I1, -I2) %>%
+        rbind(
+            select(asymp, day, ward, I = IA) %>%
+            mutate(type = "asymp")
+        ) %>%
+        rbind(
+            select(hospital, day, ward, I = IH) %>%
+            mutate(type = "hospital")
+        ) %>%
+        rbind(
+            group_by(., day, ward) %>%
+            summarise(I = sum(I)) %>%
+            mutate(type = "all")
+        ) %>%           
+        group_by(day, type) %>%
         summarise(I = sum(I)) %>%
-        ggplot(aes(x = day, y = I)) +
+        ggplot(aes(x = day, y = I, colour = type)) +
             geom_line() +
             xlab("Day") + ylab("Infections") +
-            ggtitle("R0 = 2 Inc./Inf. period = 2 days")
-    ggsave(paste0("infections_T6_stage", i, ".pdf"), p)
+            ggtitle("R0 = 3.5 Inc./Inf. period = 2 days")
+    ggsave(paste0("infections_T5_stage", i, ".pdf"), p)
 
     ## calculate number of wards infected
     wards <- select(compact, ward) %>%
@@ -65,18 +113,18 @@ for(i in 1:8) {
     print(paste0("Number of infected wards = ", length(wards)))
 
     ## extract cumulative infections at day 100
-    genpop <- select(compact, day, ward, Iinc) %>%
+    genpop <- select(compact, day, ward, Einc) %>%
         filter(day <= 100) %>%
         arrange(ward, day) %>%
         group_by(ward) %>%
-        summarise(Icum = sum(Iinc))
+        summarise(Ecum = sum(Einc))
 
     ## optimise proportion    
-    fun <- function(p) abs(1 - exp(-2 * p) - p)
+    fun <- function(p) abs(1 - exp(-3.5 * p) - p)
     opt <- optimise(fun, interval = c(0, 1))
 
     ## extract national level
-    print(paste0("runs stage ", i, ": ", sum(genpop$Icum) / (56082077 * ageprop[i]), " pred: ", opt$minimum))
+    print(paste0("runs stage ", i, ": ", sum(genpop$Ecum) / (56082077 * ageprop[i]), " pred: ", opt$minimum))
 
     ## remove db
     system(paste0("rm raw_outputs/stages", i, ".db"))
