@@ -147,50 +147,54 @@ ensembleIDGen <- function(ensembleID = "a0", ensembleSize) {
 ## @knitr reconstruct
 ## write Rcpp function to reconstruct counts from incidence
 library(Rcpp)
-cppFunction('IntegerMatrix reconstruct(IntegerVector Einc, IntegerVector Iinc, IntegerVector Rinc,
-    IntegerVector Dinc, IntegerVector IAinc, IntegerVector RAinc, IntegerVector IHinc, IntegerVector RHinc, 
-    IntegerVector DHinc) {
+cppFunction('IntegerMatrix reconstruct(IntegerVector Einc, IntegerVector I1inc, IntegerVector I2inc, 
+    IntegerVector Rinc, IntegerVector Dinc, IntegerVector IAinc, IntegerVector RAinc, 
+    IntegerVector IHinc, IntegerVector RHinc, IntegerVector DHinc) {
     
     // extract sizes
     int n = Einc.size();
     
     // set up output matrix
-    IntegerMatrix output(n, 13);
+    IntegerMatrix output(n, 15);
     
     // reconstruct counts
-    int E = 0, I = 0, R = 0, D = 0, IA = 0, RA = 0, IH = 0, RH = 0, DH = 0;
+    int E = 0, I1 = 0, I2 = 0, R = 0, D = 0, IA = 0, RA = 0, IH = 0, RH = 0, DH = 0;
     for(int i = 0; i < n; i++) {
     
-        E += Einc[i] - Iinc[i] - IAinc[i];
+        E += Einc[i] - I1inc[i] - IAinc[i];
         output(i, 0) = Einc[i];
         output(i, 1) = E;
         
-        I += Iinc[i] - IHinc[i] - Rinc[i] - Dinc[i];
-        output(i, 2) = Iinc[i];
-        output(i, 3) = I;
+        I1 += I1inc[i] - I2inc[i] - IHinc[i] - Dinc[i];
+        output(i, 2) = I1inc[i];
+        output(i, 3) = I1;
+        
+        I2 += I2inc[i] - Rinc[i];
+        output(i, 4) = I2inc[i];
+        output(i, 5) = I2;
         
         R += Rinc[i];
-        output(i, 4) = R;
+        output(i, 6) = R;
         
         D += Dinc[i];
-        output(i, 5) = D;
+        output(i, 7) = D;
         
         IA += IAinc[i] - RAinc[i];
-        output(i, 6) = IAinc[i];
-        output(i, 7) = IA;
+        output(i, 8) = IAinc[i];
+        output(i, 9) = IA;
         
         RA += RAinc[i];
-        output(i, 8) = RA;
+        output(i, 10) = RA;
         
         IH += IHinc[i] - RHinc[i] - DHinc[i];
-        output(i, 9) = IHinc[i];
-        output(i, 10) = IH;
+        output(i, 11) = IHinc[i];
+        output(i, 12) = IH;
         
         RH += RHinc[i];
-        output(i, 11) = RH;
+        output(i, 13) = RH;
         
         DH += DHinc[i];
-        output(i, 12) = DH;
+        output(i, 14) = DH;
     }
     
     // return counts

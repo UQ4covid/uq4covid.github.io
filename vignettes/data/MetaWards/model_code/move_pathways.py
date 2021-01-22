@@ -13,34 +13,34 @@ def move_pathways(network, **kwargs):
     pE = []
     pEA = []
     for j in range(nage):
-        pE.append(params.user_params[f'pE_{j}'])
-        pEA.append(params.user_params[f'pEA_{j}'])
+        pE.append(params.user_params[f'pE_{j + 1}'])
+        pEA.append(params.user_params[f'pEA_{j + 1}'])
     
     ## moves out of A class
     pA = []
     for j in range(nage):
-        pA.append(params.user_params[f'pA_{j}'])
+        pA.append(params.user_params[f'pA_{j + 1}'])
     
     ## moves out of I1 class
     pI1 = []
     pI1H = []
     pI1I2 = []
     for j in range(nage):
-        pI1.append(params.user_params[f'pI1_{j}'])
-        pI1H.append(params.user_params[f'pI1H_{j}'])
-        pI1I2.append(params.user_params[f'pI1I2_{j}'])
+        pI1.append(params.user_params[f'pI1_{j + 1}'])
+        pI1H.append(params.user_params[f'pI1H_{j + 1}'])
+        pI1I2.append(params.user_params[f'pI1I2_{j + 1}'])
     
     ## moves out of I2 class
     pI2 = []
     for j in range(nage):
-        pI2.append(params.user_params[f'pI2_{j}'])
+        pI2.append(params.user_params[f'pI2_{j + 1}'])
     
     ## moves out of H class
     pH = []
     pHR = []
     for j in range(nage):
-        pH.append(params.user_params[f'pH_{j}'])
-        pHR.append(params.user_params[f'pHR_{j}'])
+        pH.append(params.user_params[f'pH_{j + 1}'])
+        pHR.append(params.user_params[f'pHR_{j + 1}'])
         
     func = []
     
