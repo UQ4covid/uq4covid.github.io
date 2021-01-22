@@ -26,15 +26,16 @@ for(i in 1:8) {
         nest() %>%
         mutate(data = map(data, ~{
             rec <- reconstruct(
-                .$Einc, .$Iinc, .$Rinc, .$Dinc, .$IAinc, .$RAinc,
+                .$Einc, .$I1inc, .$I2inc, .$Rinc, .$Dinc, .$IAinc, .$RAinc,
                 .$IHinc, .$RHinc, .$DHinc
             ) %>%
-                magrittr::set_colnames(c(
-                    "Einc", "E", "Iinc", "I", "R", "D",
-                    "IAinc", "IA", "RA",
-                    "IHinc", "IH", "RH", "DH"
-                )) %>%
-                as_tibble()
+            magrittr::set_colnames(c(
+                "Einc", "E", "I1inc", "I1", "I2inc", "I2", 
+                "R", "D",
+                "IAinc", "IA", "RA",
+                "IHinc", "IH", "RH", "DH"
+            )) %>%
+            as_tibble()
             rec$day <- .$day
             rec
         })) %>%
@@ -44,12 +45,13 @@ for(i in 1:8) {
     
     ## check all demographics other than genpop are empty
     stopifnot(
-        select(compact, -day, -ward, -Einc, -E, -Iinc, -I, -R, -D) %>%
+        select(compact, -day, -ward, -Einc, -E, -I1inc, -I1, -I2inc, -I2, -R, -D) %>%
         sum() == 0
     )
 
     ## plot infection counts
-    p <- select(compact, day, ward, I) %>%
+    p <- select(compact, day, ward, I1, I2) %>%
+        mutate(I = I1 + I2) %>%
         group_by(day) %>%
         summarise(I = sum(I)) %>%
         ggplot(aes(x = day, y = I)) +
@@ -65,18 +67,18 @@ for(i in 1:8) {
     print(paste0("Number of infected wards = ", length(wards)))
 
     ## extract cumulative infections at day 100
-    genpop <- select(compact, day, ward, Iinc) %>%
+    genpop <- select(compact, day, ward, Einc) %>%
         filter(day <= 100) %>%
         arrange(ward, day) %>%
         group_by(ward) %>%
-        summarise(Icum = sum(Iinc))
+        summarise(Ecum = sum(Einc))
 
     ## optimise proportion    
     fun <- function(p) abs(1 - exp(-3.5 * p) - p)
     opt <- optimise(fun, interval = c(0, 1))
 
     ## extract national level
-    print(paste0("runs stage ", i, ": ", sum(genpop$Icum) / (56082077 * ageprop[i]), " pred: ", opt$minimum))
+    print(paste0("runs stage ", i, ": ", sum(genpop$Ecum) / (56082077 * ageprop[i]), " pred: ", opt$minimum))
 
     ## remove db
     system(paste0("rm raw_outputs/stages", i, ".db"))

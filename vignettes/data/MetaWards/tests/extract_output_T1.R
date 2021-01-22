@@ -24,76 +24,69 @@ for(i in 1:8) {
             nest() %>%
             mutate(data = map(data, ~{
                 rec <- reconstruct(
-                    .$Einc, .$Iinc, .$Rinc, .$Dinc, .$IAinc, .$RAinc,
+                    .$Einc, .$I1inc, .$I2inc, .$Rinc, .$Dinc, .$IAinc, .$RAinc,
                     .$IHinc, .$RHinc, .$DHinc
                 ) %>%
-                    magrittr::set_colnames(c(
-                        "Einc", "E", "Iinc", "I", "R", "D",
-                        "IAinc", "IA", "RA",
-                        "IHinc", "IH", "RH", "DH"
-                    )) %>%
-                    as_tibble()
+                magrittr::set_colnames(c(
+                    "Einc", "E", "I1inc", "I1", "I2inc", "I2", 
+                    "R", "D",
+                    "IAinc", "IA", "RA",
+                    "IHinc", "IH", "RH", "DH"
+                )) %>%
+                as_tibble()
                 rec$day <- .$day
                 rec
             })) %>%
             unnest(cols = data) %>%
             select(day, everything()) %>%
             ungroup()
-    
-        ## now extract and reconstruct by filling in gaps
-        compact <- rename(compact, genpop_0 = Einc, genpop_1 = E, genpop_2 = Iinc, genpop_3 = I, genpop_4 = R, genpop_5 = D) %>%
-            rename(asymp_2 = IAinc, asymp_3 = IA, asymp_4 = RA) %>%
-            rename(hospital_2 = IHinc, hospital_3 = IH, hospital_4 = RH, hospital_5 = DH)
-    
-        genpop <- select(compact, day, ward, starts_with("genpop_")) %>%
+        
+        ## now extract and reconstruct by filling in gaps    
+        genpop <- select(compact, day, ward, Einc, E, I1inc, I1, I2inc, I2, R, D) %>%
             complete(day = 1:10, nesting(ward)) %>%
             arrange(ward, day) %>%
-            mutate_at(vars(starts_with("genpop_")), ~ifelse(day == 1 & is.na(.), 0, .)) %>%
-            fill(starts_with("genpop_"), .direction = "down") %>%
-            set_names(c("day", "ward", paste0("stage_", 0:5)))
-        asymp <- select(compact, day, ward, starts_with("asymp_")) %>%
-            gather(stage, value, -day, -ward) %>%
-            complete(stage = paste0("asymp_", 0:5), nesting(ward, day), fill =list(value = 0)) %>%
-            spread(stage, value) %>%
+            mutate_at(-c(1:2), ~ifelse(day == 1 & is.na(.), 0, .)) %>%
+            fill(-c(1:2), .direction = "down")
+        asymp <- select(compact, day, ward, IAinc, IA, RA) %>%
             complete(day = 1:10, nesting(ward)) %>%
             arrange(ward, day) %>%
-            mutate_at(vars(starts_with("asymp_")), ~ifelse(day == 1 & is.na(.), 0, .)) %>%
-            fill(starts_with("asymp_"), .direction = "down") %>%
-            set_names(c("day", "ward", paste0("stage_", 0:5)))
-        hospital <- select(compact, day, ward, starts_with("hospital_")) %>%
-            gather(stage, value, -day, -ward) %>%
-            complete(stage = paste0("hospital_", 0:5), nesting(ward, day), fill =list(value = 0)) %>%
-            spread(stage, value) %>%
+            mutate_at(-c(1:2), ~ifelse(day == 1 & is.na(.), 0, .)) %>%
+            fill(-c(1:2), .direction = "down")
+        hospital <- select(compact, day, ward, IHinc, IH, RH, DH) %>%
             complete(day = 1:10, nesting(ward)) %>%
             arrange(ward, day) %>%
-            mutate_at(vars(starts_with("hospital_")), ~ifelse(day == 1 & is.na(.), 0, .)) %>%
-            fill(starts_with("hospital_"), .direction = "down") %>%
-            set_names(c("day", "ward", paste0("stage_", 0:5)))
-        results <- list(GP = genpop, A = asymp, H = hospital) %>%
-            bind_rows(.id = "demo")
+            mutate_at(-c(1:2), ~ifelse(day == 1 & is.na(.), 0, .)) %>%
+            fill(-c(1:2), .direction = "down")
     
-        ## check that there are no removals
-        stopifnot(all(results$stage_4 == 0))
-    
-        ## check that there are no individuals not in genpop
+        ## check that there are no individuals in any
+        ## class/demographic that they shouldn't be in
         stopifnot(
-            filter(results, demo != "GP") %>%
-            select(starts_with("stage")) %>% 
+            select(asymp, -day, -ward) %>%
+            summarise_all(~all(. == 0)) %>%
+            unlist() %>%
+            all()
+        )
+        stopifnot(
+            select(hospital, -day, -ward) %>%
             summarise_all(~all(. == 0)) %>%
             unlist() %>%
             all()
         )
     
+        ## check that there are no removals or I2
+        stopifnot(all(genpop$R == 0))
+        stopifnot(all(genpop$I2 == 0))
+    
         ## check for entries in death category
-        stopifnot(any(genpop$stage_5 >= 0))
+        stopifnot(any(genpop$D >= 0))
     
         ## check for non-decreasing D
         stopifnot(
             group_by(genpop, ward) %>%
             nest() %>%
             mutate(data = map_lgl(data, function(x) {
-                mutate(x, lg = lag(stage_5)) %>%
-                mutate(diff = stage_5 - lg) %>%
+                mutate(x, lg = lag(D)) %>%
+                mutate(diff = D - lg) %>%
                 pluck("diff") %>% 
                 {all(.[!is.na(.)] >=0)}
             })) %>%
