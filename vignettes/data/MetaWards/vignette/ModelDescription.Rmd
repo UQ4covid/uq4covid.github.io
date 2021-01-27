@@ -162,7 +162,12 @@ user <- "# Normal status" %>%
   c(".contact_matrix_filename = \"inputs/contact_matrix.csv\"") %>%
   c("") %>%
   c("# number of age classes") %>%
-  c(paste0(".nage = ", nrow(ages)))
+  c(paste0(".nage = ", nrow(ages))) %>%
+  c("") %>%
+  c("# names of input files for seeding") %>%
+  c(".nseeds = 5") %>%
+  c(".ward_seed_filename = \"inputs/ward_seeds.csv\"") %>%
+  c(".age_seed_filename = \"inputs/age_seeds.csv\"")
 writeLines(user, "../inputs/user_inputs.txt")
 ```
 
@@ -218,6 +223,47 @@ Notice that individuals in hospital have `too_ill_to_move = 1.0`, so all individ
 We will discuss these choices in more detail in the subsequent sections. Note that the `progress` parameters are all set to zero here, since all movements will be controlled via the custom `mover` function, and all `beta` parameters are set to one because the scaling of the force-of-infection between the demographics will be controlled by a custom `mixer` function.
 
 </div>
+
+## Seeding
+
+We seed infections into working-age `genpop` demographics only. To do this we require a set of probabilities for each age-demographic. These are stored in a file called `inputs/age_seeds.csv`, containing the probabilities below:
+
+```{r, echo = FALSE, results = "asis"}
+age_seed <- ages %>%
+  mutate(count = ifelse(ageCat == "<5", 0, count)) %>%
+  mutate(count = ifelse(ageCat == "5-17", 0, count)) %>%
+  mutate(count = ifelse(ageCat == "60-69", 0, count)) %>%
+  mutate(count = ifelse(ageCat == "70+", 0, count)) %>%
+  mutate(prop = count / sum(count))
+write_csv(
+  mutate(age_seed, class = 1:n()) %>%
+    select(class, prop), 
+  "../inputs/age_seeds.csv", col_names = FALSE)
+knitr::kable(age_seed)
+```
+
+We take a multinomial sample of size 5 to decide how many individuals are seeded into each age-class.
+
+To then decide which wards these are seeded into, we take the first 100 observed deaths, and generate the proportions of these deaths across the relevant NHS trusts. This generates a probability of seeding infection in each trust. We then split these probabilities across all wards in these trusts proportionately to the ward population sizes. We then sample initial seeds by taking a multinomial sample of the relevant size (according to the age-class samples above) across all relevant wards. Details and instructions can be found in `data/seedDeaths/README.md`. This creates a file `inputs/ward_seeds.csv` that contains the necessary probabilities for ward seeding.
+
+To implement this probabilistic seeding, we need a custom `iterator` function, which can be viewed below. 
+
+<button data-toggle="collapse" data-target="#iterator">Click for custom <code>iterator</code> function</button>
+<div id="iterator" class="collapse boxed">
+
+The contents of the `iterator.py` file is below. This contains code to initiate seeds and deal with lockdown (see [here](#lockdown)).
+
+```{js, code = readLines("../model_code/iterator.py"), eval = FALSE}
+```
+
+This requires an additional input file containing the dates of the different stages (which are fixed parameters here). This is stored in the `inputs/user_inputs.txt` file:
+
+```{python, code = readLines("../inputs/user_inputs.txt"), eval = FALSE}
+``` 
+
+</div>
+
+<p style="color:red">DISCUSS INPUTS FILE</p>
 
 ## Parameters {#parameters}
 
@@ -326,22 +372,9 @@ Since most of the classes are already infected, it's only the rows corresponding
 <p style="color:red">TURN LOCAL MOVEMENTS OFF</p>
 <p style="color:red">GOOGLE MOBILITY?</p>
 
-Chris Fenton wrote a neat custom `iterator` function, that models lockdown by scaling the FOI terms for different time periods, which each represent a different stage of interventions. We store this information in a custom `iterator` function (specified in `iterator.py` here), with the corresponding parameters in `inputs/user_inputs.txt`.
+Lockdown scales the FOI terms for different time periods, which each represent a different stage of interventions. We store this information in a custom `iterator` function with the corresponding parameters in `inputs/user_inputs.txt`.
 
-<button data-toggle="collapse" data-target="#ldown">Click for MetaWards <code>iterator</code> files</button>
-<div id="ldown" class="collapse boxed">
-
-The custom iterator is in the `iterate.py` file:
-
-```{python, code = readLines("../model_code/iterate.py"), eval = FALSE}
-```
-
-This requires an additional input file containing the dates of the different stages (which are fixed parameters here). This is stored in the `user_inputs.txt` file:
-
-```{python, code = readLines("../inputs/user_inputs.txt"), eval = FALSE}
-```
-
-</div>
+Seed [here](#seeds) for full iterator function.
 
 ## Extractor {#extractor}
 
