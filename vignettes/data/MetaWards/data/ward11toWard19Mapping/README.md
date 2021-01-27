@@ -16,6 +16,6 @@ Shapefiles for 2011 Wards and 2019 Wards from:
 The ZIP files must be unzipped and all data files (except the 2011 Ward Lookup) must be
 in the `tierData` folder, and the working directory needs to also be set to this folder
 before running `create2011to2019.R`. This creates a new folder called `2011to2019Data` that 
-can be added to the `MetaWardsData` repo.
+**must** be added to the `MetaWardsData` repo.
 
 The script `checks.R` runs a few manual comparisons as a sanity check.
