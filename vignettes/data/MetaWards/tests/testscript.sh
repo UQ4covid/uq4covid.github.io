@@ -28,9 +28,9 @@ printf '0 0 0 0 1' >> disease.dat
 metawards --nproc $nprocessors --nthreads $nthreads -m 2011to2019Data\
     -d ../model_code/ncov_overall.json\
     -D ../model_code/demographics.json --mixer ../model_code/mix_pathways\
-    --mover ../model_code/move_pathways --input disease.dat -a ExtraSeedsLondon.dat\
+    --mover ../model_code/move_pathways --input disease.dat\
     -u user_inputs.txt -o raw_outputs --force-overwrite-output \
-    --iterator ../model_code/iterate --extractor ../model_code/ward_extractor\
+    --iterator ../model_code/iterator --extractor ../model_code/ward_extractor\
     --start-date 2020/01/01 --theme simple --nsteps 10
 
 ## run R check
@@ -58,9 +58,9 @@ printf '0 0 0 0 1' >> disease.dat
 metawards --nproc $nprocessors --nthreads $nthreads -m 2011to2019Data\
     -d ../model_code/ncov_overall.json\
     -D ../model_code/demographics.json --mixer ../model_code/mix_pathways\
-    --mover ../model_code/move_pathways --input disease.dat -a ExtraSeedsLondon.dat\
+    --mover ../model_code/move_pathways --input disease.dat\
     -u user_inputs.txt -o raw_outputs --force-overwrite-output\
-    --iterator ../model_code/iterate --extractor ../model_code/ward_extractor\
+    --iterator ../model_code/iterator --extractor ../model_code/ward_extractor\
     --start-date 2020/01/01 --theme simple --nsteps 10
 
 ## run R check
@@ -88,9 +88,9 @@ printf '0 0 0 0 1' >> disease.dat
 metawards --nproc $nprocessors --nthreads $nthreads -m 2011to2019Data\
     -d ../model_code/ncov_overall.json\
     -D ../model_code/demographics.json --mixer ../model_code/mix_pathways\
-    --mover ../model_code/move_pathways --input disease.dat -a ExtraSeedsLondon.dat\
+    --mover ../model_code/move_pathways --input disease.dat\
     -u user_inputs.txt -o raw_outputs --force-overwrite-output\
-    --iterator ../model_code/iterate --extractor ../model_code/ward_extractor\
+    --iterator ../model_code/iterator --extractor ../model_code/ward_extractor\
     --start-date 2020/01/01 --theme simple --nsteps 10
 
 ## run R check
@@ -119,9 +119,9 @@ printf '0 0 0.2 0.2 1' >> disease.dat
 metawards --nproc $nprocessors --nthreads $nthreads -m 2011to2019Data\
     -d ../model_code/ncov_overall.json\
     -D ../model_code/demographics.json --mixer ../model_code/mix_pathways\
-    --mover ../model_code/move_pathways --input disease.dat -a ExtraSeedsLondon.dat\
+    --mover ../model_code/move_pathways --input disease.dat\
     -u user_inputs.txt -o raw_outputs --force-overwrite-output\
-    --iterator ../model_code/iterate --extractor ../model_code/ward_extractor\
+    --iterator ../model_code/iterator --extractor ../model_code/ward_extractor\
     --start-date 2020/01/01 --theme simple --nsteps 50
 
 ## run R check
@@ -150,9 +150,9 @@ printf '0 0 0 0 1' >> disease.dat
 metawards --nproc $nprocessors --nthreads $nthreads -m 2011to2019Data\
     -d ../model_code/ncov_overall.json\
     -D ../model_code/demographics.json --mixer ../model_code/mix_pathways\
-    --mover ../model_code/move_pathways --input disease.dat -a ExtraSeedsLondon.dat\
+    --mover ../model_code/move_pathways --input disease.dat\
     -u user_inputs.txt -o raw_outputs --force-overwrite-output\
-    --iterator ../model_code/iterate --extractor ../model_code/ward_extractor\
+    --iterator ../model_code/iterator --extractor ../model_code/ward_extractor\
     --start-date 2020/01/01 --theme simple --nsteps 100
 
 ## run R check
@@ -180,9 +180,9 @@ printf '0 0 0 0 1' >> disease.dat
 metawards --nproc $nprocessors --nthreads $nthreads -m 2011to2019Data\
     -d ../model_code/ncov_overall.json\
     -D ../model_code/demographics.json --mixer ../model_code/mix_pathways\
-    --mover ../model_code/move_pathways --input disease.dat -a ExtraSeedsLondon.dat\
+    --mover ../model_code/move_pathways --input disease.dat\
     -u user_inputs.txt -o raw_outputs --force-overwrite-output\
-    --iterator ../model_code/iterate --extractor ../model_code/ward_extractor\
+    --iterator ../model_code/iterator --extractor ../model_code/ward_extractor\
     --start-date 2020/01/01 --theme simple --nsteps 100
 
 ## run R check
