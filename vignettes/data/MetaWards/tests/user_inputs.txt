@@ -23,3 +23,8 @@
 
 # number of age classes
 .nage = 8
+
+# names of input files for seeding
+.nseeds = 5
+.ward_seed_filename = "../inputs/ward_seeds.csv"
+.age_seed_filename = "../inputs/age_seeds.csv"
