@@ -65,13 +65,12 @@ mismatches <- ward19 %>%
     right_join(mismatches, by = c("wd19cd" = "WD19CD", "wd19nm" = "WD19NM"), keep = TRUE)
 stopifnot(all(!is.na(mismatches$wd19cd)))
 
-## find centroids of wards
-mismatches <- select(mismatches, WD19CD, WD19NM, LAD19CD, LAD19NM, geometry) %>%
-    mutate(centroids = st_centroid(st_geometry(.)))
-st_geometry(mismatches) <- "centroids"
+## find minimum distance between wards to match on
+## (centroids not used since some trusts split over
+## non-contiguous wards with large spatial range)
+temp <- st_distance(mismatches, trust19, by_element = FALSE)
 
 ## join to nearest hospital and get trust ID
-temp <- st_distance(mismatches, trust19Supply)
 temp <- apply(temp, 1, function(x){
     which(x == min(x))
 })
@@ -94,29 +93,5 @@ stopifnot(nrow(mismatches) == 0)
 mismatches <- anti_join(trust19Lookup, Ward19Lookup, by = c("code" = "WD19CD"))
 stopifnot(nrow(mismatches) == 0)
 
-###########################
-######  SOME CHECKS  ######
-###########################
-
-tempTr <- filter(trust19, str_detect(trustNm, "Cornwall")) 
-
-## join to nearest trusts according to centroid distance
-temp <- st_centroid(trust19) %>%
-    anti_join(st_drop_geometry(tempTr), by = "trustId")
-temp1 <- st_distance(tempTr, temp)
-temp1 <- apply(temp1, 1, function(x) which(x == min(x)))
-tempTr <- slice(temp, temp1) %>%
-    pluck("trustId") %>%
-    unique() %>%
-    {filter(trust19, trustId %in% .)} %>%
-    rbind(
-        filter(trust19, str_detect(trustNm, "Cornwall")) %>%
-        semi_join(trust19Lookup, by = "trustId")
-    )
-
-tempWd <- inner_join(ward19, st_drop_geometry(tempTr), by = c("wd19cd" = "code"))
-
-ggplot() + geom_sf(data = tempWd, colour = "red")+ geom_sf(data = tempTr, fill = NA) 
-
-
-
+## save amended trust lookup table
+write_csv(trust19Lookup, "trust19Lookup.csv")
