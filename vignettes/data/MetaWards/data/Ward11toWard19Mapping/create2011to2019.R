@@ -5,8 +5,7 @@ library(sf)
 library(areal)
 
 ## set paths
-pathToMetaWardsData <- "../../../../../../MetaWardsData"
-path <- paste0(pathToMetaWardsData, "/model_data/2011Data/")
+path <- paste0("../../../../../../MetaWardsData/model_data/2011Data/")
 
 #############################################################
 ######  FIND SHAPEFILE INTERSECTIONS AND SHARED AREAS  ######
