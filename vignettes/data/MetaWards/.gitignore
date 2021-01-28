@@ -17,6 +17,9 @@ data/ward11toWard19Mapping/Ward*
 data/ward11toWard19Mapping/*.csv
 data/ward11toWard19Mapping/*.pdf
 data/hospitalStays/*.pdf
+data/hospitalCatchments/WD19*
+data/hospitalCatchments/*.pdf
+data/hospitalCatchments/*.csv
 MetaWards.Rproj
 
 literature
