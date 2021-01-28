@@ -11,7 +11,9 @@ assumes that you have cloned the MetaWardsData as detailed
 
 ## Setting up data
 
-The file `README.md` in the `data/tierData` folder contains information about
+Some data generation must be done in advance as documented below.
+
+The file `README.md` in the `data/ward2011ToWard2019Mapping` folder contains information about
 where to download the relevant shapefiles and lookup tables to convert
 the 2011 ward-level commuter data to the 2019 wards and LADs. There is also
 code to generate the relevant data for use in the MetaWards model runs.
