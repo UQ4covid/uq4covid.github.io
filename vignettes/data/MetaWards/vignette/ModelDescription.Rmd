@@ -23,8 +23,8 @@ The basic model structure is:
 * $E$: infected but not infectious;
 * $A$: asymptomatic and infectious;
 * $I$: symptomatic and infectious;
-* $H$: hospitalised and infectious;
-* $R$: recovered and immune;
+* $H$: hospitalised and not infectious;
+* $R$: recovered and immune, or symptomatic and not infectious;
 * $D$: died.
 
 **Each of these classes will be split into $J$ age-classes, with interactions between the classes described in detail below.**
@@ -35,7 +35,7 @@ grViz("digraph simpmod {
     graph[layout = dot, rankdir = LR]
     node [shape = rectangle]
     
-    S [group = gp]; E [group = gp]; I [label = 'I@_{1}', group = gp]; I2 [label = 'I@_{2}', group = gp]; 
+    S [group = gp]; E [group = gp]; I [group = gp];  
     RI [label = 'R@_{I}', group = as]; DI [label = 'D@_{I}', group = gp]; 
     A [group = as]; RA [label = 'R@_{A}', group = as];
     H [group = hos]; RH [label = 'R@_{H}', group = hos]; DH [label = 'D@_{H}', group = hos];
@@ -45,24 +45,22 @@ grViz("digraph simpmod {
     St00 [style = 'invis', group = st]; St0 [style = 'invis', label = 'Stage 0', group = st]; 
     St1 [style = 'invis', label = 'Stage 1', group = st]; 
     St2 [style = 'invis', label = 'Stage 2', group = st]; 
-    St3 [style = 'invis', label = 'Stage 3', group = st];
     
     genpop -> S [style = 'invis']
     hospital -> H [style = 'invis']
     asymp -> A [style = 'invis']
     S -> E 
-    E -> I [label = 'T@_{E}']
-    I -> I2 [label = 'T@_{I1}']
-    I2 -> RI [weight = 0, label = 'T@_{I2}']
-    I -> DI [weight = 0, label = 'T@_{I1}']
-    I -> H [label = 'T@_{I1}']
-    H -> RH [label = 'T@_{H}']
-    H -> DH [weight = 0, label = 'T@_{H}'] 
+    E -> I [label = '(1 - p@_{EA})T@_{E}']
+    I -> RI [weight = 0, label = 'p@_{IR}T@_{I}']
+    I -> DI [weight = 0, label = '(1 - p@_{IH} - p@_{IR})T@_{I}']
+    I -> H [label = 'p@_{IH}T@_{I}']
+    H -> RH [weight = 0, label = 'p@_{HR}T@_{H}']
+    H -> DH [weight = 0, label = '(1 - p@_{HR})T@_{H}'] 
     RI -> DI [style = 'invis']
     RH -> DH [style = 'invis']
-    E -> A [weight = 0]
-    A -> RA [label = 'T@_{I1}']
-    St00 -> St0 -> St1 -> St2 -> St3 [style = 'invis']
+    E -> A [label = 'p@_{EA}T@_{E}']
+    A -> RA [label = 'T@_{I}']
+    St00 -> St0 -> St1 -> St2 [style = 'invis']
     subgraph {
       rank = same; St0; E;
     }
@@ -78,10 +76,7 @@ grViz("digraph simpmod {
       label = 'Infectious Classes'
     }
     subgraph {
-      rank = same; St2; RA; I2; RH;
-    }
-    subgraph {
-      rank = same; St3; DI; DH; RI;
+      rank = same; St2; RA; RI; DI; RH; DH;
     }
     
 }", height = '100%', width = '100%')
@@ -92,14 +87,14 @@ grViz("digraph simpmod {
 The model structure above allows for different progression pathways. MetaWards deals with this by assigning individuals to different "demographics", where each demographic can be used to represent different progression pathways. There are also `mover` functions that can be used to move individuals between demographics, and `mixer` functions that scale the force-of-infection (FOI) terms between the different demographics (explained later). There are currently five pathways, which will be described below, but can be summarised as:
 
 * $SEAR$: asymptomatic infections, always recover.
-* $SEI_1I_2R$: symptomatic infections, leading to recovery.
-* $SEI_1D$: symptomatic infections, leading to death.
-* $SEI_1HR$: symptomatic infections, leading to hospital and then recovery.
-* $SEI_1HD$: symptomatic infections, leading to hospital and then death.
+* $SEIR$: symptomatic infections, leading to recovery.
+* $SEID$: symptomatic infections, leading to death.
+* $SEIHR$: symptomatic infections, leading to hospital and then recovery.
+* $SEIHD$: symptomatic infections, leading to hospital and then death.
 
-Individuals start in the `genpop` demographic. Those that move through the $SEI_1I_2R$ and $SEI_1D$ pathways remain in the `genpop` demographic, whereas those that progress through the `SEAR` pathway move into the `asymp` demographic. Furthermore, some individuals in the `genpop` demographic can be moved to the `hospital` demographic if they follow the `SEI_1HR` and `SEI_1HD` pathways.
+Individuals start in the `genpop` demographic. Those that move through the $SEIR$ and $SEID$ pathways remain in the `genpop` demographic, whereas those that progress through the `SEAR` pathway move into the `asymp` demographic. Furthermore, some individuals in the `genpop` demographic can be moved to the `hospital` demographic if they follow the `SEIHR` and `SEIHD` pathways.
 
-We assume that symptomatic individuals in $I_1$ who get very sick either die or get transferred to hospital for care. Individuals who are symptomatic but not severe transition to the $I_2$ class from which they eventually recover.
+We are calibrating to hospitalised deaths, and so to simplify the model and aid calibration, we assume that transitions out of the $I$ class correspond to an end-of-infectiousness. Some evidence suggests that individuals can remain symptomatic for much longer than they remain infectious for, but from a transmission perspective, once individuals cease to be infectious they are equivalent to "recovered" individuals. As such, the $R_I$ class corresponds to recovered and non-infectious symptomatic individuals, and $T_I$ to the average infectious period (not average symptomatic period). We also make the simplifying assumption that individuals cease to be infectious when they enter hospital. Hospital-to-general population transmission is thought to be low <p style="color:red">[REF]</p>, but this will interact with the definition of $T_I$ <p style="color:red">[JUSTIFY]</p>.
 
 We need to specify initial proportions of individuals in each pathway such that $\sum_{i \in \mathcal{P}}\sum_{j = 1}^J p_{ij} = 1$, where $\mathcal{P} = \{GP, A, H\}$ and $j = 1, \dots, J$ define the $J$ mutually exclusive age-classes. Here we define the proportions of individuals in each age class from the data in the `inputs/Pop by CTRY.csv` file from Rob:
 
@@ -137,47 +132,11 @@ demo <- "{" %>%
 writeLines(demo, "../model_code/demographics.json")
 ```
 
-```{r, warning = FALSE, message = FALSE, echo = FALSE}
-user <- "# Normal status" %>%
-  c(".can_work[0]  = True") %>%
-  c("") %>%
-  c("# Lockdown 1") %>%
-  c(".can_work[1]  = False") %>%
-  c("") %>%
-  c("# Lockdown 2") %>%
-  c(".can_work[2]  = True") %>%
-  c("") %>%
-  c("# Lockdown dates") %>%
-  c(".lockdown_date_1_year = 2020") %>%
-  c(".lockdown_date_1_month = 3") %>%
-  c(".lockdown_date_1_day = 21") %>%
-  c(".lockdown_date_2_year = 2020") %>%
-  c(".lockdown_date_2_month = 5") %>%
-  c(".lockdown_date_2_day = 13") %>%
-  c("") %>%
-  c("# Database control") %>%
-  c(".deltas = True") %>%
-  c("") %>%
-  c("# contact matrix") %>%
-  c(".contact_matrix_filename = \"inputs/contact_matrix.csv\"") %>%
-  c("") %>%
-  c("# number of age classes") %>%
-  c(paste0(".nage = ", nrow(ages))) %>%
-  c("") %>%
-  c("# names of input files for seeding") %>%
-  c(".nseeds = 5") %>%
-  c(".ward_seed_filename = \"inputs/ward_seeds.csv\"") %>%
-  c(".age_seed_filename = \"inputs/age_seeds.csv\"")
-writeLines(user, "../inputs/user_inputs.txt")
-```
-
 <p style="color:red">NEED TO CHECK WORK / PLAY RATIOS IN DIFFERENT AGE CLASSES AND ALSO CHECK LOWER AGE GROUPS</p>
 
 <p style="color:red">NEED TO CHECK WORK / PLAY RATIOS IN E.G. HOSPITALS</p>
 
-<p style="color:red">NEED TO CHECK IF WORKERS AND PLAYERS SUM TO POPULATION SIZE</p>
-
-<p style="color:red">to_ill_to_move for I1/I2</p>
+<p style="color:red">to_ill_to_move for I</p>
 
 The demographics in MetaWards is set up using the `demographics.json` file.
 
@@ -188,8 +147,6 @@ The demographics in MetaWards is set up using the `demographics.json` file.
 ```
 
 </div>
-
-<p style="color:red">CURRENTLY MODEL SEEDS IN THE FIRST DEMOGRAPHIC (KIDS) - NEED TO CHANGE THIS IN THE SEED. DISCUSS HOW BEST TO DO THIS.</p>
 
 The number of stages can be set with the MetaWards disease files, called `ncov_*.json` here.
 
@@ -220,7 +177,50 @@ Notice that individuals in hospital have `too_ill_to_move = 1.0`, so all individ
 
 <p style="color:red">HOW SHOULD WE SCALE `too_ill_to_move` FOR SYMPTOMATICS?</p>
 
-We will discuss these choices in more detail in the subsequent sections. Note that the `progress` parameters are all set to zero here, since all movements will be controlled via the custom `mover` function, and all `beta` parameters are set to one because the scaling of the force-of-infection between the demographics will be controlled by a custom `mixer` function.
+We will discuss these choices in more detail in the subsequent sections. Note that the `progress` parameters are all set to zero here, since all movements will be controlled via the custom `mover` function, and all `beta` parameters are set to one for infectious classes since the scaling of the force-of-infection between the demographics will be controlled by a custom `mixer` function.
+
+</div>
+
+## User inputs {#user}
+
+Various functions require additional user inputs. These are stored in the `inputs/user_inputs.txt` file. This contains information on the dates of lockdown and other parameters that are necessary to govern various custom functions as described in more detail in various sections of this vignette. For example, the input `.nage` controls the number of age-classes in the model as described above.
+
+```{r, warning = FALSE, message = FALSE, echo = FALSE}
+user <- "# Normal status" %>%
+  c(".can_work[0]  = True") %>%
+  c("") %>%
+  c("# Lockdown 1") %>%
+  c(".can_work[1]  = False") %>%
+  c("") %>%
+  c("# Lockdown 2") %>%
+  c(".can_work[2]  = True") %>%
+  c("") %>%
+  c("# Lockdown dates") %>%
+  c(".lockdown_date_1_year = 2020") %>%
+  c(".lockdown_date_1_month = 3") %>%
+  c(".lockdown_date_1_day = 21") %>%
+  c(".lockdown_date_2_year = 2020") %>%
+  c(".lockdown_date_2_month = 5") %>%
+  c(".lockdown_date_2_day = 13") %>%
+  c("") %>%
+  c("# contact matrix") %>%
+  c(".contact_matrix_filename = \"inputs/contact_matrix.csv\"") %>%
+  c("") %>%
+  c("# number of age classes") %>%
+  c(paste0(".nage = ", nrow(ages))) %>%
+  c("") %>%
+  c("# names of input files for seeding") %>%
+  c(".nseeds = 5") %>%
+  c(".ward_seed_filename = \"inputs/ward_seeds.csv\"") %>%
+  c(".age_seed_filename = \"inputs/age_seeds.csv\"")
+writeLines(user, "../inputs/user_inputs.txt")
+```
+
+<button data-toggle="collapse" data-target="#usercode">Click for user inputs</button>
+<div id="usercode" class="collapse boxed">
+
+```{python, code = readLines("../inputs/user_inputs.txt"), eval = FALSE}
+``` 
 
 </div>
 
@@ -228,23 +228,28 @@ We will discuss these choices in more detail in the subsequent sections. Note th
 
 We seed infections into working-age `genpop` demographics only. To do this we require a set of probabilities for each age-demographic. These are stored in a file called `inputs/age_seeds.csv`, containing the probabilities below:
 
-```{r, echo = FALSE, results = "asis"}
+```{r, echo = FALSE}
 age_seed <- ages %>%
   mutate(count = ifelse(ageCat == "<5", 0, count)) %>%
   mutate(count = ifelse(ageCat == "5-17", 0, count)) %>%
   mutate(count = ifelse(ageCat == "60-69", 0, count)) %>%
   mutate(count = ifelse(ageCat == "70+", 0, count)) %>%
-  mutate(prop = count / sum(count))
-write_csv(
-  mutate(age_seed, class = 1:n()) %>%
-    select(class, prop), 
-  "../inputs/age_seeds.csv", col_names = FALSE)
-knitr::kable(age_seed)
+  mutate(prop = count / sum(count)) %>%
+  mutate(class = 1:n()) %>%
+  select(class, prop)
+write_csv(age_seed, "../inputs/age_seeds.csv", col_names = FALSE)
 ```
 
-We take a multinomial sample of size 5 to decide how many individuals are seeded into each age-class.
+```{js, code = readLines("../inputs/age_seeds.csv"), eval = FALSE}
+```
 
-To then decide which wards these are seeded into, we take the first 100 observed deaths, and generate the proportions of these deaths across the relevant NHS trusts. This generates a probability of seeding infection in each trust. We then split these probabilities across all wards in these trusts proportionately to the ward population sizes. We then sample initial seeds by taking a multinomial sample of the relevant size (according to the age-class samples above) across all relevant wards. Details and instructions can be found in `data/seedDeaths/README.md`. This creates a file `inputs/ward_seeds.csv` that contains the necessary probabilities for ward seeding.
+Here the first column is the age demographic and the second is the probability of seeding into that age-demographic.
+
+We take a multinomial sample of size 5 to decide how many individuals are seeded into each age-class, and then we split these across wards as described below.
+
+We take the first 100 observed deaths, and generate the proportions of these deaths across the relevant NHS trusts. This generates a probability of seeding infection in each trust. We then split these probabilities across all wards in these trusts proportionately to the ward population sizes. We then sample initial seeds by taking a multinomial sample of the relevant size (according to the age-class samples above) across all relevant wards. Details and instructions can be found in `data/seedDeaths/README.md`. This creates a file `inputs/ward_seeds.csv` that contains the necessary probabilities for ward seeding. This file has the same form as the `age_seeds.csv` file described above, but the first column is the ward ID, and the second is the probabilities.
+
+> **Note**: the user inputs file must contain the relative path names to the age and ward seed files, and also the number of seeds required---see [here](#user).
 
 To implement this probabilistic seeding, we need a custom `iterator` function, which can be viewed below. 
 
@@ -253,17 +258,10 @@ To implement this probabilistic seeding, we need a custom `iterator` function, w
 
 The contents of the `iterator.py` file is below. This contains code to initiate seeds and deal with lockdown (see [here](#lockdown)).
 
-```{js, code = readLines("../model_code/iterator.py"), eval = FALSE}
+```{python, code = readLines("../model_code/iterator.py"), eval = FALSE}
 ```
 
-This requires an additional input file containing the dates of the different stages (which are fixed parameters here). This is stored in the `inputs/user_inputs.txt` file:
-
-```{python, code = readLines("../inputs/user_inputs.txt"), eval = FALSE}
-``` 
-
 </div>
-
-<p style="color:red">DISCUSS INPUTS FILE</p>
 
 ## Parameters {#parameters}
 
