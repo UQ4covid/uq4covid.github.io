@@ -13,11 +13,12 @@ public
 inputs/
 raw_outputs/
 tests/*.pdf
-data/tierData/Ward*
-data/tierData/*.csv
-data/tierData/*.pdf
+data/ward11toWard19Mapping/Ward*
+data/ward11toWard19Mapping/*.csv
+data/ward11toWard19Mapping/*.pdf
 data/hospitalStays/*.pdf
 MetaWards.Rproj
 
 literature
 newData
+
