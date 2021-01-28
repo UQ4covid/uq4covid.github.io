@@ -267,22 +267,22 @@ The contents of the `iterator.py` file is below. This contains code to initiate 
 
 For generic states $X$ and $Y$ say, the progress of an individual in age-class $j$ from state $X$ to state $Y$ in a given day is governed by probability $q^j_{XY}$, where:
 
-* $q^j_{SE}$ driven by $\beta_{kj}$ parameters ($j = 1, \dots, J$), defined by $R_0$, the mean length of the infectious period ($T_I$), and the population contact matrix, $C$, between age-classes (see [here](#trans) for details);
+* $q^j_{SE}$ driven by $\beta_{kj}$ parameters ($j = 1, \dots, J$), defined by $R_0$, the mean length of the infectious period ($T_I$), and the population contact matrix, $C$, between age-classes (see [here](#translink) for details);
 * $q^j_{EA} = p^j_{EA}\left(1 - e^{-\gamma_{E}}\right)$ where $\gamma_E = \frac{1}{T_E}$ with $T_E$ the mean latent period;
 * We model: $\log\left(p^j_{EA}\right) = \alpha_{EA} + \eta_{EA} \mbox{age}_j$, where $\eta_{EA} > 0$ and $\alpha_{EA} < -\eta_{EA} \max\left(\mbox{age}_j\right)$ to ensure than $0 < p^j_{EA} \leq 1$. The $\mbox{age}_j$ term is the middle age in age-class $j$.
-* $q^j_{EI_1} = \left(1 - p^j_{EA}\right)\left(1 - e^{-\gamma_{E}}\right)$;
-* $q^j_{AR} = 1 - e^{-\gamma_I}$ where $\gamma_I = \frac{1}{T_I}$ with $T_I = T_{I_1} + T_{I_2}$ the mean infectious period (assuming $T_{I_j}$ is the mean length of stay in class $I_j$);
-* $q^j_{I_1I_2} = p^j_{I_1I_2}\left(1 - e^{-\gamma_{I_1}}\right)$ where $\gamma_{I_1} = \frac{1}{T_{I_1}}$;
-* $q^j_{I_1H} = p^j_{I_1H}\left(1 - e^{-\gamma_{I_1}}\right)$;
-* $q^j_{I_1D} = \left(1 - p^j_{I_1H} - p^j_{I_1I_2}\right)\left(1 - e^{-\gamma_{I_1}}\right)$;
-* $q^j_{I_2R} = p^j_{I_2R}\left(1 - e^{-\gamma_{I_2}}\right)$ where $\gamma_{I_1} = \frac{1}{T_{I_1}}$;
-* Similarly to before, we model: $\log\left(p^j_{I_1I_2/H/R}\right) = \alpha_{I_1I_2/H/R} + \eta_{I_1I_2/H/R} \mbox{age}_j$, where $\eta_{I_1I_2/H/R} > 0$ and $\alpha_{I_1I_2/H/R} < -\eta_{I_1I_2/H/R} \max\left(\mbox{age}_j\right)$ to ensure than $0 < p^j_{I_1I_2/H/R} \leq 1$.
+* $q^j_{EI} = \left(1 - p^j_{EA}\right)\left(1 - e^{-\gamma_{E}}\right)$;
+* $q^j_{AR} = 1 - e^{-\gamma_I}$ where $\gamma_I = \frac{1}{T_I}$ with $T_I$ the mean infectious period;
+* $q^j_{IH} = p^j_{IH}\left(1 - e^{-\gamma_{I_1}}\right)$;
+* $q^j_{IR} = p^j_{IR}\left(1 - e^{-\gamma_{I_1}}\right)$;
+* $q^j_{ID} = \left(1 - p^j_{IH} - p^j_{IR}\right)\left(1 - e^{-\gamma_{I_1}}\right)$;
+* Similarly to before, we model: $\log\left(p^j_{IH/R}\right) = \alpha_{IH/R} + \eta_{IH/R} \mbox{age}_j$, where $\eta_{IH/R} > 0$ and $\alpha_{IH/R} < -\eta_{IH/R} \max\left(\mbox{age}_j\right)$ to ensure than $0 < p^j_{IH/R} \leq 1$.
 * $q^j_{HR} = p^j_{HR}\left(1 - e^{-\gamma_{H}}\right)$ where $\gamma_H = \frac{1}{T_H}$ with $T_H$ the mean length of hospital stay;
 * $q^j_{HD} = \left(1 - p^j_{HR}\right)\left(1 - e^{-\gamma_{H}}\right)$;
 * Similarly to before, we model: $\log\left(p^j_{HR}\right) = \alpha_{HR} + \eta_{HR} \mbox{age}_j$, where $\eta_{HR} > 0$ and $\alpha_{HR} < -\eta_{HR} \max\left(\mbox{age}_j\right)$ to ensure than $0 < p^j_{HR} \leq 1$. 
 
 Lockdown can be controlled either by constraining movements over a certain distance, or by scaling the $\beta_{kj}$ parameters. We do the latter at the moment. 
 
+<a name="translink"></a>
 <button data-toggle="collapse" data-target="#trans">Click for details on transmission terms</button>
 <div id="trans" class="collapse boxed">
 
@@ -351,7 +351,7 @@ The `mover` function applies movements in order, and so it is important to get t
 
 <p style="color:red">CHECK TRANSPOSE IN INTERACTION</p>
 
-The **interaction matrix** scales the force-of-infection (FOI) that different demographics have on other demographics. We will use this to capture the effect of each age-class on the FOI for the other age-classes (see [here](#trans)). We also have two further free parameters: $\beta^S_{A \to GP}$ and $\beta^S_{H \to GP}$ which scale the impact of aymptomatics and hospital cases on the FOI to the general population. We store this information in a file called `mix_pathways.py`. 
+The **interaction matrix** scales the force-of-infection (FOI) that different demographics have on other demographics. We will use this to capture the effect of each age-class on the FOI for the other age-classes (see [here](#translink)). We also have two further free parameters: $\beta^S_{A \to GP}$ and $\beta^S_{H \to GP}$ which scale the impact of aymptomatics and hospital cases on the FOI to the general population. We store this information in a file called `mix_pathways.py`. 
 
 <button data-toggle="collapse" data-target="#mixer">Click for MetaWards <code>mixing</code> file</button>
 <div id="mixer" class="collapse boxed">
