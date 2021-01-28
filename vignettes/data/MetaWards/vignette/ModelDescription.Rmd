@@ -35,7 +35,7 @@ grViz("digraph simpmod {
     graph[layout = dot, rankdir = LR]
     node [shape = rectangle]
     
-    S [group = gp]; E [group = gp]; I [group = gp];  
+    S [group = gp]; E [group = gp]; P [group = gp]; I [group = gp];  
     RI [label = 'R@_{I}', group = as]; DI [label = 'D@_{I}', group = gp]; 
     A [group = as]; RA [label = 'R@_{A}', group = as];
     H [group = hos]; RH [label = 'R@_{H}', group = hos]; DH [label = 'D@_{H}', group = hos];
@@ -45,12 +45,14 @@ grViz("digraph simpmod {
     St00 [style = 'invis', group = st]; St0 [style = 'invis', label = 'Stage 0', group = st]; 
     St1 [style = 'invis', label = 'Stage 1', group = st]; 
     St2 [style = 'invis', label = 'Stage 2', group = st]; 
+    St3 [style = 'invis', label = 'Stage 3', group = st]; 
     
     genpop -> S [style = 'invis']
     hospital -> H [style = 'invis']
     asymp -> A [style = 'invis']
     S -> E 
-    E -> I [label = '(1 - p@_{EA})T@_{E}']
+    E -> P [label = '(1 - p@_{EA})T@_{E}']
+    P -> I [label = 'T@_{P}']
     I -> RI [weight = 0, label = 'p@_{IR}T@_{I}']
     I -> DI [weight = 0, label = '(1 - p@_{IH} - p@_{IR})T@_{I}']
     I -> H [label = 'p@_{IH}T@_{I}']
@@ -59,8 +61,8 @@ grViz("digraph simpmod {
     RI -> DI [style = 'invis']
     RH -> DH [style = 'invis']
     E -> A [label = 'p@_{EA}T@_{E}']
-    A -> RA [label = 'T@_{I}']
-    St00 -> St0 -> St1 -> St2 [style = 'invis']
+    A -> RA [label = 'T@_{P} + T@_{I}']
+    St00 -> St0 -> St1 -> St2 -> St3 [style = 'invis']
     subgraph {
       rank = same; St0; E;
     }
@@ -69,14 +71,20 @@ grViz("digraph simpmod {
     }
     subgraph cluster {
       subgraph {
-        rank = same; A -> I -> H [style = 'invis']
+        A -> P -> I [style = 'invis', weight = 0];
       }
       style = filled;
       color = lightgrey;
       label = 'Infectious Classes'
     }
     subgraph {
-      rank = same; St2; RA; RI; DI; RH; DH;
+      rank = same; St1; A; P;
+    }
+    subgraph {
+      rank = same; St2; I; H;
+    }
+    subgraph {
+      rank = same; St3; RA; RI; DI; RH; DH;
     }
     
 }", height = '100%', width = '100%')
@@ -84,17 +92,28 @@ grViz("digraph simpmod {
 
 ## MetaWards setup
 
+The compartments are:
+
+* $S$: susceptible;
+* $E$: latent (infected but not infectious);
+* $A$: infectious but asymptomatic;
+* $P$: infectious and pre-symptomatic;
+* $I$: infectious and symptomatic;
+* $H$: hospitalised (see below);
+* $R$: recovered and immune;
+* $D$: died.
+
 The model structure above allows for different progression pathways. MetaWards deals with this by assigning individuals to different "demographics", where each demographic can be used to represent different progression pathways. There are also `mover` functions that can be used to move individuals between demographics, and `mixer` functions that scale the force-of-infection (FOI) terms between the different demographics (explained later). There are currently five pathways, which will be described below, but can be summarised as:
 
 * $SEAR$: asymptomatic infections, always recover.
-* $SEIR$: symptomatic infections, leading to recovery.
-* $SEID$: symptomatic infections, leading to death.
-* $SEIHR$: symptomatic infections, leading to hospital and then recovery.
-* $SEIHD$: symptomatic infections, leading to hospital and then death.
+* $SEPIR$: symptomatic infections, leading to recovery.
+* $SEPID$: symptomatic infections, leading to death.
+* $SEPIHR$: symptomatic infections, leading to hospital and then recovery.
+* $SEPIHD$: symptomatic infections, leading to hospital and then death.
 
-Individuals start in the `genpop` demographic. Those that move through the $SEIR$ and $SEID$ pathways remain in the `genpop` demographic, whereas those that progress through the `SEAR` pathway move into the `asymp` demographic. Furthermore, some individuals in the `genpop` demographic can be moved to the `hospital` demographic if they follow the `SEIHR` and `SEIHD` pathways.
+Individuals start in the `genpop` demographic. Those that move through the $SEPIR$ and $SEPID$ pathways remain in the `genpop` demographic, whereas those that progress through the `SEAR` pathway move into the `asymp` demographic. Furthermore, some individuals in the `genpop` demographic can be moved to the `hospital` demographic if they follow the `SEPIHR` and `SEIPHD` pathways.
 
-We are calibrating to hospitalised deaths, and so to simplify the model and aid calibration, we assume that transitions out of the $I$ class correspond to an end-of-infectiousness. Some evidence suggests that individuals can remain symptomatic for much longer than they remain infectious for, but from a transmission perspective, once individuals cease to be infectious they are equivalent to "recovered" individuals. As such, the $R_I$ class corresponds to recovered and non-infectious symptomatic individuals, and $T_I$ to the average infectious period (not average symptomatic period). We also make the simplifying assumption that individuals cease to be infectious when they enter hospital. Hospital-to-general population transmission is thought to be low <p style="color:red">[REF]</p>, but this will interact with the definition of $T_I$ <p style="color:red">[JUSTIFY]</p>.
+We are calibrating to hospitalised deaths, and so to simplify the model and aid calibration, we assume that transitions out of the $I$ class correspond to an end-of-infectiousness. Some evidence suggests that individuals can remain symptomatic for much longer than they remain infectious for, but from a transmission perspective, once individuals cease to be infectious they are equivalent to "recovered" individuals. As such, the $R_I$ class corresponds to recovered and non-infectious symptomatic individuals, and $T_P + T_I$ to the average infectious period (not average symptomatic period). The incubation period is thus $T_E + T_P$. We also make the simplifying assumptions that asymptomatic infections last the same time as symptomatic infections, and that individuals cease to be infectious when they enter hospital. Hospital-to-general population transmission is thought to be low <p style="color:red">[REF]</p>, but this will interact with the definition of $T_I$ <p style="color:red">[JUSTIFY]</p>.
 
 We need to specify initial proportions of individuals in each pathway such that $\sum_{i \in \mathcal{P}}\sum_{j = 1}^J p_{ij} = 1$, where $\mathcal{P} = \{GP, A, H\}$ and $j = 1, \dots, J$ define the $J$ mutually exclusive age-classes. Here we define the proportions of individuals in each age class from the data in the `inputs/Pop by CTRY.csv` file from Rob:
 
@@ -267,14 +286,15 @@ The contents of the `iterator.py` file is below. This contains code to initiate 
 
 For generic states $X$ and $Y$ say, the progress of an individual in age-class $j$ from state $X$ to state $Y$ in a given day is governed by probability $q^j_{XY}$, where:
 
-* $q^j_{SE}$ driven by $\beta_{kj}$ parameters ($j = 1, \dots, J$), defined by $R_0$, the mean length of the infectious period ($T_I$), and the population contact matrix, $C$, between age-classes (see [here](#translink) for details);
+* $q^j_{SE}$ driven by $\beta_{kj}$ parameters ($j = 1, \dots, J$), defined by $R_0$, the mean length of the infectious period ($T_I$), and the population contact matrix, $C$, between age-classes (see [here](#translink) for details); <p style="color:red">UPDATE</p>
 * $q^j_{EA} = p^j_{EA}\left(1 - e^{-\gamma_{E}}\right)$ where $\gamma_E = \frac{1}{T_E}$ with $T_E$ the mean latent period;
 * We model: $\log\left(p^j_{EA}\right) = \alpha_{EA} + \eta_{EA} \mbox{age}_j$, where $\eta_{EA} > 0$ and $\alpha_{EA} < -\eta_{EA} \max\left(\mbox{age}_j\right)$ to ensure than $0 < p^j_{EA} \leq 1$. The $\mbox{age}_j$ term is the middle age in age-class $j$.
-* $q^j_{EI} = \left(1 - p^j_{EA}\right)\left(1 - e^{-\gamma_{E}}\right)$;
-* $q^j_{AR} = 1 - e^{-\gamma_I}$ where $\gamma_I = \frac{1}{T_I}$ with $T_I$ the mean infectious period;
-* $q^j_{IH} = p^j_{IH}\left(1 - e^{-\gamma_{I_1}}\right)$;
-* $q^j_{IR} = p^j_{IR}\left(1 - e^{-\gamma_{I_1}}\right)$;
-* $q^j_{ID} = \left(1 - p^j_{IH} - p^j_{IR}\right)\left(1 - e^{-\gamma_{I_1}}\right)$;
+* $q^j_{EP} = \left(1 - p^j_{EA}\right)\left(1 - e^{-\gamma_{E}}\right)$;
+* $q^j_{AR} = 1 - e^{-\gamma_I}$ where $\gamma_I = \frac{1}{T_P + T_I}$ with $T_P + T_I$ the mean infectious period;
+* $q^j_{PI} = \left(1 - e^{-\gamma_{P}}\right)$ where $\gamma_P = \frac{1}{T_P}$ with $T_P$ the mean pre-symptomatic infectious period;
+* $q^j_{IH} = p^j_{IH}\left(1 - e^{-\gamma_{I}}\right)$ where $\gamma_I = \frac{1}{T_I}$ with $T_I$ the mean symptomatic infectious period;
+* $q^j_{IR} = p^j_{IR}\left(1 - e^{-\gamma_{I}}\right)$;
+* $q^j_{ID} = \left(1 - p^j_{IH} - p^j_{IR}\right)\left(1 - e^{-\gamma_{I}}\right)$;
 * Similarly to before, we model: $\log\left(p^j_{IH/R}\right) = \alpha_{IH/R} + \eta_{IH/R} \mbox{age}_j$, where $\eta_{IH/R} > 0$ and $\alpha_{IH/R} < -\eta_{IH/R} \max\left(\mbox{age}_j\right)$ to ensure than $0 < p^j_{IH/R} \leq 1$.
 * $q^j_{HR} = p^j_{HR}\left(1 - e^{-\gamma_{H}}\right)$ where $\gamma_H = \frac{1}{T_H}$ with $T_H$ the mean length of hospital stay;
 * $q^j_{HD} = \left(1 - p^j_{HR}\right)\left(1 - e^{-\gamma_{H}}\right)$;
