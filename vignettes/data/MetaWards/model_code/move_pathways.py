@@ -21,6 +21,11 @@ def move_pathways(network, **kwargs):
     for j in range(nage):
         pA.append(params.user_params[f'pA_{j + 1}'])
     
+    ## moves out of P class
+    pP = []
+    for j in range(nage):
+        pP.append(params.user_params[f'pP_{j + 1}'])
+    
     ## moves out of I1 class
     pI1 = []
     pI1H = []
@@ -66,7 +71,7 @@ def move_pathways(network, **kwargs):
         tpHR[j] = 0.0 if tpHR[j] < 0.0 else tpHR[j]
         func.append(lambda k = j, **kwargs: go_stage(go_from=f'hospital{k + 1}',
                                       go_to=f'hospital{k + 1}',
-                                      from_stage="IH",
+                                      from_stage="H",
                                       to_stage="RH",
                                       fraction=tpHR[j],
                                       **kwargs))
@@ -83,7 +88,7 @@ def move_pathways(network, **kwargs):
         tpHD[j] = 0.0 if tpHD[j] < 0.0 else tpHD[j]
         func.append(lambda k = j, **kwargs: go_stage(go_from=f'hospital{k + 1}',
                                       go_to=f'hospital{k + 1}',
-                                      from_stage="IH",
+                                      from_stage="H",
                                       to_stage="DH",
                                       fraction=tpHD[j],
                                       **kwargs))
@@ -92,7 +97,7 @@ def move_pathways(network, **kwargs):
     #########              I2 MOVES               #########
     #######################################################
 
-    ## move I2 genpop to R genpop
+    ## move I2 genpop to RI genpop
     tpI2R = []
     for j in range(nage):
         tpI2R.append(pI2[j])
@@ -101,7 +106,7 @@ def move_pathways(network, **kwargs):
         func.append(lambda k = j, **kwargs: go_stage(go_from=f'genpop{k + 1}',
                                       go_to=f'genpop{k + 1}',
                                       from_stage="I2",
-                                      to_stage="R",
+                                      to_stage="RI",
                                       fraction=tpI2R[j],
                                       **kwargs))
     
@@ -118,7 +123,7 @@ def move_pathways(network, **kwargs):
         func.append(lambda k = j, **kwargs: go_stage(go_from=f'genpop{k + 1}',
                                       go_to=f'hospital{k + 1}',
                                       from_stage="I1",
-                                      to_stage="IH",
+                                      to_stage="H",
                                       fraction=tpI1H[j],
                                       **kwargs))
 
@@ -152,8 +157,23 @@ def move_pathways(network, **kwargs):
         func.append(lambda k = j, **kwargs: go_stage(go_from=f'genpop{k + 1}',
                                       go_to=f'genpop{k + 1}',
                                       from_stage="I1",
-                                      to_stage="D",
+                                      to_stage="DI",
                                       fraction=tpI1D[j],
+                                      **kwargs))
+    
+    #######################################################
+    #########              P MOVES                #########
+    #######################################################
+
+    ## move P genpop to I1 genpop
+    tpPI1 = []
+    for j in range(nage):
+        tpPI1.append(pP[j])
+        func.append(lambda k = j, **kwargs: go_stage(go_from=f'genpop{k + 1}',
+                                      go_to=f'genpop{k + 1}',
+                                      from_stage="P",
+                                      to_stage="I1",
+                                      fraction=tpPI1[j],
                                       **kwargs))
     
     #######################################################
@@ -166,7 +186,7 @@ def move_pathways(network, **kwargs):
         tpAR.append(pA[j])
         func.append(lambda k = j, **kwargs: go_stage(go_from=f'asymp{k + 1}',
                                       go_to=f'asymp{k + 1}',
-                                      from_stage="IA",
+                                      from_stage="A",
                                       to_stage="RA",
                                       fraction=tpAR[j],
                                       **kwargs))
@@ -184,25 +204,25 @@ def move_pathways(network, **kwargs):
         func.append(lambda k = j, **kwargs: go_stage(go_from=f'genpop{k + 1}',
                                       go_to=f'asymp{k + 1}',
                                       from_stage="E",
-                                      to_stage="IA",
+                                      to_stage="A",
                                       fraction=tpEA[j],
                                       **kwargs))
 
-    ## move E genpop to I1 genpop
+    ## move E genpop to P genpop
     ## (denominator adjustment is due to operating on remainder
     ## as described in the vignette, also includes correction
     ## in case of rounding error)
-    tpEI1 = []
+    tpEP = []
     for j in range(nage):
-        tpEI1.append(pE[j] * (1.0 - pEA[j]) / (1.0 - tpEA[j]))
-        tpEI1[j] = 0.0 if tpEA[j] == 1.0 else tpEI1[j]
-        tpEI1[j] = 1.0 if tpEI1[j] > 1.0 else tpEI1[j]
-        tpEI1[j] = 0.0 if tpEI1[j] < 0.0 else tpEI1[j]
+        tpEP.append(pE[j] * (1.0 - pEA[j]) / (1.0 - tpEA[j]))
+        tpEP[j] = 0.0 if tpEA[j] == 1.0 else tpEP[j]
+        tpEP[j] = 1.0 if tpEP[j] > 1.0 else tpEP[j]
+        tpEP[j] = 0.0 if tpEP[j] < 0.0 else tpEP[j]
         func.append(lambda k = j, **kwargs: go_stage(go_from=f'genpop{k + 1}',
                                       go_to=f'genpop{k + 1}',
                                       from_stage="E",
-                                      to_stage="I1",
-                                      fraction=tpEI1[j],
+                                      to_stage="P",
+                                      fraction=tpEP[j],
                                       **kwargs))
 
     return func

@@ -11,7 +11,7 @@ def create_tables(network: Networks):
     ## Primary key needs to be composite here
     
     ## set specific column names
-    col_names = ["Einc", "I1inc", "I2inc", "Rinc", "Dinc", "IAinc", "RAinc", "IHinc", "RHinc", "DHinc"]
+    col_names = ["Einc", "Pinc", "I1inc", "I2inc", "RIinc", "DIinc", "Ainc", "RAinc", "Hinc", "RHinc", "DHinc"]
     col_names = [f"{i} int" for i in col_names]
     col_str = ','.join(col_names)
 
@@ -64,10 +64,10 @@ def output_db(population: Population, network: Networks,
         
         if subName == "genpop":
             ## new deaths across wards
-            for old, new in zip(ward_inf_previous[4], ward_inf_tot[4]):
+            for old, new in zip(ward_inf_previous[5], ward_inf_tot[5]):
                 Dprime[i].append(new - old)
             ## new removals across wards
-            for old, new in zip(ward_inf_previous[3], ward_inf_tot[3]):
+            for old, new in zip(ward_inf_previous[4], ward_inf_tot[4]):
                 Rprime[i].append(new - old)
         
         if subName == "asymp":
@@ -83,9 +83,6 @@ def output_db(population: Population, network: Networks,
             for old, new in zip(ward_inf_previous[1], ward_inf_tot[1]):
                 Rprime[i].append(new - old)
     
-    ## calculate Iprime in each demographic
-    Iprime = [[] for _ in range(len(network.subnets))]
-    
     ## extract subnet names
     sub_names = [network.subnets[i].name for i in range(len(network.subnets))]
     
@@ -100,8 +97,9 @@ def output_db(population: Population, network: Networks,
         ward_inf_previous = workspace.subspaces[ia].output_previous
         ward_inf_tot = workspace.subspaces[ia].ward_inf_tot
         ## calculate incidence
+        Aprime = []
         for old, new, Rinc in zip(ward_inf_previous[0], ward_inf_tot[0], Rprime[ia]):
-            Iprime[ia].append(new - old + Rinc)
+            Aprime.append(new - old + Rinc)
         
         ## HOSPITAL
         ih = sub_names.index(f'hospital{j + 1}')
@@ -109,35 +107,42 @@ def output_db(population: Population, network: Networks,
         ward_inf_previous = workspace.subspaces[ih].output_previous
         ward_inf_tot = workspace.subspaces[ih].ward_inf_tot
         ## calculate incidence
+        Hprime = []
         for old, new, Rinc, Dinc in zip(ward_inf_previous[0], ward_inf_tot[0], Rprime[ih], Dprime[ih]):
-            Iprime[ih].append(new - old + Rinc + Dinc)
+            Hprime.append(new - old + Rinc + Dinc)
         
         ## GENPOP I2
         ig = sub_names.index(f'genpop{j + 1}')
         ## get data
         ward_inf_previous = workspace.subspaces[ig].output_previous
         ward_inf_tot = workspace.subspaces[ig].ward_inf_tot
-        I2prime = []
         ## calculate incidence
-        for old, new, Rinc in zip(ward_inf_previous[2], ward_inf_tot[2], Rprime[ig]):
+        I2prime = []
+        for old, new, Rinc in zip(ward_inf_previous[3], ward_inf_tot[3], Rprime[ig]):
             I2prime.append(new - old + Rinc)
         
         ## GENPOP I1
         ## calculate incidence
-        for old, new, I2inc, Dinc, Hinc in zip(ward_inf_previous[1], ward_inf_tot[1], I2prime, Dprime[ig], Iprime[ih]):
-            Iprime[ig].append(new - old + I2inc + Dinc + Hinc)
+        I1prime = []
+        for old, new, I2inc, Dinc, Hinc in zip(ward_inf_previous[2], ward_inf_tot[2], I2prime, Dprime[ig], Hprime):
+            I1prime.append(new - old + I2inc + Dinc + Hinc)
+        
+        # calculate Pprime in GENPOP demographic
+        Pprime = []
+        for old, new, I1inc in zip(ward_inf_previous[1], ward_inf_tot[1], I1prime):
+            Pprime.append(new - old + I1inc)
         
         # calculate Eprime in GENPOP demographic
         Eprime = []
-        for old, new, Iinc, Ainc in zip(ward_inf_previous[0], ward_inf_tot[0], Iprime[ig], Iprime[ia]):
-            Eprime.append(new - old + Iinc + Ainc)
+        for old, new, Pinc, Ainc in zip(ward_inf_previous[0], ward_inf_tot[0], Pprime, Aprime):
+            Eprime.append(new - old + Pinc + Ainc)
             
         ## loop over wards and write to file
         wards = range(0, workspace.subspaces[0].nnodes + 1)
         day = [population.day] * len(wards)
         
         ## set column names
-        col_names = ["day", "ward", "Einc", "I1inc", "I2inc", "Rinc", "Dinc", "IAinc", "RAinc", "IHinc", "RHinc", "DHinc"]
+        col_names = ["day", "ward", "Einc", "Pinc", "I1inc", "I2inc", "RIinc", "DIinc", "Ainc", "RAinc", "Hinc", "RHinc", "DHinc"]
         col_str = ','.join(col_names)
         
         ## extract demographics
@@ -146,9 +151,9 @@ def output_db(population: Population, network: Networks,
         hospital_ward = workspace.subspaces[ih].ward_inf_tot
         
         ## write to file
-        for day, ward, Einc, I1inc, I2inc, Rinc, Dinc, IAinc, RAinc, IHinc, RHinc, DHinc in\
-        zip(day, wards, Eprime, Iprime[ig], I2prime, Rprime[ig], Dprime[ig], Iprime[ia], Rprime[ia],\
-        Iprime[ih], Rprime[ih], Dprime[ih]):
+        for day, ward, Einc, Pinc, I1inc, I2inc, RIinc, DIinc, Ainc, RAinc, Hinc, RHinc, DHinc in\
+        zip(day, wards, Eprime, Pprime, I1prime, I2prime, Rprime[ig], Dprime[ig], Aprime, Rprime[ia],\
+        Hprime, Rprime[ih], Dprime[ih]):
             if ward not in _zero_crossings:
                 _zero_crossings[ward] = False
                 
@@ -158,7 +163,7 @@ def output_db(population: Population, network: Networks,
                 Console.print(f"Got first infection in ward {ward}")
                 
             ## set up list of changes
-            val = [day, ward, Einc, I1inc, I2inc, Rinc, Dinc, IAinc, RAinc, IHinc, RHinc, DHinc]
+            val = [day, ward, Einc, Pinc, I1inc, I2inc, RIinc, DIinc, Ainc, RAinc, Hinc, RHinc, DHinc]
             keeps_str = ",".join([str(v) for v in val])
             qstring = f"insert into compact ({col_str}) values ({keeps_str}) "
             
