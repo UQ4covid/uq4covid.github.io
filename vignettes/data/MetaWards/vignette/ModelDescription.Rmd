@@ -102,6 +102,7 @@ The demographics in MetaWards is set up using the `demographics.json` file.
 
 The number of stages can be set with the MetaWards disease files, called `ncov_*.json` here.
 
+<a name="diseasefile"></a>
 <button data-toggle="collapse" data-target="#disease">Click for MetaWards <code>disease</code> files</button>
 <div id="disease" class="collapse boxed">
 
@@ -330,7 +331,7 @@ where $\mathbf{F}^\ast$ is equivalent to replacing $\beta^{ji}$ by $c^{ji}$ in $
 
 <br>
 
-### Parameter bounds
+### Parameter ranges {#parranges}
 
 We have derived plausible parameter bounds from data and the literature.
 
@@ -356,7 +357,7 @@ We have derived plausible parameter bounds from data and the literature.
 
 ## Mover functions
 
-MetaWards has a specific structure in terms of how it progresses movements between the stages. To get the correct splits between the **pathways** specified above we do all non-infection movements through a custom `mover` function specified [below](#mover). Note that in the `ncov.json` file specified [above](#diseasefile), we set all `progress` parameters to be 0. Thus, all transition probabilities other than new infections are driven by user-defined parameters that are passed to the `mover` function, which we call `move_pathways.py` here.
+MetaWards has a specific structure in terms of how it progresses movements between the stages. To get the correct splits between the **pathways** specified above we do all non-infection movements through a custom `mover` function specified below. Note that in the `ncov.json` file specified [above](#diseasefile), we set all `progress` parameters to be 0. Thus, all transition probabilities other than new infections are driven by user-defined parameters that are passed to the `mover` function, which we call `move_pathways.py` here.
 
 <button data-toggle="collapse" data-target="#mover">Click for MetaWards <code>mover</code> file</button>
 <div id="mover" class="collapse boxed">
@@ -376,12 +377,12 @@ The `mover` function applies movements in order, and so it is important to get t
 
 <p style="color:red">CHECK TRANSPOSE IN INTERACTION</p>
 
-The **interaction matrix** scales the force-of-infection (FOI) that different demographics have on other demographics. We will use this to capture the effect of each age-class on the FOI for the other age-classes (see [here](#translink)). We also have two further free parameters: $\beta^S_{A \to GP}$ and $\beta^S_{H \to GP}$ which scale the impact of aymptomatics and hospital cases on the FOI to the general population. We store this information in a file called `mix_pathways.py`. 
+The **interaction matrix** scales the force-of-infection (FOI) that different demographics have on other demographics. We will use this to capture the effect of each age-class on the FOI for the other age-classes (see [here](#translink)). We require a further free parameter, $\beta_{A \to GP}$ which scales the FOI from asymptomatics to the general population. We store this information in a file called `mix_pathways.py`. 
 
 <button data-toggle="collapse" data-target="#mixer">Click for MetaWards <code>mixing</code> file</button>
 <div id="mixer" class="collapse boxed">
 
-Since most of the classes are already infected, it's only the rows corresponding to the general population age-classes that have to contain non-zero entries. Here the `GP_A` and `GP_H` parameters scale the impact of aymptomatics and hospital cases on the force-of-infection to the general population. All demographics other than `genpop` are already infected, so have no further force-of-infection acting on them, and thus the other parameters can be set to zero. These parameters are all $> 0$.
+Since most of the classes are already infected, it's only the rows corresponding to the general population age-classes that have to contain non-zero entries. Here the `GP_A` parameter scales FOI from asymptomatics to the general population. All demographics other than `genpop` are already infected, so have no further force-of-infection acting on them, and thus the other parameters can be set to zero. These parameters are all $> 0$.
 
 ```{python, code = readLines("../model_code/mix_pathways.py"), eval = FALSE}
 ```
@@ -390,12 +391,7 @@ Since most of the classes are already infected, it's only the rows corresponding
 
 ## Lockdown
 
-<p style="color:red">CAN SKIP THIS FOR FIRST RUNS SINCE WE RUN UP TO BEFORE LOCKDOWN</p>
-<p style="color:red">LOCKDOWN TO SCALE WORK AND PLAY - TURN MOVEMENTS OF IN HOSPITALS AND ICUS</p>
-<p style="color:red">TURN LOCAL MOVEMENTS OFF</p>
-<p style="color:red">GOOGLE MOBILITY?</p>
-
-Lockdown scales the FOI terms for different time periods, which each represent a different stage of interventions. We store this information in a custom `iterator` function with the corresponding parameters in `inputs/user_inputs.txt`.
+Lockdown scales the FOI terms for different time periods, which each represent a different stage of interventions. Furthermore, for full lockdown we switch off all worker movements. When partial relaxing of lockdown is introduced, we allow worker movements to begin again, but scale the FOI (albeit less stringently than during full lockdown). We store this information in a custom `iterator` function with the corresponding parameters in `inputs/user_inputs.txt`.
 
 Seed [here](#seeds) for full iterator function.
 
@@ -415,9 +411,9 @@ This trick **hugely** reduces the size of the output data, but means that we hav
 So, to clarify, the `stages*.db` databases each contain a table called `compact` with entries:
 
 * `day`, `ward`
-* `Einc`, `Iinc`, `Rinc`, `Dinc`
-* `IAinc`, `RAinc`
-* `IHinc`, `RHinc`, `DHinc`
+* `Einc`, `Pinc`, `I1inc`, `I2inc`, `RIinc`, `DIinc`
+* `Ainc`, `RAinc`
+* `Hinc`, `RHinc`, `DHinc`
 
 We save this custom `extractor` function in the file `ward_extractor.py`.
 
@@ -439,25 +435,7 @@ To run designs, we need to generate a `disease.csv` file containing different pa
 * *design* space: this will usually be in $(0, 1)$ or $(-1, 1)$ space;
 * *disease* space: this relates to parameters that are fed into MetaWards.
 
-The *input* and *design* spaces are fairly trivial to convert between, but some more work has to be done to convert between the *input* space and the *disease* space. Thus we have parameter ranges:
-\begin{align}
-    \mbox{$R_0$}&: (2, 4.5)\\
-    \mbox{mean latent period ($T_E$)}&: (4, 6)\\
-    \mbox{mean infectious period ($T_I$)}&: (2, 4)\\
-    \mbox{mean hospital stay ($T_H$)}&: (4, 12)\\
-    \mbox{lockdown 1 restrict}&: (0, 1)\\
-    \mbox{lockdown 2 release}&: (0, 1)\\
-    \alpha_{EA}&: (?, ?)~\mbox{such that}~\alpha_{EA} < -\eta_{EA} \mbox{age}_M\\
-    \eta_{EA}&: (0, ?)\\
-    \alpha_{IH}&: (?, ?)~\mbox{such that}~\alpha_{IH} < -\eta_{IH} \mbox{age}_M\\
-    \eta_{IH}&: (0, ?)\\
-    \alpha_{IR}&: (?, ?)~\mbox{such that}~\alpha_{IR} < -\eta_{IR} \mbox{age}_M\\
-    \eta_{IR}&: (0, ?)\\
-    \alpha_{HR}&: (?, ?)~\mbox{such that}~\alpha_{HR} < -\eta_{HR} \mbox{age}_M\\
-    \eta_{HR}&: (0, ?)\\
-    \beta^S_{A \to GP}&: (0, 1)\\
-    \beta^S_{H \to GP}&: (0, 1).
-\end{align}
+The *input* and *design* spaces are fairly trivial to convert between, but some more work has to be done to convert between the *input* space and the *disease* space. Thus we have parameter ranges as described [above](#parranges).
 
 In R we can set up the *input* parameter ranges as follows:
 
