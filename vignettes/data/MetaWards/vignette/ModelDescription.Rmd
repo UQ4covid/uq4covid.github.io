@@ -20,88 +20,20 @@ Please download files for running the model from **[here](metawards.zip)**.
 
 The basic model structure is:
 
-* $E$: infected but not infectious;
-* $A$: asymptomatic and infectious;
-* $I$: symptomatic and infectious;
-* $H$: hospitalised and not infectious;
-* $R$: recovered and immune, or symptomatic and not infectious;
-* $D$: died.
-
-**Each of these classes will be split into $J$ age-classes, with interactions between the classes described in detail below.**
-
-```{r, echo = FALSE}
-library(DiagrammeR)
-grViz("digraph simpmod {
-    graph[layout = dot, rankdir = LR]
-    node [shape = rectangle]
-    
-    S [group = gp]; E [group = gp]; P [group = gp]; I [group = gp];  
-    RI [label = 'R@_{I}', group = as]; DI [label = 'D@_{I}', group = gp]; 
-    A [group = as]; RA [label = 'R@_{A}', group = as];
-    H [group = hos]; RH [label = 'R@_{H}', group = hos]; DH [label = 'D@_{H}', group = hos];
-    genpop [label = 'Gen. Pop.', group = gp]
-    asymp [label = 'Asymptomatics', group = as]
-    hospital [label = 'Hospital Patient', group = hos]
-    St00 [style = 'invis', group = st]; St0 [style = 'invis', label = 'Stage 0', group = st]; 
-    St1 [style = 'invis', label = 'Stage 1', group = st]; 
-    St2 [style = 'invis', label = 'Stage 2', group = st]; 
-    St3 [style = 'invis', label = 'Stage 3', group = st]; 
-    
-    genpop -> S [style = 'invis']
-    hospital -> H [style = 'invis']
-    asymp -> A [style = 'invis']
-    S -> E 
-    E -> P [label = '(1 - p@_{EA})T@_{E}']
-    P -> I [label = 'T@_{P}']
-    I -> RI [weight = 0, label = 'p@_{IR}T@_{I}']
-    I -> DI [weight = 0, label = '(1 - p@_{IH} - p@_{IR})T@_{I}']
-    I -> H [label = 'p@_{IH}T@_{I}']
-    H -> RH [weight = 0, label = 'p@_{HR}T@_{H}']
-    H -> DH [weight = 0, label = '(1 - p@_{HR})T@_{H}'] 
-    RI -> DI [style = 'invis']
-    RH -> DH [style = 'invis']
-    E -> A [label = 'p@_{EA}T@_{E}']
-    A -> RA [label = 'T@_{P} + T@_{I}']
-    St00 -> St0 -> St1 -> St2 -> St3 [style = 'invis']
-    subgraph {
-      rank = same; St0; E;
-    }
-    subgraph {
-      rank = same; St00 -> asymp -> genpop -> hospital [style = 'invis']
-    }
-    subgraph cluster {
-      subgraph {
-        A -> P -> I [style = 'invis', weight = 0];
-      }
-      style = filled;
-      color = lightgrey;
-      label = 'Infectious Classes'
-    }
-    subgraph {
-      rank = same; St1; A; P;
-    }
-    subgraph {
-      rank = same; St2; I; H;
-    }
-    subgraph {
-      rank = same; St3; RA; RI; DI; RH; DH;
-    }
-    
-}", height = '100%', width = '100%')
-```
-
-## MetaWards setup
-
-The compartments are:
-
 * $S$: susceptible;
 * $E$: latent (infected but not infectious);
 * $A$: infectious but asymptomatic;
 * $P$: infectious and pre-symptomatic;
-* $I$: infectious and symptomatic;
+* $I$: infectious and symptomatic (split into $I_1$ and $I_2$ for timing purposes);
 * $H$: hospitalised (see below);
 * $R$: recovered and immune;
 * $D$: died.
+
+**Each of these classes will be split into $J$ age-classes, with interactions between the classes described in detail below.**
+
+![](model.svg)
+
+## MetaWards setup
 
 The model structure above allows for different progression pathways. MetaWards deals with this by assigning individuals to different "demographics", where each demographic can be used to represent different progression pathways. There are also `mover` functions that can be used to move individuals between demographics, and `mixer` functions that scale the force-of-infection (FOI) terms between the different demographics (explained later). There are currently five pathways, which will be described below, but can be summarised as:
 
@@ -113,10 +45,11 @@ The model structure above allows for different progression pathways. MetaWards d
 
 Individuals start in the `genpop` demographic. Those that move through the $SEPIR$ and $SEPID$ pathways remain in the `genpop` demographic, whereas those that progress through the `SEAR` pathway move into the `asymp` demographic. Furthermore, some individuals in the `genpop` demographic can be moved to the `hospital` demographic if they follow the `SEPIHR` and `SEIPHD` pathways.
 
-We are calibrating to hospitalised deaths, and so to simplify the model and aid calibration, we assume that transitions out of the $I$ class correspond to an end-of-infectiousness. Some evidence suggests that individuals can remain symptomatic for much longer than they remain infectious for, but from a transmission perspective, once individuals cease to be infectious they are equivalent to "recovered" individuals. As such, the $R_I$ class corresponds to recovered and non-infectious symptomatic individuals, and $T_P + T_I$ to the average infectious period (not average symptomatic period). The incubation period is thus $T_E + T_P$. We also make the simplifying assumptions that asymptomatic infections last the same time as symptomatic infections, and that individuals cease to be infectious when they enter hospital. Hospital-to-general population transmission is thought to be low <p style="color:red">[REF]</p>, but this will interact with the definition of $T_I$ <p style="color:red">[JUSTIFY]</p>.
+We are calibrating to hospitalised deaths, and so to simplify the model and aid calibration, we assume that the $H$ class is non-infectious, but split the $I$ class into two stages, $I_1$ and $I_2$. Therefore, on average individuals are infectious for longer if they do not go to hospital. Some evidence suggests that individuals can remain symptomatic for much longer than they remain infectious, but from a transmission perspective, once individuals cease to be infectious they are equivalent to "recovered" individuals. As such, the $R_I$ class corresponds to recovered and non-infectious symptomatic individuals, and $T_P + T_{I_1} + T_{I_2}$ to the average infectious period (not average symptomatic period). The incubation period is thus $T_E + T_P$, and the time between symptom onset and admission to hospital is $T_{I_1}$. We also make the simplifying assumption that asymptomatic infections last the same time as symptomatic infections.
 
 We need to specify initial proportions of individuals in each pathway such that $\sum_{i \in \mathcal{P}}\sum_{j = 1}^J p_{ij} = 1$, where $\mathcal{P} = \{GP, A, H\}$ and $j = 1, \dots, J$ define the $J$ mutually exclusive age-classes. Here we define the proportions of individuals in each age class from the data in the `inputs/Pop by CTRY.csv` file from Rob:
 
+<a name="ages"></a>
 ```{r, warning = FALSE, message = FALSE, echo = FALSE, results = "asis"}
 library(tidyverse)
 
@@ -245,14 +178,10 @@ writeLines(user, "../inputs/user_inputs.txt")
 
 ## Seeding
 
-We seed infections into working-age `genpop` demographics only. To do this we require a set of probabilities for each age-demographic. These are stored in a file called `inputs/age_seeds.csv`, containing the probabilities below:
+We seed infections proportionately to the age-structure of the population (described [above](#ages)). These are stored in a file called `inputs/age_seeds.csv`, containing the probabilities below:
 
 ```{r, echo = FALSE}
 age_seed <- ages %>%
-  mutate(count = ifelse(ageCat == "<5", 0, count)) %>%
-  mutate(count = ifelse(ageCat == "5-17", 0, count)) %>%
-  mutate(count = ifelse(ageCat == "60-69", 0, count)) %>%
-  mutate(count = ifelse(ageCat == "70+", 0, count)) %>%
   mutate(prop = count / sum(count)) %>%
   mutate(class = 1:n()) %>%
   select(class, prop)
@@ -284,72 +213,148 @@ The contents of the `iterator.py` file is below. This contains code to initiate 
 
 ## Parameters {#parameters}
 
-For generic states $X$ and $Y$ say, the progress of an individual in age-class $j$ from state $X$ to state $Y$ in a given day is governed by probability $q^j_{XY}$, where:
+For generic states $X$ and $Y$ say, the progress of an individual in age-class $j$ ($j = 1, \dots, J$) from state $X$ to state $Y$ in a given day is governed by probability $q^j_{XY}$, where:
 
-* $q^j_{SE}$ driven by $\beta_{kj}$ parameters ($j = 1, \dots, J$), defined by $R_0$, the mean length of the infectious period ($T_I$), and the population contact matrix, $C$, between age-classes (see [here](#translink) for details); <p style="color:red">UPDATE</p>
+* $q^j_{SE}$ driven by a probability of transmission per infectious contact, $\nu$, which is defined by $R_0$ and the next-generation matrix, which in turn depends on other parameters below and the population contact matrix ($C$) between age-classes. See [here](#translink) for a complete discussion;
 * $q^j_{EA} = p^j_{EA}\left(1 - e^{-\gamma_{E}}\right)$ where $\gamma_E = \frac{1}{T_E}$ with $T_E$ the mean latent period;
 * We model: $\log\left(p^j_{EA}\right) = \alpha_{EA} + \eta_{EA} \mbox{age}_j$, where $\eta_{EA} > 0$ and $\alpha_{EA} < -\eta_{EA} \max\left(\mbox{age}_j\right)$ to ensure than $0 < p^j_{EA} \leq 1$. The $\mbox{age}_j$ term is the middle age in age-class $j$.
 * $q^j_{EP} = \left(1 - p^j_{EA}\right)\left(1 - e^{-\gamma_{E}}\right)$;
-* $q^j_{AR} = 1 - e^{-\gamma_I}$ where $\gamma_I = \frac{1}{T_P + T_I}$ with $T_P + T_I$ the mean infectious period;
-* $q^j_{PI} = \left(1 - e^{-\gamma_{P}}\right)$ where $\gamma_P = \frac{1}{T_P}$ with $T_P$ the mean pre-symptomatic infectious period;
-* $q^j_{IH} = p^j_{IH}\left(1 - e^{-\gamma_{I}}\right)$ where $\gamma_I = \frac{1}{T_I}$ with $T_I$ the mean symptomatic infectious period;
-* $q^j_{IR} = p^j_{IR}\left(1 - e^{-\gamma_{I}}\right)$;
-* $q^j_{ID} = \left(1 - p^j_{IH} - p^j_{IR}\right)\left(1 - e^{-\gamma_{I}}\right)$;
-* Similarly to before, we model: $\log\left(p^j_{IH/R}\right) = \alpha_{IH/R} + \eta_{IH/R} \mbox{age}_j$, where $\eta_{IH/R} > 0$ and $\alpha_{IH/R} < -\eta_{IH/R} \max\left(\mbox{age}_j\right)$ to ensure than $0 < p^j_{IH/R} \leq 1$.
+* $q^j_{AR} = 1 - e^{-\gamma_A}$ where $\gamma_A = \frac{1}{T_P + T_{I_1} + T_{I_2}}$ with $T_P + T_{I_1} + T_{I_2}$ the mean infectious period;
+* $q^j_{PI_1} = 1 - e^{-\gamma_{P}}$ where $\gamma_P = \frac{1}{T_P}$ with $T_P$ the mean pre-symptomatic infectious period;
+* $q^j_{I_1H} = p^j_{I_1H}\left(1 - e^{-\gamma_{I_1}}\right)$ where $\gamma_{I_1} = \frac{1}{T_{I_1}}$ with $T_{I_1}$ the mean symptomatic infectious period pre-hospitalisation;
+* $q^j_{I_1I_2} = p^j_{I_1I_2}\left(1 - e^{-\gamma_{I_1}}\right)$;
+* $q^j_{I_1D} = \left(1 - p^j_{I_1H} - p^j_{I_1I_2}\right)\left(1 - e^{-\gamma_{I_1}}\right)$;
+* Similarly to before, we model: $\log\left(p^j_{I_1I_2/H}\right) = \alpha_{I_1I_2/H} + \eta_{I_1I_2/H} \mbox{age}_j$, where $\eta_{I_1I_2/H} > 0$ and $\alpha_{I_1I_2/H} < -\eta_{I_1I_2/H} \max\left(\mbox{age}_j\right)$ to ensure than $0 < p^j_{I_1I_2/H} \leq 1$.
+* $q^j_{I_2R} = 1 - e^{-\gamma_{I_2}}$ where $\gamma_{I_2} = \frac{1}{T_{I_2}}$ is the residual mean symptomatic infectious period for non-hospitalised individuals;
 * $q^j_{HR} = p^j_{HR}\left(1 - e^{-\gamma_{H}}\right)$ where $\gamma_H = \frac{1}{T_H}$ with $T_H$ the mean length of hospital stay;
 * $q^j_{HD} = \left(1 - p^j_{HR}\right)\left(1 - e^{-\gamma_{H}}\right)$;
 * Similarly to before, we model: $\log\left(p^j_{HR}\right) = \alpha_{HR} + \eta_{HR} \mbox{age}_j$, where $\eta_{HR} > 0$ and $\alpha_{HR} < -\eta_{HR} \max\left(\mbox{age}_j\right)$ to ensure than $0 < p^j_{HR} \leq 1$. 
 
-Lockdown can be controlled either by constraining movements over a certain distance, or by scaling the $\beta_{kj}$ parameters. We do the latter at the moment. 
+We also require inputs for $R_0$, a parameter $\beta_{A \to GP}$ which scales the force-of-infection between asymptomatics and the general population, and further scaling parameters that we use to model various lockdown measures (described [below](#lockdown)).
 
 <a name="translink"></a>
 <button data-toggle="collapse" data-target="#trans">Click for details on transmission terms</button>
 <div id="trans" class="collapse boxed">
 
-In a standard single population model with age-structure, the force-of-infection acting on susceptibles in age-class $j$ at a given time $t$ is:
-$$
-    \lambda_{j} = \sum_{k = 1}^J  \beta_{kj}\frac{I_k}{N_k},
-$$
-where $\beta_{kj}$ is the transmission rate from class $k$ to class $j$, $I_k$ is the number of infectives in class $k$ and $N_k$ is the total number of individuals in class $k$ at time $t$ (the $t$ subscript has been dropped for brevity).
-
+From the model structure above, in a single population, the **force-of-infection**, $\lambda^j$, acting on an individual in age-class $j$ is:
+\begin{align*}
+    \lambda^j &= \sum_{k=1}^J \frac{\beta^{kj}}{N^k}\left(P^k + I_1^k + I_2^k + \beta_{A\to GP}A^k\right)
+\end{align*}
 In practice we model the transmission parameters as:
 $$
-  \beta_{kj} = \nu c_{kj},
+  \beta^{kj} = \nu c^{kj},
 $$
-where $0 < \nu < 1$ is a probability of infection per contact, and $c_{kj}$ is the **population contact rate** that an individual in class$j$ has with individuals in class $k$. We use the population contact matric $C = \{c_{kj}; k = 1, \dots, J; j = 1, \dots, J\}$ from the **CoMix** survey, since we are modelling from the end of the first lockdown, where contact rates are not the same as before the pandemic (where something like the BBC Pandemic Contact Survey or POLYMOD would be more appropriate).
+where $0 < \nu < 1$ is a probability of infection per contact, and $c^{kj}$ is the **population contact rate** that an individual in class $j$ has with individuals in class $k$. We use the population contact matric $C = \{c^{kj}; k = 1, \dots, J; j = 1, \dots, J\}$ from the **CoMix** survey, since we are modelling from the end of the first lockdown, where contact rates are not the same as before the pandemic (where something like the BBC Pandemic Contact Survey or POLYMOD would be more appropriate).
 
-A challenge is that we parameterise our model in terms of $R_0$, not $\nu$, and thus we need a way to derive $\nu$ from $R_0$ for a given run.
+A challenge is that we parameterise our model in terms of $R_0$, not $\nu$, and thus we need a way to derive $\nu$ from $R_0$ for a given run. To this end, $R_0$ can be derived as the **maximum eigenvalue** of the **next-generation matrix** (NGM). Firstly, let $F_i(x)$ be the rate of new infections into *infected* class $i$, and $V_i(x)$ be the rate of transitions from *infected* class $i$. Then define matrices:
+$$
+    \mathbf{F} = \left[\frac{\partial F_i\left(x_0\right)}{\partial x_j}\right] \quad \mbox{and} \quad \mathbf{V} = \left[\frac{\partial V_i\left(x_0\right)}{\partial x_j}\right] \quad \mbox{for}~1 \leq i, j, \leq J,
+$$
+where $x_0$ corresponds to the states at the disease-free equilibrium. Then, the NGM, $\mathbf{K}$, is:
+$$
+    \mathbf{K} = \mathbf{FV}^{-1},
+$$
+and $R_0$ is the maximum eigenvalue of $\mathbf{K}$.
 
-If we ignore the latent period, and assume the model is $SIR$, then $R_0$ can be derived as the **maximum eigenvalue** of the **next-generation matrix** (NGM), thus:
-\begin{align}
-    R_0 &= \mbox{eig}_M\left(\frac{\nu}{\gamma_I}C\right)\\
-    \Rightarrow \nu &= \frac{R_0 \gamma_I}{\mbox{eig}_M\left(C\right)},
-\end{align}
-where $\mbox{eig}_M\left(C\right)$ denotes the maximum eigenvalue of $C$.
+From the model structure above, in a single population with age-structure, the **infected classes** are $E^j$, $A^j$, $P^j$, $I_1^j$ and $I_2^j$ for age-classes $j = 1, \dots, J$. In a deterministic model these would have rates-of-change of:
+\begin{align*}
+    \frac{dE^j}{dt} &= S^j\left[\sum_{k=1}^J \frac{\beta^{kj}}{N^k}\left(P^k + I_1^k + I_2^k + \beta_{A\to GP}A^k\right) \right] - \gamma_E E^j\\
+    \frac{dA^j}{dt} &= p_{EA}^j\gamma_E E^j - \gamma_A A^j\\
+    \frac{dP^j}{dt} &= \left(1 - p_{EA}^j\right)\gamma_E E^j - \gamma_P P^j\\
+    \frac{dI_1^j}{dt} &= \gamma_P P^j - \gamma_{I_1} I_1^j\\
+    \frac{dI_2^j}{dt} &= p_{I_1I_2}\gamma_{I_1} I_1^j - \gamma_{I_2} I_2^j\\
+\end{align*}
+Here $\beta^{kj}$ is the transmission rate from class $k$ to class $j$ and $N_k$ is the total number of individuals in class $k$. The parameter $\beta_{A \to GP}$ scales the force-of-infection from the $A$ class to the general population.
 
-<p style="color:red">NEED TO ADD LATENT PERIOD TO NGM</p>
-
+The **non-zero** components needed to derive the NGM are:
+\begin{align*}
+    \frac{\partial F_{E^i}\left(x_0\right)}{\partial E^j} &= 0 &\qquad  \forall i, j,\\
+    \frac{\partial F_{E^i}\left(x_0\right)}{\partial A^j} &= \frac{\beta^{ji}\beta_{A \to GP}S^i}{N^j} &\qquad \forall i, j\\
+    \frac{\partial F_{E^i}\left(x_0\right)}{\partial P^j} &= \frac{\beta^{ji}S^i}{N^j} &\qquad \forall i, j\\
+    \frac{\partial F_{E^i}\left(x_0\right)}{\partial I_1^j} &= \frac{\beta^{ji}S^i}{N^j} &\qquad \forall i, j\\
+    \frac{\partial F_{E^i}\left(x_0\right)}{\partial I_2^j} &= \frac{\beta^{ji}S^i}{N^j} &\qquad \forall i, j\\
+\end{align*}
+and
+\begin{align*}
+    \frac{\partial V_{E^i}\left(x_0\right)}{\partial E^j} &= \left\{\begin{array}{cc} 
+        \gamma_E & \mathrm{for}~i = j,\\
+        0 & \mathrm{otherwise,}
+        \end{array}\right. &\\
+    \frac{\partial V_{A^i}\left(x_0\right)}{\partial E^j} &= \left\{\begin{array}{cc} 
+        -p_{EA}^i\gamma_E & \mathrm{for}~i = j,\\
+        0 & \mathrm{otherwise,}
+        \end{array}\right. &\\
+    \frac{\partial V_{A^i}\left(x_0\right)}{\partial A^j} &= \left\{\begin{array}{cc} 
+        \gamma_A & \mathrm{for}~i = j,\\
+        0 & \mathrm{otherwise,}
+        \end{array}\right. &\\
+    \frac{\partial V_{P^i}\left(x_0\right)}{\partial E^j} &= \left\{\begin{array}{cc} 
+        -\left(1 - p_{EA}^i\right)\gamma_E & \mathrm{for}~i = j,\\
+        0 & \mathrm{otherwise,}
+        \end{array}\right. &\\
+    \frac{\partial V_{P^i}\left(x_0\right)}{\partial P^j} &= \left\{\begin{array}{cc} 
+        \gamma_P & \mathrm{for}~i = j,\\
+        0 & \mathrm{otherwise,}
+        \end{array}\right. &\\
+    \frac{\partial V_{I_1^i}\left(x_0\right)}{\partial P^j} &= \left\{\begin{array}{cc} 
+        -\gamma_P & \mathrm{for}~i = j,\\
+        0 & \mathrm{otherwise,}
+        \end{array}\right. &\\
+    \frac{\partial V_{I_1^i}\left(x_0\right)}{\partial I_1^j} &= \left\{\begin{array}{cc} 
+        \gamma_{I_1} & \mathrm{for}~i = j,\\
+        0 & \mathrm{otherwise,}
+        \end{array}\right. &\\
+    \frac{\partial V_{I_2^i}\left(x_0\right)}{\partial I_1^j} &= \left\{\begin{array}{cc} 
+        -p_{I_1I_2}\gamma_{I_1} & \mathrm{for}~i = j,\\
+        0 & \mathrm{otherwise,}
+        \end{array}\right. &\\
+    \frac{\partial V_{I_2^i}\left(x_0\right)}{\partial I_2^j} &= \left\{\begin{array}{cc} 
+        \gamma_{I_2} & \mathrm{for}~i = j,\\
+        0 & \mathrm{otherwise.}
+        \end{array}\right. &\\
+\end{align*}
+Since the non-zero components of $\mathbf{F}$ all contain $\beta^{ji}$, where
+$$
+    \beta^{ji} = \nu c^{ji},
+$$
+we can thus write
+$$
+    \mathbf{K} = \nu\mathbf{F^\ast}\mathbf{V}^{-1}
+$$
+where $\mathbf{F}^\ast$ is equivalent to replacing $\beta^{ji}$ by $c^{ji}$ in $\mathbf{F}$. As such:
+\begin{align*}
+    R_0 &= \nu\mathrm{eig}_M\left(\mathbf{F}^\ast\mathbf{V}^{-1}\right)\\
+    \Rightarrow \nu &= \frac{R_0}{\mathrm{eig}_M\left(\mathbf{F}^\ast\mathbf{V}^{-1}\right)}
+\end{align*}
 </div>
 
 <br>
 
-<button data-toggle="collapse" data-target="#constraints">Click for details on constraints</button>
-<div id="constraints" class="collapse boxed">
+### Parameter bounds
 
-The parameters we need to bound are:
+We have derived plausible parameter bounds from data and the literature.
 
-* $R_0$: (2, 4.5)---from Leon and Rob;
-* $T_E$ (the mean latent period): (1, 3)---bounded through generation time distribution estimated in Challen et al. (2020);
-* $\alpha_{EA}$ and $\eta_{EA}$, where $\eta_{EA} > 0$ and $\alpha_{EA} < -\eta_{EA} \max\left(\mbox{age}_j\right)$;
-* $T_E + T_{I_1}$ bounded by incubation period from Rob's paper maybe?
-* $T_I = T_{I_1} + T_{I_2}$;
-* $\alpha_{I_1I_2}$ and $\eta_{I_1I_2}$, where $\eta_{I_1I_2} > 0$ and $\alpha_{I_1I_2} < -\eta_{I_1I_2} \max\left(\mbox{age}_j\right)$;
-* $\alpha_{I_1H}$ and $\eta_{I_1H}$, where $\eta_{I_1H} > 0$ and $\alpha_{I_1H} < -\eta_{I_1H} \max\left(\mbox{age}_j\right)$;
-* $\alpha_{I_1D}$ and $\eta_{I_1D}$, where $\eta_{I_1D} > 0$ and $\alpha_{I_1D} < -\eta_{I_1D} \max\left(\mbox{age}_j\right)$;
-* $T_H$ the mean length of hospital stay;
-* $\alpha_{HR}$ and $\eta_{HR}$, where $\eta_{HR} > 0$ and $\alpha_{HR} < -\eta_{HR} \max\left(\mbox{age}_j\right)$.
+\begin{align}
+    \mbox{$R_0$}&: (2, 4.5) \qquad \mathrm{from Leon and Rob}\\
+    \mbox{mean incubation period ($T_E + T_P$)}&: (?, ?)---Challen et al. (2020)\\
+    \mbox{mean infection to admission period ($T_E + T_P + T_{I_1}$)}&: (?, ?)---Challen et al. (2020)\\
+    \mbox{mean onset to admission period ($T_{I_1}$)}&: (?, ?)---Challen et al. (2020)\\
+    \mbox{mean onset to end-of-infectiousness ($T_{I_1} + T_{I_2}$)}&: (?, ?)---Cevik / NEJM\\
+    \mbox{mean hospital stay ($T_H$)}&: (?, ?)---Rob data\\
+    \mbox{lockdown 1 restrict}&: (0, 1)\\
+    \mbox{lockdown 2 release}&: (0, 1)\\
+    \alpha_{EA}&: (?, ?)~\mbox{such that}~\alpha_{EA} < -\eta_{EA} \mbox{age}_M\\
+    \eta_{EA}&: (0, ?)\\
+    \alpha_{I_1H}&: (?, ?)~\mbox{such that}~\alpha_{I_1H} < -\eta_{I_1H} \mbox{age}_M\\
+    \eta_{I_1H}&: (0, ?)\\
+    \alpha_{I_1I_2}&: (?, ?)~\mbox{such that}~\alpha_{I_1I_2} < -\eta_{I_1I_2} \mbox{age}_M\\
+    \eta_{I_1I_2}&: (0, ?)\\
+    \alpha_{HR}&: (?, ?)~\mbox{such that}~\alpha_{HR} < -\eta_{HR} \mbox{age}_M\\
+    \eta_{HR}&: (0, ?)\\
+    \beta_{A \to GP}&: (0, 1).
+\end{align}
 
-</div>
+## Mover functions
 
 MetaWards has a specific structure in terms of how it progresses movements between the stages. To get the correct splits between the **pathways** specified above we do all non-infection movements through a custom `mover` function specified [below](#mover). Note that in the `ncov.json` file specified [above](#diseasefile), we set all `progress` parameters to be 0. Thus, all transition probabilities other than new infections are driven by user-defined parameters that are passed to the `mover` function, which we call `move_pathways.py` here.
 

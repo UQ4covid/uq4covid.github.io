@@ -20,6 +20,10 @@ data/hospitalStays/*.pdf
 data/hospitalCatchments/WD19*
 data/hospitalCatchments/*.pdf
 data/hospitalCatchments/*.csv
+vignette/*.log
+vignette/*.gz
+vignette/*.pdf
+vignette/*.svg
 MetaWards.Rproj
 
 literature
