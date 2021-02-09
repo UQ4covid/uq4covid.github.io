@@ -9,8 +9,8 @@ source("../R_tools/dataTools.R")
 ## loop over age classes
 for(i in 1:8) {
     ## establish connection
-    system(paste0("bzip2 -dkf raw_outputs/stages", i, ".db.bz2"))
-    con <- DBI::dbConnect(RSQLite::SQLite(), paste0("raw_outputs/stages", i, ".db"))
+    system(paste0("bzip2 -dkf raw_outputs/age", i, ".db.bz2"))
+    con <- DBI::dbConnect(RSQLite::SQLite(), paste0("raw_outputs/age", i, ".db"))
 
     ## extract data
     compact <- tbl(con, "compact") %>%
