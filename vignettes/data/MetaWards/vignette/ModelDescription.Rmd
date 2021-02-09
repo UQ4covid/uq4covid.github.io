@@ -35,7 +35,7 @@ The basic model structure is:
 
 ## MetaWards setup
 
-The model structure above allows for different progression pathways. MetaWards deals with this by assigning individuals to different "demographics", where each demographic can be used to represent different progression pathways. There are also `mover` functions that can be used to move individuals between demographics, and `mixer` functions that scale the force-of-infection (FOI) terms between the different demographics (explained later). There are currently five pathways, which will be described below, but can be summarised as:
+The model structure above allows for different progression pathways. We also split the popoulation up into different age demographics, to allow for variable mixing between the age-groups. We define a customised `mover` function that is used to move individuals through different pathways, and `mixer` functions that scale the force-of-infection (FOI) terms between the different age demographics (explained later). There are currently five pathways, which will be described below, but can be summarised as:
 
 * $SEAR$: asymptomatic infections, always recover.
 * $SEPIR$: symptomatic infections, leading to recovery.
@@ -43,11 +43,9 @@ The model structure above allows for different progression pathways. MetaWards d
 * $SEPIHR$: symptomatic infections, leading to hospital and then recovery.
 * $SEPIHD$: symptomatic infections, leading to hospital and then death.
 
-Individuals start in the `genpop` demographic. Those that move through the $SEPIR$ and $SEPID$ pathways remain in the `genpop` demographic, whereas those that progress through the `SEAR` pathway move into the `asymp` demographic. Furthermore, some individuals in the `genpop` demographic can be moved to the `hospital` demographic if they follow the `SEPIHR` and `SEIPHD` pathways.
-
 We are calibrating to hospitalised deaths, and so to simplify the model and aid calibration, we assume that the $H$ class is non-infectious, but split the $I$ class into two stages, $I_1$ and $I_2$. Therefore, on average individuals are infectious for longer if they do not go to hospital. Some evidence suggests that individuals can remain symptomatic for much longer than they remain infectious, but from a transmission perspective, once individuals cease to be infectious they are equivalent to "recovered" individuals. As such, the $R_I$ class corresponds to recovered and non-infectious symptomatic individuals, and $T_P + T_{I_1} + T_{I_2}$ to the average infectious period (not average symptomatic period). The incubation period is thus $T_E + T_P$, and the time between symptom onset and admission to hospital is $T_{I_1}$. We also make the simplifying assumption that asymptomatic infections last the same time as symptomatic infections.
 
-We need to specify initial proportions of individuals in each pathway such that $\sum_{i \in \mathcal{P}}\sum_{j = 1}^J p_{ij} = 1$, where $\mathcal{P} = \{GP, A, H\}$ and $j = 1, \dots, J$ define the $J$ mutually exclusive age-classes. Here we define the proportions of individuals in each age class from the data in the `inputs/Pop by CTRY.csv` file from Rob:
+We need to specify initial proportions of individuals in each age-class, which are provided in the `inputs/Pop by CTRY.csv` file from Rob:
 
 <a name="ages"></a>
 ```{r, warning = FALSE, message = FALSE, echo = FALSE, results = "asis"}
@@ -71,18 +69,10 @@ knitr::kable(ages)
 ```{r, warning = FALSE, message = FALSE, echo = FALSE}
 ## create demographics file
 demo <- "{" %>%
-  c(paste0("\t\"demographics\" : [", paste0(paste0("\"genpop", 1:nrow(ages), "\""), collapse = ", "), ",")) %>%
-  c(paste0("\t\t", paste0(paste0("\"asymp", 1:nrow(ages), "\""), collapse = ", "), ",")) %>%
-  c(paste0("\t\t", paste0(paste0("\"hospital", 1:nrow(ages), "\""), collapse = ", "), "],")) %>%
-  c(paste0("\t\"work_ratios\" : [", paste0(ages$prop, collapse = ", "), ",")) %>%
-  c(paste0("\t\t", paste0(rep("0.0", nrow(ages)), collapse = ", "), ",")) %>%
-  c(paste0("\t\t", paste0(rep("0.0", nrow(ages)), collapse = ", "), "],")) %>%
-  c(paste0("\t\"play_ratios\" : [", paste0(ages$prop, collapse = ", "), ",")) %>%
-  c(paste0("\t\t", paste0(rep("0.0", nrow(ages)), collapse = ", "), ",")) %>%
-  c(paste0("\t\t", paste0(rep("0.0", nrow(ages)), collapse = ", "), "],")) %>%
-  c(paste0("\t\"diseases\" : [", paste0(rep("\"ncov_genpop\"", nrow(ages)), collapse = ", "), ",")) %>%
-  c(paste0("\t\t", paste0(rep("\"ncov_asymp\"", nrow(ages)), collapse = ", "), ",")) %>%
-  c(paste0("\t\t", paste0(rep("\"ncov_hospital\"", nrow(ages)), collapse = ", "), "]")) %>%
+  c(paste0("\t\"demographics\" : [", paste0(paste0("\"age", 1:nrow(ages), "\""), collapse = ", "), "],")) %>%
+  c(paste0("\t\"work_ratios\" : [", paste0(ages$prop, collapse = ", "), "],")) %>%
+  c(paste0("\t\"play_ratios\" : [", paste0(ages$prop, collapse = ", "), "],")) %>%
+  c(paste0("\t\"diseases\" : [", paste0(rep("\"ncov\"", nrow(ages)), collapse = ", "), "]")) %>%
   c("}")
 writeLines(demo, "../model_code/demographics.json")
 ```
@@ -103,39 +93,18 @@ The demographics in MetaWards is set up using the `demographics.json` file.
 
 </div>
 
-The number of stages can be set with the MetaWards disease files, called `ncov_*.json` here.
+The stages can be set with the MetaWards disease file, called `ncov.json` here.
 
 <a name="diseasefile"></a>
 <button data-toggle="collapse" data-target="#disease">Click for MetaWards <code>disease</code> files</button>
 <div id="disease" class="collapse boxed">
 
-Here `ncov_overall.json` contains:
-
-```{js, code = readLines("../model_code/ncov_overall.json"), eval = FALSE}
+```{js, code = readLines("../model_code/ncov.json"), eval = FALSE}
 ```
 
 (Note the additional ``R` class is needed to avoid a MetaWards error, but does not do anything. Hopefully this will be fixed in a later update of MetaWards.)
 
-Here `ncov_genpop.json` contains:
-
-```{js, code = readLines("../model_code/ncov_genpop.json"), eval = FALSE}
-```
-
-Here `ncov_asymp.json` contains:
-
-```{js, code = readLines("../model_code/ncov_asymp.json"), eval = FALSE}
-```
-
-Here `ncov_hospital.json` contains:
-
-```{js, code = readLines("../model_code/ncov_hospital.json"), eval = FALSE}
-```
-
-Notice that individuals in hospital have `too_ill_to_move = 1.0`, so all individuals are too ill to move.
-
-<p style="color:red">HOW SHOULD WE SCALE `too_ill_to_move` FOR SYMPTOMATICS?</p>
-
-We will discuss these choices in more detail in the subsequent sections. Note that the `progress` parameters are all set to zero here, since all movements will be controlled via the custom `mover` function, and all `beta` parameters are set to one for infectious classes since the scaling of the force-of-infection between the demographics will be controlled by a custom `mixer` function.
+We will discuss these choices in more detail in the subsequent sections. Note that the `progress` parameters are all set to zero here, since all movements will be controlled via the custom `mover` function, and the `beta` parameters are all set to one for infectious classes, but different values for different infectious classes will be passed in when the model is run, and the mixing between the age-classes will be controlled by a custom `mixer` function.
 
 </div>
 
@@ -252,6 +221,8 @@ $$
 $$
 where $0 < \nu < 1$ is a probability of infection per contact, and $c^{kj}$ is the **population contact rate** that an individual in class $j$ has with individuals in class $k$. We use the population contact matric $C = \{c^{kj}; k = 1, \dots, J; j = 1, \dots, J\}$ from the **CoMix** survey, since we are modelling from the end of the first lockdown, where contact rates are not the same as before the pandemic (where something like the BBC Pandemic Contact Survey or POLYMOD would be more appropriate).
 
+<p style="color:red">SHOULD WE USE POLYMOD AT OUTSET? ADJUST ABOVE ACCORDINGLY</p>
+
 A challenge is that we parameterise our model in terms of $R_0$, not $\nu$, and thus we need a way to derive $\nu$ from $R_0$ for a given run. To this end, $R_0$ can be derived as the **maximum eigenvalue** of the **next-generation matrix** (NGM). Firstly, let $F_i(x)$ be the rate of new infections into *infected* class $i$, and $V_i(x)$ be the rate of transitions from *infected* class $i$. Then define matrices:
 $$
     \mathbf{F} = \left[\frac{\partial F_i\left(x_0\right)}{\partial x_j}\right] \quad \mbox{and} \quad \mathbf{V} = \left[\frac{\partial V_i\left(x_0\right)}{\partial x_j}\right] \quad \mbox{for}~1 \leq i, j, \leq J,
@@ -325,12 +296,12 @@ $$
 $$
 we can thus write
 $$
-    \mathbf{K} = \nu\mathbf{F^\ast}\mathbf{V}^{-1}
+    \mathbf{K} = \nu\mathbf{G}\mathbf{V}^{-1}
 $$
-where $\mathbf{F}^\ast$ is equivalent to replacing $\beta^{ji}$ by $c^{ji}$ in $\mathbf{F}$. As such:
+where $\mathbf{G}$ is equivalent to replacing $\beta^{ji}$ by $c^{ji}$ in $\mathbf{F}$. As such:
 \begin{align*}
-    R_0 &= \nu~\mathrm{eig}_M\left(\mathbf{F}^\ast\mathbf{V}^{-1}\right)\\
-    \Rightarrow \nu &= \frac{R_0}{\mathrm{eig}_M\left(\mathbf{F}^\ast\mathbf{V}^{-1}\right)}
+    R_0 &= \nu~\mathrm{eig}_M\left(\mathbf{G}\mathbf{V}^{-1}\right)\\
+    \Rightarrow \nu &= \frac{R_0}{\mathrm{eig}_M\left(\mathbf{G}\mathbf{V}^{-1}\right)}
 \end{align*}
 where $\mathrm{eig}_M(\mathbf{K})$ denotes the maximum eigenvalue of $\mathbf{K}$.
 
@@ -345,8 +316,8 @@ We have derived plausible parameter bounds from data and the literature.
 \begin{align}
     \mbox{$R_0$}&: (2, 4.5) \qquad \mbox{from Leon and Rob}\\
     \mbox{mean incubation period ($T_{\mathrm{inc}}$)}&: (1, 8)\mbox{---Challen et al. (2020)}\\
-    $T_E$&: (0.1, 2)\\
-    $T_P$&: (1.2, 3)\\
+    T_E&: (0.1, 2)\\
+    T_P&: (1.2, 3)\\
     
     
     \mbox{mean generation period ($T_{\mathrm{gen}}$)}&: (?, ?)\mbox{---Challen et al. (2020)}\\
@@ -451,11 +422,11 @@ Since most of the classes are already infected, it's only the rows corresponding
 
 Lockdown scales the FOI terms for different time periods, which each represent a different stage of interventions. Furthermore, for full lockdown we switch off all worker movements. When partial relaxing of lockdown is introduced, we allow worker movements to begin again, but scale the FOI (albeit less stringently than during full lockdown). We store this information in a custom `iterator` function with the corresponding parameters in `inputs/user_inputs.txt`.
 
-Seed [here](#seeds) for full iterator function.
+See [here](#seeding) for full iterator function.
 
 ## Extractor {#extractor}
 
-We also have a custom `extractor` function, that saves the outputs as a compressed SQL database for each age-class, called `stages*.db.bz2` (where `*` varies by age-class). 
+We also have a custom `extractor` function, that saves the outputs as a compressed SQL database for each age-class, called `age*.db.bz2` (where `*` varies by age-class). 
 
 Each database for a given run contains a single table called `compact`. For efficiency we:
 

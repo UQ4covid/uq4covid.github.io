@@ -1,8 +1,0 @@
-{ 
-  "name"             : "SARS-Cov-2 (hospital)",
-  "stage"            : ["H", "RH", "DH"],
-  "beta"             : [0.0, 0.0, 0.0],
-  "progress"         : [0.0, 0.0, 0.0],
-  "too_ill_to_move"  : [1.0, 0.0, 0.0],
-  "contrib_foi"      : [0.0, 0.0, 0.0]
-}

@@ -69,8 +69,8 @@ def move_pathways(network, **kwargs):
         tpHR.append(pH[j] * pHR[j])
         tpHR[j] = 1.0 if tpHR[j] > 1.0 else tpHR[j]
         tpHR[j] = 0.0 if tpHR[j] < 0.0 else tpHR[j]
-        func.append(lambda k = j, **kwargs: go_stage(go_from=f'hospital{k + 1}',
-                                      go_to=f'hospital{k + 1}',
+        func.append(lambda k = j, **kwargs: go_stage(go_from=f'age{k + 1}',
+                                      go_to=f'age{k + 1}',
                                       from_stage="H",
                                       to_stage="RH",
                                       fraction=tpHR[j],
@@ -86,8 +86,8 @@ def move_pathways(network, **kwargs):
         tpHD[j] = 0.0 if tpHR[j] == 1.0 else tpHD[j]
         tpHD[j] = 1.0 if tpHD[j] > 1.0 else tpHD[j]
         tpHD[j] = 0.0 if tpHD[j] < 0.0 else tpHD[j]
-        func.append(lambda k = j, **kwargs: go_stage(go_from=f'hospital{k + 1}',
-                                      go_to=f'hospital{k + 1}',
+        func.append(lambda k = j, **kwargs: go_stage(go_from=f'age{k + 1}',
+                                      go_to=f'age{k + 1}',
                                       from_stage="H",
                                       to_stage="DH",
                                       fraction=tpHD[j],
@@ -103,8 +103,8 @@ def move_pathways(network, **kwargs):
         tpI2R.append(pI2[j])
         tpI2R[j] = 1.0 if tpI2R[j] > 1.0 else tpI2R[j]
         tpI2R[j] = 0.0 if tpI2R[j] < 0.0 else tpI2R[j]
-        func.append(lambda k = j, **kwargs: go_stage(go_from=f'genpop{k + 1}',
-                                      go_to=f'genpop{k + 1}',
+        func.append(lambda k = j, **kwargs: go_stage(go_from=f'age{k + 1}',
+                                      go_to=f'age{k + 1}',
                                       from_stage="I2",
                                       to_stage="RI",
                                       fraction=tpI2R[j],
@@ -120,8 +120,8 @@ def move_pathways(network, **kwargs):
         tpI1H.append(pI1[j] * pI1H[j])
         tpI1H[j] = 1.0 if tpI1H[j] > 1.0 else tpI1H[j]
         tpI1H[j] = 0.0 if tpI1H[j] < 0.0 else tpI1H[j]
-        func.append(lambda k = j, **kwargs: go_stage(go_from=f'genpop{k + 1}',
-                                      go_to=f'hospital{k + 1}',
+        func.append(lambda k = j, **kwargs: go_stage(go_from=f'age{k + 1}',
+                                      go_to=f'age{k + 1}',
                                       from_stage="I1",
                                       to_stage="H",
                                       fraction=tpI1H[j],
@@ -137,8 +137,8 @@ def move_pathways(network, **kwargs):
         tpI1I2[j] = 0.0 if tpI1H[j] == 1.0 else tpI1I2[j]
         tpI1I2[j] = 1.0 if tpI1I2[j] > 1.0 else tpI1I2[j]
         tpI1I2[j] = 0.0 if tpI1I2[j] < 0.0 else tpI1I2[j]
-        func.append(lambda k = j, **kwargs: go_stage(go_from=f'genpop{k + 1}',
-                                      go_to=f'genpop{k + 1}',
+        func.append(lambda k = j, **kwargs: go_stage(go_from=f'age{k + 1}',
+                                      go_to=f'age{k + 1}',
                                       from_stage="I1",
                                       to_stage="I2",
                                       fraction=tpI1I2[j],
@@ -154,8 +154,8 @@ def move_pathways(network, **kwargs):
         tpI1D[j] = 0.0 if (pI1[j] * (pI1H[j] + pI1I2[j])) == 1.0 else tpI1D[j]
         tpI1D[j] = 1.0 if tpI1D[j] > 1.0 else tpI1D[j]
         tpI1D[j] = 0.0 if tpI1D[j] < 0.0 else tpI1D[j]
-        func.append(lambda k = j, **kwargs: go_stage(go_from=f'genpop{k + 1}',
-                                      go_to=f'genpop{k + 1}',
+        func.append(lambda k = j, **kwargs: go_stage(go_from=f'age{k + 1}',
+                                      go_to=f'age{k + 1}',
                                       from_stage="I1",
                                       to_stage="DI",
                                       fraction=tpI1D[j],
@@ -169,8 +169,8 @@ def move_pathways(network, **kwargs):
     tpPI1 = []
     for j in range(nage):
         tpPI1.append(pP[j])
-        func.append(lambda k = j, **kwargs: go_stage(go_from=f'genpop{k + 1}',
-                                      go_to=f'genpop{k + 1}',
+        func.append(lambda k = j, **kwargs: go_stage(go_from=f'age{k + 1}',
+                                      go_to=f'age{k + 1}',
                                       from_stage="P",
                                       to_stage="I1",
                                       fraction=tpPI1[j],
@@ -184,8 +184,8 @@ def move_pathways(network, **kwargs):
     tpAR = []
     for j in range(nage):
         tpAR.append(pA[j])
-        func.append(lambda k = j, **kwargs: go_stage(go_from=f'asymp{k + 1}',
-                                      go_to=f'asymp{k + 1}',
+        func.append(lambda k = j, **kwargs: go_stage(go_from=f'age{k + 1}',
+                                      go_to=f'age{k + 1}',
                                       from_stage="A",
                                       to_stage="RA",
                                       fraction=tpAR[j],
@@ -201,8 +201,8 @@ def move_pathways(network, **kwargs):
         tpEA.append(pE[j] * pEA[j])
         tpEA[j] = 1.0 if tpEA[j] > 1.0 else tpEA[j]
         tpEA[j] = 0.0 if tpEA[j] < 0.0 else tpEA[j]
-        func.append(lambda k = j, **kwargs: go_stage(go_from=f'genpop{k + 1}',
-                                      go_to=f'asymp{k + 1}',
+        func.append(lambda k = j, **kwargs: go_stage(go_from=f'age{k + 1}',
+                                      go_to=f'age{k + 1}',
                                       from_stage="E",
                                       to_stage="A",
                                       fraction=tpEA[j],
@@ -218,8 +218,8 @@ def move_pathways(network, **kwargs):
         tpEP[j] = 0.0 if tpEA[j] == 1.0 else tpEP[j]
         tpEP[j] = 1.0 if tpEP[j] > 1.0 else tpEP[j]
         tpEP[j] = 0.0 if tpEP[j] < 0.0 else tpEP[j]
-        func.append(lambda k = j, **kwargs: go_stage(go_from=f'genpop{k + 1}',
-                                      go_to=f'genpop{k + 1}',
+        func.append(lambda k = j, **kwargs: go_stage(go_from=f'age{k + 1}',
+                                      go_to=f'age{k + 1}',
                                       from_stage="E",
                                       to_stage="P",
                                       fraction=tpEP[j],

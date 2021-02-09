@@ -36,7 +36,7 @@ def output_db(population: Population, network: Networks,
     conn = []
     c = []
     for i in range(nage):
-        conn.append(output_dir.open_db(f"stages{i + 1}.db", initialise = create_tables(network)))
+        conn.append(output_dir.open_db(f"age{i + 1}.db", initialise = create_tables(network)))
         c.append(conn[i].cursor())
     
     ## setup marker for previous day
@@ -49,90 +49,53 @@ def output_db(population: Population, network: Networks,
                 for k, sub1 in enumerate(workspace.subspaces[i].output_previous[j]):
                    workspace.subspaces[i].output_previous[j][k] = 0
     
-    ## extract Rprime and Dprime in each demographic
-    Rprime = [[] for _ in range(len(network.subnets))]
-    Dprime = [[] for _ in range(len(network.subnets))]
-    for i, subnet in enumerate(network.subnets):
-
-        ## get yesterday's data
-        ward_inf_previous = workspace.subspaces[i].output_previous
-        ## get today's data
-        ward_inf_tot = workspace.subspaces[i].ward_inf_tot
-        
-        ## remove digits from demographic name
-        subName = ''.join([j for j in subnet.name if not j.isdigit()])
-        
-        if subName == "genpop":
-            ## new deaths across wards
-            for old, new in zip(ward_inf_previous[5], ward_inf_tot[5]):
-                Dprime[i].append(new - old)
-            ## new removals across wards
-            for old, new in zip(ward_inf_previous[4], ward_inf_tot[4]):
-                Rprime[i].append(new - old)
-        
-        if subName == "asymp":
-            ## new removals across wards
-            for old, new in zip(ward_inf_previous[1], ward_inf_tot[1]):
-                Rprime[i].append(new - old)
-        
-        if subName == "hospital":
-            ## new deaths across wards
-            for old, new in zip(ward_inf_previous[2], ward_inf_tot[2]):
-                Dprime[i].append(new - old)
-            ## new removals across wards
-            for old, new in zip(ward_inf_previous[1], ward_inf_tot[1]):
-                Rprime[i].append(new - old)
-    
-    ## extract subnet names
-    sub_names = [network.subnets[i].name for i in range(len(network.subnets))]
-    
     ## NEED TO DO FOLLOWING CALCULATIONS IN ORDER
     
     ## loop over age classes
     for j in range(nage):
         
-        ## ASYMPTOMATICS
-        ia = sub_names.index(f'asymp{j + 1}')
         ## get data
-        ward_inf_previous = workspace.subspaces[ia].output_previous
-        ward_inf_tot = workspace.subspaces[ia].ward_inf_tot
+        ward_inf_previous = workspace.subspaces[j].output_previous
+        ward_inf_tot = workspace.subspaces[j].ward_inf_tot
+        
+        ## ASYMPTOMATICS
         ## calculate incidence
+        RAprime = []
+        for old, new in zip(ward_inf_previous[7], ward_inf_tot[7]):
+            RAprime.append(new - old)
         Aprime = []
-        for old, new, Rinc in zip(ward_inf_previous[0], ward_inf_tot[0], Rprime[ia]):
+        for old, new, Rinc in zip(ward_inf_previous[6], ward_inf_tot[6], RAprime):
             Aprime.append(new - old + Rinc)
         
         ## HOSPITAL
-        ih = sub_names.index(f'hospital{j + 1}')
-        ## get data
-        ward_inf_previous = workspace.subspaces[ih].output_previous
-        ward_inf_tot = workspace.subspaces[ih].ward_inf_tot
         ## calculate incidence
+        RHprime = []
+        for old, new in zip(ward_inf_previous[9], ward_inf_tot[9]):
+            RHprime.append(new - old)
+        DHprime = []
+        for old, new in zip(ward_inf_previous[10], ward_inf_tot[10]):
+            DHprime.append(new - old)
         Hprime = []
-        for old, new, Rinc, Dinc in zip(ward_inf_previous[0], ward_inf_tot[0], Rprime[ih], Dprime[ih]):
+        for old, new, Rinc, Dinc in zip(ward_inf_previous[8], ward_inf_tot[8], RHprime, DHprime):
             Hprime.append(new - old + Rinc + Dinc)
         
-        ## GENPOP I2
-        ig = sub_names.index(f'genpop{j + 1}')
-        ## get data
-        ward_inf_previous = workspace.subspaces[ig].output_previous
-        ward_inf_tot = workspace.subspaces[ig].ward_inf_tot
+        ## GENPOP
         ## calculate incidence
+        RIprime = []
+        for old, new in zip(ward_inf_previous[4], ward_inf_tot[4]):
+            RIprime.append(new - old)
+        DIprime = []
+        for old, new in zip(ward_inf_previous[5], ward_inf_tot[5]):
+            DIprime.append(new - old)
         I2prime = []
-        for old, new, Rinc in zip(ward_inf_previous[3], ward_inf_tot[3], Rprime[ig]):
+        for old, new, Rinc in zip(ward_inf_previous[3], ward_inf_tot[3], RIprime):
             I2prime.append(new - old + Rinc)
-        
-        ## GENPOP I1
-        ## calculate incidence
         I1prime = []
-        for old, new, I2inc, Dinc, Hinc in zip(ward_inf_previous[2], ward_inf_tot[2], I2prime, Dprime[ig], Hprime):
+        for old, new, I2inc, Dinc, Hinc in zip(ward_inf_previous[2], ward_inf_tot[2], I2prime, DIprime, Hprime):
             I1prime.append(new - old + I2inc + Dinc + Hinc)
-        
-        # calculate Pprime in GENPOP demographic
         Pprime = []
         for old, new, I1inc in zip(ward_inf_previous[1], ward_inf_tot[1], I1prime):
             Pprime.append(new - old + I1inc)
-        
-        # calculate Eprime in GENPOP demographic
         Eprime = []
         for old, new, Pinc, Ainc in zip(ward_inf_previous[0], ward_inf_tot[0], Pprime, Aprime):
             Eprime.append(new - old + Pinc + Ainc)
@@ -145,15 +108,10 @@ def output_db(population: Population, network: Networks,
         col_names = ["day", "ward", "Einc", "Pinc", "I1inc", "I2inc", "RIinc", "DIinc", "Ainc", "RAinc", "Hinc", "RHinc", "DHinc"]
         col_str = ','.join(col_names)
         
-        ## extract demographics
-        asymp_ward = workspace.subspaces[ia].ward_inf_tot
-        genpop_ward = workspace.subspaces[ig].ward_inf_tot
-        hospital_ward = workspace.subspaces[ih].ward_inf_tot
-        
         ## write to file
         for day, ward, Einc, Pinc, I1inc, I2inc, RIinc, DIinc, Ainc, RAinc, Hinc, RHinc, DHinc in\
-        zip(day, wards, Eprime, Pprime, I1prime, I2prime, Rprime[ig], Dprime[ig], Aprime, Rprime[ia],\
-        Hprime, Rprime[ih], Dprime[ih]):
+        zip(day, wards, Eprime, Pprime, I1prime, I2prime, RIprime, DIprime, Aprime, RAprime,\
+        Hprime, RHprime, DHprime):
             if ward not in _zero_crossings:
                 _zero_crossings[ward] = False
                 

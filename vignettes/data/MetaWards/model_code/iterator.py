@@ -108,7 +108,7 @@ def advance_initial_seeds(network, population, infections, profiler, rngs, **kwa
         ward_probs_ind = ward_probs[:, 0].astype(int)
         ward_probs = ward_probs[:, 1].astype(float)
         
-        # run over each age demographic (only seeding in genpop)
+        # run over each age demographic
         for demographic in range(len(age_seeds)):
             
             ## check if any seeding done in demographic
