@@ -147,54 +147,59 @@ ensembleIDGen <- function(ensembleID = "a0", ensembleSize) {
 ## @knitr reconstruct
 ## write Rcpp function to reconstruct counts from incidence
 library(Rcpp)
-cppFunction('IntegerMatrix reconstruct(IntegerVector Einc, IntegerVector I1inc, IntegerVector I2inc, 
-    IntegerVector Rinc, IntegerVector Dinc, IntegerVector IAinc, IntegerVector RAinc, 
-    IntegerVector IHinc, IntegerVector RHinc, IntegerVector DHinc) {
+cppFunction('IntegerMatrix reconstruct(IntegerVector Einc, IntegerVector Pinc, 
+    IntegerVector I1inc, IntegerVector I2inc, IntegerVector RIinc, IntegerVector DIinc, 
+    IntegerVector Ainc, IntegerVector RAinc, 
+    IntegerVector Hinc, IntegerVector RHinc, IntegerVector DHinc) {
     
     // extract sizes
     int n = Einc.size();
     
     // set up output matrix
-    IntegerMatrix output(n, 15);
+    IntegerMatrix output(n, 17);
     
     // reconstruct counts
-    int E = 0, I1 = 0, I2 = 0, R = 0, D = 0, IA = 0, RA = 0, IH = 0, RH = 0, DH = 0;
+    int E = 0, P = 0, I1 = 0, I2 = 0, RI = 0, DI = 0, A = 0, RA = 0, H = 0, RH = 0, DH = 0;
     for(int i = 0; i < n; i++) {
     
-        E += Einc[i] - I1inc[i] - IAinc[i];
+        E += Einc[i] - Pinc[i] - Ainc[i];
         output(i, 0) = Einc[i];
         output(i, 1) = E;
+    
+        P += Pinc[i] - I1inc[i];
+        output(i, 2) = Pinc[i];
+        output(i, 3) = P;
         
-        I1 += I1inc[i] - I2inc[i] - IHinc[i] - Dinc[i];
-        output(i, 2) = I1inc[i];
-        output(i, 3) = I1;
+        I1 += I1inc[i] - I2inc[i] - Hinc[i] - DIinc[i];
+        output(i, 4) = I1inc[i];
+        output(i, 5) = I1;
         
-        I2 += I2inc[i] - Rinc[i];
-        output(i, 4) = I2inc[i];
-        output(i, 5) = I2;
+        I2 += I2inc[i] - RIinc[i];
+        output(i, 6) = I2inc[i];
+        output(i, 7) = I2;
         
-        R += Rinc[i];
-        output(i, 6) = R;
+        RI += RIinc[i];
+        output(i, 8) = RI;
         
-        D += Dinc[i];
-        output(i, 7) = D;
+        DI += DIinc[i];
+        output(i, 9) = DI;
         
-        IA += IAinc[i] - RAinc[i];
-        output(i, 8) = IAinc[i];
-        output(i, 9) = IA;
+        A += Ainc[i] - RAinc[i];
+        output(i, 10) = Ainc[i];
+        output(i, 11) = A;
         
         RA += RAinc[i];
-        output(i, 10) = RA;
+        output(i, 12) = RA;
         
-        IH += IHinc[i] - RHinc[i] - DHinc[i];
-        output(i, 11) = IHinc[i];
-        output(i, 12) = IH;
+        H += Hinc[i] - RHinc[i] - DHinc[i];
+        output(i, 13) = Hinc[i];
+        output(i, 14) = H;
         
         RH += RHinc[i];
-        output(i, 13) = RH;
+        output(i, 15) = RH;
         
         DH += DHinc[i];
-        output(i, 14) = DH;
+        output(i, 16) = DH;
     }
     
     // return counts
