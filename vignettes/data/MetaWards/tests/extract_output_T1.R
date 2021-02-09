@@ -24,14 +24,14 @@ for(i in 1:8) {
             nest() %>%
             mutate(data = map(data, ~{
                 rec <- reconstruct(
-                    .$Einc, .$I1inc, .$I2inc, .$Rinc, .$Dinc, .$IAinc, .$RAinc,
-                    .$IHinc, .$RHinc, .$DHinc
+                    .$Einc, .$Pinc, .$I1inc, .$I2inc, .$RIinc, .$DIinc, .$Ainc, .$RAinc,
+                    .$Hinc, .$RHinc, .$DHinc
                 ) %>%
                 magrittr::set_colnames(c(
-                    "Einc", "E", "I1inc", "I1", "I2inc", "I2", 
-                    "R", "D",
-                    "IAinc", "IA", "RA",
-                    "IHinc", "IH", "RH", "DH"
+                    "Einc", "E", "Pinc", "P", "I1inc", "I1", "I2inc", "I2", 
+                    "RI", "DI",
+                    "Ainc", "A", "RA",
+                    "Hinc", "H", "RH", "DH"
                 )) %>%
                 as_tibble()
                 rec$day <- .$day
@@ -42,17 +42,17 @@ for(i in 1:8) {
             ungroup()
         
         ## now extract and reconstruct by filling in gaps    
-        genpop <- select(compact, day, ward, Einc, E, I1inc, I1, I2inc, I2, R, D) %>%
+        genpop <- select(compact, day, ward, Einc, E, Pinc, P, I1inc, I1, I2inc, I2, RI, DI) %>%
             complete(day = 1:10, nesting(ward)) %>%
             arrange(ward, day) %>%
             mutate_at(-c(1:2), ~ifelse(day == 1 & is.na(.), 0, .)) %>%
             fill(-c(1:2), .direction = "down")
-        asymp <- select(compact, day, ward, IAinc, IA, RA) %>%
+        asymp <- select(compact, day, ward, Ainc, A, RA) %>%
             complete(day = 1:10, nesting(ward)) %>%
             arrange(ward, day) %>%
             mutate_at(-c(1:2), ~ifelse(day == 1 & is.na(.), 0, .)) %>%
             fill(-c(1:2), .direction = "down")
-        hospital <- select(compact, day, ward, IHinc, IH, RH, DH) %>%
+        hospital <- select(compact, day, ward, Hinc, H, RH, DH) %>%
             complete(day = 1:10, nesting(ward)) %>%
             arrange(ward, day) %>%
             mutate_at(-c(1:2), ~ifelse(day == 1 & is.na(.), 0, .)) %>%
@@ -74,19 +74,19 @@ for(i in 1:8) {
         )
     
         ## check that there are no removals or I2
-        stopifnot(all(genpop$R == 0))
+        stopifnot(all(genpop$RI == 0))
         stopifnot(all(genpop$I2 == 0))
     
         ## check for entries in death category
-        stopifnot(any(genpop$D >= 0))
+        stopifnot(any(genpop$DI >= 0))
     
         ## check for non-decreasing D
         stopifnot(
             group_by(genpop, ward) %>%
             nest() %>%
             mutate(data = map_lgl(data, function(x) {
-                mutate(x, lg = lag(D)) %>%
-                mutate(diff = D - lg) %>%
+                mutate(x, lg = lag(DI)) %>%
+                mutate(diff = DI - lg) %>%
                 pluck("diff") %>% 
                 {all(.[!is.na(.)] >=0)}
             })) %>%
@@ -94,7 +94,7 @@ for(i in 1:8) {
             all()
         )
     
-        filter(genpop, ward == 255)
+        ## filter(genpop, ward == 255)
     
         print(paste0("All OK - stage ", i))
     } else {

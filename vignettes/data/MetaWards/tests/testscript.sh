@@ -13,6 +13,8 @@ cp diseaseTest.dat disease.dat
 
 ## .nu .pE .pEA 
 printf '0.2939086 0.5 0.5 0.5 0.5 0.5 0.5 0.5 0.5 0 0 0 0 0 0 0 0 ' >> disease.dat
+## .pP 
+printf '1 1 1 1 1 1 1 1 ' >> disease.dat
 ## .pA 
 printf '0 0 0 0 0 0 0 0 ' >> disease.dat
 ## .pI1 .pI1H .pI1I2 
@@ -21,8 +23,8 @@ printf '0.5 0.5 0.5 0.5 0.5 0.5 0.5 0.5 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 ' >> dis
 printf '0 0 0 0 0 0 0 0 ' >> disease.dat
 ## .pH .pHR 
 printf '0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 ' >> disease.dat
-## .lock_1_restrict .lock_2_release .GP_A .GP_H repeats 
-printf '0 0 0 0 1' >> disease.dat
+## .lock_1_restrict .lock_2_release .GP_A repeats 
+printf '0 0 0 1' >> disease.dat
 
 ## run MetaWards
 metawards --nproc $nprocessors --nthreads $nthreads -m 2011to2019Data\
