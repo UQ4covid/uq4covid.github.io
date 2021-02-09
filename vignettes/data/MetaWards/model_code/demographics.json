@@ -1,14 +1,6 @@
 {
-	"demographics" : ["genpop1", "genpop2", "genpop3", "genpop4", "genpop5", "genpop6", "genpop7", "genpop8",
-		"asymp1", "asymp2", "asymp3", "asymp4", "asymp5", "asymp6", "asymp7", "asymp8",
-		"hospital1", "hospital2", "hospital3", "hospital4", "hospital5", "hospital6", "hospital7", "hospital8"],
-	"work_ratios" : [0.06, 0.154, 0.154, 0.134, 0.128, 0.134, 0.105, 0.131,
-		0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-		0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
-	"play_ratios" : [0.06, 0.154, 0.154, 0.134, 0.128, 0.134, 0.105, 0.131,
-		0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-		0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
-	"diseases" : ["ncov_genpop", "ncov_genpop", "ncov_genpop", "ncov_genpop", "ncov_genpop", "ncov_genpop", "ncov_genpop", "ncov_genpop",
-		"ncov_asymp", "ncov_asymp", "ncov_asymp", "ncov_asymp", "ncov_asymp", "ncov_asymp", "ncov_asymp", "ncov_asymp",
-		"ncov_hospital", "ncov_hospital", "ncov_hospital", "ncov_hospital", "ncov_hospital", "ncov_hospital", "ncov_hospital", "ncov_hospital"]
+	"demographics" : ["age1", "age2", "age3", "age4", "age5", "age6", "age7", "age8"],
+	"work_ratios" : [0.06, 0.154, 0.154, 0.134, 0.128, 0.134, 0.105, 0.131],
+	"play_ratios" : [0.06, 0.154, 0.154, 0.134, 0.128, 0.134, 0.105, 0.131],
+	"diseases" : ["ncov", "ncov", "ncov", "ncov", "ncov", "ncov", "ncov", "ncov"]
 }
