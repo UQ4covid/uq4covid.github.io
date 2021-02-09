@@ -52,6 +52,9 @@ We need to specify initial proportions of individuals in each pathway such that 
 <a name="ages"></a>
 ```{r, warning = FALSE, message = FALSE, echo = FALSE, results = "asis"}
 library(tidyverse)
+library(patchwork)
+library(ggpubr)
+library(png)
 
 ## read in age-bands by country
 ages <- read_csv("../inputs/Pop\ by\ CTRY.csv") %>%
@@ -110,6 +113,8 @@ Here `ncov_overall.json` contains:
 
 ```{js, code = readLines("../model_code/ncov_overall.json"), eval = FALSE}
 ```
+
+(Note the additional ``R` class is needed to avoid a MetaWards error, but does not do anything. Hopefully this will be fixed in a later update of MetaWards.)
 
 Here `ncov_genpop.json` contains:
 
@@ -324,9 +329,11 @@ $$
 $$
 where $\mathbf{F}^\ast$ is equivalent to replacing $\beta^{ji}$ by $c^{ji}$ in $\mathbf{F}$. As such:
 \begin{align*}
-    R_0 &= \nu\mathrm{eig}_M\left(\mathbf{F}^\ast\mathbf{V}^{-1}\right)\\
+    R_0 &= \nu~\mathrm{eig}_M\left(\mathbf{F}^\ast\mathbf{V}^{-1}\right)\\
     \Rightarrow \nu &= \frac{R_0}{\mathrm{eig}_M\left(\mathbf{F}^\ast\mathbf{V}^{-1}\right)}
 \end{align*}
+where $\mathrm{eig}_M(\mathbf{K})$ denotes the maximum eigenvalue of $\mathbf{K}$.
+
 </div>
 
 <br>
@@ -336,12 +343,17 @@ where $\mathbf{F}^\ast$ is equivalent to replacing $\beta^{ji}$ by $c^{ji}$ in $
 We have derived plausible parameter bounds from data and the literature.
 
 \begin{align}
-    \mbox{$R_0$}&: (2, 4.5) \qquad \mathrm{from Leon and Rob}\\
-    \mbox{mean incubation period ($T_E + T_P$)}&: (?, ?)---Challen et al. (2020)\\
-    \mbox{mean infection to admission period ($T_E + T_P + T_{I_1}$)}&: (?, ?)---Challen et al. (2020)\\
-    \mbox{mean onset to admission period ($T_{I_1}$)}&: (?, ?)---Challen et al. (2020)\\
-    \mbox{mean onset to end-of-infectiousness ($T_{I_1} + T_{I_2}$)}&: (?, ?)---Cevik / NEJM\\
-    \mbox{mean hospital stay ($T_H$)}&: (?, ?)---Rob data\\
+    \mbox{$R_0$}&: (2, 4.5) \qquad \mbox{from Leon and Rob}\\
+    \mbox{mean incubation period ($T_{\mathrm{inc}}$)}&: (1, 8)\mbox{---Challen et al. (2020)}\\
+    $T_E$&: (0.1, 2)\\
+    $T_P$&: (1.2, 3)\\
+    
+    
+    \mbox{mean generation period ($T_{\mathrm{gen}}$)}&: (?, ?)\mbox{---Challen et al. (2020)}\\
+    \mbox{mean infection to admission period ($T_{E \to H}$)}&: (?, ?)\mbox{---Challen et al. (2020)}\\
+    \mbox{mean onset to admission period ($T_{I \to H}$)}&: (?, ?)\mbox{---Challen et al. (2020)}\\
+    \mbox{mean onset to end-of-infectiousness ($T_{I \to R}$)}&: (?, ?)\mbox{---Cevik / NEJM}\\
+    \mbox{mean hospital stay ($T_H$)}&: (?, ?)\mbox{---Rob data age-specific}\\
     \mbox{lockdown 1 restrict}&: (0, 1)\\
     \mbox{lockdown 2 release}&: (0, 1)\\
     \alpha_{EA}&: (?, ?)~\mbox{such that}~\alpha_{EA} < -\eta_{EA} \mbox{age}_M\\
@@ -354,6 +366,52 @@ We have derived plausible parameter bounds from data and the literature.
     \eta_{HR}&: (0, ?)\\
     \beta_{A \to GP}&: (0, 1).
 \end{align}
+
+Current approach:
+
+* Sample $T_{\mathrm{gen}}$ and $T_{\mathrm{inc}}$.
+* Sample $T_E$ s.t. $T_E < T_{\mathrm{gen}}$ and $T_E < T_{\mathrm{inc}}$.
+* Set $T_P = T_{\mathrm{inc}} - T_E$.
+* Sample $T_{E \to H}$ s.t. $T_{E \to H} > T_P$.
+* Set $T_{I_1} = T_{E \to H} - T_P$.
+* Sample $T_{I \to R}$ s.t. $T_{I \to R} > T_{I_1}$.
+* Set $T_{I_2} = T_{I \to R} - T_{I_1}$.
+* **Sample $T_H^j$ from log-linear stuff.**
+
+```{r, fig.width = 10, fig.height = 8, echo = FALSE}
+p1 <- data.frame(
+    Lower = rexp(1000, rate = 1 / 0.1),
+    Upper = rexp(1000, rate = 1 / 2)) %>%
+  gather(bound, value) %>%
+  ggplot(aes(x = value, y = ..density..)) +
+    geom_histogram(bins = 50) +
+    facet_wrap(~bound) +
+    xlab("Latent Period Distribution") +
+    ylab("Density")
+gen <- readPNG("../data/intervals/generation.png")
+p2 <- ggplot() + background_image(gen)# + coord_fixed()
+p1 / p2
+```
+
+```{r, fig.width = 10, fig.height = 8, echo = FALSE}
+p1 <- data.frame(
+  Lower = sapply(c(0.1, 1.2), function(x) rexp(1000, rate = 1 / x)) %>%
+      apply(1, sum)
+  ) %>%
+  cbind(
+      Upper = sapply(c(2, 3), function(x) rexp(1000, rate = 1 / x)) %>%
+          apply(1, sum)
+  ) %>%
+  gather(bound, value) %>%
+  ggplot(aes(x = value, y = ..density..)) +
+    geom_histogram(bins = 50) +
+    facet_wrap(~bound) +
+    xlab("Incubation Period Distribution") +
+    ylab("Density")
+inc <- readPNG("../data/intervals/incubation.png")
+p2 <- ggplot() + background_image(inc)# + coord_fixed()
+p1 / p2
+```
 
 ## Mover functions
 
@@ -382,7 +440,7 @@ The **interaction matrix** scales the force-of-infection (FOI) that different de
 <button data-toggle="collapse" data-target="#mixer">Click for MetaWards <code>mixing</code> file</button>
 <div id="mixer" class="collapse boxed">
 
-Since most of the classes are already infected, it's only the rows corresponding to the general population age-classes that have to contain non-zero entries. Here the `GP_A` parameter scales FOI from asymptomatics to the general population. All demographics other than `genpop` are already infected, so have no further force-of-infection acting on them, and thus the other parameters can be set to zero. These parameters are all $> 0$.
+Since most of the classes are already infected, it's only the rows corresponding to the general population age-classes that have to contain non-zero entries. Here the `betaA_GP` parameter scales FOI from asymptomatics to the general population. All demographics other than `genpop` are already infected, so have no further force-of-infection acting on them, and thus the other parameters can be set to zero. These parameters are all $> 0$.
 
 ```{python, code = readLines("../model_code/mix_pathways.py"), eval = FALSE}
 ```
