@@ -12,7 +12,10 @@ public
 
 inputs/
 raw_outputs/
-tests/*.pdf
+tests/*/*.pdf
+tests/*/*.csv
+tests/*/user_inputs.txt
+tests/*/disease.dat
 data/ward11toWard19Mapping/Ward*
 data/ward11toWard19Mapping/*.csv
 data/ward11toWard19Mapping/*.pdf
