@@ -45,7 +45,7 @@ printf '6,0\n' >> age_seeds.csv
 printf '7,0\n' >> age_seeds.csv
 printf '8,0\n' >> age_seeds.csv
    
-## test for no progression from R to D
+## SEPID model
 cp ../diseaseTest.dat disease.dat
 
 # .pE .pEA 
