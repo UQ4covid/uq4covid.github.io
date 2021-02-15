@@ -311,7 +311,7 @@ print(NGM(R0 = NA, nu = pars["nu"], C = contact, N = N,
     gammaI2 = pars["gammaI2"]))
     
 ## set up time
-times <- 1:75
+times <- 1:200
 
 ## solve using ODE solver
 out <- ode(y = inits, times = times, func = detModel, parms = pars, contact = contact, N = N) %>%
