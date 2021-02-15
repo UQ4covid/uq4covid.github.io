@@ -8,5 +8,5 @@
 ## stochastic models developed in R
 
 cd test1
-./testscript1.sh
+./testscript.sh
 cd ..

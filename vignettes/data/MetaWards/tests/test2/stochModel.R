@@ -50,16 +50,16 @@ sims <- run(
     model = model,
     pars = pars,
     tstart = 1,
-    tstop = 75,
-    tspan = 2:75,
+    tstop = 200,
+    tspan = 2:200,
     nrep = 50,
     u = c(S = N[1] - 10, E = 10, P = 0, I1 = 0, DI = 0)
 )
 
-## try discrete-time models
+## try discrete-time model
 sourceCpp("discreteStochModel.cpp")
 disSims <- list()
-for(i in 1:50) {
-    disSims[[i]] <- discreteStochModel(pars, 1, 75, c(S = N[1] - 10, E = 10, P = 0, I1 = 0, DI = 0))
+for(i in 1:10) {
+    disSims[[i]] <- discreteStochModel(pars, 1, 200, c(S = N[1] - 10, E = 10, P = 0, I1 = 0, DI = 0))
 }
 

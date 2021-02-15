@@ -49,13 +49,13 @@ printf '8,0\n' >> age_seeds.csv
 cp ../diseaseTest.dat disease.dat
 
 # .pE .pEA 
-printf '0.4 0.4 0.4 0.4 0.4 0.4 0.4 0.4 0 0 0 0 0 0 0 0 ' >> disease.dat
+printf '0.1 0.1 0.1 0.1 0.1 0.1 0.1 0.1 0 0 0 0 0 0 0 0 ' >> disease.dat
 ## .pP 
-printf '0.4 0.4 0.4 0.4 0.4 0.4 0.4 0.4 ' >> disease.dat
+printf '0.1 0.1 0.1 0.1 0.1 0.1 0.1 0.1 ' >> disease.dat
 ## .pA 
 printf '0 0 0 0 0 0 0 0 ' >> disease.dat
 ## .pI1 .pI1H .pI1I2 
-printf '0.4 0.4 0.4 0.4 0.4 0.4 0.4 0.4 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 ' >> disease.dat
+printf '0.1 0.1 0.1 0.1 0.1 0.1 0.1 0.1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 ' >> disease.dat
 ## .pI2
 printf '0 0 0 0 0 0 0 0 ' >> disease.dat
 ## .pH .pHR 
@@ -63,7 +63,7 @@ printf '0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 ' >> disease.dat
 ## .lock_1_restrict .lock_2_release 
 printf '1 1 ' >> disease.dat
 ## beta[1] beta[2] beta[3] beta[6]
-printf '0.7662384 0.7662384 0 0 ' >> disease.dat
+printf '0.1580408 0.1580408 0 0 ' >> disease.dat
 ## repeats output
 printf '10 test' >> disease.dat
 
@@ -75,7 +75,7 @@ metawards --nproc $nprocessors --nthreads $nthreads -m single -P 100000\
     --iterator ../../model_code/iterator\
     -u user_inputs.txt -o raw_outputs --force-overwrite-output \
     --extractor ../../model_code/ward_extractor\
-    --start-date 2020/01/01 --theme simple --nsteps 75
+    --start-date 2020/01/01 --theme simple --nsteps 200
 
 ## run R script
 R CMD BATCH --no-restore --no-save --slave test.R 
