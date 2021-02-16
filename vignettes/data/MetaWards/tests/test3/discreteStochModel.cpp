@@ -30,7 +30,7 @@ IntegerMatrix discreteStochModel(NumericVector pars, int tstop, arma::imat u, ar
     // set up vector of number of infectives
     arma::vec uinf(nages);
     for(i = 0; i < nages; i++) {
-        uinf[i] = (double) u(2, i) + u(3, i);
+        uinf[i] = (double) u1(2, i) + u1(3, i);
     }
     
     // extract population sizes
@@ -38,7 +38,7 @@ IntegerMatrix discreteStochModel(NumericVector pars, int tstop, arma::imat u, ar
     for(i = 0; i < nages; i++) {
         N[i] = 0.0;
         for(j = 0; j < nclasses; j++) {
-            N[i] += (double) u(j, i);
+            N[i] += (double) u1(j, i);
         }
     }
     
@@ -49,14 +49,15 @@ IntegerMatrix discreteStochModel(NumericVector pars, int tstop, arma::imat u, ar
     k = 1;
     for(i = 0; i < nclasses; i++) {
         for(j = 0; j < nages; j++) {
-            out(0, k) = u(i, j);
+            out(0, k) = u1(i, j);
             k++;
         }
     }
     
     // set up transmission rates
     arma::mat beta(nages, 1);
-    beta = nu * C * uinf / N;
+    arma::mat betaD(nages, 1);
+    arma::mat betaN(nages, 1);
     
     // set up auxiliary variables
     double prob = 0.0;
@@ -65,26 +66,45 @@ IntegerMatrix discreteStochModel(NumericVector pars, int tstop, arma::imat u, ar
     while(tstart < tstop) {
         
         for(j = 0; j < nages; j++) {
-            // SE
-            prob = 1 - exp(-beta(j, 0));
-            i = R::rbinom(u(0, j), prob);
-            u1(0, j) -= i;
-            u1(1, j) += i;
             
-            // EP
-            i = R::rbinom(u(1, j), probE);
-            u1(1, j) -= i;
-            u1(2, j) += i;
+            // I1DI
+            i = R::rbinom(u1(3, j), probI1);
+            u1(3, j) -= i;
+            u1(4, j) += i;
             
             // PI1
-            i = R::rbinom(u(2, j), probP);
+            i = R::rbinom(u1(2, j), probP);
             u1(2, j) -= i;
             u1(3, j) += i;
             
-            // I1DI
-            i = R::rbinom(u(3, j), probI1);
-            u1(3, j) -= i;
-            u1(4, j) += i;
+            // EP
+            i = R::rbinom(u1(1, j), probE);
+            u1(1, j) -= i;
+            u1(2, j) += i;
+        }
+        
+        // update infective counts for rate
+        for(i = 0; i < nages; i++) {
+            uinf[i] = (double) u1(2, i) + u1(3, i);
+        }
+        
+        // SE
+        for(j = 0; j < nages; j++) {
+            betaD = 0.7 * nu * uinf / N;
+            beta = C * betaD;
+//            Rprintf("t = %d beta[%d] = %.25f\n", tstart, j, beta[j]);
+            prob = 1 - exp(-beta(j, 0));
+            i = R::rbinom(u1(0, j), prob);
+            u1(0, j) -= i;
+            u1(1, j) += i;
+            
+            betaN = 0.3 * nu * uinf / N;
+            beta = C * betaN;
+//            Rprintf("t = %d beta[%d] = %.25f\n", tstart, j, beta[j]);
+            prob = 1 - exp(-beta(j, 0));
+            i = R::rbinom(u1(0, j), prob);
+            u1(0, j) -= i;
+            u1(1, j) += i;
         }
         
         // record output
@@ -96,17 +116,6 @@ IntegerMatrix discreteStochModel(NumericVector pars, int tstop, arma::imat u, ar
                 k++;
             }
         }
-        
-        // update counters
-        for(i = 0; i < nclasses; i++) {
-            for(j = 0; j < nages; j++) {
-                u(i, j) = u1(i, j);
-            }
-        }
-        for(i = 0; i < nages; i++) {
-            uinf[i] = u(2, i) + u(3, i);
-        }
-        beta = nu * C * uinf / N;
         
         // update time 
         tstart++;
