@@ -8,25 +8,11 @@ pars <- read_delim("disease.dat", delim = " ") %>%
 colnames(pars) <- gsub("_1", "", colnames(pars))
 colnames(pars) <- gsub("\\.", "", colnames(pars))
 pars <- pars %>%
-    mutate_all(~ifelse(. == 1, 0.99, .)) %>%
-    mutate(gammaE = -log(1 - pE)) %>%
-    mutate(gammaP = -log(1 - pP)) %>%
-    mutate(gammaA = -log(1 - pA)) %>%
-    mutate(gammaI1 = -log(1 - pI1)) %>%
-    mutate(gammaI2 = -log(1 - pI2)) %>%
-    mutate(gammaH = -log(1 - pH)) %>%
-    select(-pE, -pP, -pA, -pI1, -pI2, -pH) %>%
+    select(nu, probE = pE, probP = pP, probI1 = pI1) %>%
     unlist()
-pars <- c(
-    beta = pars["nu"], 
-    gammaE = pars["gammaE"], 
-    gammaP = pars["gammaP"], 
-    gammaI1 = pars["gammaI1"]
-)
-names(pars) <- c("nu", "gammaE", "gammaP", "gammaI1")
 
 ## set population size
-N <- round(pluck(read_csv("../../inputs/age_seeds.csv", col_names = FALSE), "X2") * 100000)
+N <- c(6000, 15400, 15400, 13400, 12800, 13400, 10500, 13100)
 
 ## set initial counts
 u <- matrix(0, 5, 8)
@@ -40,9 +26,14 @@ contact <- read_csv("contact_matrix.csv", col_names = FALSE) %>%
 
 ## try discrete-time model
 sourceCpp("discreteStochModel.cpp")
-disSims <- discreteStochModel(pars, 250, u, contact)
-#disSims <- list()
-#for(i in 1:10) {
-#    disSims[[i]] <- discreteStochModel(pars, 250, u, contact)
-#}
+disSims <- list()
+for(i in 1:50) {
+    disSims[[i]] <- discreteStochModel(pars, 150, u, contact)
+}
+stageNms <- map(c("S", "E", "P", "I1", "DI"), ~paste0(., 1:8)) %>%
+    reduce(c)
+disSims <- map(disSims, ~as_tibble(.)) %>%
+    bind_rows(.id = "rep") %>%
+    set_names(c("rep", "t", stageNms)) %>%
+    mutate(t = t + 1)
 
