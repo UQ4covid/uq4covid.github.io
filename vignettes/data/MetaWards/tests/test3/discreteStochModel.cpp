@@ -11,9 +11,9 @@ IntegerMatrix discreteStochModel(NumericVector pars, int tstop, arma::imat u, ar
   
     // extract parameters
     double nu = pars[0];
-    double gammaE = pars[1];
-    double gammaP = pars[2];
-    double gammaI1 = pars[3];
+    double probE = pars[1];
+    double probP = pars[2];
+    double probI1 = pars[3];
       
     // set up auxiliary matrix for counts
     int nclasses = u.n_rows;
@@ -60,9 +60,6 @@ IntegerMatrix discreteStochModel(NumericVector pars, int tstop, arma::imat u, ar
     
     // set up auxiliary variables
     double prob = 0.0;
-    double probE = 1 - exp(-gammaE);
-    double probP = 1 - exp(-gammaP);
-    double probI1 = 1 - exp(-gammaI1);
     tstart++;
     
     while(tstart < tstop) {
@@ -113,9 +110,7 @@ IntegerMatrix discreteStochModel(NumericVector pars, int tstop, arma::imat u, ar
         
         // update time 
         tstart++;
-        Rprintf("tstart = %d\n", tstart);
     }
-    Rprintf("hmm\n");
     return out;
 }
 

@@ -6,7 +6,7 @@ export METAWARDSDATA=$HOME/Documents/covid/MetaWardsData
 
 ## set number of threads and processors
 nprocessors=1
-nthreads=4
+nthreads=1
 
 ## remove old plot files
 rm *.pdf
@@ -41,13 +41,13 @@ printf '8,0\n' >> age_seeds.csv
 cp ../diseaseTest.dat disease.dat
 
 # .pE .pEA 
-printf '0.1 0.1 0.1 0.1 0.1 0.1 0.1 0.1 0 0 0 0 0 0 0 0 ' >> disease.dat
+printf '0.3 0.3 0.3 0.3 0.3 0.3 0.3 0.3 0 0 0 0 0 0 0 0 ' >> disease.dat
 ## .pP 
-printf '0.1 0.1 0.1 0.1 0.1 0.1 0.1 0.1 ' >> disease.dat
+printf '0.3 0.3 0.3 0.3 0.3 0.3 0.3 0.3 ' >> disease.dat
 ## .pA 
 printf '0 0 0 0 0 0 0 0 ' >> disease.dat
 ## .pI1 .pI1H .pI1I2 
-printf '0.1 0.1 0.1 0.1 0.1 0.1 0.1 0.1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 ' >> disease.dat
+printf '0.3 0.3 0.3 0.3 0.3 0.3 0.3 0.3 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 ' >> disease.dat
 ## .pI2
 printf '0 0 0 0 0 0 0 0 ' >> disease.dat
 ## .pH .pHR 
@@ -55,9 +55,9 @@ printf '0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 ' >> disease.dat
 ## .lock_1_restrict .lock_2_release 
 printf '1 1 ' >> disease.dat
 ## beta[1] beta[2] beta[3] beta[6]
-printf '0.300630350 0.300630350 0 0 ' >> disease.dat
+printf '0.157244759 0.157244759 0 0 ' >> disease.dat
 ## repeats output
-printf '10 test' >> disease.dat
+printf '50 test' >> disease.dat
 
 ## run MetaWards
 metawards --nproc $nprocessors --nthreads $nthreads -m single -P 100000\
@@ -67,7 +67,7 @@ metawards --nproc $nprocessors --nthreads $nthreads -m single -P 100000\
     --iterator ../../model_code/iterator\
     -u user_inputs.txt -o raw_outputs --force-overwrite-output \
     --extractor ../../model_code/ward_extractor\
-    --start-date 2020/01/01 --theme simple --nsteps 250
+    --start-date 2020/01/01 --theme simple --nsteps 150
 
 ## run R script
-#R CMD BATCH --no-restore --no-save --slave test.R 
+R CMD BATCH --no-restore --no-save --slave test.R 
