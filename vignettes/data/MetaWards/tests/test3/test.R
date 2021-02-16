@@ -49,7 +49,7 @@ for(i in 1:8) {
     ## set up list for runs
     rec[[i]] <- list()
     ## loop over repeats
-    for(j in 1:50) {
+    for(j in 1:10) {
         ## establish connection
         system(paste0("bzip2 -dkf raw_outputs/testx", str_pad(j, 3, pad = "0"), "/age", i, ".db.bz2"))
         con <- DBI::dbConnect(RSQLite::SQLite(), paste0("raw_outputs/testx", str_pad(j, 3, pad = "0"), "/age", i, ".db"))

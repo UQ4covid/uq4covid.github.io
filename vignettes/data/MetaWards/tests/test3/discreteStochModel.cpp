@@ -65,6 +65,11 @@ IntegerMatrix discreteStochModel(NumericVector pars, int tstop, arma::imat u, ar
     
     while(tstart < tstop) {
         
+        // update infective counts for rate
+        for(i = 0; i < nages; i++) {
+            uinf[i] = (double) u1(2, i) + u1(3, i);
+        }
+        
         for(j = 0; j < nages; j++) {
             
             // I1DI
@@ -81,11 +86,6 @@ IntegerMatrix discreteStochModel(NumericVector pars, int tstop, arma::imat u, ar
             i = R::rbinom(u1(1, j), probE);
             u1(1, j) -= i;
             u1(2, j) += i;
-        }
-        
-        // update infective counts for rate
-        for(i = 0; i < nages; i++) {
-            uinf[i] = (double) u1(2, i) + u1(3, i);
         }
         
         // SE
