@@ -34,12 +34,10 @@ IntegerMatrix discreteStochModel(NumericVector pars, int tstop, arma::imat u, ar
     }
     
     // classes are: S, E, A, RA, P, I1, DI, I2, RI, H, RH, DH
+    //              0, 1, 2, 3,  4, 5,  6,  7,  8,  9, 10, 11
     
     // set up vector of number of infectives
     arma::vec uinf(nages);
-    for(i = 0; i < nages; i++) {
-        uinf[i] = (double) nuA * u1(2, i) + u1(4, i) + u1(5, i) + u1(7, i);
-    }
     
     // extract population sizes
     arma::vec N (nages);
@@ -96,7 +94,7 @@ IntegerMatrix discreteStochModel(NumericVector pars, int tstop, arma::imat u, ar
                         
             // H out
             rmultinom(u1(9, j), mprobsH.begin(), 3, pathH.begin());
-            u1(9, j) -= pathH[0] + pathH[1];
+            u1(9, j) -= (pathH[0] + pathH[1]);
             u1(10, j) += pathH[0];
             u1(11, j) += pathH[1];
                         
@@ -107,7 +105,7 @@ IntegerMatrix discreteStochModel(NumericVector pars, int tstop, arma::imat u, ar
             
             // I1 out
             rmultinom(u1(5, j), mprobsI1.begin(), 4, pathI1.begin());
-            u1(5, j) -= pathI1[0] + pathI1[1] + pathI1[2];
+            u1(5, j) -= (pathI1[0] + pathI1[1] + pathI1[2]);
             u1(9, j) += pathI1[0];
             u1(7, j) += pathI1[1];
             u1(6, j) += pathI1[2];
@@ -124,19 +122,19 @@ IntegerMatrix discreteStochModel(NumericVector pars, int tstop, arma::imat u, ar
                         
             // EA - EP
             rmultinom(u1(1, j), mprobsE.begin(), 3, pathE.begin());
-            u1(1, j) -= pathE[0] + pathE[1];
+            u1(1, j) -= (pathE[0] + pathE[1]);
             u1(2, j) += pathE[0];
             u1(4, j) += pathE[1];
         }
         
         // update infective counts for rate
         for(i = 0; i < nages; i++) {
-            uinf[i] = (double) nuA * u1(2, i) + u1(4, i) + u1(5, i) + u1(7, i);
+            uinf[i] = (double) nuA * u1(2, i) + nu * (u1(4, i) + u1(5, i) + u1(7, i));
         }
         
         // SE
         for(j = 0; j < nages; j++) {
-            betaD = 0.7 * nu * uinf / N;
+            betaD = 0.7 * uinf / N;
             beta = C * betaD;
 //            Rprintf("t = %d beta[%d] = %.25f\n", tstart, j, beta[j]);
             prob = 1 - exp(-beta(j, 0));
@@ -144,7 +142,7 @@ IntegerMatrix discreteStochModel(NumericVector pars, int tstop, arma::imat u, ar
             u1(0, j) -= i;
             u1(1, j) += i;
             
-            betaN = 0.3 * nu * uinf / N;
+            betaN = 0.3 * uinf / N;
             beta = C * betaN;
 //            Rprintf("t = %d beta[%d] = %.25f\n", tstart, j, beta[j]);
             prob = 1 - exp(-beta(j, 0));
