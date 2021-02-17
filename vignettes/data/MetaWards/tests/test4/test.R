@@ -5,7 +5,7 @@ library(patchwork)
 source("../../R_tools/dataTools.R")
 
 ## source NGM function
-source("NGM.R")
+source("../NGM.R")
 
 pars <- read_delim("disease.dat", delim = " ") %>%
     select(ends_with("_1"), nu = `beta[1]`, nuA = `beta[6]`)
@@ -155,3 +155,4 @@ for(i in 1:8) {
     print(p1 + p2)
 }
 dev.off()
+
