@@ -5,7 +5,7 @@ library(patchwork)
 source("../../R_tools/dataTools.R")
 
 ## source NGM function
-source("NGM.R")
+source("../NGM.R")
 
 pars <- read_delim("disease.dat", delim = " ") %>%
     select(ends_with("_1"), nu = `beta[1]`, nuA = `beta[6]`)
@@ -98,7 +98,7 @@ for(i in 1:8) {
         unnest(cols = data) %>%
         gather(estimate, value, -day, -stage) %>%
         spread(stage, value) %>%
-        select(day, estimate, E, P, I1, DI = I2)
+        select(day, estimate, E, P, I1, DI)
         
     ## extract discrete-time stochastic simulations
     tempStoch <- select(disSims, day = t, ends_with(as.character(i))) %>%

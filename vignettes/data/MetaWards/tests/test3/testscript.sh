@@ -61,8 +61,10 @@ printf '10 test' >> disease.dat
 
 ## run MetaWards
 metawards --nproc $nprocessors --nthreads $nthreads -m single -P 100000\
-    -d ncov_age.json\
-    -D demographics_age.json --mixer ../../model_code/mix_pathways\
+    -d ../../model_code/ncov.json\
+    -D ../../model_code/demographics.json\
+    --mixer ../../model_code/mix_pathways\
+    --mover ../../model_code/move_pathways\
     --input disease.dat\
     --iterator ../../model_code/iterator\
     -u user_inputs.txt -o raw_outputs --force-overwrite-output \
