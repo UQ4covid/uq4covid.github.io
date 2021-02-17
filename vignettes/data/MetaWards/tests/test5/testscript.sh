@@ -55,7 +55,7 @@ printf '0.3 0.3 0.3 0.3 0.3 0.3 0.3 0.3 0.5 0.5 0.5 0.5 0.5 0.5 0.5 0.5 ' >> dis
 ## .lock_1_restrict .lock_2_release 
 printf '1 1 ' >> disease.dat
 ## beta[1] beta[2] beta[3] beta[6]
-printf '0.158833090606437 0.158833090606437 0.158833090606437 0.3 ' >> disease.dat
+printf '0.158833090606437 0.158833090606437 0.158833090606437 0.04764993 ' >> disease.dat
 ## repeats output
 printf '10 test' >> disease.dat
 
