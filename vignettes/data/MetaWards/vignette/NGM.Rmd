@@ -1,0 +1,101 @@
+---
+title: "NGM for MetaWards"
+author: "TJ McKinley"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+From the model structure above, in a single population, the **force-of-infection**, $\lambda^j$, acting on an individual in age-class $j$ is:
+\begin{align*}
+    \lambda^j &= \sum_{k=1}^J \frac{\beta^{kj}}{N^k}\left(P^k + I_1^k + I_2^k + \beta_{A\to GP}A^k\right)
+\end{align*}
+In practice we model the transmission parameters as:
+$$
+  \beta^{kj} = \nu c^{kj},
+$$
+where $0 < \nu < 1$ is a probability of infection per contact, and $c^{kj}$ is the **population contact rate** that an individual in class $j$ has with individuals in class $k$. We use the population contact matric $C = \{c^{kj}; k = 1, \dots, J; j = 1, \dots, J\}$ from the **CoMix** survey, since we are modelling from the end of the first lockdown, where contact rates are not the same as before the pandemic (where something like the BBC Pandemic Contact Survey or POLYMOD would be more appropriate).
+
+A challenge is that we parameterise our model in terms of $R_0$, not $\nu$, and thus we need a way to derive $\nu$ from $R_0$ for a given run. To this end, $R_0$ can be derived as the **maximum eigenvalue** of the **next-generation matrix** (NGM). Firstly, let $F_i(x)$ be the rate of new infections into *infected* class $i$, and $V_i(x)$ be the rate of transitions from *infected* class $i$. Then define matrices:
+$$
+    \mathbf{F} = \left[\frac{\partial F_i\left(x_0\right)}{\partial x_j}\right] \quad \mbox{and} \quad \mathbf{V} = \left[\frac{\partial V_i\left(x_0\right)}{\partial x_j}\right] \quad \mbox{for}~1 \leq i, j, \leq J,
+$$
+where $x_0$ corresponds to the states at the disease-free equilibrium. Then, the NGM, $\mathbf{K}$, is:
+$$
+    \mathbf{K} = \mathbf{FV}^{-1},
+$$
+and $R_0$ is the maximum eigenvalue of $\mathbf{K}$.
+
+From the model structure above, in a single population with age-structure, the **infected classes** are $E^j$, $A^j$, $P^j$, $I_1^j$ and $I_2^j$ for age-classes $j = 1, \dots, J$. In a deterministic model these would have rates-of-change of:
+\begin{align*}
+    \frac{dE^j}{dt} &= S^j\left[\sum_{k=1}^J \frac{\beta^{kj}}{N^k}\left(P^k + I_1^k + I_2^k + \beta_{A\to GP}A^k\right) \right] - \gamma_E E^j\\
+    \frac{dA^j}{dt} &= p_{EA}^j\gamma_E E^j - \gamma_A A^j\\
+    \frac{dP^j}{dt} &= \left(1 - p_{EA}^j\right)\gamma_E E^j - \gamma_P P^j\\
+    \frac{dI_1^j}{dt} &= \gamma_P P^j - \gamma_{I_1} I_1^j\\
+    \frac{dI_2^j}{dt} &= p_{I_1I_2}\gamma_{I_1} I_1^j - \gamma_{I_2} I_2^j\\
+\end{align*}
+Here $\beta^{kj}$ is the transmission rate from class $k$ to class $j$ and $N_k$ is the total number of individuals in class $k$. The parameter $\beta_{A \to GP}$ scales the force-of-infection from the $A$ class to the general population.
+
+The **non-zero** components needed to derive the NGM are:
+\begin{align*}
+    \frac{\partial F_{E^i}\left(x_0\right)}{\partial E^j} &= 0 &\qquad  \forall i, j,\\
+    \frac{\partial F_{E^i}\left(x_0\right)}{\partial A^j} &= \frac{\beta^{ji}\beta_{A \to GP}S^i}{N^j} &\qquad \forall i, j\\
+    \frac{\partial F_{E^i}\left(x_0\right)}{\partial P^j} &= \frac{\beta^{ji}S^i}{N^j} &\qquad \forall i, j\\
+    \frac{\partial F_{E^i}\left(x_0\right)}{\partial I_1^j} &= \frac{\beta^{ji}S^i}{N^j} &\qquad \forall i, j\\
+    \frac{\partial F_{E^i}\left(x_0\right)}{\partial I_2^j} &= \frac{\beta^{ji}S^i}{N^j} &\qquad \forall i, j\\
+\end{align*}
+and
+\begin{align*}
+    \frac{\partial V_{E^i}\left(x_0\right)}{\partial E^j} &= \left\{\begin{array}{cc} 
+        \gamma_E & \mathrm{for}~i = j,\\
+        0 & \mathrm{otherwise,}
+        \end{array}\right. &\\
+    \frac{\partial V_{A^i}\left(x_0\right)}{\partial E^j} &= \left\{\begin{array}{cc} 
+        -p_{EA}^i\gamma_E & \mathrm{for}~i = j,\\
+        0 & \mathrm{otherwise,}
+        \end{array}\right. &\\
+    \frac{\partial V_{A^i}\left(x_0\right)}{\partial A^j} &= \left\{\begin{array}{cc} 
+        \gamma_A & \mathrm{for}~i = j,\\
+        0 & \mathrm{otherwise,}
+        \end{array}\right. &\\
+    \frac{\partial V_{P^i}\left(x_0\right)}{\partial E^j} &= \left\{\begin{array}{cc} 
+        -\left(1 - p_{EA}^i\right)\gamma_E & \mathrm{for}~i = j,\\
+        0 & \mathrm{otherwise,}
+        \end{array}\right. &\\
+    \frac{\partial V_{P^i}\left(x_0\right)}{\partial P^j} &= \left\{\begin{array}{cc} 
+        \gamma_P & \mathrm{for}~i = j,\\
+        0 & \mathrm{otherwise,}
+        \end{array}\right. &\\
+    \frac{\partial V_{I_1^i}\left(x_0\right)}{\partial P^j} &= \left\{\begin{array}{cc} 
+        -\gamma_P & \mathrm{for}~i = j,\\
+        0 & \mathrm{otherwise,}
+        \end{array}\right. &\\
+    \frac{\partial V_{I_1^i}\left(x_0\right)}{\partial I_1^j} &= \left\{\begin{array}{cc} 
+        \gamma_{I_1} & \mathrm{for}~i = j,\\
+        0 & \mathrm{otherwise,}
+        \end{array}\right. &\\
+    \frac{\partial V_{I_2^i}\left(x_0\right)}{\partial I_1^j} &= \left\{\begin{array}{cc} 
+        -p_{I_1I_2}\gamma_{I_1} & \mathrm{for}~i = j,\\
+        0 & \mathrm{otherwise,}
+        \end{array}\right. &\\
+    \frac{\partial V_{I_2^i}\left(x_0\right)}{\partial I_2^j} &= \left\{\begin{array}{cc} 
+        \gamma_{I_2} & \mathrm{for}~i = j,\\
+        0 & \mathrm{otherwise.}
+        \end{array}\right. &\\
+\end{align*}
+Since the non-zero components of $\mathbf{F}$ all contain $\beta^{ji}$, where
+$$
+    \beta^{ji} = \nu c^{ji},
+$$
+we can thus write
+$$
+    \mathbf{K} = \nu\mathbf{F^\ast}\mathbf{V}^{-1}
+$$
+where $\mathbf{F}^\ast$ is equivalent to replacing $\beta^{ji}$ by $c^{ji}$ in $\mathbf{F}$. As such:
+\begin{align*}
+    R_0 &= \nu~\mathrm{eig}_M\left(\mathbf{F}^\ast\mathbf{V}^{-1}\right)\\
+    \Rightarrow \nu &= \frac{R_0}{\mathrm{eig}_M\left(\mathbf{F}^\ast\mathbf{V}^{-1}\right)}
+\end{align*}
+where $\mathrm{eig}_M(\mathbf{K})$ denotes the maximum eigenvalue of $\mathbf{K}$.
