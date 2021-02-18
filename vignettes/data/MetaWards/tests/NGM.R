@@ -1,16 +1,12 @@
 ## NGM (order: E, A, P, I1, I2)
-NGM <- function(R0 = NA, nu = NA, C, N, nuA, gammaE, pEA, gammaA, gammaP, gammaI1, pI1I2, gammaI2) {
+NGM <- function(R0 = NA, nu = NA, C, S0, N, nuA, gammaE, pEA, gammaA, gammaP, gammaI1, pI1I2, gammaI2) {
     
     ## check that exactly one of R0 or nu is specified
     stopifnot(!is.na(R0) | !is.na(nu))
     stopifnot(is.na(R0) | is.na(nu))
     
-    ## extract lengths
-    nage <- length(N)
-    stopifnot(all(dim(C) == nage))
-    
     ## check inputs
-    stopifnot(!missing(C) & !missing(N))
+    stopifnot(!missing(C) & !missing(N) & !missing(S0))
     if(missing(nuA)) nuA <- 0
     if(missing(gammaE)) gammaE <- 0
     if(missing(pEA)) pEA <- 0
@@ -21,6 +17,11 @@ NGM <- function(R0 = NA, nu = NA, C, N, nuA, gammaE, pEA, gammaA, gammaP, gammaI
     if(missing(gammaI2)) gammaI2 <- 0
     stopifnot(all(c(nuA, gammaE, pEA, gammaA, 
         gammaP, gammaI1, pI1I2, gammaI2) >= 0))
+    
+    ## extract lengths
+    nage <- length(N)
+    stopifnot(all(dim(C) == nage))
+    stopifnot(length(S0) == nage & all(S0 <= N))
     
     ## check for empty pathways
     stopifnot(gammaE > 0)
@@ -43,20 +44,20 @@ NGM <- function(R0 = NA, nu = NA, C, N, nuA, gammaE, pEA, gammaA, gammaP, gammaI
     stage <- 1
     if(pathA) {
         ## add A to E
-        F[1:nage, (nage + stage):((stage + 1) * nage)] <- t(t(nuA * N * C) / ifelse(N == 0, 1, N))
+        F[1:nage, (nage + stage):((stage + 1) * nage)] <- t(t(nuA * S0 * C) / ifelse(N == 0, 1, N))
         stage <- stage + 1
     }
     if(pathI1) {
         ## add P to E
-        F[1:nage, (stage * nage + 1):((stage + 1) * nage)] <- t(t(N * C) / ifelse(N == 0, 1, N))        
+        F[1:nage, (stage * nage + 1):((stage + 1) * nage)] <- t(t(S0 * C) / ifelse(N == 0, 1, N))        
         stage <- stage + 1
         ## add I1 to E
-        F[1:nage, (stage * nage + 1):((stage + 1) * nage)] <- t(t(N * C) / ifelse(N == 0, 1, N))
+        F[1:nage, (stage * nage + 1):((stage + 1) * nage)] <- t(t(S0 * C) / ifelse(N == 0, 1, N))
         stage <- stage + 1
     }
     if(pathI2) {
         ## add I2 to E
-        F[1:nage, (stage * nage + 1):((stage + 1) * nage)] <- t(t(N * C) / ifelse(N == 0, 1, N))
+        F[1:nage, (stage * nage + 1):((stage + 1) * nage)] <- t(t(S0 * C) / ifelse(N == 0, 1, N))
         stage <- stage + 1
     }
     
@@ -102,14 +103,14 @@ NGM <- function(R0 = NA, nu = NA, C, N, nuA, gammaE, pEA, gammaA, gammaP, gammaI
         
         ## calculate and return nu
         nu <- R0 / max(eigen(K)$values)
-        return(nu)
+        return(list(nu = nu, K = nu * K))
     } else {        
         ## calculate NGM
         K <- nu * F %*% solve(V)
         
         ## calculate and return nu
         R0 <- max(eigen(K)$values)
-        return(R0)
+        return(list(R0 = R0, K = K))
     }
 }
 
