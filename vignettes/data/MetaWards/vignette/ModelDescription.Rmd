@@ -10,7 +10,7 @@ output:
 
 <center>
 
-**Requires MetaWards 1.4.1**
+**Requires MetaWards 1.5.1**
 
 Please download files for running the model from **[here](metawards.zip)**.
 
@@ -102,8 +102,6 @@ The stages can be set with the MetaWards disease file, called `ncov.json` here.
 ```{js, code = readLines("../model_code/ncov.json"), eval = FALSE}
 ```
 
-(Note the additional ``R` class is needed to avoid a MetaWards error, but does not do anything. Hopefully this will be fixed in a later update of MetaWards.)
-
 We will discuss these choices in more detail in the subsequent sections. Note that the `progress` parameters are all set to zero here, since all movements will be controlled via the custom `mover` function, and the `beta` parameters are all set to one for infectious classes, but different values for different infectious classes will be passed in when the model is run, and the mixing between the age-classes will be controlled by a custom `mixer` function.
 
 </div>
@@ -157,7 +155,7 @@ We seed infections proportionately to the age-structure of the population (descr
 
 ```{r, echo = FALSE}
 age_seed <- ages %>%
-  mutate(prop = count / sum(count)) %>%
+  mutate(prop = round(count / sum(count), 3)) %>%
   mutate(class = 1:n()) %>%
   select(class, prop)
 write_csv(age_seed, "../inputs/age_seeds.csv", col_names = FALSE)
@@ -168,7 +166,7 @@ write_csv(age_seed, "../inputs/age_seeds.csv", col_names = FALSE)
 
 Here the first column is the age demographic and the second is the probability of seeding into that age-demographic.
 
-We take a multinomial sample of size 5 to decide how many individuals are seeded into each age-class, and then we split these across wards as described below.
+We take a multinomial sample of size <p style="color:red">5</p> to decide how many individuals are seeded into each age-class, and then we split these across wards as described below.
 
 We take the first 100 observed deaths, and generate the proportions of these deaths across the relevant NHS trusts. This generates a probability of seeding infection in each trust. We then split these probabilities across all wards in these trusts proportionately to the ward population sizes. We then sample initial seeds by taking a multinomial sample of the relevant size (according to the age-class samples above) across all relevant wards. Details and instructions can be found in `data/seedDeaths/README.md`. This creates a file `inputs/ward_seeds.csv` that contains the necessary probabilities for ward seeding. This file has the same form as the `age_seeds.csv` file described above, but the first column is the ward ID, and the second is the probabilities.
 
