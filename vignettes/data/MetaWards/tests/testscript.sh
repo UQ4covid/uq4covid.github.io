@@ -11,10 +11,10 @@ cd test1
 ./testscript.sh
 cd ..
 
-## same as test1 except except with age-specific mixing and
-## shorter transition times, thus same R0 = 3 results in 
-## different nu. Only discrete-time stochastic model now used.
-## Deterministic model used to assess R0 and NGM validity.
+## same as test1 except except with age-specific mixing thus 
+## same R0 = 3 results in different nu. Only discrete-time 
+## stochastic model now used. Deterministic model used to 
+## assess R0 and NGM validity.
 
 cd test2
 ./testscript.sh
