@@ -60,7 +60,7 @@ def move_pathways(network, **kwargs):
     #########              H MOVES                #########
     #######################################################
                                       
-    ## move H hospital to R hospital
+    ## move H genpop to R genpop
     ## (denominator adjustment is due to operating on remainder
     ## as described in the vignette, also includes correction
     ## in case of rounding error)
@@ -76,7 +76,7 @@ def move_pathways(network, **kwargs):
                                       fraction=tpHR[j],
                                       **kwargs))
                                       
-    ## move H hospital to D hospital
+    ## move H genpop to D genpop
     ## (denominator adjustment is due to operating on remainder
     ## as described in the vignette, also includes correction
     ## in case of rounding error)
@@ -114,7 +114,7 @@ def move_pathways(network, **kwargs):
     #########              I1 MOVES               #########
     #######################################################
 
-    ## move I1 genpop to H hospital
+    ## move I1 genpop to H genpop
     tpI1H = []
     for j in range(nage):
         tpI1H.append(pI1[j] * pI1H[j])
@@ -150,7 +150,7 @@ def move_pathways(network, **kwargs):
     ## in case of rounding error)
     tpI1D = []
     for j in range(nage):
-        tpI1D.append(pI1[j] * (1 - pI1H[j] - pI1I2[j]) / (1.0 - pI1[j] * (pI1H[j] + pI1I2[j])))
+        tpI1D.append(pI1[j] * (1.0 - pI1H[j] - pI1I2[j]) / (1.0 - pI1[j] * (pI1H[j] + pI1I2[j])))
         tpI1D[j] = 0.0 if (pI1[j] * (pI1H[j] + pI1I2[j])) == 1.0 else tpI1D[j]
         tpI1D[j] = 1.0 if tpI1D[j] > 1.0 else tpI1D[j]
         tpI1D[j] = 0.0 if tpI1D[j] < 0.0 else tpI1D[j]
@@ -180,7 +180,7 @@ def move_pathways(network, **kwargs):
     #########              A MOVES                #########
     #######################################################
 
-    ## move A asymp to R asymp
+    ## move A genpop to R genpop
     tpAR = []
     for j in range(nage):
         tpAR.append(pA[j])
@@ -195,7 +195,7 @@ def move_pathways(network, **kwargs):
     #########              E MOVES                #########
     #######################################################
 
-    ## move E genpop to A asymp
+    ## move E genpop to A genpop
     tpEA = []
     for j in range(nage):
         tpEA.append(pE[j] * pEA[j])
