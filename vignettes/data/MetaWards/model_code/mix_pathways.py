@@ -1,4 +1,4 @@
-from metawards.mixers import merge_using_matrix
+from metawards.mixers import merge_matrix_multi_population
 from metawards.utils import Console
 
 # use caching to store matrix read in from filename
@@ -33,4 +33,4 @@ def mix_pathways(network, **kwargs):
     
     network.demographics.interaction_matrix = matrix
 
-    return [merge_using_matrix]
+    return [merge_matrix_multi_population]
