@@ -32,69 +32,54 @@ NGM <- function(R0 = NA, nu = NA, C, S0, N, nuA, gammaE, pEA, gammaA, gammaP, ga
     pathI2 <- ifelse(pI1I2 == 0 | !pathI1, FALSE, TRUE)
     if(pathI2) stopifnot(gammaI2 > 0)
     
-    ## set number of relevant stages
-    nstages <- 1
-    if(pathA) nstages <- nstages + 1
-    if(pathI1) nstages <- nstages + 2
-    if(pathI2) nstages <- nstages + 1
-        
     ## set up empty F matrix
-    F <- matrix(0, nage * nstages, nage * nstages)
+    ## (order: E, A, P, I1, I2)
+    F <- matrix(0, nage * 5, nage * 5)
     
-    stage <- 1
-    if(pathA) {
-        ## add A to E
-        F[1:nage, (nage + stage):((stage + 1) * nage)] <- t(t(nuA * S0 * C) / ifelse(N == 0, 1, N))
-        stage <- stage + 1
-    }
-    if(pathI1) {
-        ## add P to E
-        F[1:nage, (stage * nage + 1):((stage + 1) * nage)] <- t(t(S0 * C) / ifelse(N == 0, 1, N))        
-        stage <- stage + 1
-        ## add I1 to E
-        F[1:nage, (stage * nage + 1):((stage + 1) * nage)] <- t(t(S0 * C) / ifelse(N == 0, 1, N))
-        stage <- stage + 1
-    }
-    if(pathI2) {
-        ## add I2 to E
-        F[1:nage, (stage * nage + 1):((stage + 1) * nage)] <- t(t(S0 * C) / ifelse(N == 0, 1, N))
-        stage <- stage + 1
-    }
+    ## add A to E
+    F[1:nage, (nage + 1):(2 * nage)] <- t(t(nuA * S0 * C) / ifelse(N == 0, 1, N))
+    ## add P to E
+    F[1:nage, (2 * nage + 1):(3 * nage)] <- t(t(S0 * C) / ifelse(N == 0, 1, N))
+    ## add I1 to E
+    F[1:nage, (3 * nage + 1):(4 * nage)] <- t(t(S0 * C) / ifelse(N == 0, 1, N))
+    ## add I2 to E
+    F[1:nage, (4 * nage + 1):(5 * nage)] <- t(t(S0 * C) / ifelse(N == 0, 1, N))
     
     ## set up empty V matrix
-    V <- matrix(0, nage * nstages, nage * nstages)
+    V <- matrix(0, nage * 5, nage * 5)
     
     ## add E to E terms
     diag(V)[1:nage] <- gammaE
     
-    stage <- 1
-    if(pathA) {
-        ## add E to A terms
-        V[(nage + stage):((stage + 1) * nage), 1:nage] <- diag(nage) * -pEA * gammaE
-        ## add A to A terms
-        V[(nage + stage):((stage + 1) * nage), (nage + stage):((stage + 1) * nage)] <- diag(nage) * gammaA
-        stage <- stage + 1
-    }
-    if(pathI1) {
-        ## add E to P terms
-        V[(stage * nage + 1):((stage + 1) * nage), 1:nage] <- diag(nage) * -(1 - pEA) * gammaE
-        stagecol <- ifelse(pathA, 2, 1) 
-        ## add P to P terms
-        V[(stage * nage + 1):((stage + 1) * nage), (stagecol * nage + 1):((stagecol + 1) * nage)] <- diag(nage) * gammaP
-        stage <- stage + 1
-        ## add P to I1 terms
-        V[(stage * nage + 1):((stage + 1) * nage), (stagecol * nage + 1):((stagecol + 1) * nage)] <- diag(nage) * -gammaP
-        stagecol <- stagecol + 1
-        ## add I1 to I1 terms
-        V[(stage * nage + 1):((stage + 1) * nage), (stagecol * nage + 1):((stagecol + 1) * nage)] <- diag(nage) * gammaI1
-    }
-    if(pathI2) {
-        stage <- stage + 1
-        ## add I1 to I2 terms
-        V[(stage * nage + 1):((stage + 1) * nage), (stagecol * nage + 1):((stagecol + 1) * nage)] <- diag(nage) * -pI1I2 * gammaI1
-        stagecol <- stagecol + 1
-        ## add I2 to I2 terms
-        V[(stage * nage + 1):((stage + 1) * nage), (stagecol * nage + 1):((stagecol + 1) * nage)] <- diag(nage) * gammaI2
+    ## add E to A terms
+    V[(nage + 1):(2 * nage), 1:nage] <- diag(nage) * -pEA * gammaE
+    ## add A to A terms
+    V[(nage + 1):(2 * nage), (nage + 1):(2 * nage)] <- diag(nage) * gammaA
+    
+    ## add E to P terms
+    V[(2 * nage + 1):(3 * nage), 1:nage] <- diag(nage) * -(1 - pEA) * gammaE
+    ## add P to P terms
+    V[(2 * nage + 1):(3 * nage), (2 * nage + 1):(3 * nage)] <- diag(nage) * gammaP
+    
+    ## add P to I1 terms
+    V[(3 * nage + 1):(4 * nage), (2 * nage + 1):(3 * nage)] <- diag(nage) * -gammaP
+    ## add I1 to I1 terms
+    V[(3 * nage + 1):(4 * nage), (3 * nage + 1):(4 * nage)] <- diag(nage) * gammaI1
+    
+    ## add I1 to I2 terms
+    V[(4 * nage + 1):(5 * nage), (3 * nage + 1):(4 * nage)] <- diag(nage) * -pI1I2 * gammaI1
+    ## add I2 to I2 terms
+    V[(4 * nage + 1):(5 * nage), (4 * nage + 1):(5 * nage)] <- diag(nage) * gammaI2
+    
+    ## remove pathways that don't exist
+    rem <- NULL
+    if(!pathA) rem <- (nage + 1):(2 * nage)
+    if(!pathI1) rem <- c(rem, (2 * nage + 1):(5 * nage))
+    if(!pathI2) rem <- c(rem, (4 * nage + 1):(5 * nage))
+    if(!is.null(rem)) {
+        rem <- unique(rem)
+        F <- F[-rem, -rem]
+        V <- V[-rem, -rem]
     }
     
     if(!is.na(R0)) {
