@@ -1,4 +1,5 @@
 ## load libraries
+library(mclust)
 library(tidyverse)
 library(fitdistrplus)
 library(nimble)
@@ -53,14 +54,14 @@ hosp <- hosp %>%
     }))
 
 ## fitted plots
-dplyr::select(hosp, ageCat, data) %>%
+p <- dplyr::select(hosp, ageCat, data) %>%
     unnest(cols = data) %>%
     ggplot(aes(x = time)) +
     geom_density() +
     facet_wrap(~ageCat, scales = "free_y") +
     geom_line(aes(y = out), data = dplyr::select(hosp, ageCat, preds) %>%
                   unnest(cols = preds), col = "red")
-ggsave("bestFits.pdf")
+ggsave("bestFits.pdf", p)
 
 ## take a look at shape / scale
 hosp$coefs
@@ -76,14 +77,14 @@ hosp <- hosp %>%
     }))
 
 ## fitted plots
-dplyr::select(hosp, ageCat, data) %>%
+p <- dplyr::select(hosp, ageCat, data) %>%
     unnest(cols = data) %>%
     ggplot(aes(x = time)) +
     geom_density() +
     facet_wrap(~ageCat, scales = "free_y") +
     geom_line(aes(y = out), data = dplyr::select(hosp, ageCat, preds) %>%
                   unnest(cols = preds), col = "red")
-ggsave("expFits.pdf")
+ggsave("expFits.pdf", p)
 
 ## take a look at rates
 hosp$coefs
@@ -98,9 +99,9 @@ hosp <- hosp %>%
     mutate(TH = 1 /coefs)
 
 ## plot rates against age
-ggplot(hosp, aes(x = ageMid, y = TH)) +
+p <- ggplot(hosp, aes(x = ageMid, y = TH)) +
     geom_point()
-ggsave("expFitsByAge.pdf")
+ggsave("expFitsByAge.pdf", p)
 
 ## fit simple log-LM
 hosp_lm <- hosp %>%
@@ -114,11 +115,11 @@ hosp_fit <- predict(hosp_lm, newdata = hosp_fit, interval = "confidence") %>%
     cbind(hosp_fit)
 
 ## fitted plot
-ggplot(hosp, aes(x = ageMid)) +
+p <- ggplot(hosp, aes(x = ageMid)) +
     geom_point(aes(y = log(TH))) +
     geom_line(aes(y = mean), data = hosp_fit) +
     geom_ribbon(aes(ymin = LCI, ymax = UCI), data = hosp_fit, alpha = 0.5)
-ggsave("fittedLn.pdf")
+ggsave("fittedLn.pdf", p)
 
 ## summarise model fit
 summary(hosp_lm)
@@ -137,13 +138,15 @@ code <- nimbleCode({
     for(k in 1:nAge) {
         lambda[k] <- 1.0 / TH[k]
         mu[k] <- beta0 + beta1 * ageMid[k]
-        log(TH[k]) ~ dnorm(mu[k], sigma)
+        log(TH[k]) ~ dnorm(mu[k], sigma[k])
+        log(sigma[k]) ~ dnorm(muS, sigmaS)
     }
     
     ## priors
     beta0 ~ dnorm(0, 5)
     beta1 ~ T(dnorm(0, 1), 0, )
-    sigma ~ dexp(1)
+    muS ~ dnorm(0, 5)
+    sigmaS ~ dexp(1)
 })
 
 ## set up other components of model
@@ -164,7 +167,9 @@ data <- list(t = hospBayes$time)
 initFn <- function(ageMid) {
     beta0 <- rnorm(1, 0, 1)
     beta1 <- abs(rnorm(1, 0, 1))
-    sigma <- rexp(1, 1)
+    sigma <- rexp(length(ageMid), 1)
+    sigmaS <- rexp(1, 1)
+    muS <- rnorm(1, 0, 1)
     log_TH <- rnorm(beta0 + beta1 * ageMid, sigma)
     TH <- exp(log_TH)
     lambda <- 1 / TH
@@ -173,6 +178,8 @@ initFn <- function(ageMid) {
         beta1 = beta1,
         sigma = sigma,
         lambda = lambda,
+        sigmaS = sigmaS,
+        muS = muS,
         TH = TH,
         log_TH = log_TH
     )
@@ -207,7 +214,9 @@ system.time(run <- runMCMC(cbuilt,
     thin = 1))
 
 ## plot traces
+pdf("traces.pdf")
 plot(run$samples)
+dev.off()
 samples <- as.matrix(run$samples)
 
 ## predictions
@@ -215,19 +224,47 @@ hosp_preds <- matrix(1, nrow = 1, ncol = 100) %>%
     rbind(seq(min(hosp$ageMid), max(hosp$ageMid), length.out = 100))
 hosp_preds <- samples[, 1:2] %*% hosp_preds
 hosp_preds <- apply(hosp_preds, 2, function(x) {
-        tibble(mean = mean(x), LCI = quantile(x, probs = 0.025), UCI = quantile(x, probs = 0.975))
+        tibble(mean = mean(x), LCI = quantile(x, probs = 0.005), UCI = quantile(x, probs = 0.995))
     }) %>%
     bind_rows() %>%
     mutate(ageMid = seq(min(hosp$ageMid), max(hosp$ageMid), length.out = 100))
 
 ## fitted plot
-ggplot(hosp, aes(x = ageMid)) +
+p <- ggplot(hosp, aes(x = ageMid)) +
     geom_point(aes(y = log(TH))) +
     geom_line(aes(y = mean), data = hosp_preds) +
-    geom_ribbon(aes(ymin = LCI, ymax = UCI), data = hosp_preds, alpha = 0.5)
-ggsave("fittedLnBayes.pdf")
+    geom_ribbon(aes(ymin = LCI, ymax = UCI), data = hosp_preds, alpha = 0.5) +
+    geom_abline(intercept = 1.36234700, slope =  0.01560438, colour = "red")
+ggsave("fittedLnBayes.pdf", p)
 
+## posterior correlation
 cor(samples[, 1:2])
 
-ggpairs(as_tibble(samples[, 1:2]), upper = list(continuous = "density"))
-ggsave("betas.pdf")
+## posterior plots
+p <- ggpairs(as_tibble(samples[, 1:2]), upper = list(continuous = "density"))
+ggsave("posterior.pdf", p)
+
+## fit range of finite mixture models
+mod <- densityMclust(samples[, 1:2])
+
+## summary of finite mixture models
+summary(mod)
+plot(mod, what = "BIC")
+
+## take random samples from mixture
+nimp <- 30000
+props <- sim(mod$modelName, mod$parameters, nimp)[, -1] %>%
+    as_tibble() %>%
+    set_names(c("beta0", "beta1")) %>%
+    mutate(Estimate = "Mixture") %>%
+    filter(beta1 > 0)
+
+p <- as_tibble(samples[, 1:2]) %>%
+    mutate(Estimate = "MCMC") %>%
+    rbind(props) %>%
+    ggpairs(mapping = aes(colour = Estimate, alpha = 0.5), upper = list(continuous = "density"), columns = 1:2) + 
+    theme(legend.position = "bottom")
+ggsave("mixturePosterior.pdf", p)
+
+## save mclust object
+saveRDS(mod, "hospStays.rds")
