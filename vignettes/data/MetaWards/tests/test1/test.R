@@ -4,9 +4,7 @@ library(patchwork)
 ## source reconstruct function
 source("../../R_tools/dataTools.R")
 
-## source NGM function
-source("../NGM.R")
-
+## read in pars
 pars <- read_delim("disease.dat", delim = " ") %>%
     select(ends_with("_1"), nu = `beta[1]`, nuA = `beta[6]`)
 colnames(pars) <- gsub("_1", "", colnames(pars))
