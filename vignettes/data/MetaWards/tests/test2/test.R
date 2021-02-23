@@ -31,7 +31,7 @@ contact <- read_csv("contact_matrix.csv", col_names = FALSE) %>%
 S0 <- c(N[1] - 10, N[-1])
 R0 <- NGM(R0 = NA, nu = pars["nu"], C = contact, S0 = S0, N = N, 
     nuA = pars["nuA"], gammaE = pars["gammaE"], pEP = pars["pEP"], gammaA = pars["gammaA"], 
-    gammaP = pars["gammaP"], gammaI1 = pars["gammaI1"], pI1I2 = pars["pI1I2"], 
+    gammaP = pars["gammaP"], gammaI1 = pars["gammaI1"], pI1H = pars["pI1H"], pI1D = pars["pI1D"], 
     gammaI2 = pars["gammaI2"])
 K <- R0$K
 R0 <- R0$R0

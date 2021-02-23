@@ -194,14 +194,15 @@ For generic states $X$ and $Y$ say, the progress of an individual in age-class $
 * $q^j_{EA} = \left(1 - p^j_{EP}\right)\left(1 - e^{-\gamma_{E}}\right)$;
 * $q^j_{AR} = 1 - e^{-\gamma_A}$ where $\gamma_A = \frac{1}{T_P + T_{I_1} + T_{I_2}}$ with $T_P + T_{I_1} + T_{I_2}$ the mean infectious period;
 * $q^j_{PI_1} = 1 - e^{-\gamma_{P}}$ where $\gamma_P = \frac{1}{T_P}$ with $T_P$ the mean pre-symptomatic infectious period;
-* $q^j_{I_1H} = p^j_{I_1H}\left(1 - e^{-\gamma_{I_1}}\right)$ where $\gamma_{I_1} = \frac{1}{T_{I_1}}$ with $T_{I_1}$ the mean symptomatic infectious period pre-hospitalisation;
-* $q^j_{I_1I_2} = p^j_{I_1I_2}\left(1 - e^{-\gamma_{I_1}}\right)$;
-* $q^j_{I_1D} = \left(1 - p^j_{I_1H} - p^j_{I_1I_2}\right)\left(1 - e^{-\gamma_{I_1}}\right)$;
-* Similarly to before, we model: $\log\left(p^j_{I_1I_2/H}\right) = \alpha_{I_1I_2/H} + \eta_{I_1I_2/H} \mbox{age}_j$, where $\eta_{I_1I_2/H} > 0$ and $\alpha_{I_1I_2/H} < -\eta_{I_1I_2/H} \max\left(\mbox{age}_j\right)$ to ensure than $0 < p^j_{I_1I_2/H} \leq 1$.
+* $q^j_{I_1H} = p^j_{I_1H}\left(1 - e^{-\gamma_{I_1}}\right)$ where $\gamma_{I_1} = \frac{1}{T_{I_1}}$ with $T_{I_1}$ the mean pre-hospitalisation symptomatic infectious period;
+* $q^j_{I_1D} = p^j_{I_1D}\left(1 - e^{-\gamma_{I_1}}\right)$;
+* $q^j_{I_1I_2} = \left(1 - p^j_{I_1H} - p^j_{I_1D}\right)\left(1 - e^{-\gamma_{I_1}}\right)$;
+* Similarly to before, we model: $\log\left(p^j_{I_1H/D}\right) = \alpha_{I_1H/D} + \eta_{I_1H/D} \mbox{age}_j$, where $\eta_{I_1H/D} > 0$ and $\alpha_{I_1H/D} < -\eta_{I_1H/D} \max\left(\mbox{age}_j\right)$ to ensure than $0 < p^j_{I_1H/D} \leq 1$.
 * $q^j_{I_2R} = 1 - e^{-\gamma_{I_2}}$ where $\gamma_{I_2} = \frac{1}{T_{I_2}}$ is the residual mean symptomatic infectious period for non-hospitalised individuals;
-* $q^j_{HR} = p^j_{HR}\left(1 - e^{-\gamma_{H}}\right)$ where $\gamma_H = \frac{1}{T_H}$ with $T_H$ the mean length of hospital stay;
-* $q^j_{HD} = \left(1 - p^j_{HR}\right)\left(1 - e^{-\gamma_{H}}\right)$;
-* Similarly to before, we model: $\log\left(p^j_{HR}\right) = \alpha_{HR} + \eta_{HR} \mbox{age}_j$, where $\eta_{HR} > 0$ and $\alpha_{HR} < -\eta_{HR} \max\left(\mbox{age}_j\right)$ to ensure than $0 < p^j_{HR} \leq 1$. 
+* $q^j_{HD} = p^j_{HD}\left(1 - e^{-\gamma_{H}^j}\right)$ where $\gamma_H^j = \frac{1}{T_H^j}$ with $T_H^j$ the mean length of hospital stay for age class $j$;
+* $q^j_{HR} = \left(1 - p^j_{HD}\right)\left(1 - e^{-\gamma_{H}^j}\right)$;
+* Similarly to before, we model: $\log\left(p^j_{HD}\right) = \alpha_{HD} + \eta_{HD} \mbox{age}_j$, where $\eta_{HD} > 0$ and $\alpha_{HD} < -\eta_{HD} \max\left(\mbox{age}_j\right)$ to ensure than $0 < p^j_{HD} \leq 1$. 
+* We also model: $\log\left(T_H^j\right) = \alpha_{T_H} + \eta_{T_H} \mbox{age}_j$ where $\eta_{T_H} > 0$. 
 
 We also require inputs for $R_0$, a parameter $\beta_{A \to GP}$ which scales the force-of-infection between asymptomatics and the general population, and further scaling parameters that we use to model various lockdown measures (described [below](#lockdown)).
 
@@ -237,7 +238,7 @@ From the model structure above, in a single population with age-structure, the *
     \frac{dA^j}{dt} &= \left(1 - p_{EP}^j\right)\gamma_E E^j - \gamma_A A^j\\
     \frac{dP^j}{dt} &= p_{EP}^j\gamma_E E^j - \gamma_P P^j\\
     \frac{dI_1^j}{dt} &= \gamma_P P^j - \gamma_{I_1} I_1^j\\
-    \frac{dI_2^j}{dt} &= p_{I_1I_2}\gamma_{I_1} I_1^j - \gamma_{I_2} I_2^j\\
+    \frac{dI_2^j}{dt} &= \left(1 - p_{I_1H} - p_{I_1D}\right)\gamma_{I_1} I_1^j - \gamma_{I_2} I_2^j\\
 \end{align*}
 Here $\beta^{kj}$ is the transmission rate from class $k$ to class $j$ and $N_k$ is the total number of individuals in class $k$. The parameter $\beta_{A \to GP}$ scales the force-of-infection from the $A$ class to the general population.
 
@@ -280,7 +281,7 @@ and
         0 & \mathrm{otherwise,}
         \end{array}\right. &\\
     \frac{\partial V_{I_2^i}\left(x_0\right)}{\partial I_1^j} &= \left\{\begin{array}{cc} 
-        -p_{I_1I_2}\gamma_{I_1} & \mathrm{for}~i = j,\\
+        -\left(1 - p_{I_1H} - p_{I_1D}\right)\gamma_{I_1} & \mathrm{for}~i = j,\\
         0 & \mathrm{otherwise,}
         \end{array}\right. &\\
     \frac{\partial V_{I_2^i}\left(x_0\right)}{\partial I_2^j} &= \left\{\begin{array}{cc} 
@@ -316,29 +317,11 @@ We have derived plausible parameter bounds from data and the literature.
     T_E&: (0.1, 2)\\
     T_P&: (1.2, 3)\\
     T_{I_1}&: (2.8, 4.5)\\
-    T_{I_2}&: (0.0001, 0.5)\\
-    
-    
-    \mbox{mean generation period ($T_{\mathrm{gen}}$)}&: (?, ?)\mbox{---Challen et al. (2020)}\\
-    \mbox{mean infection to admission period ($T_{E \to H}$)}&: (?, ?)\mbox{---Challen et al. (2020)}\\
-    \mbox{mean onset to admission period ($T_{I \to H}$)}&: (?, ?)\mbox{---Challen et al. (2020)}\\
-    \mbox{mean onset to end-of-infectiousness ($T_{I \to R}$)}&: (?, ?)\mbox{---Cevik / NEJM}\\
-    \mbox{mean hospital stay ($T_H$)}&: (?, ?)\mbox{---Rob data age-specific}\\
-    \mbox{lockdown 1 restrict}&: (0, 1)\\
-    \mbox{lockdown 2 release}&: (0, 1)\\
-    \alpha_{EA}&: (?, ?)~\mbox{such that}~\alpha_{EA} < -\eta_{EA} \mbox{age}_M\\
-    \eta_{EA}&: (0, ?)\\
-    \alpha_{I_1H}&: (?, ?)~\mbox{such that}~\alpha_{I_1H} < -\eta_{I_1H} \mbox{age}_M\\
-    \eta_{I_1H}&: (0, ?)\\
-    \alpha_{I_1I_2}&: (?, ?)~\mbox{such that}~\alpha_{I_1I_2} < -\eta_{I_1I_2} \mbox{age}_M\\
-    \eta_{I_1I_2}&: (0, ?)\\
-    \alpha_{HR}&: (?, ?)~\mbox{such that}~\alpha_{HR} < -\eta_{HR} \mbox{age}_M\\
-    \eta_{HR}&: (0, ?)\\
-    \beta_{A \to GP}&: (0, 1).
+    T_{I_2}&: (0.0001, 0.5)
 \end{align}
 
 <a name="priorslink"></a>
-<button data-toggle="collapse" data-target="#priors">Click for details on prior choices</button>
+<button data-toggle="collapse" data-target="#priors">Click for details on plausible range choices</button>
 <div id="priors" class="collapse boxed">
 
 For the mean latent period, $T_E$, we set the upper bound such that the latent period distribution had an upper tail probability that is consistent with the **generation interval** distribution from Challen et al. (2020). This provides a conservative upper bound, since the generation time is equivalent to $T_E + T_P$ in our model. We chose a lower bound such that it is possible to have a short, but non-zero latent period. The figure below shows the latent period distributions at the lower and upper bounds of the parameter ranges for $T_E$.
@@ -518,9 +501,9 @@ MetaWards has a specific structure in terms of how it progresses movements betwe
 
 The `mover` function applies movements in order, and so it is important to get the order correct. In particular we need to reverse the order of the stage movements (e.g. do movements out of the $H$ demographic *before* movements out of the $I_1$ demographic). This is to ensure that individuals that move from $I_1 \to H$ say, can't then immediately move out of $H$. The file `move_pathways.py` contains the code below.
 
-> **Additional note**: The functions in the `mover` file operate in turn. Therefore the movement probabilities below must be altered between each function, in order to get the correct proportions moved. For example, consider that we have $n$ individuals in the $I_1$ class and we want to move a proportion $p_{I_1}p_{I_1H}$ from $I_1 \to H$, a proportion $p_{I_1}p_{I_1I_2}$ from $I_1 \to I_2$, and a proportion $p_{I_1}\left(1 - p_{I_1H} - p_{I_1I_2}\right)$ from $I \to D_I$, where $p_{I_1} = 1 - e^{-\gamma_{I_1}}$.
+> **Additional note**: The functions in the `mover` file operate in turn. Therefore the movement probabilities below must be altered between each function, in order to get the correct proportions moved. For example, consider that we have $n$ individuals in the $I_1$ class and we want to move a proportion $p_{I_1}p_{I_1H}$ from $I_1 \to H$, a proportion $p_{I_1}p_{I_1D}$ from $I_1 \to D_I$, and a proportion $p_{I_1}\left(1 - p_{I_1H} - p_{I_1D}\right)$ from $I_1 \to I_2$, where $p_{I_1} = 1 - e^{-\gamma_{I_1}}$.
 > 
-> In this case the first `mover` function takes a random binomial sample from the $n$ individuals with probability $p_{I_1}p_{I_1H}$ as requested, resulting in $n_{I_1H}$ moves. However, the second `mover` function now operates on the $n - n_{I_1H}$ individuals, so we need to adjust the sampling probabilities to adjust for this. Hence the second `mover` function needs to sample from the $n - n_{I_1H}$ individuals with probability $\frac{p_{I_1}p_{I_1I_2}}{1 - p_{I_1}p_{I_1H}}$ in order to generate the correct proportions of moves that we would expect, resulting in $n_{I_1I_2}$ moves. Similarly, the third `mover` function now operates on the $n - n_{I_1H} - n_{I_1I_2}$ remaining individuals, and thus we would need to adjust the sampling probability to $\frac{p_{I_1}\left(1 - p_{I_1H} - p_{I_1I_2}\right)}{1 - p_{I_1}\left(p_{I_1H} + p_{I_1I_2}\right)}$. The remaining individuals remain in $I_1$.
+> In this case the first `mover` function takes a random binomial sample from the $n$ individuals with probability $p_{I_1}p_{I_1H}$ as requested, resulting in $n_{I_1H}$ moves. However, the second `mover` function now operates on the $n - n_{I_1H}$ individuals, so we need to adjust the sampling probabilities to adjust for this. Hence the second `mover` function needs to sample from the $n - n_{I_1H}$ individuals with probability $\frac{p_{I_1}p_{I_1D}}{1 - p_{I_1}p_{I_1H}}$ in order to generate the correct proportions of moves that we would expect, resulting in $n_{I_1D}$ moves. Similarly, the third `mover` function now operates on the $n - n_{I_1H} - n_{I_1D}$ remaining individuals, and thus we would need to adjust the sampling probability to $\frac{p_{I_1}\left(1 - p_{I_1H} - p_{I_1D}\right)}{1 - p_{I_1}\left(p_{I_1H} + p_{I_1D}\right)}$. The remaining individuals remain in $I_1$.
 
 ```{python, code = readLines("../model_code/move_pathways.py"), eval = FALSE}
 ```
