@@ -5,6 +5,7 @@ library(fitdistrplus)
 library(nimble)
 library(coda)
 library(GGally)
+library(svglite)
 
 ## load data
 hosp <- read_csv("admissionToOutcomeLineList.csv", col_names = TRUE)
@@ -18,18 +19,6 @@ hosp <- mutate(hosp, ageCat = ifelse(ageCat == "70-79", "70+", ageCat)) %>%
     mutate(ageCat = ifelse(ageCat == "80-89", "70+", ageCat)) %>%
     mutate(ageCat = ifelse(ageCat == "90+", "70+", ageCat)) %>%
     arrange(ageCat)
-
-## now plot time spent in hospital
-hosp %>%
-    filter(finaloutcome == "Death" | finaloutcome == "Discharged") %>%
-    ggplot(aes(x = time, fill = finaloutcome)) +
-    geom_density(alpha = 0.5, colour = NA) +
-    facet_wrap(~ageCat, scales = "free_y")
-hosp %>%
-    filter(finaloutcome == "Death" | finaloutcome == "Discharged") %>%
-    ggplot(aes(x = time)) +
-    geom_density() +
-    facet_wrap(~ageCat, scales = "free_y")
 
 ## fit some simple models to each age-class and ignore outcome
 hosp <- hosp %>%
@@ -53,21 +42,7 @@ hosp <- hosp %>%
         tibble(time = t, out = out)
     }))
 
-## fitted plots
-p <- dplyr::select(hosp, ageCat, data) %>%
-    unnest(cols = data) %>%
-    ggplot(aes(x = time)) +
-    geom_density() +
-    facet_wrap(~ageCat, scales = "free_y") +
-    geom_line(aes(y = out), data = dplyr::select(hosp, ageCat, preds) %>%
-                  unnest(cols = preds), col = "red")
-ggsave("bestFits.pdf", p)
-
-## take a look at shape / scale
-hosp$coefs
-
-## all apart from last one are close to one scale
-## so try to refit all using exponential
+## produce predictions using exponential model
 hosp <- hosp %>%
     mutate(coefs = map_dbl(exp, "estimate")) %>%
     mutate(preds = map(coefs, ~{
@@ -83,11 +58,10 @@ p <- dplyr::select(hosp, ageCat, data) %>%
     geom_density() +
     facet_wrap(~ageCat, scales = "free_y") +
     geom_line(aes(y = out), data = dplyr::select(hosp, ageCat, preds) %>%
-                  unnest(cols = preds), col = "red")
+                  unnest(cols = preds), col = "red") +
+    xlab("Time") + ylab("Density")
 ggsave("expFits.pdf", p)
-
-## take a look at rates
-hosp$coefs
+ggsave("expFits.svg", p)
 
 ## extract mid-points of age-classes
 hosp <- hosp %>%
@@ -97,33 +71,6 @@ hosp <- hosp %>%
     mutate(ageMid = (LB + UB) / 2) %>%
     dplyr::select(-LB, -UB) %>%
     mutate(TH = 1 /coefs)
-
-## plot rates against age
-p <- ggplot(hosp, aes(x = ageMid, y = TH)) +
-    geom_point()
-ggsave("expFitsByAge.pdf", p)
-
-## fit simple log-LM
-hosp_lm <- hosp %>%
-    {lm(log(TH) ~ ageMid, data = .)}
-
-## add LM predictions
-hosp_fit <- tibble(ageMid = seq(min(hosp$ageMid), max(hosp$ageMid), length.out = 100))
-hosp_fit <- predict(hosp_lm, newdata = hosp_fit, interval = "confidence") %>%
-    as_tibble() %>%
-    set_names(c("mean", "LCI", "UCI")) %>%
-    cbind(hosp_fit)
-
-## fitted plot
-p <- ggplot(hosp, aes(x = ageMid)) +
-    geom_point(aes(y = log(TH))) +
-    geom_line(aes(y = mean), data = hosp_fit) +
-    geom_ribbon(aes(ymin = LCI, ymax = UCI), data = hosp_fit, alpha = 0.5)
-ggsave("fittedLn.pdf", p)
-
-## summarise model fit
-summary(hosp_lm)
-cbind(coef(hosp_lm), confint(hosp_lm))
 
 ## fit Bayesian hierarchical model to account for sampling variability
 code <- nimbleCode({
@@ -234,15 +181,13 @@ p <- ggplot(hosp, aes(x = ageMid)) +
     geom_point(aes(y = log(TH))) +
     geom_line(aes(y = mean), data = hosp_preds) +
     geom_ribbon(aes(ymin = LCI, ymax = UCI), data = hosp_preds, alpha = 0.5) +
-    geom_abline(intercept = 1.36234700, slope =  0.01560438, colour = "red")
+    xlab("Age") + ylab("log(mean hospital stay time)")# +
+    # geom_abline(intercept = 1.36234700, slope =  0.01560438, colour = "red")
 ggsave("fittedLnBayes.pdf", p)
+ggsave("fittedLnBayes.svg", p)
 
 ## posterior correlation
 cor(samples[, 1:2])
-
-## posterior plots
-p <- ggpairs(as_tibble(samples[, 1:2]), upper = list(continuous = "density"))
-ggsave("posterior.pdf", p)
 
 ## fit range of finite mixture models
 mod <- densityMclust(samples[, 1:2])
@@ -262,9 +207,19 @@ props <- sim(mod$modelName, mod$parameters, nimp)[, -1] %>%
 p <- as_tibble(samples[, 1:2]) %>%
     mutate(Estimate = "MCMC") %>%
     rbind(props) %>%
-    ggpairs(mapping = aes(colour = Estimate, alpha = 0.5), upper = list(continuous = "density"), columns = 1:2) + 
+    ggpairs(mapping = aes(colour = Estimate, alpha = 0.5), upper = list(continuous = "density"), columns = 1:2, legend = 1) + 
+    theme(legend.position = "bottom")
+leg <- getPlot(p, 1, 1) +
+    guides(alpha = FALSE)
+leg <- grab_legend(leg)
+p <- as_tibble(samples[, 1:2]) %>%
+    mutate(Estimate = "MCMC") %>%
+    rbind(props) %>%
+    ggpairs(mapping = aes(colour = Estimate, alpha = 0.5), upper = list(continuous = "density"), columns = 1:2, legend = leg) + 
     theme(legend.position = "bottom")
 ggsave("mixturePosterior.pdf", p)
+ggsave("mixturePosterior.svg", p)
+ggsave("mixturePosterior.png", p)
 
 ## save mclust object
 saveRDS(mod, "hospStays.rds")
