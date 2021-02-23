@@ -39,14 +39,14 @@ detModel <- function(time, state, parameters, contact, N) {
         dE7 <- beta[7] * S7 - gammaE * E7
         dE8 <- beta[8] * S8 - gammaE * E8
         
-        dA1 <- gammaE * pEA * E1 - gammaA * A1
-        dA2 <- gammaE * pEA * E2 - gammaA * A2
-        dA3 <- gammaE * pEA * E3 - gammaA * A3
-        dA4 <- gammaE * pEA * E4 - gammaA * A4
-        dA5 <- gammaE * pEA * E5 - gammaA * A5
-        dA6 <- gammaE * pEA * E6 - gammaA * A6
-        dA7 <- gammaE * pEA * E7 - gammaA * A7
-        dA8 <- gammaE * pEA * E8 - gammaA * A8
+        dA1 <- gammaE * (1 - pEP) * E1 - gammaA * A1
+        dA2 <- gammaE * (1 - pEP) * E2 - gammaA * A2
+        dA3 <- gammaE * (1 - pEP) * E3 - gammaA * A3
+        dA4 <- gammaE * (1 - pEP) * E4 - gammaA * A4
+        dA5 <- gammaE * (1 - pEP) * E5 - gammaA * A5
+        dA6 <- gammaE * (1 - pEP) * E6 - gammaA * A6
+        dA7 <- gammaE * (1 - pEP) * E7 - gammaA * A7
+        dA8 <- gammaE * (1 - pEP) * E8 - gammaA * A8
         
         dRA1 <- gammaA * A1
         dRA2 <- gammaA * A2
@@ -57,14 +57,14 @@ detModel <- function(time, state, parameters, contact, N) {
         dRA7 <- gammaA * A7
         dRA8 <- gammaA * A8
         
-        dP1 <- gammaE * (1 - pEA) * E1 - gammaP * P1
-        dP2 <- gammaE * (1 - pEA) * E2 - gammaP * P2
-        dP3 <- gammaE * (1 - pEA) * E3 - gammaP * P3
-        dP4 <- gammaE * (1 - pEA) * E4 - gammaP * P4
-        dP5 <- gammaE * (1 - pEA) * E5 - gammaP * P5
-        dP6 <- gammaE * (1 - pEA) * E6 - gammaP * P6
-        dP7 <- gammaE * (1 - pEA) * E7 - gammaP * P7
-        dP8 <- gammaE * (1 - pEA) * E8 - gammaP * P8
+        dP1 <- gammaE * pEP * E1 - gammaP * P1
+        dP2 <- gammaE * pEP * E2 - gammaP * P2
+        dP3 <- gammaE * pEP * E3 - gammaP * P3
+        dP4 <- gammaE * pEP * E4 - gammaP * P4
+        dP5 <- gammaE * pEP * E5 - gammaP * P5
+        dP6 <- gammaE * pEP * E6 - gammaP * P6
+        dP7 <- gammaE * pEP * E7 - gammaP * P7
+        dP8 <- gammaE * pEP * E8 - gammaP * P8
         
         dI11 <- gammaP * P1 - gammaI1 * I11
         dI12 <- gammaP * P2 - gammaI1 * I12
@@ -174,7 +174,7 @@ pars <- read_delim("disease.dat", delim = " ") %>%
 colnames(pars) <- gsub("_1", "", colnames(pars))
 colnames(pars) <- gsub("\\.", "", colnames(pars))
 pars <- pars %>%
-    mutate_all(~ifelse(. == 1, 0.99, .)) %>%
+    mutate_at(vars(pE, pP, pA, pI1, pI2, pH), ~ifelse(. == 1, 0.99, .)) %>%
     mutate(gammaE = -log(1 - pE)) %>%
     mutate(gammaP = -log(1 - pP)) %>%
     mutate(gammaA = -log(1 - pA)) %>%

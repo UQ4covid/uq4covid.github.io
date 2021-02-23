@@ -48,8 +48,8 @@ printf '8,0\n' >> age_seeds.csv
 ## SEPID model
 cp ../diseaseTest.dat disease.dat
 
-# .pE .pEA 
-printf '0.3 0.3 0.3 0.3 0.3 0.3 0.3 0.3 0 0 0 0 0 0 0 0 ' >> disease.dat
+# .pE .pEP
+printf '0.3 0.3 0.3 0.3 0.3 0.3 0.3 0.3 1 1 1 1 1 1 1 1 ' >> disease.dat
 ## .pP 
 printf '0.3 0.3 0.3 0.3 0.3 0.3 0.3 0.3 ' >> disease.dat
 ## .pA 
