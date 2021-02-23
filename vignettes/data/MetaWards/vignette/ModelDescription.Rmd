@@ -427,56 +427,6 @@ p1 <- data.frame(
 p1
 ```
 
-**TESTS**:
-
-
-rates <- seq(2.8, 4.5, length.out = 9)
-par(mfrow = c(3, 3))
-for(i in rates) {
-  temp <- rexp(10000, rate = 1 / i)
-  hist(temp, main = paste(i), freq = FALSE, breaks = 50)
-}
-
-par(mfrow = c(3, 3))
-for(i in rates) {
-  temp <- rexp(10000, rate = 1 / i)
-  temp <- temp + rexp(10000, rate = 1 / 0.1) + rexp(10000, rate = 1 / 2)
-  hist(temp, main = paste(i), freq = FALSE, breaks = 50, ylim = c(0, 0.12))
-}
-
-par(mfrow = c(3, 3))
-for(i in rates) {
-  temp <- rexp(10000, rate = 1 / i)
-  temp <- temp + rexp(10000, rate = 1 / 1.2) + rexp(10000, rate = 1 / 3)
-  hist(temp, main = paste(i), freq = FALSE, breaks = 50, ylim = c(0, 0.12))
-}
-
-rates <- seq(0.0001, 0.5, length.out = 9)
-par(mfrow = c(3, 3))
-for(i in rates) {
-  temp <- rexp(10000, rate = 1 / i)
-  hist(temp, main = paste(i), freq = FALSE, breaks = 50)
-}
-
-par(mfrow = c(3, 3))
-for(i in rates) {
-  temp <- rexp(100000, rate = 1 / i)
-  temp <- temp + rexp(100000, rate = 1 / 2.8)
-  p <- sum(temp > 9) / length(temp)
-  s <- signif(sqrt(0.95 * 0.05 / length(temp)), 2)
-  hist(temp, main = paste0("Lmean = ", i, ", p = ", p, ", s = ", s), freq = FALSE, breaks = 50)
-}
-
-par(mfrow = c(3, 3))
-for(i in rates) {
-  temp <- rexp(100000, rate = 1 / i)
-  temp <- temp + rexp(100000, rate = 1 / 4.5)
-  p <- sum(temp > 9) / length(temp)
-  s <- signif(sqrt(0.95 * 0.05 / length(temp)), 2)
-  hist(temp, main = paste0("Umean = ", i, ", p = ", p, ", s = ", s), freq = FALSE, breaks = 50)
-}
-
-
 For the hospital stay times we used **DATA SOURCE HERE**. Below we plot the distribution of stay times by age, along with the best fitting exponential model in each case.
 
 ![](../data/hospitalStays/expFits.svg)
