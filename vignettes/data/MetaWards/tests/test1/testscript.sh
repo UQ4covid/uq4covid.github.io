@@ -54,12 +54,12 @@ printf '0.3 0.3 0.3 0.3 0.3 0.3 0.3 0.3 1 1 1 1 1 1 1 1 ' >> disease.dat
 printf '0.3 0.3 0.3 0.3 0.3 0.3 0.3 0.3 ' >> disease.dat
 ## .pA 
 printf '0 0 0 0 0 0 0 0 ' >> disease.dat
-## .pI1 .pI1H .pI1I2 
-printf '0.3 0.3 0.3 0.3 0.3 0.3 0.3 0.3 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 ' >> disease.dat
+## .pI1 .pI1H .pI1D 
+printf '0.3 0.3 0.3 0.3 0.3 0.3 0.3 0.3 0 0 0 0 0 0 0 0 1 1 1 1 1 1 1 1 ' >> disease.dat
 ## .pI2
 printf '0 0 0 0 0 0 0 0 ' >> disease.dat
-## .pH .pHR 
-printf '0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 ' >> disease.dat
+## .pH .pHD 
+printf '0 0 0 0 0 0 0 0 1 1 1 1 1 1 1 1 ' >> disease.dat
 ## .lock_1_restrict .lock_2_release 
 printf '1 1 ' >> disease.dat
 ## beta[1] beta[2] beta[3] beta[6]

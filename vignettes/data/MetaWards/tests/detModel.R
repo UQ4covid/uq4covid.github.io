@@ -75,14 +75,14 @@ detModel <- function(time, state, parameters, contact, N) {
         dI17 <- gammaP * P7 - gammaI1 * I17
         dI18 <- gammaP * P8 - gammaI1 * I18
         
-        dI21 <- pI1I2 * gammaI1 * I11 - gammaI2 * I21
-        dI22 <- pI1I2 * gammaI1 * I12 - gammaI2 * I22
-        dI23 <- pI1I2 * gammaI1 * I13 - gammaI2 * I23
-        dI24 <- pI1I2 * gammaI1 * I14 - gammaI2 * I24
-        dI25 <- pI1I2 * gammaI1 * I15 - gammaI2 * I25
-        dI26 <- pI1I2 * gammaI1 * I16 - gammaI2 * I26
-        dI27 <- pI1I2 * gammaI1 * I17 - gammaI2 * I27
-        dI28 <- pI1I2 * gammaI1 * I18 - gammaI2 * I28
+        dI21 <- (1 - pI1H - pI1D) * gammaI1 * I11 - gammaI2 * I21
+        dI22 <- (1 - pI1H - pI1D) * gammaI1 * I12 - gammaI2 * I22
+        dI23 <- (1 - pI1H - pI1D) * gammaI1 * I13 - gammaI2 * I23
+        dI24 <- (1 - pI1H - pI1D) * gammaI1 * I14 - gammaI2 * I24
+        dI25 <- (1 - pI1H - pI1D) * gammaI1 * I15 - gammaI2 * I25
+        dI26 <- (1 - pI1H - pI1D) * gammaI1 * I16 - gammaI2 * I26
+        dI27 <- (1 - pI1H - pI1D) * gammaI1 * I17 - gammaI2 * I27
+        dI28 <- (1 - pI1H - pI1D) * gammaI1 * I18 - gammaI2 * I28
         
         dH1 <- pI1H * gammaI1 * I11 - gammaH * H1
         dH2 <- pI1H * gammaI1 * I12 - gammaH * H2
@@ -93,14 +93,14 @@ detModel <- function(time, state, parameters, contact, N) {
         dH7 <- pI1H * gammaI1 * I17 - gammaH * H7
         dH8 <- pI1H * gammaI1 * I18 - gammaH * H8                 
         
-        dDI1 <- (1 - pI1H - pI1I2) * gammaI1 * I11
-        dDI2 <- (1 - pI1H - pI1I2) * gammaI1 * I12
-        dDI3 <- (1 - pI1H - pI1I2) * gammaI1 * I13
-        dDI4 <- (1 - pI1H - pI1I2) * gammaI1 * I14
-        dDI5 <- (1 - pI1H - pI1I2) * gammaI1 * I15
-        dDI6 <- (1 - pI1H - pI1I2) * gammaI1 * I16
-        dDI7 <- (1 - pI1H - pI1I2) * gammaI1 * I17
-        dDI8 <- (1 - pI1H - pI1I2) * gammaI1 * I18              
+        dDI1 <- pI1D * gammaI1 * I11
+        dDI2 <- pI1D * gammaI1 * I12
+        dDI3 <- pI1D * gammaI1 * I13
+        dDI4 <- pI1D * gammaI1 * I14
+        dDI5 <- pI1D * gammaI1 * I15
+        dDI6 <- pI1D * gammaI1 * I16
+        dDI7 <- pI1D * gammaI1 * I17
+        dDI8 <- pI1D * gammaI1 * I18              
         
         dRI1 <- gammaI2 * I21
         dRI2 <- gammaI2 * I22
@@ -111,23 +111,23 @@ detModel <- function(time, state, parameters, contact, N) {
         dRI7 <- gammaI2 * I27
         dRI8 <- gammaI2 * I28 
         
-        dRH1 <- pHR * gammaH * H1
-        dRH2 <- pHR * gammaH * H2
-        dRH3 <- pHR * gammaH * H3
-        dRH4 <- pHR * gammaH * H4
-        dRH5 <- pHR * gammaH * H5
-        dRH6 <- pHR * gammaH * H6
-        dRH7 <- pHR * gammaH * H7
-        dRH8 <- pHR * gammaH * H8 
+        dRH1 <- (1 - pHD) * gammaH * H1
+        dRH2 <- (1 - pHD) * gammaH * H2
+        dRH3 <- (1 - pHD) * gammaH * H3
+        dRH4 <- (1 - pHD) * gammaH * H4
+        dRH5 <- (1 - pHD) * gammaH * H5
+        dRH6 <- (1 - pHD) * gammaH * H6
+        dRH7 <- (1 - pHD) * gammaH * H7
+        dRH8 <- (1 - pHD) * gammaH * H8 
         
-        dDH1 <- (1 - pHR) * gammaH * H1
-        dDH2 <- (1 - pHR) * gammaH * H2
-        dDH3 <- (1 - pHR) * gammaH * H3
-        dDH4 <- (1 - pHR) * gammaH * H4
-        dDH5 <- (1 - pHR) * gammaH * H5
-        dDH6 <- (1 - pHR) * gammaH * H6
-        dDH7 <- (1 - pHR) * gammaH * H7
-        dDH8 <- (1 - pHR) * gammaH * H8
+        dDH1 <- pHD * gammaH * H1
+        dDH2 <- pHD * gammaH * H2
+        dDH3 <- pHD * gammaH * H3
+        dDH4 <- pHD * gammaH * H4
+        dDH5 <- pHD * gammaH * H5
+        dDH6 <- pHD * gammaH * H6
+        dDH7 <- pHD * gammaH * H7
+        dDH8 <- pHD * gammaH * H8
         
         return(list(c(
             dS1, dS2, dS3, dS4, dS5, dS6, dS7, dS8,

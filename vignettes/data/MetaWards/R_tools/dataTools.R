@@ -208,7 +208,7 @@ cppFunction('IntegerMatrix reconstruct(IntegerVector Einc, IntegerVector Pinc,
 
 ## @knitr NGM
 ## NGM (order: E, A, P, I1, I2)
-NGM <- function(R0 = NA, nu = NA, C, S0, N, nuA, gammaE, pEP, gammaA, gammaP, gammaI1, pI1I2, gammaI2) {
+NGM <- function(R0 = NA, nu = NA, C, S0, N, nuA, gammaE, pEP, gammaA, gammaP, gammaI1, pI1H, pI1D, gammaI2) {
   
     ## check that exactly one of R0 or nu is specified
     stopifnot(!is.na(R0) | !is.na(nu))
@@ -222,10 +222,11 @@ NGM <- function(R0 = NA, nu = NA, C, S0, N, nuA, gammaE, pEP, gammaA, gammaP, ga
     if(missing(gammaA)) gammaA <- 0
     if(missing(gammaP)) gammaP <- 0
     if(missing(gammaI1)) gammaI1 <- 0
-    if(missing(pI1I2)) pI1I2 <- 0
+    if(missing(pI1H)) pI1H <- 0
+    if(missing(pI1D)) pI1D <- 0
     if(missing(gammaI2)) gammaI2 <- 0
     stopifnot(all(c(nuA, gammaE, pEP, gammaA, 
-                    gammaP, gammaI1, pI1I2, gammaI2) >= 0))
+                    gammaP, gammaI1, pI1H, pI1D, gammaI2) >= 0))
     
     ## extract lengths
     nage <- length(N)
@@ -238,7 +239,7 @@ NGM <- function(R0 = NA, nu = NA, C, S0, N, nuA, gammaE, pEP, gammaA, gammaP, ga
     if(pathA) stopifnot(gammaA > 0)
     pathI1 <- ifelse(pEP == 0, FALSE, TRUE)
     if(pathI1) stopifnot(gammaP > 0 & gammaI1 > 0)
-    pathI2 <- ifelse(pI1I2 == 0 | !pathI1, FALSE, TRUE)
+    pathI2 <- ifelse((1 - pI1H - pI1D) == 0 | !pathI1, FALSE, TRUE)
     if(pathI2) stopifnot(gammaI2 > 0)
     
     ## set up empty F matrix
@@ -276,7 +277,7 @@ NGM <- function(R0 = NA, nu = NA, C, S0, N, nuA, gammaE, pEP, gammaA, gammaP, ga
     V[(3 * nage + 1):(4 * nage), (3 * nage + 1):(4 * nage)] <- diag(nage) * gammaI1
     
     ## add I1 to I2 terms
-    V[(4 * nage + 1):(5 * nage), (3 * nage + 1):(4 * nage)] <- diag(nage) * -pI1I2 * gammaI1
+    V[(4 * nage + 1):(5 * nage), (3 * nage + 1):(4 * nage)] <- diag(nage) * -(1 - pI1H - pI1D) * gammaI1
     ## add I2 to I2 terms
     V[(4 * nage + 1):(5 * nage), (4 * nage + 1):(5 * nage)] <- diag(nage) * gammaI2
     

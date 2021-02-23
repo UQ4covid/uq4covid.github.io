@@ -18,10 +18,10 @@ IntegerMatrix discreteStochModel(NumericVector pars, int tstop, arma::imat u, ar
     double probP = pars[5];
     double probI1 = pars[6];
     double probI1H = pars[7];
-    double probI1I2 = pars[8];
+    double probI1D = pars[8];
     double probI2 = pars[9];
     double probH = pars[10];
-    double probHR = pars[11];
+    double probHD = pars[11];
       
     // set up auxiliary matrix for counts
     int nclasses = u.n_rows;
@@ -75,13 +75,13 @@ IntegerMatrix discreteStochModel(NumericVector pars, int tstop, arma::imat u, ar
     IntegerVector pathI1(4);
     NumericVector mprobsI1(4);
     mprobsI1[0] = probI1 * probI1H;
-    mprobsI1[1] = probI1 * probI1I2;
-    mprobsI1[2] = probI1 * (1.0 - probI1I2 - probI1H);
+    mprobsI1[1] = probI1 * (1.0 - probI1D - probI1H);
+    mprobsI1[2] = probI1 * probI1D;
     mprobsI1[3] = 1.0 - probI1;
     IntegerVector pathH(3);
     NumericVector mprobsH(3);
-    mprobsH[0] = probH * probHR;
-    mprobsH[1] = probH * (1.0 - probHR);
+    mprobsH[0] = probH * (1.0 - probHD);
+    mprobsH[1] = probH * probHD;
     mprobsH[2] = 1.0 - probH;
     tstart++;
     
