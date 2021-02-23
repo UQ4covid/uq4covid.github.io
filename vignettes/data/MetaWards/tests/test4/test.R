@@ -53,7 +53,7 @@ stopifnot(finalsize$value <= 0.0006 | finalsize$convergence == 0)
 finalsize <- finalsize$par * N
 
 ## fit deterministic model
-source("detModel.R")
+source("../detModel.R")
 
 ## fit discrete-time stochastic model
 source("stochModel.R")
