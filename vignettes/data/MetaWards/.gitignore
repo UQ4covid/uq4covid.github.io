@@ -20,6 +20,10 @@ tests/*/*.Rout
 data/ward11toWard19Mapping/Ward*
 data/ward11toWard19Mapping/*.csv
 data/ward11toWard19Mapping/*.pdf
+data/hospitalisation/*.pdf
+data/hospitalisation/*.svg
+data/hospitalisation/*.png
+data/hospitalisation/*.rds
 data/hospitalStays/*.pdf
 data/hospitalStays/*.rds
 data/hospitalCatchments/WD19*
