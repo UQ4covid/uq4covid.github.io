@@ -11,10 +11,10 @@ def move_pathways(network, **kwargs):
 
     ## moves out of E class
     pE = []
-    pEA = []
+    pEP = []
     for j in range(nage):
         pE.append(params.user_params[f'pE_{j + 1}'])
-        pEA.append(params.user_params[f'pEA_{j + 1}'])
+        pEP.append(params.user_params[f'pEP_{j + 1}'])
     
     ## moves out of A class
     pA = []
@@ -198,7 +198,7 @@ def move_pathways(network, **kwargs):
     ## move E genpop to A genpop
     tpEA = []
     for j in range(nage):
-        tpEA.append(pE[j] * pEA[j])
+        tpEA.append(pE[j] * (1.0 - pEP[j]))
         tpEA[j] = 1.0 if tpEA[j] > 1.0 else tpEA[j]
         tpEA[j] = 0.0 if tpEA[j] < 0.0 else tpEA[j]
         func.append(lambda k = j, **kwargs: go_stage(go_from=f'age{k + 1}',
@@ -214,7 +214,7 @@ def move_pathways(network, **kwargs):
     ## in case of rounding error)
     tpEP = []
     for j in range(nage):
-        tpEP.append(pE[j] * (1.0 - pEA[j]) / (1.0 - tpEA[j]))
+        tpEP.append(pE[j] * pEP[j] / (1.0 - tpEA[j]))
         tpEP[j] = 0.0 if tpEA[j] == 1.0 else tpEP[j]
         tpEP[j] = 1.0 if tpEP[j] > 1.0 else tpEP[j]
         tpEP[j] = 0.0 if tpEP[j] < 0.0 else tpEP[j]

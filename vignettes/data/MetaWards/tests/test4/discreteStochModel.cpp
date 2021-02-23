@@ -13,7 +13,7 @@ IntegerMatrix discreteStochModel(NumericVector pars, int tstop, arma::imat u, ar
     double nu = pars[0];
     double nuA = pars[1];
     double probE = pars[2];
-    double probEA = pars[3];
+    double probEP = pars[3];
     double probA = pars[4];
     double probP = pars[5];
     double probI1 = pars[6];
@@ -69,8 +69,8 @@ IntegerMatrix discreteStochModel(NumericVector pars, int tstop, arma::imat u, ar
     double prob = 0.0;
     IntegerVector pathE(3);
     NumericVector mprobsE(3);
-    mprobsE[0] = probE * probEA;
-    mprobsE[1] = probE * (1.0 - probEA);
+    mprobsE[0] = probE * (1.0 - probEP);
+    mprobsE[1] = probE * probEP;
     mprobsE[2] = 1.0 - probE;
     IntegerVector pathI1(4);
     NumericVector mprobsI1(4);

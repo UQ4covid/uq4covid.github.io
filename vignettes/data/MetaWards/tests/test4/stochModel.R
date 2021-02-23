@@ -8,7 +8,7 @@ pars <- read_delim("disease.dat", delim = " ") %>%
 colnames(pars) <- gsub("_1", "", colnames(pars))
 colnames(pars) <- gsub("\\.", "", colnames(pars))
 pars <- pars %>%
-    select(nu, nuA, pE, pEA, pA, pP, pI1, pI1H, pI1I2, pI2, pH, pHR) %>%
+    select(nu, nuA, pE, pEP, pA, pP, pI1, pI1H, pI1I2, pI2, pH, pHR) %>%
     unlist()
 
 ## set population size

@@ -10,7 +10,7 @@ pars <- read_delim("disease.dat", delim = " ") %>%
 colnames(pars) <- gsub("_1", "", colnames(pars))
 colnames(pars) <- gsub("\\.", "", colnames(pars))
 pars <- pars %>%
-    mutate_all(~ifelse(. == 1, 0.99, .)) %>%
+    mutate_at(vars(pE, pP, pA, pI1, pI2, pH), ~ifelse(. == 1, 0.99, .)) %>%
     mutate(gammaE = -log(1 - pE)) %>%
     mutate(gammaP = -log(1 - pP)) %>%
     mutate(gammaA = -log(1 - pA)) %>%
@@ -30,7 +30,7 @@ contact <- read_csv("contact_matrix.csv", col_names = FALSE) %>%
 ## check NGM
 S0 <- c(N[1] - 10, N[-1])
 R0 <- NGM(R0 = NA, nu = pars["nu"], C = contact, S0 = S0, N = N, 
-    nuA = pars["nuA"], gammaE = pars["gammaE"], pEA = pars["pEA"], gammaA = pars["gammaA"], 
+    nuA = pars["nuA"], gammaE = pars["gammaE"], pEP = pars["pEP"], gammaA = pars["gammaA"], 
     gammaP = pars["gammaP"], gammaI1 = pars["gammaI1"], pI1I2 = pars["pI1I2"], 
     gammaI2 = pars["gammaI2"])
 K <- R0$K

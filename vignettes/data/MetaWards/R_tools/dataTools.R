@@ -208,7 +208,7 @@ cppFunction('IntegerMatrix reconstruct(IntegerVector Einc, IntegerVector Pinc,
 
 ## @knitr NGM
 ## NGM (order: E, A, P, I1, I2)
-NGM <- function(R0 = NA, nu = NA, C, S0, N, nuA, gammaE, pEA, gammaA, gammaP, gammaI1, pI1I2, gammaI2) {
+NGM <- function(R0 = NA, nu = NA, C, S0, N, nuA, gammaE, pEP, gammaA, gammaP, gammaI1, pI1I2, gammaI2) {
   
     ## check that exactly one of R0 or nu is specified
     stopifnot(!is.na(R0) | !is.na(nu))
@@ -218,13 +218,13 @@ NGM <- function(R0 = NA, nu = NA, C, S0, N, nuA, gammaE, pEA, gammaA, gammaP, ga
     stopifnot(!missing(C) & !missing(N) & !missing(S0))
     if(missing(nuA)) nuA <- 0
     if(missing(gammaE)) gammaE <- 0
-    if(missing(pEA)) pEA <- 0
+    if(missing(pEP)) pEP <- 0
     if(missing(gammaA)) gammaA <- 0
     if(missing(gammaP)) gammaP <- 0
     if(missing(gammaI1)) gammaI1 <- 0
     if(missing(pI1I2)) pI1I2 <- 0
     if(missing(gammaI2)) gammaI2 <- 0
-    stopifnot(all(c(nuA, gammaE, pEA, gammaA, 
+    stopifnot(all(c(nuA, gammaE, pEP, gammaA, 
                     gammaP, gammaI1, pI1I2, gammaI2) >= 0))
     
     ## extract lengths
@@ -234,9 +234,9 @@ NGM <- function(R0 = NA, nu = NA, C, S0, N, nuA, gammaE, pEA, gammaA, gammaP, ga
     
     ## check for empty pathways
     stopifnot(gammaE > 0)
-    pathA <- ifelse(pEA == 0, FALSE, TRUE)
+    pathA <- ifelse(pEP == 1, FALSE, TRUE)
     if(pathA) stopifnot(gammaA > 0)
-    pathI1 <- ifelse(pEA == 1, FALSE, TRUE)
+    pathI1 <- ifelse(pEP == 0, FALSE, TRUE)
     if(pathI1) stopifnot(gammaP > 0 & gammaI1 > 0)
     pathI2 <- ifelse(pI1I2 == 0 | !pathI1, FALSE, TRUE)
     if(pathI2) stopifnot(gammaI2 > 0)
@@ -261,12 +261,12 @@ NGM <- function(R0 = NA, nu = NA, C, S0, N, nuA, gammaE, pEA, gammaA, gammaP, ga
     diag(V)[1:nage] <- gammaE
     
     ## add E to A terms
-    V[(nage + 1):(2 * nage), 1:nage] <- diag(nage) * -pEA * gammaE
+    V[(nage + 1):(2 * nage), 1:nage] <- diag(nage) * -(1 - pEP) * gammaE
     ## add A to A terms
     V[(nage + 1):(2 * nage), (nage + 1):(2 * nage)] <- diag(nage) * gammaA
     
     ## add E to P terms
-    V[(2 * nage + 1):(3 * nage), 1:nage] <- diag(nage) * -(1 - pEA) * gammaE
+    V[(2 * nage + 1):(3 * nage), 1:nage] <- diag(nage) * -pEP * gammaE
     ## add P to P terms
     V[(2 * nage + 1):(3 * nage), (2 * nage + 1):(3 * nage)] <- diag(nage) * gammaP
     

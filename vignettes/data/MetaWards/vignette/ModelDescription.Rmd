@@ -189,9 +189,9 @@ The contents of the `iterator.py` file is below. This contains code to initiate 
 For generic states $X$ and $Y$ say, the progress of an individual in age-class $j$ ($j = 1, \dots, J$) from state $X$ to state $Y$ in a given day is governed by probability $q^j_{XY}$, where:
 
 * $q^j_{SE}$ driven by a probability of transmission per infectious contact, $\nu$, which is defined by $R_0$ and the next-generation matrix, which in turn depends on other parameters below and the population contact matrix ($C$) between age-classes. See [here](#translink) for a complete discussion;
-* $q^j_{EA} = p^j_{EA}\left(1 - e^{-\gamma_{E}}\right)$ where $\gamma_E = \frac{1}{T_E}$ with $T_E$ the mean latent period;
-* We model: $\log\left(p^j_{EA}\right) = \alpha_{EA} + \eta_{EA} \mbox{age}_j$, where $\eta_{EA} > 0$ and $\alpha_{EA} < -\eta_{EA} \max\left(\mbox{age}_j\right)$ to ensure than $0 < p^j_{EA} \leq 1$. The $\mbox{age}_j$ term is the middle age in age-class $j$.
-* $q^j_{EP} = \left(1 - p^j_{EA}\right)\left(1 - e^{-\gamma_{E}}\right)$;
+* $q^j_{EP} = p^j_{EP}\left(1 - e^{-\gamma_{E}}\right)$ where $\gamma_E = \frac{1}{T_E}$ with $T_E$ the mean latent period;
+* We model: $\log\left(p^j_{EP}\right) = \alpha_{EP} + \eta_{EP} \mbox{age}_j$, where $\eta_{EP} > 0$ and $\alpha_{EP} < -\eta_{EP} \max\left(\mbox{age}_j\right)$ to ensure than $0 < p^j_{EP} \leq 1$. The $\mbox{age}_j$ term is the middle age in age-class $j$.
+* $q^j_{EA} = \left(1 - p^j_{EP}\right)\left(1 - e^{-\gamma_{E}}\right)$;
 * $q^j_{AR} = 1 - e^{-\gamma_A}$ where $\gamma_A = \frac{1}{T_P + T_{I_1} + T_{I_2}}$ with $T_P + T_{I_1} + T_{I_2}$ the mean infectious period;
 * $q^j_{PI_1} = 1 - e^{-\gamma_{P}}$ where $\gamma_P = \frac{1}{T_P}$ with $T_P$ the mean pre-symptomatic infectious period;
 * $q^j_{I_1H} = p^j_{I_1H}\left(1 - e^{-\gamma_{I_1}}\right)$ where $\gamma_{I_1} = \frac{1}{T_{I_1}}$ with $T_{I_1}$ the mean symptomatic infectious period pre-hospitalisation;
@@ -234,8 +234,8 @@ and $R_0$ is the maximum eigenvalue of $\mathbf{K}$.
 From the model structure above, in a single population with age-structure, the **infected classes** are $E^j$, $A^j$, $P^j$, $I_1^j$ and $I_2^j$ for age-classes $j = 1, \dots, J$. In a deterministic model these would have rates-of-change of:
 \begin{align*}
     \frac{dE^j}{dt} &= S^j\left[\sum_{k=1}^J \frac{\beta^{kj}}{N^k}\left(P^k + I_1^k + I_2^k + \beta_{A\to GP}A^k\right) \right] - \gamma_E E^j\\
-    \frac{dA^j}{dt} &= p_{EA}^j\gamma_E E^j - \gamma_A A^j\\
-    \frac{dP^j}{dt} &= \left(1 - p_{EA}^j\right)\gamma_E E^j - \gamma_P P^j\\
+    \frac{dA^j}{dt} &= \left(1 - p_{EP}^j\right)\gamma_E E^j - \gamma_A A^j\\
+    \frac{dP^j}{dt} &= p_{EP}^j\gamma_E E^j - \gamma_P P^j\\
     \frac{dI_1^j}{dt} &= \gamma_P P^j - \gamma_{I_1} I_1^j\\
     \frac{dI_2^j}{dt} &= p_{I_1I_2}\gamma_{I_1} I_1^j - \gamma_{I_2} I_2^j\\
 \end{align*}
@@ -256,7 +256,7 @@ and
         0 & \mathrm{otherwise,}
         \end{array}\right. &\\
     \frac{\partial V_{A^i}\left(x_0\right)}{\partial E^j} &= \left\{\begin{array}{cc} 
-        -p_{EA}^i\gamma_E & \mathrm{for}~i = j,\\
+        -\left(1 - p_{EP}^i\right)\gamma_E & \mathrm{for}~i = j,\\
         0 & \mathrm{otherwise,}
         \end{array}\right. &\\
     \frac{\partial V_{A^i}\left(x_0\right)}{\partial A^j} &= \left\{\begin{array}{cc} 
@@ -264,7 +264,7 @@ and
         0 & \mathrm{otherwise,}
         \end{array}\right. &\\
     \frac{\partial V_{P^i}\left(x_0\right)}{\partial E^j} &= \left\{\begin{array}{cc} 
-        -\left(1 - p_{EA}^i\right)\gamma_E & \mathrm{for}~i = j,\\
+        -p_{EP}^i\gamma_E & \mathrm{for}~i = j,\\
         0 & \mathrm{otherwise,}
         \end{array}\right. &\\
     \frac{\partial V_{P^i}\left(x_0\right)}{\partial P^j} &= \left\{\begin{array}{cc} 
@@ -576,7 +576,7 @@ parRanges <- data.frame(
     parameter = c("r_zero", "latent_time", "infectious1_time", 
                   "infectious1_time", "hospital_time",
                   "lock_1_restrict", "lock_2_release",
-                  "alphaEA", "etaEA", 
+                  "alphaEP", "etaEP", 
                   "alphaI1H", "etaI1H", 
                   "alphaI1I2", "etaI1I2",
                   "alphaI2", "etaI2",
