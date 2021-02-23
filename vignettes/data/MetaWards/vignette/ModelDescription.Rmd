@@ -351,7 +351,7 @@ p1 <- data.frame(
   ggplot(aes(x = value, y = ..density..)) +
     geom_histogram(bins = 50) +
     facet_wrap(~bound) +
-    xlab("Latent Period Distribution") +
+    xlab("Latent period distribution") +
     ylab("Density")
 gen <- readPNG("../data/intervals/generation.png")
 p2 <- ggplot() + background_image(gen) + coord_fixed()
@@ -376,7 +376,7 @@ p1 <- data.frame(
   ggplot(aes(x = value, y = ..density..)) +
     geom_histogram(bins = 50) +
     facet_wrap(~bound) +
-    xlab("Incubation Period Distribution") +
+    xlab("Incubation period distribution") +
     ylab("Density")
 inc <- readPNG("../data/intervals/incubation.png")
 p2 <- ggplot() + background_image(inc)# + coord_fixed()
@@ -386,9 +386,9 @@ BB"
 p1 / p2 + plot_layout(design = layout)
 ```
 
-To generate ranges for the length of the infectious period, $T_{I_1}$, we note that this is equivalent to the **time-from-onset-to-admission** in our model, and hence through simulation chose bounds for $T_{I_1}$ such that at the lower bounds the time-from-onset-to-admission distribution looks like the time-from-onset-to-admission in Challen et al. (2020), and at the upper bound of $T_{I_1}$ the time-from-onset-to-admission distribution looks like the time-from-infection-to-admission in Challen et al. (2020). The figure below shows these distributions at the lower and upper bounds of the parameter ranges for $T_{I_1}$, against the reference distributions in Challen et al. (2020).
+To generate ranges for the length of the infectious period, $T_{I_1}$, we note that this is equivalent to the **time-from-onset-to-admission** in our model, and hence through simulation chose bounds for $T_{I_1}$ such that the distribution of $T_1$ was approximately consistent with the time-from-onset-to-admission in Challen et al. (2020), and also that the time-from-infection-to-admission, $T_E + T_P + T_{I_1}$, was consistent with the time-from-infection-to-admission in Challen et al. (2020), at both the lower and upper bounds for $T_E$ and $T_P$. The figure below shows these distributions at the lower and upper bounds of the parameter ranges for $T_{I_1}$, against the reference distributions in Challen et al. (2020).
 
-```{r, fig.width = 5, fig.height = 5, echo = FALSE}
+```{r, fig.width = 5, fig.height = 10, echo = FALSE, message = FALSE, warning = FALSE}
 p1 <- data.frame(
     Lower = rexp(10000, rate = 1 / 2.8),
     Upper = rexp(10000, rate = 1 / 4.5)) %>%
@@ -396,19 +396,37 @@ p1 <- data.frame(
   ggplot(aes(x = value, y = ..density..)) +
     geom_histogram(bins = 50) +
     facet_wrap(~bound) +
-    xlab("???????? Distribution") +
+    xlab("Time-from-onset-to-admission distribution") +
     ylab("Density")
-gen <- readPNG("../data/intervals/infectious.png")
-p2 <- ggplot() + background_image(gen)# + coord_fixed()
+onsetToAdmission <- readPNG("../data/intervals/onsetToAdmission.png")
+p2 <- ggplot() + background_image(onsetToAdmission) + coord_fixed()
+p3 <- data.frame(
+  Lower = sapply(c(0.1, 1.2, 2.8), function(x) rexp(10000, rate = 1 / x)) %>%
+      apply(1, sum)
+  ) %>%
+  cbind(
+      Upper = sapply(c(2, 3, 4.5), function(x) rexp(10000, rate = 1 / x)) %>%
+          apply(1, sum)
+  ) %>%
+  gather(bound, value) %>%
+  ggplot(aes(x = value, y = ..density..)) +
+    geom_histogram(bins = 50) +
+    facet_wrap(~bound) +
+    xlab("Time-from-infection-to-admission distribution") +
+    ylab("Density")
+infectionToAdmission <- readPNG("../data/intervals/infectionToAdmission.png")
+p4 <- ggplot() + background_image(infectionToAdmission) + coord_fixed()
 layout <- "
 AA
-BB"
-p1 / p2 + plot_layout(design = layout)
+BB
+CC
+DD"
+p1 / p2 / p3 / p4 + plot_layout(design = layout)
 ```
 
-For the remainder of infectivity time, $T_{I_2}$, we noted that Cevik et al. (2020) found no live virus beyond day 9 of symptom onset. As such, we used simulation to find upper and lower bounds for $T_{I_2}$ such that there was around 13--15% of the total infectivity time > 9 days post-onset. 
+For the remainder of infectivity time, $T_{I_2}$, we noted that Cevik et al. (2020) found no live virus beyond day 9 of symptom onset. As such, we used simulation to find upper and lower bounds for $T_{I_2}$. The upper bound of $T_{I_2}$ was chosen so that when $T_{I_1}$ was at its lower bound, the probability that the infectivity time post onset ($T_{I_1} + T_{I_2}$) was > 9 days was $\approx 0.05$. Conversely, if $T_{I_1}$ is set to its upper bound, then even for very low values of $T_{I_2}$ we were unable to get upper tail probabilities for $T_{I_1} + T_{I_2}$ of less than $\approx 0.13$, hence we set a lower bound for $T_{I_2}$ of 0.0001. At the upper bound for $T_{I_1}$ and $T_{I_2}$ these tail probabilities were $\approx 0.15$.
 
-```{r, fig.width = 5, fig.height = 5, echo = FALSE}
+```{r, fig.width = 5, fig.height = 2.5, echo = FALSE}
 p1 <- data.frame(
   Lower = sapply(c(2.8, 0.0001), function(x) rexp(10000, rate = 1 / x)) %>%
       apply(1, sum)
@@ -421,19 +439,14 @@ p1 <- data.frame(
   ggplot(aes(x = value, y = ..density..)) +
     geom_histogram(bins = 50) +
     facet_wrap(~bound) +
-    xlab("??????????? Distribution") +
+    xlab("Post onset infectivity time distribution") +
     ylab("Density")
-inc <- readPNG("../data/intervals/infectious.png")
-p2 <- ggplot() + background_image(inc)# + coord_fixed()
-layout <- "
-AA
-BB"
-p1 / p2 + plot_layout(design = layout)
+p1
 ```
 
 **TESTS**:
 
-```{r}
+
 rates <- seq(2.8, 4.5, length.out = 9)
 par(mfrow = c(3, 3))
 for(i in rates) {
@@ -479,10 +492,20 @@ for(i in rates) {
   s <- signif(sqrt(0.95 * 0.05 / length(temp)), 2)
   hist(temp, main = paste0("Umean = ", i, ", p = ", p, ", s = ", s), freq = FALSE, breaks = 50)
 }
-```
 
-For the hospital stay times we used **DATA SOURCE HERE**. Specifying 
 
+For the hospital stay times we used **DATA SOURCE HERE**. Below we plot the distribution of stay times by age, along with the best fitting exponential model in each case.
+
+![](../data/hospitalStays/expFits.svg)
+
+If we plot the log(mean hospital stay time) from the fitted exponential models against the midpoints of each age-category, then we get an approximate increasing linear relationship with age. To capture estimation uncertainties more robustly, we built a hierarchical Bayesian model (fitted using MCMC in NIMBLE) to estimate both the mean hospital stay times in each age category, and then simultaneously the slope and intercept from Gaussian linear regression model fitted to the log(mean hospital stay time) from the exponential models. Full details can be found in the `data/hospitalStays/` folder.
+
+As a comparison, below we show the log(mean hospital stay time) estimates from the non-Bayesian models (fitted independently to each age-distribution) against the fitted line from the hierarchical Bayesian model.
+
+![](../data/hospitalStays/fittedLnBayes.svg)
+The intercept and slope of this line provide the parameters we use to determine the age-structured hospital stay times, and we've decided to draw from the posterior distribution of these parameters in our input designs. To avoid having to run the MCMC each time we want more design points, we approximate the posterior distribution using a truncated finite Gaussian mixture model, fitted using the `mclust` package in R. The posterior distributions from the MCMC and the approximating FMM are shown below.
+
+![](../data/hospitalStays/mixturePosterior.png)
 
 </div>
 
