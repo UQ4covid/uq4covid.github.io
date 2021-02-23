@@ -35,7 +35,7 @@ The basic model structure is:
 
 ## MetaWards setup
 
-The model structure above allows for different progression pathways. We also split the popoulation up into different age demographics, to allow for variable mixing between the age-groups. We define a customised `mover` function that is used to move individuals through different pathways, and `mixer` functions that scale the force-of-infection (FOI) terms between the different age demographics (explained later). There are currently five pathways, which will be described below, but can be summarised as:
+The model structure above allows for different progression pathways. We also split the population up into different age demographics, to allow for variable mixing between the age-groups. We define a customised `mover` function that is used to move individuals through different pathways, and `mixer` functions that scale the force-of-infection (FOI) terms between the different age demographics (explained later). There are currently five pathways, which will be described below, but can be summarised as:
 
 * $SEAR$: asymptomatic infections, always recover.
 * $SEPIR$: symptomatic infections, leading to recovery.
@@ -313,9 +313,10 @@ We have derived plausible parameter bounds from data and the literature.
 
 \begin{align}
     \mbox{$R_0$}&: (2, 4.5) \qquad \mbox{from Leon and Rob}\\
-    \mbox{mean incubation period ($T_{\mathrm{inc}}$)}&: (1, 8)\mbox{---Challen et al. (2020)}\\
     T_E&: (0.1, 2)\\
     T_P&: (1.2, 3)\\
+    T_{I_1}&: (2.8, 4.5)\\
+    T_{I_2}&: (0.0001, 0.5)\\
     
     
     \mbox{mean generation period ($T_{\mathrm{gen}}$)}&: (?, ?)\mbox{---Challen et al. (2020)}\\
@@ -336,18 +337,13 @@ We have derived plausible parameter bounds from data and the literature.
     \beta_{A \to GP}&: (0, 1).
 \end{align}
 
-Current approach:
+<a name="priorslink"></a>
+<button data-toggle="collapse" data-target="#priors">Click for details on prior choices</button>
+<div id="priors" class="collapse boxed">
 
-* Sample $T_{\mathrm{gen}}$ and $T_{\mathrm{inc}}$.
-* Sample $T_E$ s.t. $T_E < T_{\mathrm{gen}}$ and $T_E < T_{\mathrm{inc}}$.
-* Set $T_P = T_{\mathrm{inc}} - T_E$.
-* Sample $T_{E \to H}$ s.t. $T_{E \to H} > T_P$.
-* Set $T_{I_1} = T_{E \to H} - T_P$.
-* Sample $T_{I \to R}$ s.t. $T_{I \to R} > T_{I_1}$.
-* Set $T_{I_2} = T_{I \to R} - T_{I_1}$.
-* **Sample $T_H^j$ from log-linear stuff.**
+For the mean latent period, $T_E$, we set the upper bound such that the latent period distribution had an upper tail probability that is consistent with the **generation interval** distribution from Challen et al. (2020). This provides a conservative upper bound, since the generation time is equivalent to $T_E + T_P$ in our model. We chose a lower bound such that it is possible to have a short, but non-zero latent period. The figure below shows the latent period distributions at the lower and upper bounds of the parameter ranges for $T_E$.
 
-```{r, fig.width = 10, fig.height = 8, echo = FALSE}
+```{r, fig.width = 5, fig.height = 5, echo = FALSE}
 p1 <- data.frame(
     Lower = rexp(1000, rate = 1 / 0.1),
     Upper = rexp(1000, rate = 1 / 2)) %>%
@@ -358,17 +354,22 @@ p1 <- data.frame(
     xlab("Latent Period Distribution") +
     ylab("Density")
 gen <- readPNG("../data/intervals/generation.png")
-p2 <- ggplot() + background_image(gen)# + coord_fixed()
-p1 / p2
+p2 <- ggplot() + background_image(gen) + coord_fixed()
+layout <- "
+AA
+BB"
+p1 / p2 + plot_layout(design = layout)
 ```
 
-```{r, fig.width = 10, fig.height = 8, echo = FALSE}
+To generate ranges for the length of the pre-symptomatic period, $T_P$, we note that the **incubation period** is equivalent to $T_E + T_P$ in our model, and hence through simulation we generated incubation period distributions at the lower and upper bounds of $T_E$, and chose bounds for $T_P$ such that at the lower bounds of $T_E$ and $T_P$ the incubation period distribution looks like the lower-mean incubation period distribution in Challen et al. (2020), and at the upper bounds of $T_E$ and $T_P$ the incubation period distribution looks like the higher-mean incubation period distribution in Challen et al. (2020). The figure below shows the incubation period distributions at the lower and upper bounds of the parameter ranges for $T_E$ and $T_P$, against the reference distributions in Challen et al. (2020).
+
+```{r, fig.width = 5, fig.height = 5, echo = FALSE}
 p1 <- data.frame(
-  Lower = sapply(c(0.1, 1.2), function(x) rexp(1000, rate = 1 / x)) %>%
+  Lower = sapply(c(0.1, 1.2), function(x) rexp(10000, rate = 1 / x)) %>%
       apply(1, sum)
   ) %>%
   cbind(
-      Upper = sapply(c(2, 3), function(x) rexp(1000, rate = 1 / x)) %>%
+      Upper = sapply(c(2, 3), function(x) rexp(10000, rate = 1 / x)) %>%
           apply(1, sum)
   ) %>%
   gather(bound, value) %>%
@@ -379,8 +380,111 @@ p1 <- data.frame(
     ylab("Density")
 inc <- readPNG("../data/intervals/incubation.png")
 p2 <- ggplot() + background_image(inc)# + coord_fixed()
-p1 / p2
+layout <- "
+AA
+BB"
+p1 / p2 + plot_layout(design = layout)
 ```
+
+To generate ranges for the length of the infectious period, $T_{I_1}$, we note that this is equivalent to the **time-from-onset-to-admission** in our model, and hence through simulation chose bounds for $T_{I_1}$ such that at the lower bounds the time-from-onset-to-admission distribution looks like the time-from-onset-to-admission in Challen et al. (2020), and at the upper bound of $T_{I_1}$ the time-from-onset-to-admission distribution looks like the time-from-infection-to-admission in Challen et al. (2020). The figure below shows these distributions at the lower and upper bounds of the parameter ranges for $T_{I_1}$, against the reference distributions in Challen et al. (2020).
+
+```{r, fig.width = 5, fig.height = 5, echo = FALSE}
+p1 <- data.frame(
+    Lower = rexp(10000, rate = 1 / 2.8),
+    Upper = rexp(10000, rate = 1 / 4.5)) %>%
+  gather(bound, value) %>%
+  ggplot(aes(x = value, y = ..density..)) +
+    geom_histogram(bins = 50) +
+    facet_wrap(~bound) +
+    xlab("???????? Distribution") +
+    ylab("Density")
+gen <- readPNG("../data/intervals/infectious.png")
+p2 <- ggplot() + background_image(gen)# + coord_fixed()
+layout <- "
+AA
+BB"
+p1 / p2 + plot_layout(design = layout)
+```
+
+For the remainder of infectivity time, $T_{I_2}$, we noted that Cevik et al. (2020) found no live virus beyond day 9 of symptom onset. As such, we used simulation to find upper and lower bounds for $T_{I_2}$ such that there was around 13--15% of the total infectivity time > 9 days post-onset. 
+
+```{r, fig.width = 5, fig.height = 5, echo = FALSE}
+p1 <- data.frame(
+  Lower = sapply(c(2.8, 0.0001), function(x) rexp(10000, rate = 1 / x)) %>%
+      apply(1, sum)
+  ) %>%
+  cbind(
+      Upper = sapply(c(4.5, 0.5), function(x) rexp(10000, rate = 1 / x)) %>%
+          apply(1, sum)
+  ) %>%
+  gather(bound, value) %>%
+  ggplot(aes(x = value, y = ..density..)) +
+    geom_histogram(bins = 50) +
+    facet_wrap(~bound) +
+    xlab("??????????? Distribution") +
+    ylab("Density")
+inc <- readPNG("../data/intervals/infectious.png")
+p2 <- ggplot() + background_image(inc)# + coord_fixed()
+layout <- "
+AA
+BB"
+p1 / p2 + plot_layout(design = layout)
+```
+
+**TESTS**:
+
+```{r}
+rates <- seq(2.8, 4.5, length.out = 9)
+par(mfrow = c(3, 3))
+for(i in rates) {
+  temp <- rexp(10000, rate = 1 / i)
+  hist(temp, main = paste(i), freq = FALSE, breaks = 50)
+}
+
+par(mfrow = c(3, 3))
+for(i in rates) {
+  temp <- rexp(10000, rate = 1 / i)
+  temp <- temp + rexp(10000, rate = 1 / 0.1) + rexp(10000, rate = 1 / 2)
+  hist(temp, main = paste(i), freq = FALSE, breaks = 50, ylim = c(0, 0.12))
+}
+
+par(mfrow = c(3, 3))
+for(i in rates) {
+  temp <- rexp(10000, rate = 1 / i)
+  temp <- temp + rexp(10000, rate = 1 / 1.2) + rexp(10000, rate = 1 / 3)
+  hist(temp, main = paste(i), freq = FALSE, breaks = 50, ylim = c(0, 0.12))
+}
+
+rates <- seq(0.0001, 0.5, length.out = 9)
+par(mfrow = c(3, 3))
+for(i in rates) {
+  temp <- rexp(10000, rate = 1 / i)
+  hist(temp, main = paste(i), freq = FALSE, breaks = 50)
+}
+
+par(mfrow = c(3, 3))
+for(i in rates) {
+  temp <- rexp(100000, rate = 1 / i)
+  temp <- temp + rexp(100000, rate = 1 / 2.8)
+  p <- sum(temp > 9) / length(temp)
+  s <- signif(sqrt(0.95 * 0.05 / length(temp)), 2)
+  hist(temp, main = paste0("Lmean = ", i, ", p = ", p, ", s = ", s), freq = FALSE, breaks = 50)
+}
+
+par(mfrow = c(3, 3))
+for(i in rates) {
+  temp <- rexp(100000, rate = 1 / i)
+  temp <- temp + rexp(100000, rate = 1 / 4.5)
+  p <- sum(temp > 9) / length(temp)
+  s <- signif(sqrt(0.95 * 0.05 / length(temp)), 2)
+  hist(temp, main = paste0("Umean = ", i, ", p = ", p, ", s = ", s), freq = FALSE, breaks = 50)
+}
+```
+
+For the hospital stay times we used **DATA SOURCE HERE**. Specifying 
+
+
+</div>
 
 ## Mover functions
 
