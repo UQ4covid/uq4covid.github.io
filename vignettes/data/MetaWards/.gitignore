@@ -25,6 +25,8 @@ data/hospitalisation/*.svg
 data/hospitalisation/*.png
 data/hospitalisation/*.rds
 data/hospitalStays/*.pdf
+data/hospitalStays/*.svg
+data/hospitalStays/*.png
 data/hospitalStays/*.rds
 data/hospitalCatchments/WD19*
 data/hospitalCatchments/*.pdf
