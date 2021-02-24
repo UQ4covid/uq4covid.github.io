@@ -317,7 +317,9 @@ We have derived plausible parameter bounds from data and the literature.
     T_E&: (0.1, 2)\\
     T_P&: (1.2, 3)\\
     T_{I_1}&: (2.8, 4.5)\\
-    T_{I_2}&: (0.0001, 0.5)
+    T_{I_2}&: (0.0001, 0.5)\\
+    \alpha_{T_H}, \eta_{T_H}&: \mbox{drawn from distribution as described below}\\
+    \alpha_{I_1H}, \eta_{I_1H}&: \mbox{drawn from distribution as described below}\\
 \end{align}
 
 <a name="priorslink"></a>
@@ -431,14 +433,25 @@ For the hospital stay times we used **DATA SOURCE HERE**. Below we plot the dist
 
 ![](../data/hospitalStays/expFits.svg)
 
-If we plot the log(mean hospital stay time) from the fitted exponential models against the midpoints of each age-category, then we get an approximate increasing linear relationship with age. To capture estimation uncertainties more robustly, we built a hierarchical Bayesian model (fitted using MCMC in NIMBLE) to estimate both the mean hospital stay times in each age category, and then simultaneously the slope and intercept from Gaussian linear regression model fitted to the log(mean hospital stay time) from the exponential models. Full details can be found in the `data/hospitalStays/` folder.
+If we plot the log(mean hospital stay time) from the fitted exponential models against the midpoints of each age-category, then we get an approximate increasing linear relationship with age. To capture estimation uncertainties more robustly, we built a hierarchical Bayesian model (fitted using MCMC implemented in NIMBLE) to estimate both the mean hospital stay times in each age category, and then simultaneously the slope and intercept from Gaussian linear regression model fitted to the log(mean hospital stay time) from the exponential models. Full details can be found in the `data/hospitalStays/` folder.
 
-As a comparison, below we show the log(mean hospital stay time) estimates from the non-Bayesian models (fitted independently to each age-distribution) against the fitted line from the hierarchical Bayesian model.
+As a comparison, below we show the log(mean hospital stay time) estimates from the non-Bayesian models (fitted independently to each age-distribution) against the fitted line from the hierarchical Bayesian model, with 99% credible intervals.
 
 ![](../data/hospitalStays/fittedLnBayes.svg)
-The intercept and slope of this line provide the parameters we use to determine the age-structured hospital stay times, and we've decided to draw from the posterior distribution of these parameters in our input designs. To avoid having to run the MCMC each time we want more design points, we approximate the posterior distribution using a truncated finite Gaussian mixture model, fitted using the `mclust` package in R. The posterior distributions from the MCMC and the approximating FMM are shown below.
+
+The intercept and slope of this line provide the parameters we use to determine the age-structured hospital stay times, and we've decided to draw from the posterior distribution of these parameters in our input designs. To avoid having to run the MCMC each time we want more design points, we approximate the posterior distribution using a truncated finite Gaussian mixture model, fitted using the `mclust` package in R. The posterior distributions from the MCMC and the approximating FMM are shown below. 
 
 ![](../data/hospitalStays/mixturePosterior.png)
+
+For the probability of hospitalisation with age we used data in Table 3 from Verity et al. (2020). If we plot the log(probability of severe symptoms) by age against the midpoints of each age-category, then we get an approximate increasing linear relationship with age. We fitted a binomial GLM to these data in a Bayesian framework (using MCMC implemented in NIMBLE), with a log-linear relationship between the mean probability of hospitalisation and age. Full details can be found in the `data/hospitalisation/` folder.
+
+As a comparison, below we show the probability of severe symptoms estimates from the data against the fitted line from the Bayesian model, with both 99% credible and predictive intervals added for comparison. The prediction intervals were evaluated at each observed age by using the posterior samples for the probabilities of hospitalisation and using these to seed random draws from a binomial distribution with a number of trials equal to that observed in the data for that age category. The number of hospitalisations was then divided by the number of trials to get a comparable prediction interval that could be directly compared to the data.
+
+![](../data/hospitalisation/fittedLnBayes.svg)
+
+The intercept and slope of this line provide the parameters we use to determine the age-structured probabilities of hospitalisation, and we've decided to draw from the posterior distribution of these parameters in our input designs. To avoid having to run the MCMC each time we want more design points, we approximate the posterior distribution using a truncated finite Gaussian mixture model, fitted using the `mclust` package in R. The posterior distributions from the MCMC and the approximating FMM are shown below.
+
+![](../data/hospitalisation/mixturePosterior.png)
 
 </div>
 
