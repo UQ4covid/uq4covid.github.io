@@ -124,7 +124,7 @@ p <- ggplot(hosp, aes(x = ageMid)) +
     geom_line(aes(y = mean), data = hosp_preds) +
     geom_ribbon(aes(ymin = LCI, ymax = UCI), data = hosp_preds, alpha = 0.5) +
     geom_ribbon(aes(ymin = LCI, ymax = UCI), data = hosp_preds1, alpha = 0.5) +
-    xlab("Age") + ylab("pHospital")
+    xlab("Age") + ylab("Probability of hospitalisation")
 ggsave("fittedLnBayes.pdf", p)
 ggsave("fittedLnBayes.svg", p)
 
