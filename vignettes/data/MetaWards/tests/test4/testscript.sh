@@ -16,7 +16,8 @@ cp ../user_inputs_default.txt user_inputs.txt
 printf '\n.nseeds = 10\n' >> user_inputs.txt
 printf '\n.ward_seed_filename = \"ward_seeds.csv\"\n' >> user_inputs.txt
 printf '\n.age_seed_filename = \"age_seeds.csv\"\n' >> user_inputs.txt
-printf '\n\n.contact_matrix_filename = \"contact_matrix.csv\"\n' >> user_inputs.txt
+printf '\n\n.contact_matrix1_filename = \"contact_matrix.csv\"\n' >> user_inputs.txt
+printf '\n\n.contact_matrix2_filename = \"contact_matrix.csv\"\n' >> user_inputs.txt
 
 ## set up contact matrix
 rm contact_matrix.csv
