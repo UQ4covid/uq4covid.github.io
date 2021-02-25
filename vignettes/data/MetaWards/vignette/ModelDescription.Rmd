@@ -61,7 +61,7 @@ ages <- read_csv("../inputs/Pop\ by\ CTRY.csv") %>%
   select(-gender, -code) %>%
   mutate(prop = round(count / sum(count), 3))
 stopifnot(sum(ages$prop) == 1)
-C <- read.csv("../inputs/contact_matrix.csv", header = FALSE)
+C <- read.csv("../inputs/coMix_matrix.csv", header = FALSE)
 stopifnot(all(dim(C) == nrow(ages)))
 knitr::kable(ages)
 ```
@@ -129,7 +129,7 @@ user <- "# Normal status" %>%
   c(".lockdown_date_2_day = 13") %>%
   c("") %>%
   c("# contact matrix") %>%
-  c(".contact_matrix_filename = \"inputs/contact_matrix.csv\"") %>%
+  c(".contact_matrix_filename = \"inputs/coMix_matrix.csv\"") %>%
   c("") %>%
   c("# number of age classes") %>%
   c(paste0(".nage = ", nrow(ages))) %>%
@@ -218,7 +218,7 @@ In practice we model the transmission parameters as:
 $$
   \beta^{kj} = \nu c^{kj},
 $$
-where $0 < \nu < 1$ is a probability of infection per contact, and $c^{kj}$ is the **population contact rate** that an individual in class $j$ has with individuals in class $k$. We use the population contact matric $C = \{c^{kj}; k = 1, \dots, J; j = 1, \dots, J\}$ from the **CoMix** survey, since we are modelling from the end of the first lockdown, where contact rates are not the same as before the pandemic (where something like the BBC Pandemic Contact Survey or POLYMOD would be more appropriate).
+where $0 < \nu < 1$ is a probability of infection per contact, and $c^{kj}$ is the **population contact rate** that an individual in class $j$ has with individuals in class $k$. We use the population contact matrix $C = \{c^{kj}; k = 1, \dots, J; j = 1, \dots, J\}$ from the **POLYMOD** survey in the early stages of the outbreak, and then the **CoMix** survey after the first lockdown.
 
 <p style="color:red">SHOULD WE USE POLYMOD AT OUTSET? ADJUST ABOVE ACCORDINGLY</p>
 
@@ -738,7 +738,8 @@ You can very easily wrap these ideas into an R function that can scroll through 
 
 ```{r, echo = FALSE, message = FALSE, warning = FALSE, eval = FALSE}
 ## copy data across
-system("cp ../data/contactData/contact_matrix.csv ../inputs/")
+system("cp ../data/contactData/coMix_matrix.csv ../inputs/")
+system("cp ../data/contactData/POLYMOD_matrix.csv ../inputs/")
 system("cp ../data/populationByAge/Pop\\ by\\ CTRY.csv ../inputs/")
 tempdir <- getwd()
 setwd("..")

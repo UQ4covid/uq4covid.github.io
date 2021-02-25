@@ -20,7 +20,7 @@ printf '\n\n.contact_matrix_filename = \"contact_matrix.csv\"\n' >> user_inputs.
 
 ## set up contact matrix
 rm contact_matrix.csv
-cp ../../inputs/contact_matrix.csv .
+cp ../../inputs/coMix_matrix.csv contact_matrix.csv
 
 ## set up seeds
 rm ward_seeds.csv
