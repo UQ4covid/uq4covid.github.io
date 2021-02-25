@@ -36,3 +36,14 @@ cd ..
 cd test4
 ./testscript.sh
 cd ..
+
+## same as test4 but with a change of contact matrix
+## partway through the outbreak---starts off as no
+## mixing between ages and then flips to coMix
+## deterministic model removed here and no final sizes
+## since difficult to calculate when contact matrices 
+## change
+
+cd test5
+./testscript.sh
+cd ..
