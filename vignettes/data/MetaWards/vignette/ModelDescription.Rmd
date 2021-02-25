@@ -129,7 +129,8 @@ user <- "# Normal status" %>%
   c(".lockdown_date_2_day = 13") %>%
   c("") %>%
   c("# contact matrix") %>%
-  c(".contact_matrix_filename = \"inputs/coMix_matrix.csv\"") %>%
+  c(".contact_matrix1_filename = \"inputs/POLYMOD_matrix.csv\"") %>%
+  c(".contact_matrix2_filename = \"inputs/coMix_matrix.csv\"") %>%
   c("") %>%
   c("# number of age classes") %>%
   c(paste0(".nage = ", nrow(ages))) %>%
