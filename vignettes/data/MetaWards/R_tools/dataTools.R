@@ -117,6 +117,42 @@ convertInputToDisease <- function(input, C, ages) {
     disease
 }
 
+## @knitr maximin
+## function to generate maximin samples given an arbitrary FMM
+FMMmaximin <- function(model, nsamp, nseed = 100000) {
+    
+    ## check inputs and dependencies
+    require(mclust)
+    require(fields)
+  
+    stopifnot(!missing(model) & !missing(nsamp))
+    stopifnot(class(model)[1] == "densityMclust")
+    stopifnot(is.numeric(nsamp) & round(nsamp) == nsamp & nsamp > 1)
+    stopifnot(is.numeric(nseed) & round(nseed) == nseed & nseed > 1 & nsamp < nseed)
+    
+    ## produce large number of samples from model
+    sims <- sim(model$modelName, model$parameters, nseed)[, -1]
+    
+    ## rescale
+    simsnorm <- apply(sims, 2, function(x) (x - min(x)) / diff(range(x)))
+    
+    ## sample initial choice at random
+    simind <- sample.int(nrow(sims), 1)
+    simrem <- c(1:nrow(sims))[-simind]
+    
+    ## choose other points using maximin
+    while(length(simind) < nsamp) {
+        dists <- rdist(simsnorm[simind, , drop = FALSE], simsnorm[-simind, , drop = FALSE])
+        dists <- apply(dists, 2, min)
+        dists <- which(dists == max(dists))
+        simind <- c(simind, simrem[dists[1]])
+        simrem <- simrem[-dists[1]]
+    }
+    
+    ## return design
+    sims[simind, ]
+}
+
 ## @knitr ensembleIDGen
 ## function for generating ensemble hash IDs (from Danny)
 ensembleIDGen <- function(ensembleID = "a0", ensembleSize) {
