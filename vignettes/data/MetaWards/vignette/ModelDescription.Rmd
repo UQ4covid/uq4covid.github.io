@@ -221,8 +221,6 @@ $$
 $$
 where $0 < \nu < 1$ is a probability of infection per contact, and $c^{kj}$ is the **population contact rate** that an individual in class $j$ has with individuals in class $k$. We use the population contact matrix $C = \{c^{kj}; k = 1, \dots, J; j = 1, \dots, J\}$ from the **POLYMOD** survey in the early stages of the outbreak, and then the **CoMix** survey after the first lockdown.
 
-<p style="color:red">SHOULD WE USE POLYMOD AT OUTSET? ADJUST ABOVE ACCORDINGLY</p>
-
 A challenge is that we parameterise our model in terms of $R_0$, not $\nu$, and thus we need a way to derive $\nu$ from $R_0$ for a given run. To this end, $R_0$ can be derived as the **maximum eigenvalue** of the **next-generation matrix** (NGM). Firstly, let $F_i(x)$ be the rate of new infections into *infected* class $i$, and $V_i(x)$ be the rate of transitions from *infected* class $i$. Then define matrices:
 $$
     \mathbf{F} = \left[\frac{\partial F_i\left(x_0\right)}{\partial x_j}\right] \quad \mbox{and} \quad \mathbf{V} = \left[\frac{\partial V_i\left(x_0\right)}{\partial x_j}\right] \quad \mbox{for}~1 \leq i, j, \leq J,
@@ -304,6 +302,8 @@ where $\mathbf{G}$ is equivalent to replacing $\beta^{ji}$ by $c^{ji}$ in $\math
     \Rightarrow \nu &= \frac{R_0}{\mathrm{eig}_M\left(\mathbf{G}\mathbf{V}^{-1}\right)}
 \end{align*}
 where $\mathrm{eig}_M(\mathbf{K})$ denotes the maximum eigenvalue of $\mathbf{K}$.
+
+**When using a mixture of contact matrices, we parameterise $\nu$ using the NGM evaluated at the initial contact structure, which represents the contact matrix expected in a completely susceptible population at the start of the outbreak.**
 
 </div>
 
