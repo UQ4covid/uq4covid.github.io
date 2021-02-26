@@ -35,12 +35,12 @@ code <- nimbleCode({
     ## fit log-linear model to 1 / rates
     for(k in 1:nAge) {
         severe[k] ~ dbin(pS[k], all[k])
-        log(pS[k]) <- beta0 + beta1 * ageMid[k]
+        log(pS[k]) <- alpha + eta * ageMid[k]
     }
     
     ## priors
-    beta0 ~ dnorm(0, 5)
-    beta1 ~ T(dnorm(0, 1), 0, )
+    alpha ~ dnorm(0, 5)
+    eta ~ T(dnorm(0, 1), 0, )
 })
 
 ## set up other components of model
@@ -54,13 +54,13 @@ data <- list(severe = hosp$severe)
 initFn <- function(ageMid) {
     pS <- 2
     while(any(pS >= 1 | pS <= 0)) {
-        beta0 <- rnorm(1, 0, 1)
-        beta1 <- abs(rnorm(1, 0, 1))
-        pS <- exp(beta0 + beta1 * ageMid)
+        alpha <- rnorm(1, 0, 1)
+        eta <- abs(rnorm(1, 0, 1))
+        pS <- exp(alpha + eta * ageMid)
     }
     inits <- list(
-        beta0 = beta0,
-        beta1 = beta1,
+        alpha = alpha,
+        eta = eta,
         pS = pS
     )
     inits
@@ -73,7 +73,7 @@ model <- nimbleModel(code = code, constants = consts, data = data, inits = initF
 cmodel <- compileNimble(model)
 
 ## set monitors
-config <- configureMCMC(cmodel, monitors = c("beta0", "beta1"), thin = 1)
+config <- configureMCMC(cmodel, monitors = c("alpha", "eta"), thin = 1)
 
 ## check monitors and samplers
 config$printMonitors()
@@ -142,9 +142,9 @@ plot(mod, what = "BIC")
 nimp <- 30000
 props <- sim(mod$modelName, mod$parameters, nimp)[, -1] %>%
     as_tibble() %>%
-    set_names(c("beta0", "beta1")) %>%
+    set_names(c("alpha", "eta")) %>%
     mutate(Estimate = "Mixture") %>%
-    filter(beta1 > 0)
+    filter(eta > 0)
 
 p <- as_tibble(samples) %>%
     mutate(Estimate = "MCMC") %>%
