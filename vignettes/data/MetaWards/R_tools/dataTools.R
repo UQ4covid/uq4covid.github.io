@@ -132,6 +132,7 @@ FMMmaximin <- function(model, nsamp, nseed = 100000) {
     
     ## produce large number of samples from model
     sims <- sim(model$modelName, model$parameters, nseed)[, -1]
+    sims <- sims[sims[, 2] > 0, ]
     
     ## rescale
     simsnorm <- apply(sims, 2, function(x) (x - min(x)) / diff(range(x)))
