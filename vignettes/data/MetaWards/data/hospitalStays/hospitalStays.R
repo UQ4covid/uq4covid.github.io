@@ -84,14 +84,14 @@ code <- nimbleCode({
     ## fit log-linear model to 1 / rates
     for(k in 1:nAge) {
         lambda[k] <- 1.0 / TH[k]
-        mu[k] <- beta0 + beta1 * ageMid[k]
+        mu[k] <- alpha + eta * ageMid[k]
         log(TH[k]) ~ dnorm(mu[k], sigma[k])
         log(sigma[k]) ~ dnorm(muS, sigmaS)
     }
     
     ## priors
-    beta0 ~ dnorm(0, 5)
-    beta1 ~ T(dnorm(0, 1), 0, )
+    alpha ~ dnorm(0, 5)
+    eta ~ T(dnorm(0, 1), 0, )
     muS ~ dnorm(0, 5)
     sigmaS ~ dexp(1)
 })
@@ -112,17 +112,17 @@ data <- list(t = hospBayes$time)
 
 ## sample initial values
 initFn <- function(ageMid) {
-    beta0 <- rnorm(1, 0, 1)
-    beta1 <- abs(rnorm(1, 0, 1))
+    alpha <- rnorm(1, 0, 1)
+    eta <- abs(rnorm(1, 0, 1))
     sigma <- rexp(length(ageMid), 1)
     sigmaS <- rexp(1, 1)
     muS <- rnorm(1, 0, 1)
-    log_TH <- rnorm(beta0 + beta1 * ageMid, sigma)
+    log_TH <- rnorm(alpha + eta * ageMid, sigma)
     TH <- exp(log_TH)
     lambda <- 1 / TH
     inits <- list(
-        beta0 = beta0,
-        beta1 = beta1,
+        alpha = alpha,
+        eta = eta,
         sigma = sigma,
         lambda = lambda,
         sigmaS = sigmaS,
@@ -140,7 +140,7 @@ model <- nimbleModel(code = code, constants = consts, data = data, inits = initF
 cmodel <- compileNimble(model)
 
 ## set monitors
-config <- configureMCMC(cmodel, monitors = c("beta0", "beta1", "lambda"), thin = 1)
+config <- configureMCMC(cmodel, monitors = c("alpha", "eta", "lambda"), thin = 1)
 
 ## check monitors and samplers
 config$printMonitors()
@@ -200,9 +200,9 @@ plot(mod, what = "BIC")
 nimp <- 30000
 props <- sim(mod$modelName, mod$parameters, nimp)[, -1] %>%
     as_tibble() %>%
-    set_names(c("beta0", "beta1")) %>%
+    set_names(c("alpha", "eta")) %>%
     mutate(Estimate = "Mixture") %>%
-    filter(beta1 > 0)
+    filter(eta > 0)
 
 p <- as_tibble(samples[, 1:2]) %>%
     mutate(Estimate = "MCMC") %>%
