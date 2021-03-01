@@ -45,43 +45,74 @@ The model structure above allows for different progression pathways. We also spl
 
 We are calibrating to hospitalised deaths, and so to simplify the model and aid calibration, we assume that the $H$ class is non-infectious, but split the $I$ class into two stages, $I_1$ and $I_2$. Therefore, on average individuals are infectious for longer if they do not go to hospital. Some evidence suggests that individuals can remain symptomatic for much longer than they remain infectious, but from a transmission perspective, once individuals cease to be infectious they are equivalent to "recovered" individuals. As such, the $R_I$ class corresponds to recovered and non-infectious symptomatic individuals, and $T_P + T_{I_1} + T_{I_2}$ to the average infectious period (not average symptomatic period). The incubation period is thus $T_E + T_P$, and the time between symptom onset and admission to hospital is $T_{I_1}$. We also make the simplifying assumption that asymptomatic infections last the same time as symptomatic infections.
 
-We need to specify initial proportions of individuals in each age-class, which are provided in the `inputs/Pop by CTRY.csv` file from Rob:
+We need to specify initial proportions of individuals in each age-class, which are provided in the `inputs/Pop by CTRY.csv` file from Rob.
 
-<a name="ages"></a>
-```{r, warning = FALSE, message = FALSE, echo = FALSE, results = "asis"}
+```{r, warning = FALSE, message = FALSE, include = FALSE}
 library(tidyverse)
 library(patchwork)
 library(ggpubr)
 library(png)
 
+## read in commuter data
+players <- sum(read_delim("~/Documents/covid/MetaWardsData/model_data/2011to2019Data/PlaySize19.dat", " ", col_names = FALSE)$X2)
+workers <- sum(read_delim("~/Documents/covid/MetaWardsData/model_data/2011to2019Data/WorkSize19.dat", " ", col_names = FALSE)$X2)
+```
+
+<button data-toggle="collapse" data-target="#workplay">Click for worker / player generation</button>
+<div id="workplay" class="collapse boxed">
+
+Note that the total number of individuals in the table above is different to the number of individuals in the commuter data that is used in MetaWards, since the commuter data come from the 2011 census, whereas the age-distributions above come from more recent population counts. Hence we use the more recent data to figure out the proportions of individuals in each age-category, which we pass to the MetaWards model.
+
+However, we also need to specify the proportions of the workers and players that are in each age category. In this case we make the assumption that all individuals $<18$ years old or $\geq 70$ are players only. Hence if $p_j$ is the proportion of individuals in age-class $j$ in the population, then the proportion of workers in age-class $j$ is:
+$$
+    p^W_j = \left\{\begin{array}{ll}
+        0 & \mbox{if $a_j < 18$},\\
+        \frac{p_j}{\sum_{\{k : 18 \leq a_k < 70\}} p_k} & \mbox{if $j$ s.t. $18 \leq a_j < 70$},\\
+        0 & \mbox{if $a_j \geq 70$}.
+      \end{array}\right.
+$$
+To generate the proportions of players in each age-class, we need to use the fact that the sum of workers and players in each age-class must equal the number in the population. Hence we require that
+\begin{align*}
+    p^P_jN^P + p^W_j N^W &= p_j \left(N^P + N^W\right)\\
+    \Rightarrow p^P_j &= \frac{p_j \left(N^P + N^W\right) - p^W_j N^W}{N^P},
+\end{align*}
+where $N^W = `r as.integer(workers)`$ and $N^P = `r as.integer(players)`$ are the total number of workers and players in the population.
+</div>
+
+<a name="ages"></a>
+
+```{r, warning = FALSE, message = FALSE, echo = FALSE, results = "asis"}
 ## read in age-bands by country
 ages <- read_csv("../inputs/Pop\ by\ CTRY.csv") %>%
   filter(!is.na(ageCat)) %>%
   filter(code == "E92000001") %>%
   select(-gender, -code) %>%
-  mutate(prop = round(count / sum(count), 3))
-stopifnot(sum(ages$prop) == 1)
+  mutate(prop = round(count / sum(count), 3)) %>%
+  mutate(propW = prop, propP = prop) %>%
+  mutate(propW = ifelse(ageCat == "<5" | ageCat == "5-17" | ageCat == "70+", 0, propW)) %>%
+  mutate(propW = round(propW / sum(propW), 3)) %>%
+  mutate(propP = round((prop * (workers + players) - propW * workers) / players, 6))
+stopifnot(sum(ages$prop) == 1 & sum(ages$propW) == 1 & sum(ages$propP) == 1)
 C <- read.csv("../inputs/coMix_matrix.csv", header = FALSE)
 stopifnot(all(dim(C) == nrow(ages)))
-knitr::kable(ages)
+C <- read.csv("../inputs/POLYMOD_matrix.csv", header = FALSE)
+stopifnot(all(dim(C) == nrow(ages)))
+rename(ages, `Prop. Pop.` = prop, `Prop. Workers` = propW, `Prop. Players` = propP) %>%
+  rename(Age = ageCat, Count = count) %>%
+  mutate_at(-c(1:2), ~signif(., 3)) %>%
+  knitr::kable()
 ```
 
 ```{r, warning = FALSE, message = FALSE, echo = FALSE}
 ## create demographics file
 demo <- "{" %>%
   c(paste0("\t\"demographics\" : [", paste0(paste0("\"age", 1:nrow(ages), "\""), collapse = ", "), "],")) %>%
-  c(paste0("\t\"work_ratios\" : [", paste0(ages$prop, collapse = ", "), "],")) %>%
-  c(paste0("\t\"play_ratios\" : [", paste0(ages$prop, collapse = ", "), "],")) %>%
+  c(paste0("\t\"work_ratios\" : [", paste0(ages$propW, collapse = ", "), "],")) %>%
+  c(paste0("\t\"play_ratios\" : [", paste0(ages$propP, collapse = ", "), "],")) %>%
   c(paste0("\t\"diseases\" : [", paste0(rep("\"ncov\"", nrow(ages)), collapse = ", "), "]")) %>%
   c("}")
 writeLines(demo, "../model_code/demographics.json")
 ```
-
-<p style="color:red">NEED TO CHECK WORK / PLAY RATIOS IN DIFFERENT AGE CLASSES AND ALSO CHECK LOWER AGE GROUPS</p>
-
-<p style="color:red">NEED TO CHECK WORK / PLAY RATIOS IN E.G. HOSPITALS</p>
-
-<p style="color:red">to_ill_to_move for I</p>
 
 The demographics in MetaWards is set up using the `demographics.json` file.
 
@@ -96,7 +127,7 @@ The demographics in MetaWards is set up using the `demographics.json` file.
 The stages can be set with the MetaWards disease file, called `ncov.json` here.
 
 <a name="diseasefile"></a>
-<button data-toggle="collapse" data-target="#disease">Click for MetaWards <code>disease</code> files</button>
+<button data-toggle="collapse" data-target="#disease">Click for MetaWards <code>disease</code> file</button>
 <div id="disease" class="collapse boxed">
 
 ```{js, code = readLines("../model_code/ncov.json"), eval = FALSE}
