@@ -360,7 +360,7 @@ We have derived plausible parameter bounds from data and the literature.
 
 For the mean latent period, $T_E$, we set the upper bound such that the latent period distribution had an upper tail probability that is consistent with the **generation interval** distribution from Challen et al. (2020). This provides a conservative upper bound, since the generation time is equivalent to $T_E + T_P$ in our model. We chose a lower bound such that it is possible to have a short, but non-zero latent period. The figure below shows the latent period distributions at the lower and upper bounds of the parameter ranges for $T_E$.
 
-```{r, fig.width = 5, fig.height = 5, echo = FALSE}
+```{r, fig.width = 5, fig.height = 5, echo = FALSE, fig.align = "center"}
 p1 <- data.frame(
     Lower = rexp(1000, rate = 1 / 0.1),
     Upper = rexp(1000, rate = 1 / 2)) %>%
@@ -380,7 +380,7 @@ p1 / p2 + plot_layout(design = layout)
 
 To generate ranges for the length of the pre-symptomatic period, $T_P$, we note that the **incubation period** is equivalent to $T_E + T_P$ in our model, and hence through simulation we generated incubation period distributions at the lower and upper bounds of $T_E$, and chose bounds for $T_P$ such that at the lower bounds of $T_E$ and $T_P$ the incubation period distribution looks like the lower-mean incubation period distribution in Challen et al. (2020), and at the upper bounds of $T_E$ and $T_P$ the incubation period distribution looks like the higher-mean incubation period distribution in Challen et al. (2020). The figure below shows the incubation period distributions at the lower and upper bounds of the parameter ranges for $T_E$ and $T_P$, against the reference distributions in Challen et al. (2020).
 
-```{r, fig.width = 5, fig.height = 5, echo = FALSE}
+```{r, fig.width = 5, fig.height = 5, echo = FALSE, fig.align = "center"}
 p1 <- data.frame(
   Lower = sapply(c(0.1, 1.2), function(x) rexp(10000, rate = 1 / x)) %>%
       apply(1, sum)
@@ -403,9 +403,9 @@ BB"
 p1 / p2 + plot_layout(design = layout)
 ```
 
-To generate ranges for the length of the infectious period, $T_{I_1}$, we note that this is equivalent to the **time-from-onset-to-admission** in our model, and hence through simulation chose bounds for $T_{I_1}$ such that the distribution of $T_1$ was approximately consistent with the time-from-onset-to-admission in Challen et al. (2020), and also that the time-from-infection-to-admission, $T_E + T_P + T_{I_1}$, was consistent with the time-from-infection-to-admission in Challen et al. (2020), at both the lower and upper bounds for $T_E$ and $T_P$. The figure below shows these distributions at the lower and upper bounds of the parameter ranges for $T_{I_1}$, against the reference distributions in Challen et al. (2020).
+To generate ranges for the length of the infectious period, $T_{I_1}$, we note that this is equivalent to the **time-from-onset-to-admission** in our model, and hence through simulation chose bounds for $T_{I_1}$ such that the distribution of $T_1$ was approximately consistent with the time-from-onset-to-admission in Challen et al. (2020), and also that the time-from-infection-to-admission, $T_E + T_P + T_{I_1}$, was consistent with the time-from-infection-to-admission in Challen et al. (2020), at both the lower and upper bounds for $T_E$ and $T_P$. The figure below shows these distributions at the lower and upper bounds of the parameter ranges, against the reference distributions in Challen et al. (2020).
 
-```{r, fig.width = 5, fig.height = 10, echo = FALSE, message = FALSE, warning = FALSE}
+```{r, fig.width = 5, fig.height = 10, echo = FALSE, message = FALSE, warning = FALSE, fig.align = "center"}
 p1 <- data.frame(
     Lower = rexp(10000, rate = 1 / 2.8),
     Upper = rexp(10000, rate = 1 / 4.5)) %>%
@@ -443,7 +443,7 @@ p1 / p2 / p3 / p4 + plot_layout(design = layout)
 
 For the remainder of infectivity time, $T_{I_2}$, we noted that Cevik et al. (2020) found no live virus beyond day 9 of symptom onset. As such, we used simulation to find upper and lower bounds for $T_{I_2}$. The upper bound of $T_{I_2}$ was chosen so that when $T_{I_1}$ was at its lower bound, the probability that the infectivity time post onset ($T_{I_1} + T_{I_2}$) was > 9 days was $\approx 0.05$. Conversely, if $T_{I_1}$ is set to its upper bound, then even for very low values of $T_{I_2}$ we were unable to get upper tail probabilities for $T_{I_1} + T_{I_2}$ of less than $\approx 0.13$, hence we set a lower bound for $T_{I_2}$ of 0.0001. At the upper bound for $T_{I_1}$ and $T_{I_2}$ these tail probabilities were $\approx 0.15$.
 
-```{r, fig.width = 5, fig.height = 2.5, echo = FALSE}
+```{r, fig.width = 5, fig.height = 2.5, echo = FALSE, fig.align = "center"}
 p1 <- data.frame(
   Lower = sapply(c(2.8, 0.0001), function(x) rexp(10000, rate = 1 / x)) %>%
       apply(1, sum)
@@ -463,27 +463,37 @@ p1
 
 For the hospital stay times we used **DATA SOURCE HERE**. Below we plot the distribution of stay times by age, along with the best fitting exponential model in each case.
 
-![](../data/hospitalStays/expFits.svg)
+```{r, echo = FALSE, out.width = "75%", out.height = "75%", fig.align = "center"}
+knitr::include_graphics("../data/hospitalStays/expFits.svg")
+```
 
 If we plot the log(mean hospital stay time) from the fitted exponential models against the midpoints of each age-category, then we get an approximate increasing linear relationship with age. To capture estimation uncertainties more robustly, we built a hierarchical Bayesian model (fitted using MCMC implemented in NIMBLE) to estimate both the mean hospital stay times in each age category, and then simultaneously the slope and intercept from Gaussian linear regression model fitted to the log(mean hospital stay time) from the exponential models. Full details can be found in the `data/hospitalStays/` folder.
 
 As a comparison, below we show the log(mean hospital stay time) estimates from the non-Bayesian models (fitted independently to each age-distribution) against the fitted line from the hierarchical Bayesian model, with 99% credible intervals.
 
-![](../data/hospitalStays/fittedLnBayes.svg)
+```{r, echo = FALSE, out.width = "50%", out.height = "50%", fig.align = "center"}
+knitr::include_graphics("../data/hospitalStays/fittedLnBayes.svg")
+```
 
 The intercept and slope of this line provide the parameters we use to determine the age-structured hospital stay times, and we've decided to draw from the posterior distribution of these parameters in our input designs. To avoid having to run the MCMC each time we want more design points, we approximate the posterior distribution using a truncated finite Gaussian mixture model, fitted using the `mclust` package in R. The posterior distributions from the MCMC and the approximating FMM are shown below. 
 
-![](../data/hospitalStays/mixturePosterior.png)
+```{r, echo = FALSE, out.width = "75%", out.height = "75%", fig.align = "center"}
+knitr::include_graphics("../data/hospitalStays/mixturePosterior.png")
+```
 
-For the probability of hospitalisation with age we used data in Table 3 from Verity et al. (2020). If we plot the log(probability of severe symptoms) by age against the midpoints of each age-category, then we get an approximate increasing linear relationship with age. We fitted a binomial GLM to these data in a Bayesian framework (using MCMC implemented in NIMBLE), with a log-linear relationship between the mean probability of hospitalisation and age. Full details can be found in the `data/hospitalisation/` folder.
+For the probability of hospitalisation with age we used data in Table 3 from Verity et al. (2020). If we plot the log(probability of severe symptoms) against the midpoints of each age-category, then we get an approximate increasing linear relationship with age. We fitted a binomial GLM to these data in a Bayesian framework (using MCMC implemented in NIMBLE), with a log-linear relationship between the mean probability of hospitalisation and age. Full details can be found in the `data/hospitalisation/` folder.
 
-As a comparison, below we show the probability of severe symptoms estimates from the data against the fitted line from the Bayesian model, with both 99% credible and predictive intervals added for comparison. The prediction intervals were evaluated at each observed age by using the posterior samples for the probabilities of hospitalisation and using these to seed random draws from a binomial distribution with a number of trials equal to that observed in the data for that age category. The number of hospitalisations was then divided by the number of trials to get a comparable prediction interval that could be directly compared to the data.
+As a comparison, below we show the probability of severe symptoms estimates from the data against the fitted line from the Bayesian model, with both 99% credible and predictive intervals added for comparison. The prediction intervals were evaluated at each observed age by using the posterior samples for the probabilities of hospitalisation and using these to seed random draws from a binomial distribution with a number of trials equal to that observed in the data for each age category. The number of hospitalisations was then divided by the number of trials to get a comparable prediction interval that could be directly compared to the data.
 
-![](../data/hospitalisation/fittedLnBayes.svg)
+```{r, echo = FALSE, out.width = "50%", out.height = "50%", fig.align = "center"}
+knitr::include_graphics("../data/hospitalisation/fittedLnBayes.svg")
+```
 
 The intercept and slope of this line provide the parameters we use to determine the age-structured probabilities of hospitalisation, and we've decided to draw from the posterior distribution of these parameters in our input designs. To avoid having to run the MCMC each time we want more design points, we approximate the posterior distribution using a truncated finite Gaussian mixture model, fitted using the `mclust` package in R. The posterior distributions from the MCMC and the approximating FMM are shown below.
 
-![](../data/hospitalisation/mixturePosterior.png)
+```{r, echo = FALSE, out.width = "75%", out.height = "75%", fig.align = "center"}
+knitr::include_graphics("../data/hospitalisation/mixturePosterior.png")
+```
 
 </div>
 
@@ -507,14 +517,12 @@ The `mover` function applies movements in order, and so it is important to get t
 
 ## Interaction matrices
 
-<p style="color:red">CHECK TRANSPOSE IN INTERACTION</p>
+We will use an **interaction matrix** to input the contact matrices that scale the force-of-infection (FOI) from each age-class to the other age-classes (see [here](#translink)). When using interaction matrices in this way, the MetaWards `beta` parameters correspond to the probability of transmission given an infected contact, $\nu$, and for asymptomatics we scale `beta` by $0 < \beta_{A \to GP} < 1$. Full details are given [here](#translink). 
 
-The **interaction matrix** scales the force-of-infection (FOI) that different demographics have on other demographics. We will use this to capture the effect of each age-class on the FOI for the other age-classes (see [here](#translink)). We require a further free parameter, $\beta_{A \to GP}$ which scales the FOI from asymptomatics to the general population. We store this information in a file called `mix_pathways.py`. 
+The `mix_pathways.py` file contains the custom mixer code. Note that we pass in the relative paths to the contact matrix filenames through the user inputs (see [here](#user)), and we start with the POLYMOD contact matrix and then switch to the CoMix contact matrix after the first lockdown. The `merge_matrix_multi_population` merge function is required to get the correct frequency-dependent mixing (see MetaWards tutorial section [here](https://metawards.org/tutorial/part05/04_contacts.html)).
 
-<button data-toggle="collapse" data-target="#mixer">Click for MetaWards <code>mixing</code> file</button>
+<button data-toggle="collapse" data-target="#mixer">Click for MetaWards <code>mixer</code> file</button>
 <div id="mixer" class="collapse boxed">
-
-Since most of the classes are already infected, it's only the rows corresponding to the general population age-classes that have to contain non-zero entries. Here the `betaA_GP` parameter scales FOI from asymptomatics to the general population. All demographics other than `genpop` are already infected, so have no further force-of-infection acting on them, and thus the other parameters can be set to zero. These parameters are all $> 0$.
 
 ```{python, code = readLines("../model_code/mix_pathways.py"), eval = FALSE}
 ```
