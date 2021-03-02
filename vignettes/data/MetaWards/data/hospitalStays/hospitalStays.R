@@ -70,7 +70,7 @@ hosp <- hosp %>%
     mutate_at(vars(c("UB", "LB")), as.numeric) %>%
     mutate(ageMid = (LB + UB) / 2) %>%
     dplyr::select(-LB, -UB) %>%
-    mutate(TH = 1 /coefs)
+    mutate(TH = 1 / coefs)
 
 ## fit Bayesian hierarchical model to account for sampling variability
 code <- nimbleCode({
@@ -85,8 +85,8 @@ code <- nimbleCode({
     for(k in 1:nAge) {
         lambda[k] <- 1.0 / TH[k]
         mu[k] <- alpha + eta * ageMid[k]
-        log(TH[k]) ~ dnorm(mu[k], sigma[k])
-        log(sigma[k]) ~ dnorm(muS, sigmaS)
+        log(TH[k]) ~ dnorm(mu[k], sd = sigma[k])
+        log(sigma[k]) ~ dnorm(muS, sd = sigmaS)
     }
     
     ## priors
