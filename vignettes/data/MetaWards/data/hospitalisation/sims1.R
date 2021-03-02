@@ -2,8 +2,9 @@
 library(mclust)
 library(MASS)
 library(tidyverse)
-library(patchwork)
 library(coda)
+library(GGally)
+library(svglite)
 
 ## read in reference estimates
 IFR <- readRDS("IFR.rds")
@@ -40,32 +41,28 @@ log_sum_exp <- function(x) {
 }
 
 ## M-H algorithm
-MH <- function(N, model, ageMid, severe, all, nind, nMC) {
+MH <- function(N, model, ageMid, severe, all, nind, nMC, LB = -20) {
     
     ## sample initial values
     logdens <- NA
     while(!is.finite(logdens)) {
-        pEP <- 2; pIH <- 2; pID <- 2; pHD <- 2
-        while(any((pIH + pID) > 1)) {
-            while(any(pIH > 1)) {
-                eta <- sim(model$modelName, model$parameters, 1)[, -1]
-                alphaIH <- eta[1]
-                eta <- eta[2]
-                pIH <- exp(alphaIH + eta * ageMid)
-            }
-            while(any(pID > 1)) {
-                alphaID <- rnorm(1, -5, 1)
-                pID <- exp(alphaID + eta * ageMid)
-            }
-        }
-        while(any(pEP > 1)) {
-            alphaEP <- rnorm(1, -5, 1)
-            pEP <- exp(alphaEP + eta * ageMid)
-        }
-        while(any(pHD > 1)) {
-            alphaHD <- rnorm(1, -5, 1)
-            pHD <- exp(alphaHD + eta * ageMid)
-        }
+        eta <- sim(model$modelName, model$parameters, 1)[, -1]
+        alphaIH <- eta[1]
+        eta <- eta[2]
+        pIH <- exp(alphaIH + eta * ageMid)
+        stopifnot(all(pIH <= 1))
+        
+        alphaID <- runif(1, LB, log(1 - exp(alphaIH + eta * max(ageMid))) - eta * max(ageMid))
+        pID <- exp(alphaID + eta * ageMid)
+        stopifnot(all(pID <= 1))
+        
+        alphaEP <- runif(1, LB, -eta * max(ageMid))
+        pEP <- exp(alphaEP + eta * ageMid)
+        stopifnot(all(pEP <= 1))
+        
+        alphaHD <- runif(1, LB, -eta * max(ageMid))
+        pHD <- exp(alphaHD + eta * ageMid)
+        stopifnot(all(pHD <= 1))
         
         ## log-likelihood estimate using MC sampling
         logdens <- map_dbl(1:nMC, function(j, ageMid, pEP, pIH, pID, pHD, nind, severe, all) {
@@ -84,8 +81,15 @@ MH <- function(N, model, ageMid, severe, all, nind, nMC) {
         ## calculate mean of these replicates on the log-scale
         logdens <- log_sum_exp(logdens)
         
-        ## add log-priors (flat improper priors on other intercepts)
-        logdens <- logdens + dens(model$modelName, matrix(c(alphaIH, eta), nrow = 1), model$parameters, logarithm = TRUE)
+        ## add log-priors
+        logdens <- logdens + 
+          dens(model$modelName, matrix(c(alphaIH, eta), nrow = 1), model$parameters, logarithm = TRUE) +
+          dunif(alphaID, LB, log(1 - exp(alphaIH + eta * max(ageMid))) - eta * max(ageMid), log = TRUE) +
+          dunif(alphaEP, LB, -eta * max(ageMid), log = TRUE) +
+          dunif(alphaHD, LB, -eta * max(ageMid), log = TRUE)
+        
+        ## check eta (don't need explicit truncation normalisation because it cancels)
+        if(eta < 0) logdens <- NA
         
         ## set up parameters
         pars <- c(alphaEP, alphaID, alphaHD, alphaIH, eta)
@@ -123,11 +127,23 @@ MH <- function(N, model, ageMid, severe, all, nind, nMC) {
         pID <- exp(alphaID + eta * ageMid)
         pHD <- exp(alphaHD + eta * ageMid)
         pIH <- exp(alphaIH + eta * ageMid)
+        
+        ## check log-priors
+        logprop <- dens(model$modelName, matrix(c(alphaIH, eta), nrow = 1), model$parameters, logarithm = TRUE) +
+          dunif(alphaID, LB, log(1 - exp(alphaIH + eta * max(ageMid))) - eta * max(ageMid), log = TRUE) +
+          dunif(alphaEP, LB, -eta * max(ageMid), log = TRUE) +
+          dunif(alphaHD, LB, -eta * max(ageMid), log = TRUE)
+        
+        ## check eta (don't need explicit truncation normalisation because it cancels)
+        if(eta < 0) logprop <- NA
     
-        ## check validity, if invalid then rejected by improper prior
-        if(all(pEP <= 1) & all(pID <= 1) & all(pHD <= 1) & all(pIH <= 1) & all((pID + pIH) <= 1)) {
+        ## log-likelihood estimate
+        if(is.finite(logprop)) {
+            ## quick additional check
+            stopifnot(all(pEP <= 1) & all(pID <= 1) & all(pHD <= 1) & all(pIH <= 1) & all((pID + pIH) <= 1))
+          
             ## log-likelihood estimate using MC sampling
-            logprop <- map_dbl(1:nMC, function(j, ageMid, pEP, pIH, pID, pHD, nind, severe, all) {
+            temp <- map_dbl(1:nMC, function(j, ageMid, pEP, pIH, pID, pHD, nind, severe, all) {
               nD <- map_int(1:length(ageMid), function(i, pEP, pIH, pID, pHD, nind) {
                 nP <- rbinom(1, nind, pEP[i])
                 temp <- rmultinom(1, nP, c(pIH[i], pID[i], 1 - pIH[i] - pID[i]))
@@ -141,10 +157,8 @@ MH <- function(N, model, ageMid, severe, all, nind, nMC) {
             }, ageMid = ageMid, pEP = pEP, pIH = pIH, pID = pID, pHD = pHD, nind = nind, severe = severe, all = all)
             
             ## calculate mean of these replicates
-            logprop <- log_sum_exp(logprop)
-            
-            ## add log-priors (flat improper priors on other intercepts)
-            logprop <- logprop + dens(model$modelName, matrix(c(alphaIH, eta), nrow = 1), model$parameters, logarithm = TRUE)
+            temp <- log_sum_exp(temp)
+            logprop <- logprop + temp
             
             ## accept-reject (symmetric proposal cancels)
             if(log(runif(1, 0, 1)) < (logprop - logdens)) {
@@ -173,7 +187,7 @@ MH <- function(N, model, ageMid, severe, all, nind, nMC) {
 }
 
 ## run MCMC
-samples <- MH(50000, model, IFR$ageMid, IFR$severe, IFR$all, 10000, 1)
+samples <- MH(50000, model, IFR$ageMid, IFR$severe, IFR$all, 10000, 10)
 
 ## plot traces
 pdf("simtraces.pdf")
@@ -181,9 +195,54 @@ plot(samples)
 dev.off()
 
 ## plot posterior
-p <- as.matrix(samples) %>%
+p <- as.matrix(window(samples, start = 25000)) %>%
   as_tibble() %>%
-  ggpairs(mapping = aes(colour = Estimate, alpha = 0.5), upper = list(continuous = "density"))
-ggsave("simsPosterior.pdf", p)
-ggsave("simsPosterior.svg", p)
+  ggpairs(upper = list(continuous = "density"))
 ggsave("simsPosterior.png", p)
+
+## predictions
+preds <- apply(as.matrix(window(samples, start = 25000)), 1, function(samples, ageMid, nind) {
+  
+    alphaEP <- samples[1]
+    alphaID <- samples[2]
+    alphaHD <- samples[3]
+    alphaIH <- samples[4]
+    eta <- samples[5]
+    
+    pEP <- exp(alphaEP + eta * ageMid)
+    pID <- exp(alphaID + eta * ageMid)
+    pHD <- exp(alphaHD + eta * ageMid)
+    pIH <- exp(alphaIH + eta * ageMid)
+    
+    ## check on validity
+    stopifnot(all(pEP <= 1) & all(pID <= 1) & all(pHD <= 1) & all(pIH <= 1) & all((pID + pIH) <= 1))
+    
+    ## run simulation
+    nD <- map_int(1:length(ageMid), function(i, pEP, pIH, pID, pHD, nind) {
+        nP <- rbinom(1, nind, pEP[i])
+        temp <- rmultinom(1, nP, c(pIH[i], pID[i], 1 - pIH[i] - pID[i]))
+        nH <- temp[1]
+        nID <- temp[2]
+        nHD <- rbinom(1, nH, pHD[i])
+        nID + nHD
+      }, pEP = pEP, pIH = pIH, pID = pID, pHD = pHD, nind = nind)
+    nD / nind
+}, ageMid = IFR$ageMid, nind = 100000)
+preds <- apply(preds, 1, function(x) {
+        tibble(mean = mean(x), LCI = quantile(x, probs = 0.005), UCI = quantile(x, probs = 0.995))
+    }) %>%
+  bind_rows() %>%
+  mutate(ageMid = IFR$ageMid)%>%
+  mutate(type = "pred") 
+
+## plot predictions
+p <- IFR %>%
+    select(mean = IFR, LCI, UCI, ageMid) %>%
+    mutate(type = "IFR") %>%
+    rbind(preds) %>%
+    ggplot(aes(x = ageMid)) +
+      geom_point(aes(y = mean, colour = type)) +
+      geom_ribbon(aes(ymin = LCI, ymax = UCI, fill = type), alpha = 0.3)
+ggsave("simsPreds.pdf", p)
+ggsave("simsPreds.svg", p)
+ggsave("simsPreds.png", p)
