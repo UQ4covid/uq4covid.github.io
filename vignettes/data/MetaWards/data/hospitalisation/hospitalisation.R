@@ -9,25 +9,33 @@ library(svglite)
 ## load data
 hosp <- read_csv("hospitalisationImperial.csv", col_names = TRUE) %>%
     rename(ageCat = X1, severe = `Severe cases`, all = `All cases`) %>%
-    select(ageCat, severe, all) %>%
+    rename(prop = `Proportion of infected individuals hospitalised`) %>%
     mutate(ageCat = gsub("–", "-", ageCat)) %>%
-    mutate(ageCat = gsub(" years", "", ageCat))
-
-## match data roughly to age-classes used in the model
-hosp <- mutate(hosp, ageCat = ifelse(ageCat == "70-79", "70+", ageCat)) %>%
-    mutate(ageCat = ifelse(ageCat == "≥80", "70+", ageCat)) %>%
-    group_by(ageCat) %>%
-    summarise_all(sum) %>%
-    arrange(ageCat)
+    mutate(ageCat = gsub(" years", "", ageCat)) %>%
+    mutate(prop = gsub("·", ".", prop)) %>%
+    separate(prop, c("prop", "CI"), sep = "% ") %>%
+    mutate(prop = as.numeric(prop) / 100) %>%
+    mutate(CI = gsub("\\(|\\)", "", CI)) %>%
+    separate(CI, c("LCI", "UCI"), sep = "–") %>%
+    mutate_at(vars(ends_with("CI")), ~as.numeric(.) / 100)
 
 ## extract mid-points of age-classes
 hosp <- hosp %>%
-    mutate(ageCat = ifelse(ageCat == "70+", "70-80", ageCat)) %>%
+    mutate(ageCat = ifelse(ageCat == "≥80", "80-89", ageCat)) %>%
     separate(ageCat, c("LB", "UB"), sep = "-", remove = FALSE) %>%
     mutate_at(vars(c("UB", "LB")), as.numeric) %>%
     mutate(ageMid = (LB + UB) / 2) %>%
-    dplyr::select(-LB, -UB) %>%
-    mutate(pS = severe / all)
+    dplyr::select(-LB, -UB)
+
+## transform according to bounds
+hosp <- filter(hosp, prop > 0) %>%
+    mutate(diffL = prop - LCI) %>%
+    mutate(diffU = UCI - prop) %>%
+    mutate(diff = ifelse(diffL > diffU, diffL, diffU)) %>%
+    mutate(diff = (diff / 1.96)^2) %>%
+    mutate(all = round(prop * (1 - prop) / diff)) %>%
+    mutate(severe = round(prop * all)) %>%
+    select(-starts_with("diff"))
 
 ## fit Bayesian model
 code <- nimbleCode({
@@ -107,26 +115,50 @@ hosp_preds1 <- rbind(hosp$all, hosp_preds) %>%
     apply(2, function(x) {
         rbinom(rep(1, length(x) - 1), x[1], x[-1]) / x[1]
     })
-hosp_preds <- apply(hosp_preds, 2, function(x) {
-    tibble(mean = mean(x), LCI = quantile(x, probs = 0.005), UCI = quantile(x, probs = 0.995))
-}) %>%
+
+## summarise predictions
+hosp_preds_sum <- apply(hosp_preds, 2, function(x) {
+        tibble(mean = mean(x), LCI = quantile(x, probs = 0.005), UCI = quantile(x, probs = 0.995))
+    }) %>%
     bind_rows() %>%
     mutate(ageMid = hosp$ageMid)
-hosp_preds1 <- apply(hosp_preds1, 2, function(x) {
-    tibble(mean = mean(x), LCI = quantile(x, probs = 0.005), UCI = quantile(x, probs = 0.995))
-}) %>%
+hosp_preds1_sum <- apply(hosp_preds1, 2, function(x) {
+        tibble(mean = mean(x), LCI = quantile(x, probs = 0.005), UCI = quantile(x, probs = 0.995))
+    }) %>%
     bind_rows() %>%
     mutate(ageMid = hosp$ageMid)
 
 ## fitted plot
 p <- ggplot(hosp, aes(x = ageMid)) +
-    geom_point(aes(y = pS)) +
-    geom_line(aes(y = mean), data = hosp_preds) +
-    geom_ribbon(aes(ymin = LCI, ymax = UCI), data = hosp_preds, alpha = 0.5) +
-    geom_ribbon(aes(ymin = LCI, ymax = UCI), data = hosp_preds1, alpha = 0.5) +
+    geom_point(aes(y = prop)) +
+    geom_line(aes(y = mean), data = hosp_preds_sum) +
+    geom_ribbon(aes(ymin = LCI, ymax = UCI), data = hosp_preds_sum, alpha = 0.5) +
+    geom_ribbon(aes(ymin = LCI, ymax = UCI), data = hosp_preds1_sum, alpha = 0.5) +
     xlab("Age") + ylab("Probability of hospitalisation")
 ggsave("fittedLnBayes.pdf", p)
 ggsave("fittedLnBayes.svg", p)
+
+## pick closest runs to data
+closeRuns <- apply(hosp_preds1, 1, function(x, p) {
+        sum(abs(x - p))
+    }, p = hosp$prop) %>%
+    sort.list() %>%
+    {hosp_preds[.[1:10], ]} %>%
+    as_tibble() %>%
+    mutate(run = as.character(1:n())) %>%
+    gather(ageMid, prop, -run) %>%
+    mutate(ageMid = gsub("V", "", ageMid)) %>%
+    mutate(ageMid = hosp$ageMid[as.numeric(ageMid)])
+
+## check that some are similar to data
+p <- ggplot(hosp, aes(x = ageMid)) +
+    geom_point(aes(y = prop)) +
+    geom_line(aes(y = mean), data = hosp_preds_sum) +
+    geom_ribbon(aes(ymin = LCI, ymax = UCI), data = hosp_preds_sum, alpha = 0.5) +
+    geom_ribbon(aes(ymin = LCI, ymax = UCI), data = hosp_preds1_sum, alpha = 0.5) +
+    geom_line(aes(y = prop, colour = run), data = closeRuns) +
+    guides(colour = FALSE) +
+    xlab("Age") + ylab("Probability of hospitalisation")
 
 ## posterior correlation
 cor(samples)
@@ -146,6 +178,7 @@ props <- sim(mod$modelName, mod$parameters, nimp)[, -1] %>%
     mutate(Estimate = "Mixture") %>%
     filter(eta > 0)
 
+## plot posterior and approximation
 p <- as_tibble(samples) %>%
     mutate(Estimate = "MCMC") %>%
     rbind(props) %>%
@@ -160,7 +193,6 @@ p <- as_tibble(samples[, 1:2]) %>%
     ggpairs(mapping = aes(colour = Estimate, alpha = 0.5), upper = list(continuous = "density"), columns = 1:2, legend = leg) + 
     theme(legend.position = "bottom")
 ggsave("mixturePosterior.pdf", p)
-ggsave("mixturePosterior.svg", p)
 ggsave("mixturePosterior.png", p)
 
 ## save mclust object
