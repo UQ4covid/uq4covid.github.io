@@ -21,7 +21,7 @@ pars <- pars %>%
     unlist()
 
 ## set population size
-N <- c(6000, 15400, 15400, 13400, 12800, 13400, 10500, 13100)
+N <- c(10011, 25694, 9985, 8654, 8322, 8654, 6823, 21857)
 
 ## set contact matrices
 contact1 <- read_csv("contact_matrix1.csv", col_names = FALSE) %>%

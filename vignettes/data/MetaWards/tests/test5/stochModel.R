@@ -11,9 +11,6 @@ pars <- pars %>%
     select(nu, nuA, pE, pEP, pA, pP, pI1, pI1H, pI1D, pI2, pH, pHD) %>%
     unlist()
 
-## set population size
-N <- c(6000, 15400, 15400, 13400, 12800, 13400, 10500, 13100)
-
 ## set initial counts
 u <- matrix(0, 12, 8)
 u[1, ] <- N
