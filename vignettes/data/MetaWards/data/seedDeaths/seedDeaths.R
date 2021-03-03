@@ -51,8 +51,6 @@ print("SOME TRUSTS DON'T MATCH")
 seeds <- semi_join(seeds, trust19Lookup, by = c("code" = "trustId"))
 seeds <- mutate(seeds, prop = prop / sum(prop))
 
-
-
 ## set path to MetaWardsData
 path <- paste0("../../../../../../MetaWardsData/model_data/2011to2019Data/")
 
@@ -80,3 +78,4 @@ stopifnot(sum(seeds$prop) == 1)
 
 ## write seeds file
 write_csv(seeds, "../../inputs/ward_seeds.csv", col_names = FALSE)
+
