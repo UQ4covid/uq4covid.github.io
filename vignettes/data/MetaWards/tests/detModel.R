@@ -146,9 +146,6 @@ detModel <- function(time, state, parameters, contact, N) {
     })
 }
 
-## set population size
-N <- c(6000, 15400, 15400, 13400, 12800, 13400, 10500, 13100)
-
 ## set seeds
 nseeds <- 10
 

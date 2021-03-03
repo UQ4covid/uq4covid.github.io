@@ -21,7 +21,7 @@ pars <- pars %>%
     unlist()
 
 ## set population size
-N <- c(6000, 15400, 15400, 13400, 12800, 13400, 10500, 13100)
+N <- c(10011, 25694, 9985, 8654, 8322, 8654, 6823, 21857)
 
 ## set contact matrix
 contact <- read_csv("contact_matrix.csv", col_names = FALSE) %>%
@@ -49,7 +49,7 @@ balance <- function(z, C) {
 }
 A <- t(N * t(Ksmall / N))
 finalsize <- optim(rep(0.5, length(N)), balance, C = A, control = list(maxit = 10000), method = "L-BFGS-B", lower = rep(0, length(N)), upper = rep(1, length(N)))
-stopifnot(finalsize$value <= 0.0006 | finalsize$convergence == 0)
+stopifnot(finalsize$value <= 0.0007 | finalsize$convergence == 0)
 finalsize <- finalsize$par * N
 
 ## fit deterministic model
