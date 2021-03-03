@@ -167,7 +167,7 @@ user <- "# Normal status" %>%
   c(paste0(".nage = ", nrow(ages))) %>%
   c("") %>%
   c("# names of input files for seeding") %>%
-  c(".nseeds = 5") %>%
+  c(".nseeds = 100") %>%
   c(".ward_seed_filename = \"inputs/ward_seeds.csv\"") %>%
   c(".age_seed_filename = \"inputs/age_seeds.csv\"")
 writeLines(user, "../inputs/user_inputs.txt")
@@ -198,9 +198,11 @@ write_csv(age_seed, "../inputs/age_seeds.csv", col_names = FALSE)
 
 Here the first column is the age demographic and the second is the probability of seeding into that age-demographic.
 
-We take a multinomial sample of size <p style="color:red">5</p> to decide how many individuals are seeded into each age-class, and then we split these across wards as described below.
+We take a multinomial sample of size 100 to decide how many individuals are seeded into each age-class, and then we split these across wards as described below.
 
 We take the first 100 observed deaths, and generate the proportions of these deaths across the relevant NHS trusts. This generates a probability of seeding infection in each trust. We then split these probabilities across all wards in these trusts proportionately to the ward population sizes. We then sample initial seeds by taking a multinomial sample of the relevant size (according to the age-class samples above) across all relevant wards. Details and instructions can be found in `data/seedDeaths/README.md`. This creates a file `inputs/ward_seeds.csv` that contains the necessary probabilities for ward seeding. This file has the same form as the `age_seeds.csv` file described above, but the first column is the ward ID, and the second is the probabilities.
+
+The first 100 deaths occur before 14th March 2020, and so we seed three weeks before this at start simulations on 22nd February 2020.
 
 > **Note**: the user inputs file must contain the relative path names to the age and ward seed files, and also the number of seeds required---see [here](#user).
 
@@ -641,11 +643,11 @@ R CMD BATCH --no-restore --slave --no-save convertDesign.R
 
 export METAWARDSDATA=$HOME/Documents/covid/MetaWardsData
 
-metawards -d model_code/ncov_overall.json -m 2011to2019Data\
+metawards -d model_code/ncov.json -m 2011to2019Data\
   -D model_code/demographics.json --mixer model_code/mix_pathways\
-  --mover model_code/move_pathways --input inputs/disease.dat -a ExtraSeedsLondon.dat \
+  --mover model_code/move_pathways --input inputs/disease.dat \
   -u inputs/user_inputs.txt -o raw_outputs --force-overwrite-output \
-  --iterator model_code/iterate --extractor model_code/ward_extractor --start-date 2020/01/01 \
+  --iterator model_code/iterator --extractor model_code/ward_extractor --start-date 2020/02/22 \
   --theme simple --nsteps 100
 ```
 
