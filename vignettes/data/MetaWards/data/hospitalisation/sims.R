@@ -5,20 +5,12 @@ library(tidyverse)
 library(coda)
 library(GGally)
 library(svglite)
+library(parallel)
 
-## read in reference estimates
+## read in data for death rates
 IFR <- readRDS("IFR.rds")
 
-## transform according to bounds
-IFR <- mutate(IFR, diffL = IFR - LCI) %>%
-    mutate(diffU = UCI - IFR) %>%
-    mutate(diff = ifelse(diffL > diffU, diffL, diffU)) %>%
-    mutate(diff = (diff / 1.96)^2) %>%
-    mutate(all = round(IFR * (1 - IFR) / diff)) %>%
-    mutate(severe = round(IFR * all)) %>%
-    select(-starts_with("diff"))
-
-## read in FMM
+## read in FMM for hospitalisation rates
 model <- readRDS("hospitalisation.rds")
 
 ## implements log-sum-exp trick
@@ -46,26 +38,31 @@ log_sum_exp <- function(x) {
 }
 
 ## M-H algorithm
-MH <- function(N, model, ageMid, severe, all, nind, nMC, LB = -20) {
+MH <- function(N, model, ageMid, severe, all, nind, nMC, LB = -20, ageMax = 100) {
     
     ## sample initial values
     logdens <- NA
     while(!is.finite(logdens)) {
-        eta <- sim(model$modelName, model$parameters, 1)[, -1]
-        alphaIH <- eta[1]
-        eta <- eta[2]
-        pIH <- exp(alphaIH + eta * ageMid)
-        stopifnot(all(pIH <= 1))
+        pIH <- 2
+        eta <- -1
+        while(pIH > 1 | eta < 0) {
+            eta <- sim(model$modelName, model$parameters, 1)[, -1]
+            alphaIH <- eta[1]
+            eta <- eta[2]
+            pIH <- exp(alphaIH + eta * ageMax)
+        }
+        stopifnot(pIH <= 1)
         
-        alphaID <- runif(1, LB, log(1 - exp(alphaIH + eta * max(ageMid))) - eta * max(ageMid))
+        alphaID <- runif(1, LB, log(1 - pIH) - eta * ageMax)
         pID <- exp(alphaID + eta * ageMid)
-        stopifnot(all(pID <= 1))
+        pIH <- exp(alphaIH + eta * ageMid)
+        stopifnot(all((pID + pIH) <= 1))
         
-        alphaEP <- runif(1, LB, -eta * max(ageMid))
+        alphaEP <- runif(1, LB, -eta * ageMax)
         pEP <- exp(alphaEP + eta * ageMid)
         stopifnot(all(pEP <= 1))
         
-        alphaHD <- runif(1, LB, -eta * max(ageMid))
+        alphaHD <- runif(1, LB, -eta * ageMax)
         pHD <- exp(alphaHD + eta * ageMid)
         stopifnot(all(pHD <= 1))
         
@@ -89,9 +86,9 @@ MH <- function(N, model, ageMid, severe, all, nind, nMC, LB = -20) {
         ## add log-priors
         logdens <- logdens + 
           dens(model$modelName, matrix(c(alphaIH, eta), nrow = 1), model$parameters, logarithm = TRUE) +
-          dunif(alphaID, LB, log(1 - exp(alphaIH + eta * max(ageMid))) - eta * max(ageMid), log = TRUE) +
-          dunif(alphaEP, LB, -eta * max(ageMid), log = TRUE) +
-          dunif(alphaHD, LB, -eta * max(ageMid), log = TRUE)
+          dunif(alphaID, LB, log(1 - exp(alphaIH + eta * ageMax)) - eta * ageMax, log = TRUE) +
+          dunif(alphaEP, LB, -eta * ageMax, log = TRUE) +
+          dunif(alphaHD, LB, -eta * ageMax, log = TRUE)
         
         ## check eta (don't need explicit truncation normalisation because it cancels)
         if(eta < 0) logdens <- NA
@@ -128,6 +125,7 @@ MH <- function(N, model, ageMid, severe, all, nind, nMC, LB = -20) {
         alphaHD <- parsProp[3]
         alphaIH <- parsProp[4]
         eta <- parsProp[5]
+        
         pEP <- exp(alphaEP + eta * ageMid)
         pID <- exp(alphaID + eta * ageMid)
         pHD <- exp(alphaHD + eta * ageMid)
@@ -135,9 +133,9 @@ MH <- function(N, model, ageMid, severe, all, nind, nMC, LB = -20) {
         
         ## check log-priors
         logprop <- dens(model$modelName, matrix(c(alphaIH, eta), nrow = 1), model$parameters, logarithm = TRUE) +
-          dunif(alphaID, LB, log(1 - exp(alphaIH + eta * max(ageMid))) - eta * max(ageMid), log = TRUE) +
-          dunif(alphaEP, LB, -eta * max(ageMid), log = TRUE) +
-          dunif(alphaHD, LB, -eta * max(ageMid), log = TRUE)
+          dunif(alphaID, LB, log(1 - exp(alphaIH + eta * ageMax)) - eta * ageMax, log = TRUE) +
+          dunif(alphaEP, LB, -eta * ageMax, log = TRUE) +
+          dunif(alphaHD, LB, -eta * ageMax, log = TRUE)
         
         ## check eta (don't need explicit truncation normalisation because it cancels)
         if(eta < 0) logprop <- NA
@@ -182,7 +180,17 @@ MH <- function(N, model, ageMid, severe, all, nind, nMC, LB = -20) {
             accrate <- nacc / 100
             print(paste0("niter = ", j, ", accrate = ", accrate))
             nacc <- 0
-            propCov <- cov(out[1:j, ]) * (2.56^2) / npars
+            if(j < (N / 4)) {
+                if(accrate > 0.23) {
+                    scale <- ((1 - accrate) / (1 - 0.23)) * 2
+                } else {
+                    scale <- 2 / (accrate / 0.23)
+                }
+                propCov <- scale * cov(out[1:j, ]) * (2.56^2) / npars
+            } else {
+                propCov <- cov(out[(N / 4):j, ]) * (2.56^2) / npars
+            }
+            
         }
     }
     ## return chain
@@ -191,17 +199,41 @@ MH <- function(N, model, ageMid, severe, all, nind, nMC, LB = -20) {
     out
 }
 
-## run MCMC
-samples <- MH(100000, model, IFR$ageMid, IFR$severe, IFR$all, 10000, 10)
-samples <- window(samples, start = 10000, thin = 3)
+## set number of samples
+nsamps <- 100
+nrep <- 10
+samples <- mclapply(1:(2 * nrep), function(i, IFR, nsamps, model) {
+    
+    ## subsample Imperial data and fit model
+    if(i %% 2 == 0) {
+        IFR1 <- filter(IFR, data == "Imperial") %>%
+            mutate(all = nsamps) %>%
+            mutate(severe = rbinom(rep(1, n()), size = all, prob = prop))
+    } else {
+        IFR1 <- filter(IFR, data == "CDC") %>%
+            mutate(all = nsamps) %>%
+            mutate(severe = rbinom(rep(1, n()), size = all, prob = prop))
+    }
+    
+    ## run MCMC
+    samples <- MH(190000, model, IFR1$ageMid, IFR1$severe, IFR1$all, 100000, 1, -20, 100)
+    samples <- window(samples, start = 100000, thin = 3)
+    
+    ## return runs
+    samples
+}, IFR = IFR, nsamps = nsamps, model = model, mc.cores = 20)
+# samples <- reduce(samples, c)
 
 ## plot traces
-pdf("simtraces.pdf")
-plot(samples)
+pdf("simTraces.pdf")
+map(samples, plot)
 dev.off()
 
-## convert to matrix
-samples <- as.matrix(samples)
+## convert to matrices
+samples <- map(samples, as.matrix)
+
+## union samples
+samples <- reduce(samples, rbind)
 
 ## predictions
 preds <- apply(samples, 1, function(samples, ageMid, nind) {
@@ -240,17 +272,17 @@ preds <- apply(samples, 1, function(samples, ageMid, nind) {
 
 ## plot predictions
 p <- IFR %>%
-    select(mean = IFR, LCI, UCI, ageMid) %>%
-    mutate(type = "IFR") %>%
-    rbind(preds) %>%
-    ggplot(aes(x = ageMid)) +
-      geom_point(aes(y = mean, colour = type)) +
-      geom_ribbon(aes(ymin = LCI, ymax = UCI, fill = type), alpha = 0.3)
-ggsave("simsPreds.pdf", p)
+    select(mean = prop, ageMid) %>%
+    mutate(LCI = NA) %>%
+    mutate(UCI = NA) %>%
+    mutate(type = "IFR")
+p <- ggplot(p, aes(x = ageMid)) +
+      geom_point(aes(y = mean)) +
+      geom_ribbon(aes(ymin = LCI, ymax = UCI), data = preds, alpha = 0.5)
 ggsave("simsPreds.svg", p)
-ggsave("simsPreds.png", p)
 
 ## fit range of finite mixture models
+samples <- samples[sample.int(nrow(samples), 30000), ]
 mod <- densityMclust(samples)
 
 ## summary of finite mixture models
@@ -280,3 +312,30 @@ p <- as_tibble(samples) %>%
     ggpairs(mapping = aes(colour = Estimate, alpha = 0.5), upper = list(continuous = "density"), columns = 1:5, legend = leg) + 
     theme(legend.position = "bottom")
 ggsave("simsMixturePosterior.png", p)
+
+## save mclust object
+saveRDS(mod, "fullmod.rds")
+
+## plot marginal posterior for alphaIH and eta against prior
+props <- sim(model$modelName, model$parameters, nimp)[, -1] %>%
+    as_tibble() %>%
+    set_names(c("alphaIH", "eta")) %>%
+    mutate(Estimate = "Prior") %>%
+    filter(eta > 0) %>%
+    filter(alphaIH < -eta * 100)
+p <- as_tibble(samples) %>%
+    select(alphaIH, eta) %>%
+    mutate(Estimate = "Posterior") %>%
+    rbind(props) %>%
+    ggpairs(mapping = aes(colour = Estimate, alpha = 0.5), upper = list(continuous = "density"), columns = 1:2, legend = 1) + 
+    theme(legend.position = "bottom")
+leg <- getPlot(p, 1, 1) +
+    guides(alpha = FALSE)
+leg <- grab_legend(leg)
+p <- as_tibble(samples) %>%
+    select(alphaIH, eta) %>%
+    mutate(Estimate = "MCMC") %>%
+    rbind(props) %>%
+    ggpairs(mapping = aes(colour = Estimate, alpha = 0.5), upper = list(continuous = "density"), columns = 1:2, legend = leg) + 
+    theme(legend.position = "bottom")
+ggsave("simsComparison.png", p)

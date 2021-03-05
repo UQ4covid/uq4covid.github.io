@@ -5,37 +5,10 @@ library(nimble)
 library(coda)
 library(GGally)
 library(svglite)
+library(readxl)
 
 ## load data
-hosp <- read_csv("hospitalisationImperial.csv", col_names = TRUE) %>%
-    rename(ageCat = X1, severe = `Severe cases`, all = `All cases`) %>%
-    rename(prop = `Proportion of infected individuals hospitalised`) %>%
-    mutate(ageCat = gsub("–", "-", ageCat)) %>%
-    mutate(ageCat = gsub(" years", "", ageCat)) %>%
-    mutate(prop = gsub("·", ".", prop)) %>%
-    separate(prop, c("prop", "CI"), sep = "% ") %>%
-    mutate(prop = as.numeric(prop) / 100) %>%
-    mutate(CI = gsub("\\(|\\)", "", CI)) %>%
-    separate(CI, c("LCI", "UCI"), sep = "–") %>%
-    mutate_at(vars(ends_with("CI")), ~as.numeric(.) / 100)
-
-## extract mid-points of age-classes
-hosp <- hosp %>%
-    mutate(ageCat = ifelse(ageCat == "≥80", "80-89", ageCat)) %>%
-    separate(ageCat, c("LB", "UB"), sep = "-", remove = FALSE) %>%
-    mutate_at(vars(c("UB", "LB")), as.numeric) %>%
-    mutate(ageMid = (LB + UB) / 2) %>%
-    dplyr::select(-LB, -UB)
-
-## transform according to bounds
-hosp <- filter(hosp, prop > 0) %>%
-    mutate(diffL = prop - LCI) %>%
-    mutate(diffU = UCI - prop) %>%
-    mutate(diff = ifelse(diffL > diffU, diffL, diffU)) %>%
-    mutate(diff = (diff / 1.96)^2) %>%
-    mutate(all = round(prop * (1 - prop) / diff)) %>%
-    mutate(severe = round(prop * all)) %>%
-    select(-starts_with("diff"))
+hosp <- readRDS("hosp.rds")
 
 ## fit Bayesian model
 code <- nimbleCode({
@@ -47,16 +20,9 @@ code <- nimbleCode({
     }
     
     ## priors
-    alpha ~ dnorm(0, 5)
-    eta ~ T(dnorm(0, 1), 0, )
+    alpha ~ T(dnorm(0, sd = 5), , -eta * 100)
+    eta ~ T(dnorm(0, sd = 1), 0, )
 })
-
-## set up other components of model
-consts <- list(
-    nAge = nrow(hosp),
-    ageMid = hosp$ageMid,
-    all = hosp$all)
-data <- list(severe = hosp$severe)
 
 ## sample initial values
 initFn <- function(ageMid) {
@@ -74,59 +40,183 @@ initFn <- function(ageMid) {
     inits
 }
 
-## define the model, data, inits and constants
-model <- nimbleModel(code = code, constants = consts, data = data, inits = initFn(consts$ageMid))
-
-## compile the model
-cmodel <- compileNimble(model)
-
-## set monitors
-config <- configureMCMC(cmodel, monitors = c("alpha", "eta"), thin = 1)
-
-## check monitors and samplers
-config$printMonitors()
-config$printSamplers()
-
-## build the model
-built <- buildMCMC(config)
-cbuilt <- compileNimble(built)
-
-## run the model
-system.time(run <- runMCMC(cbuilt, 
-    niter = 155000, 
-    nburnin = 5000, 
-    nchains = 2, 
-    progressBar = TRUE, 
-    summary = TRUE, 
-    samplesAsCodaMCMC = TRUE, 
-    thin = 10))
-
-## plot traces
+nrep <- 10
+nsamps <- 100
+j <- 1
+samples <- list()
 pdf("traces.pdf")
-plot(run$samples)
+for(i in 1:nrep) {
+    
+    ## subsample CDC
+    hosp1 <- filter(hosp, data == "CDC") %>%
+        mutate(all = nsamps) %>%
+        mutate(severe = rbinom(rep(1, n()), size = all, prob = prop))
+
+    ## set up other components of model
+    consts <- list(
+        nAge = nrow(hosp1),
+        ageMid = hosp1$ageMid,
+        all = hosp1$all)
+    data <- list(severe = hosp1$severe)
+    
+    ## define the model, data, inits and constants
+    model <- nimbleModel(code = code, constants = consts, data = data, inits = initFn(100))
+    
+    ## compile the model
+    cmodel <- compileNimble(model)
+    
+    ## set monitors
+    config <- configureMCMC(cmodel, monitors = c("alpha", "eta"), thin = 1)
+    
+    ## check monitors and samplers
+    config$printMonitors()
+    config$printSamplers()
+    
+    ## build the model
+    built <- buildMCMC(config)
+    cbuilt <- compileNimble(built)
+    
+    ## run the model
+    system.time(run <- runMCMC(cbuilt, 
+        niter = 155000, 
+        nburnin = 5000, 
+        nchains = 2, 
+        progressBar = TRUE, 
+        summary = TRUE, 
+        samplesAsCodaMCMC = TRUE, 
+        thin = 10))
+
+    ## plot traces
+    plot(run$samples)
+    
+    ## extract samples
+    samples[[j]] <- as.matrix(run$samples)
+    j <- j + 1
+    
+    ## subsample CDC and remove final age class
+    hosp1 <- filter(hosp, data == "CDC") %>%
+        filter(ageMid != max(ageMid)) %>%
+        mutate(all = nsamps) %>%
+        mutate(severe = rbinom(rep(1, n()), size = all, prob = prop))
+    
+    ## set up other components of model
+    consts <- list(
+        nAge = nrow(hosp1),
+        ageMid = hosp1$ageMid,
+        all = hosp1$all)
+    data <- list(severe = hosp1$severe)
+    
+    ## define the model, data, inits and constants
+    model <- nimbleModel(code = code, constants = consts, data = data, inits = initFn(consts$ageMid))
+    
+    ## compile the model
+    cmodel <- compileNimble(model)
+    
+    ## set monitors
+    config <- configureMCMC(cmodel, monitors = c("alpha", "eta"), thin = 1)
+    
+    ## check monitors and samplers
+    config$printMonitors()
+    config$printSamplers()
+    
+    ## build the model
+    built <- buildMCMC(config)
+    cbuilt <- compileNimble(built)
+    
+    ## run the model
+    system.time(run <- runMCMC(cbuilt, 
+        niter = 155000, 
+        nburnin = 5000, 
+        nchains = 2, 
+        progressBar = TRUE, 
+        summary = TRUE, 
+        samplesAsCodaMCMC = TRUE, 
+        thin = 10))
+    
+    ## plot traces
+    plot(run$samples)
+    
+    ## extract samples
+    samples[[j]] <- as.matrix(run$samples)
+    j <- j + 1
+    
+    ## subsample Imperial
+    hosp1 <- filter(hosp, data == "Imperial") %>%
+        mutate(all = nsamps) %>%
+        mutate(severe = rbinom(rep(1, n()), size = all, prob = prop))
+    
+    ## set up other components of model
+    consts <- list(
+        nAge = nrow(hosp1),
+        ageMid = hosp1$ageMid,
+        all = hosp1$all)
+    data <- list(severe = hosp1$severe)
+    
+    ## define the model, data, inits and constants
+    model <- nimbleModel(code = code, constants = consts, data = data, inits = initFn(consts$ageMid))
+    
+    ## compile the model
+    cmodel <- compileNimble(model)
+    
+    ## set monitors
+    config <- configureMCMC(cmodel, monitors = c("alpha", "eta"), thin = 1)
+    
+    ## check monitors and samplers
+    config$printMonitors()
+    config$printSamplers()
+    
+    ## build the model
+    built <- buildMCMC(config)
+    cbuilt <- compileNimble(built)
+    
+    ## run the model
+    system.time(run <- runMCMC(cbuilt, 
+        niter = 155000, 
+        nburnin = 5000, 
+        nchains = 2, 
+        progressBar = TRUE, 
+        summary = TRUE, 
+        samplesAsCodaMCMC = TRUE, 
+        thin = 10))
+    
+    ## plot traces
+    plot(run$samples)
+    
+    ## extract samples
+    samples[[j]] <- as.matrix(run$samples)
+    j <- j + 1
+}
 dev.off()
-samples <- as.matrix(run$samples)
+
+## union samples
+samples <- reduce(samples, rbind)
+
+## order hosp
+hosp1 <- arrange(hosp, ageMid) %>%
+    distinct(ageMid, .keep_all = TRUE)
 
 ## predictions
-hosp_preds <- matrix(1, nrow = 1, ncol = nrow(hosp)) %>%
-    rbind(hosp$ageMid)
+hosp_preds <- matrix(1, nrow = 1, ncol = nrow(hosp1)) %>%
+    rbind(hosp1$ageMid)
 hosp_preds <- exp(samples %*% hosp_preds)
-hosp_preds1 <- rbind(hosp$all, hosp_preds) %>%
+hosp_preds1 <- rbind(rep(nsamps, ncol(hosp_preds)), hosp_preds) %>%
     apply(2, function(x) {
         rbinom(rep(1, length(x) - 1), x[1], x[-1]) / x[1]
     })
 
 ## summarise predictions
-hosp_preds_sum <- apply(hosp_preds, 2, function(x) {
+hosp_preds_sum <- hosp_preds %>%
+    apply(2, function(x) {
         tibble(mean = mean(x), LCI = quantile(x, probs = 0.005), UCI = quantile(x, probs = 0.995))
     }) %>%
     bind_rows() %>%
-    mutate(ageMid = hosp$ageMid)
-hosp_preds1_sum <- apply(hosp_preds1, 2, function(x) {
+    mutate(ageMid = hosp1$ageMid)
+hosp_preds1_sum <- hosp_preds1 %>%
+    apply(2, function(x) {
         tibble(mean = mean(x), LCI = quantile(x, probs = 0.005), UCI = quantile(x, probs = 0.995))
     }) %>%
     bind_rows() %>%
-    mutate(ageMid = hosp$ageMid)
+    mutate(ageMid = hosp1$ageMid)
 
 ## fitted plot
 p <- ggplot(hosp, aes(x = ageMid)) +
@@ -135,23 +225,22 @@ p <- ggplot(hosp, aes(x = ageMid)) +
     geom_ribbon(aes(ymin = LCI, ymax = UCI), data = hosp_preds_sum, alpha = 0.5) +
     geom_ribbon(aes(ymin = LCI, ymax = UCI), data = hosp_preds1_sum, alpha = 0.5) +
     xlab("Age") + ylab("Probability of hospitalisation")
-ggsave("fittedLnBayes.pdf", p)
-ggsave("fittedLnBayes.svg", p)
+ggsave("fittedHosp.svg", p)
 
 ## pick closest runs to data
-closeRuns <- apply(hosp_preds1, 1, function(x, p) {
+closeRuns <- apply(hosp_preds, 1, function(x, p) {
         sum(abs(x - p))
-    }, p = hosp$prop) %>%
+    }, p = hosp1$prop) %>%
     sort.list() %>%
     {hosp_preds[.[1:10], ]} %>%
     as_tibble() %>%
     mutate(run = as.character(1:n())) %>%
     gather(ageMid, prop, -run) %>%
     mutate(ageMid = gsub("V", "", ageMid)) %>%
-    mutate(ageMid = hosp$ageMid[as.numeric(ageMid)])
+    mutate(ageMid = hosp1$ageMid[as.numeric(ageMid)])
 
 ## check that some are similar to data
-p <- ggplot(hosp, aes(x = ageMid)) +
+ggplot(hosp, aes(x = ageMid)) +
     geom_point(aes(y = prop)) +
     geom_line(aes(y = mean), data = hosp_preds_sum) +
     geom_ribbon(aes(ymin = LCI, ymax = UCI), data = hosp_preds_sum, alpha = 0.5) +
@@ -162,6 +251,9 @@ p <- ggplot(hosp, aes(x = ageMid)) +
 
 ## posterior correlation
 cor(samples)
+
+## subsample posterior
+samples <- samples[sample.int(nrow(samples), 30000), ]
 
 ## fit range of finite mixture models
 mod <- densityMclust(samples)
@@ -192,7 +284,6 @@ p <- as_tibble(samples[, 1:2]) %>%
     rbind(props) %>%
     ggpairs(mapping = aes(colour = Estimate, alpha = 0.5), upper = list(continuous = "density"), columns = 1:2, legend = leg) + 
     theme(legend.position = "bottom")
-ggsave("mixturePosterior.pdf", p)
 ggsave("mixturePosterior.png", p)
 
 ## save mclust object
