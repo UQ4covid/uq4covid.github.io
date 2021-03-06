@@ -31,8 +31,7 @@ hosp <- read_excel("CasesHospDeathInHospForUS_Update.xlsx") %>%
 
 ## extract IFR data
 IFR <- select(hosp, -propH) %>%
-    rbind(IFR) %>%
-    rename(prop = propD)
+    rbind(IFR)
 hosp <- select(hosp, -propD)
 
 ## load Imperial data
@@ -51,8 +50,7 @@ hosp <- read_csv("hospitalisationImperial.csv", col_names = TRUE) %>%
     mutate(ageMid = (LB + UB) / 2) %>%
     select(-LB, -UB) %>%
     mutate(data = "Imperial") %>%
-    rbind(hosp) %>%
-    rename(prop = propH)
+    rbind(hosp)
 
 ## save cleaned data
 saveRDS(IFR, "IFR.rds")
