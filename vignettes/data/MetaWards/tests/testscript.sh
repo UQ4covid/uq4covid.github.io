@@ -47,3 +47,11 @@ cd ..
 cd test5
 ./testscript.sh
 cd ..
+
+## same as test4 but with different probabilities of
+## transition through different pathways - mainly used
+## to test R0 and check mover code
+
+cd test6
+./testscript.sh
+cd ..

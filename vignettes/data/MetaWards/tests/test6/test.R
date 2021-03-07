@@ -6,19 +6,22 @@ source("../../R_tools/dataTools.R")
 
 ## read in pars
 pars <- read_delim("disease.dat", delim = " ") %>%
-    select(ends_with("_1"), nu = `beta[1]`, nuA = `beta[6]`)
-colnames(pars) <- gsub("_1", "", colnames(pars))
-colnames(pars) <- gsub("\\.", "", colnames(pars))
-pars <- pars %>%
-    mutate_at(vars(pE, pP, pA, pI1, pI2, pH), ~ifelse(. == 1, 0.99, .)) %>%
-    mutate(gammaE = -log(1 - pE)) %>%
-    mutate(gammaP = -log(1 - pP)) %>%
-    mutate(gammaA = -log(1 - pA)) %>%
-    mutate(gammaI1 = -log(1 - pI1)) %>%
-    mutate(gammaI2 = -log(1 - pI2)) %>%
-    mutate(gammaH = -log(1 - pH)) %>%
-    select(-pE, -pP, -pA, -pI1, -pI2, -pH) %>%
-    unlist()
+    select(-contains("beta"), -contains("lock_"), 
+    nu_1 = `beta[1]`, nuA_1 = `beta[6]`, -repeats, -output) %>%
+    gather(par, value) %>%
+    separate(par, c("par", "age"), sep = "_") %>%
+    complete(age, par) %>%
+    mutate(par = gsub("\\.", "", par)) %>%
+    arrange(par, age) %>%
+    select(-age) %>%
+    group_by(par) %>%
+    fill(value) %>%
+    nest() %>%
+    mutate(data = map(data, "value")) %>%
+    spread(par, data) %>%
+    mutate_at(vars(pE, pP, pA, pI1, pI2, pH), ~map(., ~ifelse(. == 1, 0.99, .))) %>%
+    mutate_at(vars(pE, pP, pA, pI1, pI2, pH), ~map(., ~{-log(1 - .)})) %>%
+    rename(gammaE = pE, gammaP = pP, gammaA = pA, gammaI1 = pI1, gammaI2 = pI2, gammaH = pH)
 
 ## set population size
 N <- c(10011, 25694, 9985, 8654, 8322, 8654, 6823, 21857)
@@ -30,12 +33,12 @@ contact <- read_csv("contact_matrix.csv", col_names = FALSE) %>%
 ## check NGM
 S0 <- c(N[1] - 10, N[-1])
 nage <- length(N)
-R0 <- NGM(R0 = NA, nu = rep(pars["nu"], nage), C = contact, S0 = S0, N = N, 
-    nuA = rep(pars["nuA"], nage), gammaE = rep(pars["gammaE"], nage), 
-    pEP = rep(pars["pEP"], nage), gammaA = rep(pars["gammaA"], nage), 
-    gammaP = rep(pars["gammaP"], nage), gammaI1 = rep(pars["gammaI1"], nage), 
-    pI1H = rep(pars["pI1H"], nage), pI1D = rep(pars["pI1D"], nage), 
-    gammaI2 = rep(pars["gammaI2"], nage))
+R0 <- NGM(R0 = NA, nu = pars$nu[[1]][1], C = contact, S0 = S0, N = N, 
+    nuA = pars$nuA[[1]][1], gammaE = pars$gammaE[[1]], 
+    pEP = pars$pEP[[1]], gammaA = pars$gammaA[[1]], 
+    gammaP = pars$gammaP[[1]], gammaI1 = pars$gammaI1[[1]], 
+    pI1H = pars$pI1H[[1]], pI1D = pars$pI1D[[1]], 
+    gammaI2 = pars$gammaI2[[1]])
 K <- R0$K
 R0 <- R0$R0
 print(paste0("R0 = ", R0))
@@ -51,12 +54,15 @@ balance <- function(z, C) {
     sum(abs(z - (1 - exp(-C %*% z))))
 }
 A <- t(N * t(Ksmall / N))
-finalsize <- optim(rep(0.5, length(N)), balance, C = A, control = list(maxit = 10000), method = "L-BFGS-B", lower = rep(0, length(N)), upper = rep(1, length(N)))
-stopifnot(finalsize$value <= 0.0007 | finalsize$convergence == 0)
+
+finalsize <- list(value = 1, convergence = 1)
+while(finalsize$value > 0.0007 & finalsize$convergence != 0) {
+    finalsize <- optim(runif(length(N), 0, 1), balance, C = A, control = list(maxit = 10000), method = "L-BFGS-B", lower = rep(0, length(N)), upper = rep(1, length(N)))
+}
 finalsize <- finalsize$par * N
 
 ## fit deterministic model
-source("../detModel.R")
+source("detModel.R")
 
 ## fit discrete-time stochastic model
 source("stochModel.R")
