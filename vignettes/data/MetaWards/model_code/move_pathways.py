@@ -73,7 +73,7 @@ def move_pathways(network, **kwargs):
                                       go_to=f'age{k + 1}',
                                       from_stage="H",
                                       to_stage="DH",
-                                      fraction=tpHD[j],
+                                      fraction=tpHD[k],
                                       **kwargs))
                                       
     ## move H genpop to R genpop
@@ -90,7 +90,7 @@ def move_pathways(network, **kwargs):
                                       go_to=f'age{k + 1}',
                                       from_stage="H",
                                       to_stage="RH",
-                                      fraction=tpHR[j],
+                                      fraction=tpHR[k],
                                       **kwargs))
                                       
     #######################################################
@@ -107,7 +107,7 @@ def move_pathways(network, **kwargs):
                                       go_to=f'age{k + 1}',
                                       from_stage="I2",
                                       to_stage="RI",
-                                      fraction=tpI2R[j],
+                                      fraction=tpI2R[k],
                                       **kwargs))
     
     #######################################################
@@ -124,7 +124,7 @@ def move_pathways(network, **kwargs):
                                       go_to=f'age{k + 1}',
                                       from_stage="I1",
                                       to_stage="H",
-                                      fraction=tpI1H[j],
+                                      fraction=tpI1H[k],
                                       **kwargs))
 
     ## move I1 genpop to DI genpop
@@ -141,7 +141,7 @@ def move_pathways(network, **kwargs):
                                       go_to=f'age{k + 1}',
                                       from_stage="I1",
                                       to_stage="DI",
-                                      fraction=tpI1D[j],
+                                      fraction=tpI1D[k],
                                       **kwargs))
 
     ## move I1 genpop to I2 genpop
@@ -158,7 +158,7 @@ def move_pathways(network, **kwargs):
                                       go_to=f'age{k + 1}',
                                       from_stage="I1",
                                       to_stage="I2",
-                                      fraction=tpI1I2[j],
+                                      fraction=tpI1I2[k],
                                       **kwargs))
     
     #######################################################
@@ -173,7 +173,7 @@ def move_pathways(network, **kwargs):
                                       go_to=f'age{k + 1}',
                                       from_stage="P",
                                       to_stage="I1",
-                                      fraction=tpPI1[j],
+                                      fraction=tpPI1[k],
                                       **kwargs))
     
     #######################################################
@@ -188,7 +188,7 @@ def move_pathways(network, **kwargs):
                                       go_to=f'age{k + 1}',
                                       from_stage="A",
                                       to_stage="RA",
-                                      fraction=tpAR[j],
+                                      fraction=tpAR[k],
                                       **kwargs))
     
     #######################################################
@@ -205,7 +205,7 @@ def move_pathways(network, **kwargs):
                                       go_to=f'age{k + 1}',
                                       from_stage="E",
                                       to_stage="A",
-                                      fraction=tpEA[j],
+                                      fraction=tpEA[k],
                                       **kwargs))
 
     ## move E genpop to P genpop
@@ -222,7 +222,7 @@ def move_pathways(network, **kwargs):
                                       go_to=f'age{k + 1}',
                                       from_stage="E",
                                       to_stage="P",
-                                      fraction=tpEP[j],
+                                      fraction=tpEP[k],
                                       **kwargs))
 
     return func
