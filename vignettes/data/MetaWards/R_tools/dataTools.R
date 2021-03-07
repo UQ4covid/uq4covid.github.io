@@ -248,36 +248,38 @@ cppFunction('IntegerMatrix reconstruct(IntegerVector Einc, IntegerVector Pinc,
 NGM <- function(R0 = NA, nu = NA, C, S0, N, nuA, gammaE, pEP, gammaA, gammaP, gammaI1, pI1H, pI1D, gammaI2) {
   
     ## check that exactly one of R0 or nu is specified
+    stopifnot(length(R0) == 1 & length(nu) == 1 & length(nuA) == 1)
     stopifnot(!is.na(R0) | !is.na(nu))
     stopifnot(is.na(R0) | is.na(nu))
     
     ## check inputs
     stopifnot(!missing(C) & !missing(N) & !missing(S0))
     if(missing(nuA)) nuA <- 0
-    if(missing(gammaE)) gammaE <- 0
-    if(missing(pEP)) pEP <- 0
-    if(missing(gammaA)) gammaA <- 0
-    if(missing(gammaP)) gammaP <- 0
-    if(missing(gammaI1)) gammaI1 <- 0
-    if(missing(pI1H)) pI1H <- 0
-    if(missing(pI1D)) pI1D <- 0
-    if(missing(gammaI2)) gammaI2 <- 0
+    if(missing(gammaE)) gammaE <- rep(0, length(N))
+    if(missing(pEP)) pEP <- rep(0, length(N))
+    if(missing(gammaA)) gammaA <- rep(0, length(N))
+    if(missing(gammaP)) gammaP <- rep(0, length(N))
+    if(missing(gammaI1)) gammaI1 <- rep(0, length(N))
+    if(missing(pI1H)) pI1H <- rep(0, length(N))
+    if(missing(pI1D)) pI1D <- rep(0, length(N))
+    if(missing(gammaI2)) gammaI2 <- rep(0, length(N))
     stopifnot(all(c(nuA, gammaE, pEP, gammaA, 
                     gammaP, gammaI1, pI1H, pI1D, gammaI2) >= 0))
     
     ## extract lengths
     nage <- length(N)
     stopifnot(all(dim(C) == nage))
-    stopifnot(length(S0) == nage & all(S0 <= N))
+    stopifnot(length(S0) == nage & all(S0 <= N) & any(S0 >= 1))
+    stopifnot(all(map_lgl(list(gammaE, pEP, gammaA, gammaP, gammaI1, pI1H, pI1D, gammaI2), ~{length(.) == nage})))
     
     ## check for empty pathways
-    stopifnot(gammaE > 0)
+    stopifnot(all(gammaE > 0))
     pathA <- ifelse(pEP == 1, FALSE, TRUE)
-    if(pathA) stopifnot(gammaA > 0)
+    if(any(pathA)) stopifnot(gammaA[pathA] > 0)
     pathI1 <- ifelse(pEP == 0, FALSE, TRUE)
-    if(pathI1) stopifnot(gammaP > 0 & gammaI1 > 0)
+    if(any(pathI1)) stopifnot(gammaP[pathI1] > 0 & gammaI1[pathI1] > 0)
     pathI2 <- ifelse((1 - pI1H - pI1D) == 0 | !pathI1, FALSE, TRUE)
-    if(pathI2) stopifnot(gammaI2 > 0)
+    if(any(pathI2)) stopifnot(gammaI2[pathI2] > 0)
     
     ## set up empty F matrix
     ## (order: E, A, P, I1, I2)
@@ -320,9 +322,13 @@ NGM <- function(R0 = NA, nu = NA, C, S0, N, nuA, gammaE, pEP, gammaA, gammaP, ga
     
     ## remove pathways that don't exist
     rem <- NULL
-    if(!pathA) rem <- (nage + 1):(2 * nage)
-    if(!pathI1) rem <- c(rem, (2 * nage + 1):(5 * nage))
-    if(!pathI2) rem <- c(rem, (4 * nage + 1):(5 * nage))
+    if(!all(pathA)) rem <- nage + which(!pathA)
+    if(!all(pathI1)) {
+        rem <- c(rem, reduce(map(c(2 * nage, 3 * nage, 4 * nage), function(x, pathI1) {
+            x + which(!pathI1)
+        }, pathI1 = pathI1), c))
+    }
+    if(!all(pathI2)) rem <- c(rem, 4 * nage + which(!pathI2))
     if(!is.null(rem)) {
         rem <- unique(rem)
         F <- F[-rem, -rem]
