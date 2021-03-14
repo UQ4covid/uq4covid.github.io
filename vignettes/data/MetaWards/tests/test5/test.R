@@ -32,8 +32,8 @@ contact2 <- read_csv("contact_matrix2.csv", col_names = FALSE) %>%
 ## check NGM
 S0 <- c(N[1] - 10, N[-1])
 nage <- length(N)
-R0 <- NGM(R0 = NA, nu = rep(pars["nu"], nage), C = contact1, S0 = S0, N = N, 
-    nuA = rep(pars["nuA"], nage), gammaE = rep(pars["gammaE"], nage), 
+R0 <- NGM(R0 = NA, nu = pars["nu"], C = contact1, S0 = S0, N = N, 
+    nuA = pars["nuA"], gammaE = rep(pars["gammaE"], nage), 
     pEP = rep(pars["pEP"], nage), gammaA = rep(pars["gammaA"], nage), 
     gammaP = rep(pars["gammaP"], nage), gammaI1 = rep(pars["gammaI1"], nage), 
     pI1H = rep(pars["pI1H"], nage), pI1D = rep(pars["pI1D"], nage), 
@@ -45,8 +45,8 @@ print(paste0("R01 = ", R0))
 ## check NGM
 S0 <- c(N[1] - 10, N[-1])
 nage <- length(N)
-R0 <- NGM(R0 = NA, nu = rep(pars["nu"], nage), C = contact2, S0 = S0, N = N, 
-    nuA = rep(pars["nuA"], nage), gammaE = rep(pars["gammaE"], nage), 
+R0 <- NGM(R0 = NA, nu = pars["nu"], C = contact2, S0 = S0, N = N, 
+    nuA = pars["nuA"], gammaE = rep(pars["gammaE"], nage), 
     pEP = rep(pars["pEP"], nage), gammaA = rep(pars["gammaA"], nage), 
     gammaP = rep(pars["gammaP"], nage), gammaI1 = rep(pars["gammaI1"], nage), 
     pI1H = rep(pars["pI1H"], nage), pI1D = rep(pars["pI1D"], nage), 
