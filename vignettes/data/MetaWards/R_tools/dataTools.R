@@ -1,28 +1,22 @@
 ## @knitr convertDesignToInput
 ## function to convert from design to input space
-convertDesignToInput <- function(design, parRanges, ageM, scale = c("zero_one", "negone_one")) {
+convertDesignToInput <- function(design, parRanges, scale = c("zero_one", "negone_one")) {
   
     require(dplyr)
     require(tidyr)
   
     ## convert from design space to input space
     input <- mutate(design, ind = 1:n()) %>%
-        gather(parameter, value, -output, -ind, -repeats) %>%
+        gather(parameter, value, -ind) %>%
         left_join(parRanges, by = "parameter")
     if(scale[1] == "negone_one") {
         input <- mutate(input, value = value / 2 + 1)
     }
     input <- mutate(input, value = value * (upper - lower) + lower) %>%
-        dplyr::select(ind, output, repeats, parameter, value) %>%
+        dplyr::select(ind, parameter, value) %>%
         spread(parameter, value) %>%
         arrange(ind) %>%
         dplyr::select(-ind)
-    
-    ## remove design points that don't adhere to necessary criteria
-    input <- filter(input, alphaEA < -etaEA * ageM) %>%
-      filter(alphaIH < -etaIH * ageM) %>%
-      filter(alphaIR < -etaIR * ageM) %>%
-      filter(alphaHR < -etaHR * ageM)
     
     ## return inputs
     input
@@ -30,71 +24,87 @@ convertDesignToInput <- function(design, parRanges, ageM, scale = c("zero_one", 
 
 ## @knitr convertInputToDisease
 ## function to convert from input to disease space
-convertInputToDisease <- function(input, C, ages) {
+convertInputToDisease <- function(input, C, N, S0, ages) {
    
     require(dplyr)
+  
+    stopifnot(all(c("R0", "nuA", "TE", "TP", "TI1", "TI2", "alphaEP", 
+        "alphaI1H", "alphaI1D", "alphaHD", "eta", 
+        "alphaTH", "etaTH", "lock_1_restrict", 
+        "lock_2_release") %in% colnames(input)))
     
-    ## transmission parameter
-    disease <- tibble(`.nu` = (input$r_zero / (max(eigen(C)$values) * input$infectious1_time)))
-    stopifnot(all(disease$`.nu` > 0 & disease$`.nu` < 1))
-    
+    ## scaling for asymptomatics
+    disease <- select(input, nuA)
+  
     ## progressions out of the E class
     for(j in 1:length(ages)) {
-        disease <- mutate(disease, ".pE_{j}" := 1 - exp(-1 / input$latent_time))
+        disease <- mutate(disease, ".pE_{j}" := 1 - exp(-1 / input$TE))
     }
     disease <- mutate(disease, 
-        temp = map2(input$alphaEA, input$etaEA, function(alpha, eta, ages) {
+        temp = map2(input$alphaEP, input$eta, function(alpha, eta, ages) {
             out <- exp(alpha + eta * ages) %>%
-                as.matrix(nrow = 1) %>%
+                matrix(nrow = 1) %>%
                 as_tibble()
-            colnames(out) <- paste0(".pEA_", 1:length(ages))
+            colnames(out) <- paste0(".pEP_", 1:length(ages))
             out
         }, ages = ages)) %>%
         unnest(cols = temp)
     
     ## progressions out of the A class
     for(j in 1:length(ages)) {
-        disease <- mutate(disease, ".pA_{j}" := 1 - exp(-1 / input$infectious1_time))
+        disease <- mutate(disease, ".pA_{j}" := 1 - exp(-1 / (input$TP + input$TI1 + input$TI2)))
+    }
+    
+    ## progressions out of the P class
+    for(j in 1:length(ages)) {
+      disease <- mutate(disease, ".pP_{j}" := 1 - exp(-1 / input$TP))
     }
     
     ## progressions out of the I1 class
     for(j in 1:length(ages)) {
-        disease <- mutate(disease, ".pI1_{j}" := 1 - exp(-1 / input$infectious1_time))
+        disease <- mutate(disease, ".pI1_{j}" := 1 - exp(-1 / input$TI1))
     }
     disease <- mutate(disease, 
-        temp = map2(input$alphaI1H, input$etaI1H, function(alpha, eta, ages) {
+        temp = map2(input$alphaI1H, input$eta, function(alpha, eta, ages) {
             out <- exp(alpha + eta * ages) %>%
-                as.matrix(nrow = 1) %>%
+                matrix(nrow = 1) %>%
                 as_tibble()
             colnames(out) <- paste0(".pI1H_", 1:length(ages))
             out
         }, ages = ages)) %>%
         unnest(cols = temp)
     disease <- mutate(disease, 
-        temp = map2(input$alphaI1I2, input$etaI1I2, function(alpha, eta, ages) {
+        temp = map2(input$alphaI1D, input$eta, function(alpha, eta, ages) {
             out <- exp(alpha + eta * ages) %>%
-                as.matrix(nrow = 1) %>%
+                matrix(nrow = 1) %>%
                 as_tibble()
-            colnames(out) <- paste0(".pI1I2_", 1:length(ages))
+            colnames(out) <- paste0(".pI1D_", 1:length(ages))
             out
         }, ages = ages)) %>%
         unnest(cols = temp)
     
     ## progressions out of the I2 class
     for(j in 1:length(ages)) {
-        disease <- mutate(disease, ".pI2_{j}" := 1 - exp(-1 / input$infectious2_time))
+        disease <- mutate(disease, ".pI2_{j}" := 1 - exp(-1 / input$TI2))
     }
     
     ## progressions out of the H class
-    for(j in 1:length(ages)) {
-        disease <- mutate(disease, ".pH_{j}" := 1 - exp(-1 / input$hospital_time))
-    }
     disease <- mutate(disease, 
-        temp = map2(input$alphaHR, input$etaHR, function(alpha, eta, ages) {
+        temp = map2(input$alphaTH, input$etaTH, function(alpha, eta, ages) {
             out <- exp(alpha + eta * ages) %>%
-                as.matrix(nrow = 1) %>%
+                {1 - exp(-1 / .)} %>%
+                matrix(nrow = 1) %>%
                 as_tibble()
-            colnames(out) <- paste0(".pHR_", 1:length(ages))
+            colnames(out) <- paste0(".pH_", 1:length(ages))
+          out
+        }, ages = ages)) %>%
+        unnest(cols = temp)
+    disease <- mutate(disease, 
+        temp = map2(input$alphaHD, input$eta, function(alpha, eta, ages) {
+            out <- exp(alpha + eta * ages) %>%
+                matrix(nrow = 1) %>%
+                as_tibble()
+            colnames(out) <- paste0(".pHD_", 1:length(ages))
             out
         }, ages = ages)) %>%
         unnest(cols = temp)
@@ -103,15 +113,62 @@ convertInputToDisease <- function(input, C, ages) {
     disease$`.lock_1_restrict` <- input$lock_1_restrict
     disease$`.lock_2_release` <- input$lock_2_release
     
-    ## set up scaling for mixing matrix
-    disease$`.GP_A` <- input$GP_A
-    disease$`.GP_H` <- input$GP_H
+    ## remove any invalid inputs
+    stopifnot(any(disease$nuA >= 0 | disease$nuA <= 1))
+    disease <- mutate(disease, ind = 1:n()) %>%
+        filter_at(vars(starts_with(".p")), all_vars(. >= 0 & . <= 1))
+
+    ## set up data for calculating transmission parameter
+    temp <- select(disease, ind, starts_with(".pEP"), starts_with(".pI1H"), starts_with(".pI1D")) %>%
+        gather(prob, value, -ind) %>%
+        separate(prob, c("prob", "age"), sep = "_") %>%
+        spread(age, value) %>%
+        group_by(prob, ind) %>%
+        nest() %>%
+        ungroup() %>%
+        spread(prob, data) %>%
+        arrange(ind) %>%
+        mutate_at(vars(-ind), ~map(., as.data.frame)) %>%
+        mutate_at(vars(-ind), ~map(., unlist))
+    colnames(temp) <- gsub("\\.", "", colnames(temp))
     
-    ## finalise number of repeats
-    disease$repeats <- input$repeats
+    temp <- mutate(input, ind = 1:n()) %>%
+        select(ind, R0, nuA, TE, TP, TI1, TI2) %>%
+        inner_join(temp, by = "ind")
+
+    temp <- mutate(temp, nu = pmap(as.list(temp)[-1], function(R0, nuA, TE, TP, TI1, TI2, pEP, pI1H, pI1D, C, N, S0) {
+            ## transformations
+            gammaE <- rep(1 / TE, length(N))
+            gammaP <- rep(1 / TP, length(N))
+            gammaI1 <- rep(1 / TI1, length(N))
+            gammaI2 <- rep(1 / TI2, length(N))
+            gammaA <- rep(1 / (TP + TI1 + TI2), length(N))
+            
+            ## calculate nu from NGM
+            try(NGM(R0 = R0, nu = NA, C, S0, N, nuA, gammaE, pEP, gammaA, gammaP, gammaI1, 
+                pI1H, pI1D, gammaI2)$nu, silent = TRUE)
+        }, C = C, N = N, S0 = S0))
+    temp <- filter(temp, map_lgl(nu, is.numeric)) %>%
+        mutate(nu = map_dbl(nu, 1)) %>%
+        select(ind, nu)
+    disease <- inner_join(disease, temp, by = "ind")
     
-    ## copy hash for each input
-    disease$output <- input$output
+    ## checks on nu
+    stopifnot(all(disease$nu > 0 & disease$nu < 1))
+    
+    ## finalise data set
+    disease <- mutate(disease, `beta[1]` = nu) %>%
+        mutate(`beta[2]` = nu) %>%
+        rename(`beta[3]` = nu) %>%
+        rename(`beta[6]` = nuA) %>%
+        inner_join(
+            mutate(input, ind = 1:n()) %>%
+                select(ind, repeats, output),
+            by = "ind"
+        )
+    
+    print(paste0(nrow(input) - nrow(disease), " invalid inputs removed"))
+    print(paste0(nrow(disease), " samples remaining"))
     
     ## return disease file
     disease
