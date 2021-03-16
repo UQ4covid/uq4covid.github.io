@@ -2,7 +2,6 @@
 library(lhs)
 library(mclust)
 library(tidyverse)
-library(GGally)
 
 ## source dataTools
 source("R_tools/dataTools.R")
@@ -72,20 +71,18 @@ disease <- convertInputToDisease(inputs, C, N, S0, ages)
 stopifnot(nrow(disease) >= ndesign)
 
 # ## plot inputs
-# select(disease, ind) %>%
+# library(GGally)
+# select(disease, output) %>%
 #     mutate(valid = 1) %>%
-#     right_join(mutate(inputs, ind = 1:n()), by = "ind") %>%
+#     right_join(inputs, by = "output") %>%
 #     arrange(!is.na(valid)) %>%
 #     ggpairs(aes(colour = valid), columns = 3:17, upper = "blank")
 
 ## remove extraneous samples
-inputs <- mutate(inputs, ind = 1:n()) %>%
-    semi_join(disease, by = "ind") %>%
-    arrange(ind) %>%
-    select(-ind) %>%
+inputs <- semi_join(inputs, disease, by = "output") %>%
+    arrange(output) %>%
     slice(1:ndesign)
-disease <- arrange(disease, ind) %>%
-    select(-ind) %>%
+disease <- arrange(disease, output) %>%
     slice(1:ndesign)
 
 ## write text file for MetaWards

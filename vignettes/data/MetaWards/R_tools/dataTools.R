@@ -31,10 +31,13 @@ convertInputToDisease <- function(input, C, N, S0, ages) {
     stopifnot(all(c("R0", "nuA", "TE", "TP", "TI1", "TI2", "alphaEP", 
         "alphaI1H", "alphaI1D", "alphaHD", "eta", 
         "alphaTH", "etaTH", "lock_1_restrict", 
-        "lock_2_release") %in% colnames(input)))
+        "lock_2_release", "repeats", "output") %in% colnames(input)))
+    
+    ## check unique ID
+    stopifnot(length(unique(input$output)) == length(input$output))
     
     ## scaling for asymptomatics
-    disease <- select(input, nuA)
+    disease <- select(input, nuA, output)
   
     ## progressions out of the E class
     for(j in 1:length(ages)) {
@@ -110,26 +113,23 @@ convertInputToDisease <- function(input, C, N, S0, ages) {
     
     ## remove any invalid inputs
     stopifnot(any(disease$nuA >= 0 | disease$nuA <= 1))
-    disease <- mutate(disease, ind = 1:n()) %>%
-        filter_at(vars(starts_with(".p")), all_vars(. >= 0 & . <= 1))
+    disease <- filter_at(disease, vars(starts_with(".p")), all_vars(. >= 0 & . <= 1))
 
     ## set up data for calculating transmission parameter
-    temp <- select(disease, ind, starts_with(".pEP"), starts_with(".pI1H"), starts_with(".pI1D")) %>%
-        gather(prob, value, -ind) %>%
+    temp <- select(disease, output, starts_with(".pEP"), starts_with(".pI1H"), starts_with(".pI1D")) %>%
+        gather(prob, value, -output) %>%
         separate(prob, c("prob", "age"), sep = "_") %>%
         spread(age, value) %>%
-        group_by(prob, ind) %>%
+        group_by(prob, output) %>%
         nest() %>%
         ungroup() %>%
         spread(prob, data) %>%
-        arrange(ind) %>%
-        mutate_at(vars(-ind), ~purrr::map(., as.data.frame)) %>%
-        mutate_at(vars(-ind), ~purrr::map(., unlist))
+        mutate_at(vars(-output), ~purrr::map(., as.data.frame)) %>%
+        mutate_at(vars(-output), ~purrr::map(., unlist))
     colnames(temp) <- gsub("\\.", "", colnames(temp))
     
-    temp <- mutate(input, ind = 1:n()) %>%
-        select(ind, R0, nuA, TE, TP, TI1, TI2) %>%
-        inner_join(temp, by = "ind")
+    temp <- select(input, output, R0, nuA, TE, TP, TI1, TI2) %>%
+        inner_join(temp, by = "output")
 
     temp <- mutate(temp, nu = pmap_dbl(as.list(temp)[-1], function(R0, nuA, TE, TP, TI1, TI2, pEP, pI1H, pI1D, C, N, S0) {
             ## transformations
@@ -143,7 +143,7 @@ convertInputToDisease <- function(input, C, N, S0, ages) {
             NGM(R0 = R0, nu = NA, C, S0, N, nuA, gammaE, pEP, gammaA, gammaP, gammaI1, 
                 pI1H, pI1D, gammaI2)$nu
         }, C = C, N = N, S0 = S0))
-    disease <- inner_join(disease, select(temp, nu, ind), by = "ind")
+    disease <- inner_join(disease, select(temp, nu, output), by = "output")
     
     ## checks on nu
     stopifnot(all(disease$nu > 0 & disease$nu < 1))
@@ -153,11 +153,7 @@ convertInputToDisease <- function(input, C, N, S0, ages) {
         mutate(`beta[2]` = nu) %>%
         rename(`beta[3]` = nu) %>%
         rename(`beta[6]` = nuA) %>%
-        inner_join(
-            mutate(input, ind = 1:n()) %>%
-                select(ind, repeats, output),
-            by = "ind"
-        )
+        inner_join(select(input, repeats, output), by = "output")
     
     print(paste0(nrow(input) - nrow(disease), " invalid inputs removed"))
     print(paste0(nrow(disease), " samples remaining"))
