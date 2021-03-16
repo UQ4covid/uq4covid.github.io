@@ -21,12 +21,13 @@ C <- as.matrix(read.csv("inputs/POLYMOD_matrix.csv", header = FALSE))
 
 ## generate LHS design
 ndesign <- 100
-design <- randomLHS(ndesign, nrow(parRanges))
+ndesignScale <- 1.5 ## generate more samples than required since some will be invalid
+design <- randomLHS(round(ndesign * ndesignScale), nrow(parRanges))
 colnames(design) <- parRanges$parameter
 design <- as_tibble(design)
 
 ## convert to input space
-input <- convertDesignToInput(design, parRanges, "zero_one")
+inputs <- convertDesignToInput(design, parRanges, "zero_one")
 
 ## generate space-filling design for other parameters
 
@@ -35,21 +36,21 @@ hospStays <- readRDS("inputs/hospStays.rds")
 pathways <- readRDS("inputs/pathways.rds")
 
 ## generate design points for hospital stay lengths
-hospStaysInput <- FMMmaximin(hospStays, ndesign, 10000) %>%
+hospStaysInput <- FMMmaximin(hospStays, round(ndesign * ndesignScale)) %>%
     as_tibble() %>%
     rename(alphaTH = x1, etaTH = x2)
-pathwaysInput <- FMMmaximin(pathways, ndesign, 10000) %>%
+pathwaysInput <- FMMmaximin(pathways, round(ndesign * ndesignScale)) %>%
     as_tibble() %>%
     rename(alphaEP = x1, alphaI1D = x2, alphaHD = x3, alphaI1H = x4, eta = x5)
 
 ## bind to design
-input <- cbind(input, hospStaysInput, pathwaysInput)
+inputs <- cbind(inputs, hospStaysInput, pathwaysInput)
 
 ## add unique hash identifier
 ## (at the moment don't use "a0" type ensembleID, because MetaWards
 ## parses to dates)
-input$output <- ensembleIDGen(ensembleID = "Ens0", nrow(input))
-input$repeats <- 1
+inputs$output <- ensembleIDGen(ensembleID = "Ens0", nrow(inputs))
+inputs$repeats <- 1
 
 ## solution to round numbers preserving sum
 ## adapted from:
@@ -67,14 +68,25 @@ S0 <- N - smart_round(read_csv("inputs/age_seeds.csv", col_names = FALSE)$X2 * 1
 ages <- c(2.5, 11, 23.5, 34.5, 44.5, 55.5, 65.5, 75.5)
 
 ## convert input to disease
-disease <- convertInputToDisease(input, C, N, S0, ages)
+disease <- convertInputToDisease(inputs, C, N, S0, ages)
+stopifnot(nrow(disease) >= ndesign)
 
-## plot inputs
-select(disease, ind) %>%
-    mutate(valid = 1) %>%
-    right_join(mutate(input, ind = 1:n()), by = "ind") %>%
-    arrange(!is.na(valid)) %>%
-    ggpairs(aes(colour = valid), columns = 3:17, upper = "blank")
+# ## plot inputs
+# select(disease, ind) %>%
+#     mutate(valid = 1) %>%
+#     right_join(mutate(inputs, ind = 1:n()), by = "ind") %>%
+#     arrange(!is.na(valid)) %>%
+#     ggpairs(aes(colour = valid), columns = 3:17, upper = "blank")
+
+## remove extraneous samples
+inputs <- mutate(inputs, ind = 1:n()) %>%
+    semi_join(disease, by = "ind") %>%
+    arrange(ind) %>%
+    select(-ind) %>%
+    slice(1:ndesign)
+disease <- arrange(disease, ind) %>%
+    select(-ind) %>%
+    slice(1:ndesign)
 
 ## write text file for MetaWards
 write.table(disease, "inputs/disease.dat", row.names = FALSE, sep = " ", quote = FALSE)
