@@ -169,7 +169,7 @@ convertInputToDisease <- function(input, C, N, S0, ages) {
 
 ## @knitr maximin
 ## function to generate maximin samples given an arbitrary FMM
-FMMmaximin <- function(model, nsamp, nseed = 100000) {
+FMMmaximin <- function(model, nsamp, nseed = 10000) {
     
     ## check inputs and dependencies
     require(mclust)
