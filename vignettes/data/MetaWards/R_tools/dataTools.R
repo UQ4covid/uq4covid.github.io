@@ -27,6 +27,7 @@ convertDesignToInput <- function(design, parRanges, scale = c("zero_one", "negon
 convertInputToDisease <- function(input, C, N, S0, ages) {
    
     require(dplyr)
+    require(magrittr)
   
     stopifnot(all(c("R0", "nuA", "TE", "TP", "TI1", "TI2", "alphaEP", 
         "alphaI1H", "alphaI1D", "alphaHD", "eta", 
@@ -42,11 +43,10 @@ convertInputToDisease <- function(input, C, N, S0, ages) {
     }
     disease <- mutate(disease, 
         temp = map2(input$alphaEP, input$eta, function(alpha, eta, ages) {
-            out <- exp(alpha + eta * ages) %>%
+            exp(alpha + eta * ages) %>%
                 matrix(nrow = 1) %>%
+                set_colnames(paste0(".pEP_", 1:length(ages))) %>%
                 as_tibble()
-            colnames(out) <- paste0(".pEP_", 1:length(ages))
-            out
         }, ages = ages)) %>%
         unnest(cols = temp)
     
@@ -66,20 +66,18 @@ convertInputToDisease <- function(input, C, N, S0, ages) {
     }
     disease <- mutate(disease, 
         temp = map2(input$alphaI1H, input$eta, function(alpha, eta, ages) {
-            out <- exp(alpha + eta * ages) %>%
+            exp(alpha + eta * ages) %>%
                 matrix(nrow = 1) %>%
+                set_colnames(paste0(".pI1H_", 1:length(ages))) %>%
                 as_tibble()
-            colnames(out) <- paste0(".pI1H_", 1:length(ages))
-            out
         }, ages = ages)) %>%
         unnest(cols = temp)
     disease <- mutate(disease, 
         temp = map2(input$alphaI1D, input$eta, function(alpha, eta, ages) {
-            out <- exp(alpha + eta * ages) %>%
+            exp(alpha + eta * ages) %>%
                 matrix(nrow = 1) %>%
+                set_colnames(paste0(".pI1D_", 1:length(ages))) %>%
                 as_tibble()
-            colnames(out) <- paste0(".pI1D_", 1:length(ages))
-            out
         }, ages = ages)) %>%
         unnest(cols = temp)
     
@@ -91,21 +89,19 @@ convertInputToDisease <- function(input, C, N, S0, ages) {
     ## progressions out of the H class
     disease <- mutate(disease, 
         temp = map2(input$alphaTH, input$etaTH, function(alpha, eta, ages) {
-            out <- exp(alpha + eta * ages) %>%
-                {1 - exp(-1 / .)} %>%
-                matrix(nrow = 1) %>%
-                as_tibble()
-            colnames(out) <- paste0(".pH_", 1:length(ages))
-          out
+          exp(alpha + eta * ages) %>%
+              {1 - exp(-1 / .)} %>%
+              matrix(nrow = 1) %>%
+              set_colnames(paste0(".pH_", 1:length(ages))) %>%
+              as_tibble()
         }, ages = ages)) %>%
         unnest(cols = temp)
     disease <- mutate(disease, 
         temp = map2(input$alphaHD, input$eta, function(alpha, eta, ages) {
-            out <- exp(alpha + eta * ages) %>%
+            exp(alpha + eta * ages) %>%
                 matrix(nrow = 1) %>%
+                set_colnames(paste0(".pHD_", 1:length(ages))) %>%
                 as_tibble()
-            colnames(out) <- paste0(".pHD_", 1:length(ages))
-            out
         }, ages = ages)) %>%
         unnest(cols = temp)
     
@@ -136,7 +132,7 @@ convertInputToDisease <- function(input, C, N, S0, ages) {
         select(ind, R0, nuA, TE, TP, TI1, TI2) %>%
         inner_join(temp, by = "ind")
 
-    temp <- mutate(temp, nu = pmap(as.list(temp)[-1], function(R0, nuA, TE, TP, TI1, TI2, pEP, pI1H, pI1D, C, N, S0) {
+    temp <- mutate(temp, nu = pmap_dbl(as.list(temp)[-1], function(R0, nuA, TE, TP, TI1, TI2, pEP, pI1H, pI1D, C, N, S0) {
             ## transformations
             gammaE <- rep(1 / TE, length(N))
             gammaP <- rep(1 / TP, length(N))
@@ -145,13 +141,10 @@ convertInputToDisease <- function(input, C, N, S0, ages) {
             gammaA <- rep(1 / (TP + TI1 + TI2), length(N))
             
             ## calculate nu from NGM
-            try(NGM(R0 = R0, nu = NA, C, S0, N, nuA, gammaE, pEP, gammaA, gammaP, gammaI1, 
-                pI1H, pI1D, gammaI2)$nu, silent = TRUE)
+            NGM(R0 = R0, nu = NA, C, S0, N, nuA, gammaE, pEP, gammaA, gammaP, gammaI1, 
+                pI1H, pI1D, gammaI2)$nu
         }, C = C, N = N, S0 = S0))
-    temp <- filter(temp, map_lgl(nu, is.numeric)) %>%
-        mutate(nu = map_dbl(nu, 1)) %>%
-        select(ind, nu)
-    disease <- inner_join(disease, temp, by = "ind")
+    disease <- inner_join(disease, select(temp, nu, ind), by = "ind")
     
     ## checks on nu
     stopifnot(all(disease$nu > 0 & disease$nu < 1))
