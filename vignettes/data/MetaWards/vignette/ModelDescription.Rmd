@@ -705,9 +705,7 @@ metawards -d model_code/ncov.json -m 2011to2019Data\
 
 ### Outputs 
 
-<p style="color:red">HAVEN'T TOUCHED ANYTHING BELOW UNTIL WE FINALISE EXTRACTORS</p>
-
-As described [above](#extractor) each model run produces a series of files called `stages1.db.bz2`, `stages2.db.bz2` etc., which are compressed databases containing the outputs for each age-class. In practice, it is time-consuming to unzip and extract all of these outputs for all design points, and extract and collate the various quantities we need for our emulation and history matching process. To this end we have been kindly offered a processing and data storage solution on [JASMIN](https://www.jasmin.ac.uk/). 
+As described [above](#extractor) each model run produces a series of files called `age1.db.bz2`, `age2.db.bz2` etc., which are compressed databases containing the outputs for each age-class. In practice, it is time-consuming to unzip and extract all of these outputs for all design points, and extract and collate the various quantities we need for our emulation and history matching process. To this end we have been kindly offered a processing and data storage solution on [JASMIN](https://www.jasmin.ac.uk/). 
 
 The simulation outputs from our model are stored at the public repository:
 
@@ -720,21 +718,21 @@ wave
 +-- inputs
 +-- raw_outputs
 | +-- EnsID
-| | +-- stages.db
+| | +-- age*.db
 | | +-- weeksums.csv
 | | +-- Cprev.csv
 | | +-- Hprev.csv
 | | +-- Deaths.csv
 | +-- EnsIDx002
-| | +-- stages.db
+| | +-- age*.db
 | | +-- weeksums.csv
 | +-- EnsIDx003
-| | +-- stages.db
+| | +-- age*.db
 | | +-- weeksums.csv
 | +-- ...
 ```
 
-The `stages*.db` files are the unzipped raw outputs for that design point (described above). The `weeksums.csv` files are weekly summaries of mean hospital prevalence (`Hprev` column), mean critical care prevalence (`Cprev` column) and total hospital + critical care deaths (`Deaths` column) on a weekly basis for each ward and week since lockdown. 
+The `age*.db` files are the unzipped raw outputs for that design point (described above). The `weeksums.csv` files are weekly summaries of mean hospital prevalence (`Hprev` column), mean critical care prevalence (`Cprev` column) and total hospital + critical care deaths (`Deaths` column) on a weekly basis for each ward and week since lockdown. 
 
 For a given ensemble ID (`Ens0000` say), the folder `Ens0000` corresponds to the first replicate for that design point. Other replicates are appended with the replicate number e.g. `Ens0000x002`, `Ens0000x003` and so on. The **main folder only** (e.g. `Ens0000`) for each design point also contains three more `.csv` files: `Hprev.csv`, `Cprev.csv` and `Deaths.csv`. These contain 0.025, 0.25, 0.5, 0.75 and 0.975 quantiles of the `Hprev`, `Cprev` and `Deaths` counts respectively taken across the replicates, and are designed to be used to build our emulators.
 
@@ -745,21 +743,20 @@ The main repo contains scripts to produce these in parallel on JASMIN, greatly s
 
 #### More detail on manipulating model outputs {#recon}
 
-If you've run the model yourselves, or want to use the data differently, then as an example of how to manipulate the raw outputs, migrate to an output folder containing `stages.db.bz2` (or download one from the repo above). If this is a zipped file, then you will have to unzip it. In Linux this can be done on the command line e.g.
+If you've run the model yourselves, or want to use the data differently, then as an example of how to manipulate the raw outputs, migrate to an output folder containing e.g. `age1.db.bz2` (or download one from the repo above). If this is a zipped file, then you will have to unzip it. In Linux this can be done on the command line e.g.
 
 ```{bash}
-bzip2 -dkf stages1.db.bz2
+bzip2 -dkf age1.db.bz2
 ```
 
-You will notice that the unzipped `stages1.db` file is larger than the compressed version. As such, you might need to remove `stages1.db` at the end if you have limited hard drive space (to this end, the `bzip -dkf` flag I used above ensures that the original compressed file is not deleted when uncompressed). 
+You will notice that the unzipped `stages1.db` file is larger than the compressed version. As such, you might need to remove `age1.db` at the end if you have limited hard drive space (to this end, the `bzip -dkf` flag used above ensures that the original compressed file is not deleted when uncompressed). 
 
-The database contains a single table called `compact`. To store the outputs efficiently, we have introduced various tricks, described [above](#extractor). To clarify, each `stages*.db` database contains a table called `compact` with entries:
+The database contains a single table called `compact`. To store the outputs efficiently, we have introduced various tricks, described [above](#extractor). To clarify, each `age*.db` database contains a table called `compact` with entries:
 
 * `day`, `ward`
-* `Einc`, `Iinc`, `Rinc`, `Dinc`
-* `IAinc`, `RAinc`
-* `IHinc`, `RHinc`, `DHinc`
-* `ICinc`, `RCinc`, `DCinc`
+* `Einc`, `Pinc`, `I1inc`, `I2inc`, `RIinc`, `DIinc`
+* `Ainc`, `RAinc`
+* `Hinc`, `RHinc`, `DHinc`
 
 If you're happy with SQL, you can query these directly with e.g. SQLite. If you are an R user, then the `dplyr` package (or more specifically the `dbplyr` package) provides some useful R tools for querying SQL databases using `tidyverse`-type notation. More details about these tools can be found [here](https://cran.r-project.org/web/packages/dbplyr/vignettes/dbplyr.html).
 
@@ -773,7 +770,7 @@ If required, the script `R_tools/dataTools.R`, that provides a function called `
 
 </div>
 
-As a quick example, imagine that we want to extract the **cumulative hospital cases** on say day 100 from R for the lowest age-class. (**Note that we do not need the time-series counts for this, only the incidence data.**) Here we will need to extract the **new hospital cases** from day 1--100, and then sum them up for each ward. Therefore we need to extract `day`, `ward` and `IHinc` from the `compact` table.
+As a quick example, imagine that we want to extract the **cumulative hospital cases** on say day 20 from R for the lowest age-class. (**Note that we do not need the time-series counts for this, only the incidence data.**) Here we will need to extract the **new hospital cases** from day 1--20, and then sum them up for each ward. Therefore we need to extract `day`, `ward` and `Hinc` from the `compact` table.
 
 ```{r, message = messageFlag, warning = warningFlag}
 ## load library
@@ -782,7 +779,7 @@ As a quick example, imagine that we want to extract the **cumulative hospital ca
 library(dplyr)
 
 ## establish connection to database
-con <- DBI::dbConnect(RSQLite::SQLite(), "stages1.db")
+con <- DBI::dbConnect(RSQLite::SQLite(), "age1.db")
 
 ## connect to the 'compact' table
 compact <- tbl(con, "compact")
@@ -793,15 +790,15 @@ compact
 
 By default, the package only pulls enough data from the database to produce a summary on the screen (notice that it prints the dimensions as `?? x 19`). If the database is small enough, then the `collect()` function can be used to import tables directly into R as a `tibble`. Alternatively, the `dbplyr` package can convert `tidyverse`-style commands into SQL and run these directly within the database. For large databases this is likely to be much more efficient, in terms of speed and memory usage. You can then `collect()` the results of the query into R.
 
-As an example of this latter approach, we will set up a query that sums the **new** hospital cases over the first 100 days in each ward. **Remember**: for each ward the database only contains days when some event happens. For cumulative *incidence* counts this is fine, since the missing data will be zero in each case, so we just need to filter first to remove all time points $> 100$. To set up the query:
+As an example of this latter approach, we will set up a query that sums the **new** hospital cases over the first 20 days in each ward. **Remember**: for each ward the database only contains days when some event happens. For cumulative *incidence* counts this is fine, since the missing data will be zero in each case, so we just need to filter first to remove all time points $> 20$. To set up the query:
 
 ```{r}
-## IHinc contains the new cases, so sum these
+## Hinc contains the new cases, so sum these
 ## over each ward for days 1--100
-hosp_db <- filter(compact, day <= 100) %>%
-    select(ward, IHinc) %>%
+hosp_db <- filter(compact, day <= 20) %>%
+    select(ward, Hinc) %>%
     group_by(ward) %>%
-    summarise(IHcum = sum(IHinc))
+    summarise(Hcum = sum(Hinc))
 ```
 
 This hasn't run any commands yet, rather `hosp_db` contains a parsed SQL query that can be run through the database connection. If you like, you can view the generated SQL query using:
@@ -828,7 +825,8 @@ Now you can play with `hosp` as much as you like. **Note** that `hosp` here only
 
 You can very easily wrap these ideas into an R function that can scroll through the design IDs, extract relevant outputs and bind to the inputs. Note that this data processing takes a lot of time, so running in parallel is very helpful. Hence why we do all this on JASMIN.
 
-```{r, echo = FALSE, message = messageFlag, warning = warningFlag, eval = TRUE}
+```{r, message = messageFlag, warning = warningFlag, include = FALSE}
+set.seed(666)
 tempdir <- getwd()
 setwd("..")
 source("convertDesign.R")
