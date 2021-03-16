@@ -4,4 +4,4 @@ The data (`hospitalisationImperial.csv`) is a copy of Table 3 from Verity et al.
 
 Set working directory to this folder, and then run the `cleanData.R` script file to clean and combine data for the subsequent analyses.
 
-Running the `sims.R` script file reruns our plausible range code, and produces a file called `fullmod.rds` that contains a finite mixture model that can be used to generate design points for these parameters.
+Running the `sims.R` script file reruns our plausible range code, and produces a file called `pathways.rds` that contains a finite mixture model that can be used to generate design points for these parameters.

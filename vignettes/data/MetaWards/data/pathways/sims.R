@@ -419,4 +419,4 @@ p <- as_tibble(samples1) %>%
 ggsave("simsMixturePosterior.png", p)
 
 ## save mclust object
-saveRDS(mod, "fullmod.rds")
+saveRDS(mod, "../../inputs/pathways.rds")
