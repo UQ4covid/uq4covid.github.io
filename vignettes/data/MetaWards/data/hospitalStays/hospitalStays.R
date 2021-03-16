@@ -186,6 +186,26 @@ p <- ggplot(hosp, aes(x = ageMid)) +
 ggsave("fittedLnBayes.pdf", p)
 ggsave("fittedLnBayes.svg", p)
 
+## predictions
+hosp_preds <- matrix(1, nrow = 1, ncol = 100) %>%
+    rbind(seq(min(hosp$ageMid), max(hosp$ageMid), length.out = 100))
+hosp_preds <- exp(samples[, 1:2] %*% hosp_preds)
+hosp_preds <- apply(hosp_preds, 2, function(x) {
+        tibble(mean = mean(x), LCI = quantile(x, probs = 0.005), UCI = quantile(x, probs = 0.995))
+    }) %>%
+    bind_rows() %>%
+    mutate(ageMid = seq(min(hosp$ageMid), max(hosp$ageMid), length.out = 100))
+
+## fitted plot
+p <- ggplot(hosp, aes(x = ageMid)) +
+    geom_point(aes(y = TH)) +
+    geom_line(aes(y = mean), data = hosp_preds) +
+    geom_ribbon(aes(ymin = LCI, ymax = UCI), data = hosp_preds, alpha = 0.5) +
+    xlab("Age") + ylab("Mean hospital stay time")# +
+    # geom_abline(intercept = 1.36234700, slope =  0.01560438, colour = "red")
+ggsave("fittedBayes.pdf", p)
+ggsave("fittedBayes.svg", p)
+
 ## posterior correlation
 cor(samples[, 1:2])
 
@@ -222,4 +242,4 @@ ggsave("mixturePosterior.svg", p)
 ggsave("mixturePosterior.png", p)
 
 ## save mclust object
-saveRDS(mod, "hospStays.rds")
+saveRDS(mod, "../../inputs/hospStays.rds")
