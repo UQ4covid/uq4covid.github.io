@@ -280,9 +280,9 @@ From the model structure above, in a single population with age-structure, the *
     \frac{dA^j}{dt} &= \left(1 - p_{EP}^j\right)\gamma_E E^j - \gamma_A A^j\\
     \frac{dP^j}{dt} &= p_{EP}^j\gamma_E E^j - \gamma_P P^j\\
     \frac{dI_1^j}{dt} &= \gamma_P P^j - \gamma_{I_1} I_1^j\\
-    \frac{dI_2^j}{dt} &= \left(1 - p_{I_1H} - p_{I_1D}\right)\gamma_{I_1} I_1^j - \gamma_{I_2} I_2^j\\
+    \frac{dI_2^j}{dt} &= \left(1 - p_{I_1H}^j - p_{I_1D}^j\right)\gamma_{I_1} I_1^j - \gamma_{I_2} I_2^j\\
 \end{align*}
-Here $\beta^{kj}$ is the transmission rate from class $k$ to class $j$ and $N_k$ is the total number of individuals in class $k$. The parameter $\beta_{A \to GP}$ scales the force-of-infection from the $A$ class to the general population.
+Here $\beta^{kj}$ is the transmission rate from class $k$ to class $j$ and $N_k$ is the total number of individuals in class $k$. The parameter $\beta_{A \to GP}$ scales the force-of-infection from the $A$ class relative to the other infectious classes.
 
 The **non-zero** components needed to derive the NGM are:
 \begin{align*}
@@ -323,7 +323,7 @@ and
         0 & \mathrm{otherwise,}
         \end{array}\right. &\\
     \frac{\partial V_{I_2^i}\left(x_0\right)}{\partial I_1^j} &= \left\{\begin{array}{cc} 
-        -\left(1 - p_{I_1H} - p_{I_1D}\right)\gamma_{I_1} & \mathrm{for}~i = j,\\
+        -\left(1 - p_{I_1H}^i - p_{I_1D}^i\right)\gamma_{I_1} & \mathrm{for}~i = j,\\
         0 & \mathrm{otherwise,}
         \end{array}\right. &\\
     \frac{\partial V_{I_2^i}\left(x_0\right)}{\partial I_2^j} &= \left\{\begin{array}{cc} 
@@ -620,26 +620,17 @@ The *input* and *design* spaces are fairly trivial to convert between, but some 
 In R we can set up the *input* parameter ranges as follows:
 
 ```{r}
-## set up parameter ranges
+## set up parameter ranges for uniform ranges
 parRanges <- data.frame(
-    parameter = c("r_zero", "latent_time", "infectious1_time", 
-                  "infectious1_time", "hospital_time",
-                  "lock_1_restrict", "lock_2_release",
-                  "alphaEP", "etaEP", 
-                  "alphaI1H", "etaI1H", 
-                  "alphaI1I2", "etaI1I2",
-                  "alphaI2", "etaI2",
-                  "alphaHR", "etaHR",
-                  "GP_A", "GP_H"),
-    lower = c(2, 4, 2, 2, 4, 0, 0, rep(c("?", 0), 5), rep(0, 2)),
-    upper = c(4, 6, 4, 4, 12, 1, 1, rep(c("?", "?"), 5), rep(1, 2)),
+    parameter = c("R0", "TE", "TP", "TI1", "TI2", 
+                  "betaAGP", "lock_1_restrict", "lock_2_release"),
+    lower = c(2, 0.1, 1.2, 2.8, 0.0001, 0, 0, 0),
+    upper = c(4.5, 2, 3, 4.5, 0.5, 1, 1, 1),
     stringsAsFactors = FALSE
-)
+) 
 ```
 
 Firstly we want a function to convert between the *design* and *input* spaces. A short R function called `convertDesignToInput()` which does this is given below and can be found in the `R_tools/dataTools.R` script file. This requires a `design` data frame with columns denoting each *input* parameter in `parRanges` and rows corresponding to design points. There should be an additional column called `output` that defines a unique identifier for each design point, and a column called `repeats` that contains the number of repeats for each design point. The `convertDesignToInput()` function also requires the `parRanges` data frame (defined above). We use the `scale` argument to define whether the design is on the $(0, 1)$ (`scale = "zero_one"`) or $(-1, 1)$ (`scale = "negone_one"`) space.
-
-> **Note**: this function converts the probabilities correctly for the `mover` defined [above](#mover).
 
 ```{r, echo = FALSE}
 library(knitr)
@@ -654,7 +645,19 @@ read_chunk("../R_tools/dataTools.R")
 
 </div>
 
-Once we have done this, we need to transform from the *input* space to the *disease* space for MetaWards. A `convertInputToDisease()` R function is given below and can be found in the `R_tools/dataTools.R` script file. This requires an `input` data frame, with columns denoting each *input* parameter and rows corresponding to each input points, a number of `repeats` and a column of unique identifiers (`output`).
+Next we have to generate design points for the age-dependent parameters using the process described [above](#parranges). To do this we have two generated finite mixture models that are stored in the files `inputs/pathways.rds` and `inputs/hospStays.rds`, and we use these to generate sets of design points, which we sub-sample using a maximin space-filling design. This approach is implemented in the `FMMmaximin()` function shown below. This takes an `mclust` model object containing the finite mixture model, a required number of design points (`nsamp`), and a number of points to pass to the maximin sampler (`nseed`):
+
+<button data-toggle="collapse" data-target="#maximin">Click for R <code>FMMmaximin</code> function</button>
+<div id="maximin" class="collapse boxed">
+
+```{r, maximin}
+```
+
+</div>
+
+Note that we **do not** have to run the `convertDesignToInput()` function on these design points, since they are already in the *input* space.
+
+Once we have generated design points in this way, we need to transform from the *input* space to the *disease* space for MetaWards. A `convertInputToDisease()` R function is given below and can be found in the `R_tools/dataTools.R` script file. This requires an `input` data frame, with columns denoting each *input* parameter (`R0`, `TE`, `TP`, `TI1`, `TI2`, `alphaEP`, `alphaI1H`, `alphaI1D`, `alphaHD`, `eta`, `alphaTH`, `etaTH`, `betaAGP`, `lock_1_restrict`, `lock_2_release`) and rows corresponding to each input point, a number of `repeats` and a column of unique identifiers (`output`).
 
 <button data-toggle="collapse" data-target="#convert1">Click for R <code>convertInputToDisease</code> function</button>
 <div id="convert1" class="collapse boxed">
@@ -669,7 +672,7 @@ Also in `R_tools/dataTools.R` is a function `ensembleIDGen()` that creates uniqu
 ```{r, code = readLines("../convertDesign.R"), eval = FALSE}
 ```
 
-This produces a file `inputs/disease.dat` that can be passed to MetaWards to run the model. The batch code below provides the command line instructions needed to the model using these inputs. If you don't run Linux, then the file should give you an idea of how to run the model on your own system.
+This produces a file `inputs/disease.dat` that can be passed to MetaWards to run the model. The batch code below provides the command line instructions needed to the model using these inputs for the start of the epidemic to the first lockdown. If you don't run Linux, then the file should give you an idea of how to run the model on your own system.
 
 <button data-toggle="collapse" data-target="#run">Click to show code</button>
 <div id="run" class="collapse boxed">
@@ -680,13 +683,16 @@ mkdir -p raw_outputs
 R CMD BATCH --no-restore --slave --no-save convertDesign.R 
 
 export METAWARDSDATA=$HOME/Documents/covid/MetaWardsData
-
+  
 metawards -d model_code/ncov.json -m 2011to2019Data\
-  -D model_code/demographics.json --mixer model_code/mix_pathways\
-  --mover model_code/move_pathways --input inputs/disease.dat \
-  -u inputs/user_inputs.txt -o raw_outputs --force-overwrite-output \
-  --iterator model_code/iterator --extractor model_code/ward_extractor --start-date 2020/02/22 \
-  --theme simple --nsteps 100
+    -D model_code/demographics.json\
+    --mixer model_code/mix_pathways\
+    --mover model_code/move_pathways\
+    --input inputs/disease.dat\
+    --iterator model_code/iterator\
+    -u inputs/user_inputs.txt -o raw_outputs --force-overwrite-output \
+    --extractor model_code/ward_extractor\
+    --start-date 2020/02/22 --theme simple --nsteps 28
 ```
 
 </div>
@@ -820,7 +826,7 @@ You can very easily wrap these ideas into an R function that can scroll through 
 tempdir <- getwd()
 setwd("..")
 source("convertDesign.R")
-system("zip metawards.zip model_code/* R_tools/* vignette/* convertDesign.R downloadQuantiles.R runscript.sh README.sh")
+system("zip metawards.zip model_code/* R_tools/* vignette/ModelDescription.html inputs/*.csv inputs/hospStays.rds inputs/pathways.rds *.R README.md")
 setwd(tempdir)
 ```
 
