@@ -496,7 +496,13 @@ knitr::include_graphics("../data/hospitalStays/mixturePosterior.png")
 
 For the probabilities of transitioning along different pathways by age, we used two sources of information to generate plausible ranges to use as initial inputs into the calibration. We use model estimates of the *infection fatality risk* and the *probability of hospitalisation given infection* from Verity et al. (2020), and also some data from the CDC.
 
-**NEED EXPLANATION OF THE CDC APPROACH HERE**
+The estimates of the infection fatality risk and the probability of hospitalisation given infection from the CDC are  obtained in the following way.
+
+1. The cumulative number of cases and deaths for each age group by 26/02/2021 were downloaded from [https://covid.cdc.gov/covid-data-tracker/#demographics](https://covid.cdc.gov/covid-data-tracker/#demographics).
+2. We use the cumulative hospitalisation proportion (per 100,000 population) on 20/02/2021 (available from [https://gis.cdc.gov/grasp/COVIDNet/COVID19_3.html](https://gis.cdc.gov/grasp/COVIDNet/COVID19_3.html)), and the US population by age (available from [https://www.statista.com/statistics/241488/population-of-the-us-by-sex-and-age/](https://www.statista.com/statistics/241488/population-of-the-us-by-sex-and-age/)) to estimate the number of hospitalisations for the entire US population.
+3. We obtain the number of in hospital deaths by age group from [https://data.cdc.gov/dataset/NVSS-Provisional-COVID-19-Deaths-by-Place-of-Death/4va6-ph5s/data](https://data.cdc.gov/dataset/NVSS-Provisional-COVID-19-Deaths-by-Place-of-Death/4va6-ph5s/data), by filtering the data for the entire US using the category "Place of death" / "Healthcare setting, inpatient". 
+
+These estimates are provided in the `data/pathways/CasesHospDeathInHospForUS_Update.xlsx` file.
 
 If we plot the log(probability of hospitalisation given infection), and the log(infection fatality risk) against the midpoints of each age-category, then we get an approximate increasing linear relationship with age in all cases, and after discussions we have decided to use log-linear relationships between the probabilities of transitions along certain pathways, and age, with the same slope parameter in each case, constrained such that there is always an increasing risk of more severe outcomes with age. We allow the intercepts to vary between the different transition pathways. Hence we have five parameters to calibrate: the intercepts $\alpha_{EP}$, $\alpha_{I_1D}$, $\alpha_{I_1H}$, $\alpha_{HD}$ and the common slope $\eta$.
 
