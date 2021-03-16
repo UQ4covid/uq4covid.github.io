@@ -53,6 +53,10 @@ library(patchwork)
 library(ggpubr)
 library(png)
 
+## quick way of turning warning and messaging flags on or off
+warningFlag <- FALSE
+messageFlag <- FALSE
+
 ## read in commuter data
 players <- sum(read_delim("~/Documents/covid/MetaWardsData/model_data/2011to2019Data/PlaySize19.dat", " ", col_names = FALSE)$X2)
 workers <- sum(read_delim("~/Documents/covid/MetaWardsData/model_data/2011to2019Data/WorkSize19.dat", " ", col_names = FALSE)$X2)
@@ -83,7 +87,7 @@ where $N^W = `r format(as.integer(workers), big.mark = ",")`$ and $N^P = `r form
 
 <a name="ages"></a>
 
-```{r, warning = FALSE, message = FALSE, echo = FALSE, results = "asis"}
+```{r, warning = warningFlag, message = messageFlag, echo = FALSE, results = "asis"}
 ## read in age-bands by country
 ages <- read_csv("../inputs/Pop\ by\ CTRY.csv") %>%
   filter(!is.na(ageCat)) %>%
@@ -106,7 +110,7 @@ rename(ages, `Prop. Pop.` = prop, `Prop. Workers` = propW, `Prop. Players` = pro
   knitr::kable()
 ```
 
-```{r, warning = FALSE, message = FALSE, echo = FALSE}
+```{r, warning = warningFlag, message = messageFlag, echo = FALSE}
 ## create demographics file
 demo <- "{" %>%
   c(paste0("\t\"demographics\" : [", paste0(paste0("\"age", 1:nrow(ages), "\""), collapse = ", "), "],")) %>%
@@ -144,7 +148,7 @@ We will discuss these choices in more detail in the subsequent sections. Note th
 
 Various functions require additional user inputs. These are stored in the `inputs/user_inputs.txt` file. This contains information on the dates of lockdown and other parameters that are necessary to govern various custom functions as described in more detail in various sections of this vignette. For example, the input `.nage` controls the number of age-classes in the model as described above.
 
-```{r, warning = FALSE, message = FALSE, echo = FALSE}
+```{r, warning = warningFlag, message = messageFlag, echo = FALSE}
 user <- "# Normal status" %>%
   c(".can_work[0]  = True") %>%
   c("") %>%
@@ -414,7 +418,7 @@ p1 / p2 + plot_layout(design = layout)
 
 To generate ranges for the length of the infectious period, $T_{I_1}$, we note that this is equivalent to the **time-from-onset-to-admission** in our model, and hence through simulation chose bounds for $T_{I_1}$ such that the distribution of $T_1$ was approximately consistent with the time-from-onset-to-admission in Challen et al. (2020), and also that the time-from-infection-to-admission, $T_E + T_P + T_{I_1}$, was consistent with the time-from-infection-to-admission in Challen et al. (2020), at both the lower and upper bounds for $T_E$ and $T_P$. The figure below shows these distributions at the lower and upper bounds of the parameter ranges, against the reference distributions in Challen et al. (2020).
 
-```{r, fig.width = 5, fig.height = 10, echo = FALSE, message = FALSE, warning = FALSE, fig.align = "center"}
+```{r, fig.width = 5, fig.height = 10, echo = FALSE, message = messageFlag, warning = warningFlag, fig.align = "center"}
 p1 <- data.frame(
     Lower = rexp(10000, rate = 1 / 2.8),
     Upper = rexp(10000, rate = 1 / 4.5)) %>%
@@ -759,7 +763,7 @@ If required, the script `R_tools/dataTools.R`, that provides a function called `
 
 As a quick example, imagine that we want to extract the **cumulative hospital cases** on say day 100 from R for the lowest age-class. (**Note that we do not need the time-series counts for this, only the incidence data.**) Here we will need to extract the **new hospital cases** from day 1--100, and then sum them up for each ward. Therefore we need to extract `day`, `ward` and `IHinc` from the `compact` table.
 
-```{r, message = FALSE, warning = FALSE}
+```{r, message = messageFlag, warning = warningFlag}
 ## load library
 ## (you might also need to install the 'RSQLite' 
 ## and `dbplyr` packages which 'dplyr' calls)
@@ -812,11 +816,7 @@ Now you can play with `hosp` as much as you like. **Note** that `hosp` here only
 
 You can very easily wrap these ideas into an R function that can scroll through the design IDs, extract relevant outputs and bind to the inputs. Note that this data processing takes a lot of time, so running in parallel is very helpful. Hence why we do all this on JASMIN.
 
-```{r, echo = FALSE, message = FALSE, warning = FALSE, eval = FALSE}
-## copy data across
-system("cp ../data/contactData/coMix_matrix.csv ../inputs/")
-system("cp ../data/contactData/POLYMOD_matrix.csv ../inputs/")
-system("cp ../data/populationByAge/Pop\\ by\\ CTRY.csv ../inputs/")
+```{r, echo = FALSE, message = messageFlag, warning = warningFlag, eval = TRUE}
 tempdir <- getwd()
 setwd("..")
 source("convertDesign.R")
