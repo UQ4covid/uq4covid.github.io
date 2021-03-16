@@ -179,7 +179,7 @@ user <- "# Normal status" %>%
   c(".age_seed_filename = \"inputs/age_seeds.csv\"") %>%
   c("") %>%
   c("# turn off movements in school-age children") %>%
-  c("static_play_at_home[\"age2\"] = 1.0")
+  c("age2:static_play_at_home = 1.0")
 writeLines(user, "../inputs/user_inputs.txt")
 ```
 
