@@ -1,41 +1,39 @@
 ## load libraries
 library(tidyverse)
-library(readxl)
+library(patchwork)
 
 ## read in data
-deaths <- read_xlsx(
-    "COVID-19-daily-announced-deaths-2-April-2020-1.xlsx", 
-    sheet = "COVID19 daily deaths by trust",
-    skip = 13)
-
-## clean data
-deaths <- slice(deaths, -c(1:2)) %>%
-    select(-2) %>%
-    select(1:22)
-colnames(deaths)[1:3] <- c("region", "code", "name")
-deaths <- gather(deaths, date, deaths, -region, -code, -name) %>%
-    mutate(date = as.Date(as.numeric(date), origin = "1899-12-30"))
+deaths <- read_csv("trustDeathsAdmissionsIcuExtract20200624.csv", guess_max = 30000) %>%
+    filter(statistic == "death") %>%
+    filter(date <= "2020-04-01")
 
 ## examine cases by date
-deaths %>%
+p1 <- deaths %>%
     group_by(date) %>%
-    summarise(deaths = sum(deaths)) %>%
+    summarise(deaths = sum(value)) %>%
+    ggplot(aes(x = date, y = deaths)) +
+        geom_line() + xlab("Date") + ylab("Deaths")
+p2 <- deaths %>%
+    group_by(date) %>%
+    summarise(deaths = sum(value)) %>%
     mutate(deaths = cumsum(deaths)) %>%
     ggplot(aes(x = date, y = deaths)) +
         geom_line() + xlab("Date") + ylab("Cumulative Deaths")
+p <- p1 + p2
+ggsave("deathCounts.pdf", p)
 
 ## extract first 100 deaths and amalgamate to proportion
 ## of deaths per trust
 seeds <- deaths %>%
     group_by(date) %>%
-    summarise(deaths = sum(deaths)) %>%
+    summarise(deaths = sum(value)) %>%
     mutate(deaths = cumsum(deaths)) %>%
     filter(deaths <= 100) %>%
     select(-deaths) %>%
     inner_join(deaths, by = "date") %>%
-    filter(deaths > 0) %>%
+    filter(value > 0) %>%
     group_by(code) %>%
-    summarise(deaths = sum(deaths)) %>%
+    summarise(deaths = sum(value)) %>%
     mutate(prop = deaths / sum(deaths)) %>%
     select(-deaths)
 
