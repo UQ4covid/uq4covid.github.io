@@ -388,15 +388,31 @@ NGM <- function(R0 = NA, nu = NA, C, S0, N, nuA, gammaE, pEP, gammaA, gammaP, ga
         ## calculate NGM
         K <- F %*% solve(V)
         
+        ## extract eigenvalues
+        eig <- eigen(K)$values
+        if(is.complex(eig)) {
+            ## extract real eigenvalues
+            eig <- as.numeric(eig[Im(eig) == 0])
+            stopifnot(length(eig) >= 1)
+        }
+        
         ## calculate and return nu
-        nu <- R0 / max(eigen(K)$values)
+        nu <- R0 / max(eig)
         return(list(nu = nu, K = nu * K))
     } else {        
         ## calculate NGM
         K <- nu * F %*% solve(V)
         
-        ## calculate and return nu
-        R0 <- max(eigen(K)$values)
+        ## extract eigenvalues
+        eig <- eigen(K)$values
+        if(is.complex(eig)) {
+            ## extract real eigenvalues
+            eig <- as.numeric(eig[Im(eig) == 0])
+            stopifnot(length(eig) >= 1)
+        }
+        
+        ## calculate and return R0
+        R0 <- max(eig)
         return(list(R0 = R0, K = K))
     }
 }
