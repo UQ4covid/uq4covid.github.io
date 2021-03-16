@@ -248,7 +248,7 @@ For generic states $X$ and $Y$ say, the progress of an individual in age-class $
 * Similarly to before, we model: $\log\left(p^j_{HD}\right) = \alpha_{HD} + \eta \mbox{age}_j$. 
 * We also model: $\log\left(T_H^j\right) = \alpha_{T_H} + \eta_{T_H} \mbox{age}_j$ where $\eta_{T_H} > 0$. 
 
-We also require inputs for $R_0$, a parameter $\beta_{A \to GP}$ which scales the force-of-infection between asymptomatics and the general population, and further scaling parameters that we use to model various lockdown measures (described [below](#lockdown)).
+We also require inputs for $R_0$, a parameter $\nu_A$ which scales the force-of-infection between asymptomatics and the general population, and further scaling parameters that we use to model various lockdown measures (described [below](#lockdown)).
 
 <a name="translink"></a>
 <button data-toggle="collapse" data-target="#trans">Click for details on transmission terms</button>
@@ -256,7 +256,7 @@ We also require inputs for $R_0$, a parameter $\beta_{A \to GP}$ which scales th
 
 From the model structure above, in a single population, the **force-of-infection**, $\lambda^j$, acting on an individual in age-class $j$ is:
 \begin{align*}
-    \lambda^j &= \sum_{k=1}^J \frac{\beta^{kj}}{N^k}\left(P^k + I_1^k + I_2^k + \beta_{A\to GP}A^k\right)
+    \lambda^j &= \sum_{k=1}^J \frac{\beta^{kj}}{N^k}\left(P^k + I_1^k + I_2^k + \nu_A A^k\right)
 \end{align*}
 In practice we model the transmission parameters as:
 $$
@@ -276,18 +276,18 @@ and $R_0$ is the maximum eigenvalue of $\mathbf{K}$.
 
 From the model structure above, in a single population with age-structure, the **infected classes** are $E^j$, $A^j$, $P^j$, $I_1^j$ and $I_2^j$ for age-classes $j = 1, \dots, J$. In a deterministic model these would have rates-of-change of:
 \begin{align*}
-    \frac{dE^j}{dt} &= S^j\left[\sum_{k=1}^J \frac{\beta^{kj}}{N^k}\left(P^k + I_1^k + I_2^k + \beta_{A\to GP}A^k\right) \right] - \gamma_E E^j\\
+    \frac{dE^j}{dt} &= S^j\left[\sum_{k=1}^J \frac{\beta^{kj}}{N^k}\left(P^k + I_1^k + I_2^k + \nu_A A^k\right) \right] - \gamma_E E^j\\
     \frac{dA^j}{dt} &= \left(1 - p_{EP}^j\right)\gamma_E E^j - \gamma_A A^j\\
     \frac{dP^j}{dt} &= p_{EP}^j\gamma_E E^j - \gamma_P P^j\\
     \frac{dI_1^j}{dt} &= \gamma_P P^j - \gamma_{I_1} I_1^j\\
     \frac{dI_2^j}{dt} &= \left(1 - p_{I_1H}^j - p_{I_1D}^j\right)\gamma_{I_1} I_1^j - \gamma_{I_2} I_2^j\\
 \end{align*}
-Here $\beta^{kj}$ is the transmission rate from class $k$ to class $j$ and $N_k$ is the total number of individuals in class $k$. The parameter $\beta_{A \to GP}$ scales the force-of-infection from the $A$ class relative to the other infectious classes.
+Here $\beta^{kj}$ is the transmission rate from class $k$ to class $j$ and $N_k$ is the total number of individuals in class $k$. The parameter $\nu_A$ scales the force-of-infection from the $A$ class relative to the other infectious classes.
 
 The **non-zero** components needed to derive the NGM are:
 \begin{align*}
     \frac{\partial F_{E^i}\left(x_0\right)}{\partial E^j} &= 0 &\qquad  \forall i, j,\\
-    \frac{\partial F_{E^i}\left(x_0\right)}{\partial A^j} &= \frac{\beta^{ji}\beta_{A \to GP}S^i}{N^j} &\qquad \forall i, j\\
+    \frac{\partial F_{E^i}\left(x_0\right)}{\partial A^j} &= \frac{\beta^{ji}\nu_A S^i}{N^j} &\qquad \forall i, j\\
     \frac{\partial F_{E^i}\left(x_0\right)}{\partial P^j} &= \frac{\beta^{ji}S^i}{N^j} &\qquad \forall i, j\\
     \frac{\partial F_{E^i}\left(x_0\right)}{\partial I_1^j} &= \frac{\beta^{ji}S^i}{N^j} &\qquad \forall i, j\\
     \frac{\partial F_{E^i}\left(x_0\right)}{\partial I_2^j} &= \frac{\beta^{ji}S^i}{N^j} &\qquad \forall i, j\\
@@ -364,7 +364,7 @@ We have derived plausible parameter bounds from data and the literature. **We no
     T_{I_2}&: (0.0001, 0.5)\\
     \alpha_{EP}, \alpha_{I_1H}, \alpha_{I_1D}, \alpha_{HD}, \eta&: \mbox{drawn from distribution as described below}\\
     \alpha_{T_H}, \eta_{T_H}&: \mbox{drawn from distribution as described below}\\
-    \beta_{A \to GP}&: (0, 1)
+    \nu_A&: (0, 1)
 \end{align}
 
 <a name="priorslink"></a>
@@ -557,7 +557,7 @@ The `mover` function applies movements in order, and so it is important to get t
 
 ## Interaction matrices
 
-We will use an **interaction matrix** to input the contact matrices that scale the force-of-infection (FOI) from each age-class to the other age-classes (see [here](#translink)). When using interaction matrices in this way, the MetaWards `beta` parameters correspond to the probability of transmission given an infected contact, $\nu$, and for asymptomatics we scale `beta` by $0 < \beta_{A \to GP} < 1$. Full details are given [here](#translink). 
+We will use an **interaction matrix** to input the contact matrices that scale the force-of-infection (FOI) from each age-class to the other age-classes (see [here](#translink)). When using interaction matrices in this way, the MetaWards `beta` parameters correspond to the probability of transmission given an infected contact, $\nu$, and for asymptomatics we scale `beta` by $0 < \nu_A < 1$. Full details are given [here](#translink). 
 
 The `mix_pathways.py` file contains the custom mixer code. Note that we pass in the relative paths to the contact matrix filenames through the user inputs (see [here](#user)), and we start with the POLYMOD contact matrix and then switch to the CoMix contact matrix after the first lockdown. The `merge_matrix_multi_population` merge function is required to get the correct frequency-dependent mixing (see MetaWards tutorial section [here](https://metawards.org/tutorial/part05/04_contacts.html)).
 
@@ -623,7 +623,7 @@ In R we can set up the *input* parameter ranges as follows:
 ## set up parameter ranges for uniform ranges
 parRanges <- data.frame(
     parameter = c("R0", "TE", "TP", "TI1", "TI2", 
-                  "betaAGP", "lock_1_restrict", "lock_2_release"),
+                  "nuA", "lock_1_restrict", "lock_2_release"),
     lower = c(2, 0.1, 1.2, 2.8, 0.0001, 0, 0, 0),
     upper = c(4.5, 2, 3, 4.5, 0.5, 1, 1, 1),
     stringsAsFactors = FALSE
@@ -657,7 +657,7 @@ Next we have to generate design points for the age-dependent parameters using th
 
 Note that we **do not** have to run the `convertDesignToInput()` function on these design points, since they are already in the *input* space.
 
-Once we have generated design points in this way, we need to transform from the *input* space to the *disease* space for MetaWards. A `convertInputToDisease()` R function is given below and can be found in the `R_tools/dataTools.R` script file. This requires an `input` data frame, with columns denoting each *input* parameter (`R0`, `TE`, `TP`, `TI1`, `TI2`, `alphaEP`, `alphaI1H`, `alphaI1D`, `alphaHD`, `eta`, `alphaTH`, `etaTH`, `betaAGP`, `lock_1_restrict`, `lock_2_release`) and rows corresponding to each input point, a number of `repeats` and a column of unique identifiers (`output`).
+Once we have generated design points in this way, we need to transform from the *input* space to the *disease* space for MetaWards. A `convertInputToDisease()` R function is given below and can be found in the `R_tools/dataTools.R` script file. This requires an `input` data frame, with columns denoting each *input* parameter (`R0`, `TE`, `TP`, `TI1`, `TI2`, `alphaEP`, `alphaI1H`, `alphaI1D`, `alphaHD`, `eta`, `alphaTH`, `etaTH`, `nuA`, `lock_1_restrict`, `lock_2_release`) and rows corresponding to each input point, a number of `repeats` and a column of unique identifiers (`output`).
 
 <button data-toggle="collapse" data-target="#convert1">Click for R <code>convertInputToDisease</code> function</button>
 <div id="convert1" class="collapse boxed">
