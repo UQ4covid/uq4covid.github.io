@@ -2,8 +2,7 @@
 ## function to convert from design to input space
 convertDesignToInput <- function(design, parRanges, scale = c("zero_one", "negone_one")) {
   
-    require(dplyr)
-    require(tidyr)
+    require(tidyverse)
   
     ## convert from design space to input space
     input <- mutate(design, ind = 1:n()) %>%
@@ -26,7 +25,7 @@ convertDesignToInput <- function(design, parRanges, scale = c("zero_one", "negon
 ## function to convert from input to disease space
 convertInputToDisease <- function(input, C, N, S0, ages) {
    
-    require(dplyr)
+    require(tidyverse)
     require(magrittr)
   
     stopifnot(all(c("R0", "nuA", "TE", "TP", "TI1", "TI2", "alphaEP", 
@@ -124,8 +123,8 @@ convertInputToDisease <- function(input, C, N, S0, ages) {
         ungroup() %>%
         spread(prob, data) %>%
         arrange(ind) %>%
-        mutate_at(vars(-ind), ~map(., as.data.frame)) %>%
-        mutate_at(vars(-ind), ~map(., unlist))
+        mutate_at(vars(-ind), ~purrr::map(., as.data.frame)) %>%
+        mutate_at(vars(-ind), ~purrr::map(., unlist))
     colnames(temp) <- gsub("\\.", "", colnames(temp))
     
     temp <- mutate(input, ind = 1:n()) %>%
