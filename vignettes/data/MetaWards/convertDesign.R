@@ -20,7 +20,7 @@ parRanges <- data.frame(
 C <- as.matrix(read.csv("inputs/POLYMOD_matrix.csv", header = FALSE))
 
 ## generate LHS design
-ndesign <- 100
+ndesign <- 5
 ndesignScale <- 1.5 ## generate more samples than required since some will be invalid
 design <- randomLHS(round(ndesign * ndesignScale), nrow(parRanges))
 colnames(design) <- parRanges$parameter
