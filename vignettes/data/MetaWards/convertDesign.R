@@ -35,10 +35,20 @@ hospStays <- readRDS("inputs/hospStays.rds")
 pathways <- readRDS("inputs/pathways.rds")
 
 ## generate design points for hospital stay lengths
-hospStaysInput <- FMMmaximin(hospStays, round(ndesign * ndesignScale)) %>%
+hospStaysInput <- FMMmaximin(
+        hospStays, 
+        round(ndesign * ndesignScale), 
+        matrix(c(-Inf, Inf, 0, Inf), ncol = 2, byrow = TRUE)
+    ) %>%
     as_tibble() %>%
     rename(alphaTH = x1, etaTH = x2)
-pathwaysInput <- FMMmaximin(pathways, round(ndesign * ndesignScale)) %>%
+
+## generate design points for other transition probabilities
+pathwaysInput <- FMMmaximin(
+        pathways, 
+        round(ndesign * ndesignScale),
+        matrix(c(rep(c(-20, 0), times = 4), 0, 1), ncol = 2, byrow = TRUE)
+    ) %>%
     as_tibble() %>%
     rename(alphaEP = x1, alphaI1D = x2, alphaHD = x3, alphaI1H = x4, eta = x5)
 
