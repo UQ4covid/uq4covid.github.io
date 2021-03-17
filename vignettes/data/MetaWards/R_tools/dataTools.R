@@ -164,19 +164,40 @@ convertInputToDisease <- function(input, C, N, S0, ages) {
 
 ## @knitr maximin
 ## function to generate maximin samples given an arbitrary FMM
-FMMmaximin <- function(model, nsamp, nseed = 10000) {
+FMMmaximin <- function(model, nsamp, limits, nseed = 10000) {
     
     ## check inputs and dependencies
     require(mclust)
     require(fields)
   
-    stopifnot(!missing(model) & !missing(nsamp))
+    stopifnot(!missing(model) & !missing(nsamp) & !missing(limits))
     stopifnot(class(model)[1] == "densityMclust")
     stopifnot(is.numeric(nsamp) & round(nsamp) == nsamp & nsamp > 1)
     stopifnot(is.numeric(nseed) & round(nseed) == nseed & nseed > 1 & nsamp < nseed)
+    stopifnot(is.matrix(limits))
+    stopifnot(ncol(limits) == 2 & nrow(limits) == nrow(model$parameters$mean))
+    stopifnot(all(limits[, 1] < limits[, 2]))
     
-    ## produce large number of samples from model
-    sims <- sim(model$modelName, model$parameters, nseed)[, -1]
+    ## produce large number of samples from model and ensure they are
+    ## consistent with limits
+    sims <- matrix(NA, 1, 1)
+    while(nrow(sims) < nseed) {
+        
+        ## sample from FMM
+        sims1 <- sim(model$modelName, model$parameters, nseed)[, -1]
+    
+        ## check against limits
+        for(i in 1:nrow(limits)) {
+            sims1 <- sims1[sims1[, i] >= limits[i, 1], ]
+            sims1 <- sims1[sims1[, i] <= limits[i, 2], ]
+        }
+        if(nrow(sims) == 1) {
+            sims <- sims1
+        } else {
+            sims <- rbind(sims, sims1)
+        }
+    }
+    sims <- sims[1:nseed, ]
     
     ## rescale
     simsnorm <- apply(sims, 2, function(x) (x - min(x)) / diff(range(x)))
