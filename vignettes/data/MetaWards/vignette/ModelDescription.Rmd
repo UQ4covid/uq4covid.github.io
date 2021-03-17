@@ -678,27 +678,12 @@ Also in `R_tools/dataTools.R` is a function `ensembleIDGen()` that creates uniqu
 ```{r, code = readLines("../convertDesign.R"), eval = FALSE}
 ```
 
-This produces a file `inputs/disease.dat` that can be passed to MetaWards to run the model. The batch code below provides the command line instructions needed to the model using these inputs for the start of the epidemic to the first lockdown. If you don't run Linux, then the file should give you an idea of how to run the model on your own system.
+This produces a file `inputs/disease.dat` that can be passed to MetaWards to run the model. The `bash` script below provides the command line instructions needed to the model using these inputs for the start of the epidemic to the first lockdown. If you don't run Linux, then the file should give you an idea of how to run the model on your own system.
 
-<button data-toggle="collapse" data-target="#run">Click to show code</button>
+<button data-toggle="collapse" data-target="#run">Click to show `runscript.sh`</button>
 <div id="run" class="collapse boxed">
 
-```{bash, eval = FALSE}
-mkdir -p raw_outputs
-
-R CMD BATCH --no-restore --slave --no-save convertDesign.R 
-
-export METAWARDSDATA=$HOME/Documents/covid/MetaWardsData
-  
-metawards -d model_code/ncov.json -m 2011to2019Data\
-    -D model_code/demographics.json\
-    --mixer model_code/mix_pathways\
-    --mover model_code/move_pathways\
-    --input inputs/disease.dat\
-    --iterator model_code/iterator\
-    -u inputs/user_inputs.txt -o raw_outputs --force-overwrite-output \
-    --extractor model_code/ward_extractor\
-    --start-date 2020/02/22 --theme simple --nsteps 28
+```{bash, code = readLines("../runscript.sh"), eval = FALSE}
 ```
 
 </div>
@@ -826,11 +811,20 @@ Now you can play with `hosp` as much as you like. **Note** that `hosp` here only
 You can very easily wrap these ideas into an R function that can scroll through the design IDs, extract relevant outputs and bind to the inputs. Note that this data processing takes a lot of time, so running in parallel is very helpful. Hence why we do all this on JASMIN.
 
 ```{r, message = messageFlag, warning = warningFlag, include = FALSE}
-set.seed(666)
+## create ZIP file for code
 tempdir <- getwd()
 setwd("..")
-source("convertDesign.R")
-system("zip metawards.zip model_code/* R_tools/* vignette/ModelDescription.html inputs/*.csv inputs/hospStays.rds inputs/pathways.rds *.R README.md")
+system("zip metawards.zip convertDesign.R downloadQuantiles.R runscript.sh model_code/*.py model_code/*.json R_tools/* vignette/ModelDescription.html inputs/*.csv inputs/user_inputs.txt inputs/hospStays.rds inputs/pathways.rds")
+system("zip -d metawards.zip inputs/Pop\\ by\\ CTRY.csv")
+setwd(tempdir)
+```
+
+```{r, message = messageFlag, warning = warningFlag, include = FALSE}
+## create ZIP file for Catalyst
+tempdir <- getwd()
+setwd("..")
+system("zip metawardsCatalyst.zip *.sh *.sbatch *.R model_code/*.py model_code/*.json R_tools/* vignette/ModelDescription.html inputs/*.csv inputs/user_inputs.txt inputs/hospStays.rds inputs/pathways.rds README.md")
+system("zip -d metawardsCatalyst.zip runscript.sh inputs/Pop\\ by\\ CTRY.csv")
 setwd(tempdir)
 ```
 
