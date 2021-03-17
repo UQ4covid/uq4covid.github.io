@@ -388,7 +388,7 @@ ggsave("fittedHosp.svg", p)
 ## fit range of finite mixture models
 samples1 <- samples[sample.int(nrow(samples), 50000), ]
 # samples1 <- maximin(samples, 10)
-mod <- densityMclust(samples1)
+mod <- densityMclust(samples1, G = 1:25, modelNames = "VVV")
 
 ## summary of finite mixture models
 summary(mod)
@@ -400,7 +400,11 @@ props <- sim(mod$modelName, mod$parameters, nimp)[, -1] %>%
     as_tibble() %>%
     set_names(c("alphaEP", "alphaID", "alphaHD", "alphaIH", "eta")) %>%
     mutate(Estimate = "Mixture") %>%
-    filter(eta > 0)
+    filter(eta > 0) %>%
+    filter(alphaEP > -20 & alphaEP < 0) %>%
+    filter(alphaID > -20 & alphaID < 0) %>%
+    filter(alphaHD > -20 & alphaHD < 0) %>%
+    filter(alphaIH > -20 & alphaIH < 0)
 
 ## plot mixture posterior against initial posterior
 p <- as_tibble(samples1) %>%
@@ -420,3 +424,79 @@ ggsave("simsMixturePosterior.png", p)
 
 ## save mclust object
 saveRDS(mod, "../../inputs/pathways.rds")
+
+## predictions for deaths from mixture
+preds <- apply(as.matrix(select(props, -Estimate)), 1, function(samples, ageMid, nind) {
+    
+    alphaEP <- samples[1]
+    alphaID <- samples[2]
+    alphaHD <- samples[3]
+    alphaIH <- samples[4]
+    eta <- samples[5]
+    
+    pEP <- exp(alphaEP + eta * ageMid)
+    pID <- exp(alphaID + eta * ageMid)
+    pHD <- exp(alphaHD + eta * ageMid)
+    pIH <- exp(alphaIH + eta * ageMid)
+    
+    ## check on validity
+    if(all(pEP <= 1) & all(pID <= 1) & all(pHD <= 1) & all(pIH <= 1) & all((pID + pIH) <= 1)) {
+        
+        ## run simulation
+        nD <- map(1:length(pEP), function(i, pEP, pIH, pID, pHD, nind) {
+            nP <- rbinom(1, nind, pEP[i])
+            temp <- rmultinom(1, nP, c(pIH[i], pID[i], 1 - pIH[i] - pID[i]))
+            nH <- temp[1]
+            nID <- temp[2]
+            nHD <- rbinom(1, nH, pHD[i])
+            c(nID, nHD, nH)
+        }, pEP = pEP, pIH = pIH, pID = pID, pHD = pHD, nind = nind)
+        
+        ## extract probabilities
+        pD <- map_int(nD, ~sum(.[-3])) / nind
+        pH <- map_int(nD, 3) / nind
+    } else {
+        pD <- rep(NA, length(pEP))
+        pH <- rep(NA, length(pEP))
+    }
+    list(pH, pD)
+}, ageMid = ageMid, nind = 100000)
+
+## extract summaries of predictions
+hosp_preds <- map(preds, 1) %>%
+    transpose() %>%
+    map(unlist) %>%
+    map(function(x) {
+        x <- x[!is.na(x)]
+        tibble(mean = mean(x), LCI = quantile(x, probs = 0.005), UCI = quantile(x, probs = 0.995))
+    }) %>%
+    bind_rows() %>%
+    mutate(ageMid = ageMid) %>%
+    mutate(type = "pred") 
+death_preds <- map(preds, 2) %>%
+    transpose() %>%
+    map(unlist) %>%
+    map(function(x) {
+        x <- x[!is.na(x)]
+        tibble(mean = mean(x), LCI = quantile(x, probs = 0.005), UCI = quantile(x, probs = 0.995))
+    }) %>%
+    bind_rows() %>%
+    mutate(ageMid = ageMid) %>%
+    mutate(type = "pred") 
+
+## plot predictions
+p <- ggplot(death_preds, aes(x = ageMid)) +
+    geom_line(aes(y = mean)) +
+    geom_point(aes(y = propD), data = IFR) +
+    geom_ribbon(aes(ymin = LCI, ymax = UCI), alpha = 0.3)
+ggsave("fittedDeathsMix.pdf", p)
+ggsave("fittedDeathsMix.svg", p)
+
+## plot predictions
+p <- ggplot(hosp_preds, aes(x = ageMid)) +
+    geom_line(aes(y = mean)) +
+    geom_point(aes(y = propH), data = hosp) +
+    geom_ribbon(aes(ymin = LCI, ymax = UCI), alpha = 0.3)
+ggsave("fittedHospMix.pdf", p)
+ggsave("fittedHospMix.svg", p)
+
