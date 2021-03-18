@@ -371,7 +371,7 @@ We have derived plausible parameter bounds from data and the literature. **We no
 <button data-toggle="collapse" data-target="#priors">Click for details on plausible range choices</button>
 <div id="priors" class="collapse boxed">
 
-For the mean latent period, $T_E$, we set the upper bound such that the latent period distribution has an upper tail probability that is consistent with the **generation interval** distribution from Challen et al. (2020). This provides a conservative upper bound, since the generation time is equivalent to $T_E + T_P$ in our model. We choose a lower bound such that it is possible to have a short, but non-zero latent period. The figure below shows the latent period distributions at the lower and upper bounds of the parameter ranges for $T_E$.
+For the mean latent period, $T_E$, we set the upper bound such that the latent period distribution has an upper tail probability that is consistent with the **generation interval** distribution from [Challen et al. (2020)](https://www.medrxiv.org/content/10.1101/2020.11.17.20231548v2). This provides a conservative upper bound, since the generation time is equivalent to $T_E + T_P$ in our model. We choose a lower bound such that it is possible to have a short, but non-zero latent period. The figure below shows the latent period distributions at the lower and upper bounds of the parameter ranges for $T_E$.
 
 ```{r, fig.width = 5, fig.height = 5, echo = FALSE, fig.align = "center"}
 p1 <- data.frame(
@@ -391,7 +391,7 @@ BB"
 p1 / p2 + plot_layout(design = layout)
 ```
 
-To generate ranges for the length of the pre-symptomatic period, $T_P$, we note that the **incubation period** is equivalent to $T_E + T_P$ in our model, and hence through simulation we generated incubation period distributions at the lower and upper bounds of $T_E$, and chose bounds for $T_P$ such that at the lower bounds of $T_E$ and $T_P$ the incubation period distribution looks like the lower-mean incubation period distribution in Challen et al. (2020), and at the upper bounds of $T_E$ and $T_P$ the incubation period distribution looks like the higher-mean incubation period distribution in Challen et al. (2020). The figure below shows the incubation period distributions at the lower and upper bounds of the parameter ranges for $T_E$ and $T_P$, against the reference distributions in Challen et al. (2020).
+To generate ranges for the length of the pre-symptomatic period, $T_P$, we note that the **incubation period** is equivalent to $T_E + T_P$ in our model, and hence through simulation we generated incubation period distributions at the lower and upper bounds of $T_E$, and chose bounds for $T_P$ such that at the lower bounds of $T_E$ and $T_P$ the incubation period distribution looks like the lower-mean incubation period distribution in [Challen et al. (2020)](https://www.medrxiv.org/content/10.1101/2020.11.17.20231548v2), and at the upper bounds of $T_E$ and $T_P$ the incubation period distribution looks like the higher-mean incubation period distribution in [Challen et al. (2020)](https://www.medrxiv.org/content/10.1101/2020.11.17.20231548v2). The figure below shows the incubation period distributions at the lower and upper bounds of the parameter ranges for $T_E$ and $T_P$, against the reference distributions in [Challen et al. (2020)](https://www.medrxiv.org/content/10.1101/2020.11.17.20231548v2).
 
 ```{r, fig.width = 5, fig.height = 5, echo = FALSE, fig.align = "center"}
 p1 <- data.frame(
@@ -416,7 +416,7 @@ BB"
 p1 / p2 + plot_layout(design = layout)
 ```
 
-To generate ranges for the length of the infectious period, $T_{I_1}$, we note that this is equivalent to the **time-from-onset-to-admission** in our model, and hence through simulation chose bounds for $T_{I_1}$ such that the distribution of $T_1$ was approximately consistent with the time-from-onset-to-admission in Challen et al. (2020), and also that the time-from-infection-to-admission, $T_E + T_P + T_{I_1}$, was consistent with the time-from-infection-to-admission in Challen et al. (2020), at both the lower and upper bounds for $T_E$ and $T_P$. The figure below shows these distributions at the lower and upper bounds of the parameter ranges, against the reference distributions in Challen et al. (2020).
+To generate ranges for the length of the infectious period, $T_{I_1}$, we note that this is equivalent to the **time-from-onset-to-admission** in our model, and hence through simulation chose bounds for $T_{I_1}$ such that the distribution of $T_1$ was approximately consistent with the time-from-onset-to-admission in [Challen et al. (2020)](https://www.medrxiv.org/content/10.1101/2020.11.17.20231548v2), and also that the time-from-infection-to-admission, $T_E + T_P + T_{I_1}$, was consistent with the time-from-infection-to-admission in [Challen et al. (2020)](https://www.medrxiv.org/content/10.1101/2020.11.17.20231548v2), at both the lower and upper bounds for $T_E$ and $T_P$. The figure below shows these distributions at the lower and upper bounds of the parameter ranges, against the reference distributions in [Challen et al. (2020)](https://www.medrxiv.org/content/10.1101/2020.11.17.20231548v2).
 
 ```{r, fig.width = 5, fig.height = 10, echo = FALSE, message = messageFlag, warning = warningFlag, fig.align = "center"}
 p1 <- data.frame(
@@ -494,7 +494,7 @@ The intercept and slope of this line provide the parameters we use to determine 
 knitr::include_graphics("../data/hospitalStays/mixturePosterior.png")
 ```
 
-For the probabilities of transitioning along different pathways by age, we used two sources of information to generate plausible ranges to use as initial inputs into the calibration. We use model estimates of the *infection fatality risk* and the *probability of hospitalisation given infection* from Verity et al. (2020), and also some data from the CDC.
+For the probabilities of transitioning along different pathways by age, we used two sources of information to generate plausible ranges to use as initial inputs into the calibration. We use model estimates of the *infection fatality risk* and the *probability of hospitalisation given infection* from [Verity et al. (2020)](https://www.thelancet.com/journals/laninf/article/PIIS1473-3099(20)30243-7/fulltext), and also some data from the CDC.
 
 The estimates of the infection fatality risk and the probability of hospitalisation given infection from the CDC are  obtained in the following way.
 
@@ -506,7 +506,7 @@ These estimates are provided in the `data/pathways/CasesHospDeathInHospForUS_Upd
 
 If we plot the log(probability of hospitalisation given infection), and the log(infection fatality risk) against the midpoints of each age-category, then we get an approximate increasing linear relationship with age in all cases, and after discussions we have decided to use log-linear relationships between the probabilities of transitions along certain pathways, and age, with the same slope parameter in each case, constrained such that there is always an increasing risk of more severe outcomes with age. We allow the intercepts to vary between the different transition pathways. Hence we have five parameters to calibrate: the intercepts $\alpha_{EP}$, $\alpha_{I_1D}$, $\alpha_{I_1H}$, $\alpha_{HD}$ and the common slope $\eta$.
 
-To derive plausible ranges for these parameters, we used a pseudo-marginal MCMC approach based on simulated data sets. Firstly, we took the infection fatality risks and probabilities of hospitalisation estimates from Verity et al. (2020), and for each age-class we generated a pseudo-data set by randomly sampling from a binomial distribution with 100 trials and a probability of success given by the relevant estimate. This gave us age-specific counts for hospitalisations ($y_{iH}$) and death *given* infection ($y_{iD}$) given $n_i = 100$ "trials" for age-classes $i$. We then fitted a model to this pseudo-data set, targeting a posterior of the form:
+To derive plausible ranges for these parameters, we used a pseudo-marginal MCMC approach based on simulated data sets. Firstly, we took the infection fatality risks and probabilities of hospitalisation estimates from [Verity et al. (2020)](https://www.thelancet.com/journals/laninf/article/PIIS1473-3099(20)30243-7/fulltext), and for each age-class we generated a pseudo-data set by randomly sampling from a binomial distribution with 100 trials and a probability of success given by the relevant estimate. This gave us age-specific counts for hospitalisations ($y_{iH}$) and death *given* infection ($y_{iD}$) given $n_i = 100$ "trials" for age-classes $i$. We then fitted a model to this pseudo-data set, targeting a posterior of the form:
 \begin{align}
     & \pi\left(\alpha_{EP}, \alpha_{I_1D}, \alpha_{I_1H}, \alpha_{HD}, \eta \mid \mathbf{y}, \mathbf{n}\right) \propto\\
     & \qquad \pi\left(\mathbf{y} \mid \alpha_{EP}, \alpha_{I_1D}, \alpha_{I_1H}, \alpha_{HD}, \eta, \mathbf{n}\right) \pi\left(\alpha_{EP}, \alpha_{I_1D}, \alpha_{I_1H}, \alpha_{HD}, \eta\right).
@@ -521,7 +521,7 @@ $$
 $$
 where (with a slight abuse of notation) $x_j \sim \pi\left(\mathbf{x} \mid \alpha_{EP}, \alpha_{I_1D}, \alpha_{I_1H}, \alpha_{HD}, \eta\right)$. Since $\hat{\pi}\left(\mathbf{y} \mid \alpha_{EP}, \alpha_{I_1D}, \alpha_{I_1H}, \alpha_{HD}, \eta, \mathbf{n}\right)$ is positive and unbiased, we can substitute this estimator in place of the true likelihood in a Metropolis-Hastings algorithm, and it will converge to the true posterior in probability. We found $M = 1$ simulation was sufficient, but we had to run long chains to get good mixing.
 
-We repeated this approach for 10 replicate pseudo-data sets derived from the Verity et al. (2020) estimates, and also 10 replicate pseudo-data sets derived from the CDC data. The **union** of these posterior samples across all 20 data sets provided our plausible ranges. Full details can be found in the `data/pathways/` folder.
+We repeated this approach for 10 replicate pseudo-data sets derived from the [Verity et al. (2020)](https://www.thelancet.com/journals/laninf/article/PIIS1473-3099(20)30243-7/fulltext) estimates, and also 10 replicate pseudo-data sets derived from the CDC data. The **union** of these posterior samples across all 20 data sets provided our plausible ranges. Full details can be found in the `data/pathways/` folder.
 
 As a comparison, below we show the probability of hospitalisation given infection estimates from both the Verity and CDC data against the 99% prediction intervals generated from our union posterior samples. 
 
