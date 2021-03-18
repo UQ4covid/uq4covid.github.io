@@ -4,7 +4,7 @@ be proportionately redistributed to the 2019 wards.
 2011 Ward Lookup from the `MetaWardsData` repository. Need to add correct path to local repository
 in the `create2011to2019.R` source file before running.
 
-Ward19 Lookup (Ward_to_Local_Authority_District_(December_2019)_Lookup_in_the_United_Kingdom) from:
+Ward19 Lookup (`Ward_to_Local_Authority_District_(December_2019)_Lookup_in_the_United_Kingdom.csv`) from:
 
 (https://geoportal.statistics.gov.uk/datasets/ward-to-local-authority-district-december-2019-lookup-in-the-united-kingdom)[https://geoportal.statistics.gov.uk/datasets/ward-to-local-authority-district-december-2019-lookup-in-the-united-kingdom]
 
