@@ -25,6 +25,7 @@ ggsave("deathCounts.pdf", p)
 ## extract first 100 deaths and amalgamate to proportion
 ## of deaths per trust
 seeds <- deaths %>%
+    arrange(date) %>%
     group_by(date) %>%
     summarise(deaths = sum(value)) %>%
     mutate(deaths = cumsum(deaths)) %>%
