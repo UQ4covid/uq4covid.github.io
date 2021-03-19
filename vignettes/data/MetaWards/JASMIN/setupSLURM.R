@@ -33,8 +33,9 @@ lockdown1 <- dmy("21/03/2020")
 lockdown2 <- dmy("13/05/2020")
 
 ## extract weeks after lockdown
-WEEKS <- unique(tweeks[dates >= lockdown1])
-WEEKS <- c(min(WEEKS) - 1, WEEKS)
+# WEEKS <- unique(tweeks[dates >= lockdown1])
+# WEEKS <- c(min(WEEKS) - 1, WEEKS)
+WEEKS <- unique(tweeks)
 
 ## create week/day lookup table
 week_lookup <- data.frame(day = as.numeric(dates - startdate), week = tweeks)
