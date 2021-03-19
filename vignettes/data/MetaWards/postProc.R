@@ -2,6 +2,7 @@
 library(dplyr)
 library(tidyr)
 library(readr)
+library(magrittr)
 
 ## may also need to install RSQLite library
 ## e.g. install.packages("RSQLite")
@@ -15,6 +16,9 @@ if(length(args) > 0) {
 } else {
     stop("No arguments")
 }
+
+## source in dataTools (for reconstruct function)
+source("R_tools/dataTools.R")
 
 ## read in ward and week lookups
 weeks <- read_csv("week_lookup.csv", col_names = FALSE)
@@ -39,13 +43,31 @@ system(paste0("bzip2 -dkf ", path, ".bz2"))
 con <- DBI::dbConnect(RSQLite::SQLite(), path)
 
 ## collect database
-output <- tbl(con, "compact") %>%
+compact <- tbl(con, "compact") %>%
     collect()
     
+## disconnect from database
+DBI::dbDisconnect(con)
+    
+## reconstruct counts from incidence
+output <- reconstruct(
+        compact$Einc, compact$Pinc, compact$I1inc, compact$I2inc, compact$RIinc, 
+        compact$DIinc, compact$Ainc, compact$RAinc,
+        compact$Hinc, compact$RHinc, compact$DHinc
+    ) %>%
+    magrittr::set_colnames(c(
+        "Einc", "E", "Pinc", "P", "I1inc", "I1", "I2inc", "I2", 
+        "RI", "DI",
+        "Ainc", "A", "RA",
+        "Hinc", "H", "RH", "DH"
+    )) %>%
+    as_tibble()
+output$day <- compact$day
+
 ## join with week lookup and generate summary measures
 output <- inner_join(output, weeks, by = "day") %>%
     group_by(ward, week) %>%
-    summarise(Hprev = sum(H) / 7, Cprev = sum(C) / 7, Deaths = max(DH) + max(DC)) %>%
+    summarise(Hprev = sum(H) / 7, Deaths = max(DH) + max(DI)) %>%
     ungroup()
     
 ## expand to empty wards

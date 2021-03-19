@@ -1,5 +1,5 @@
-## load jaspy to get SQLite3 3.26.0 and 
-## later version of R (3.5.1) you will have
+## load jaspy to get SQLite3 3.30.1 and 
+## later version of R (3.6.3) you will have
 ## to do this outside of the script
 # system("module load jaspy")
 print("HAVE YOU LOADED jaspy?")
@@ -13,22 +13,14 @@ library(dplyr)
 library(readr)
 library(purrr)
 library(stringr)
-## need to install before-CCTZ version of lubridate
-## or else it won't compile
-## also then need devtools, so had to install
-## earlier version of a dependency
-#library(versions)
-#install.versions("later", version = "0.7.5")
-#library(devtools)
-#devtools::install_github("tidyverse/lubridate@before-CCTZ")
 library(lubridate)
 
 ## may also need to install RSQLite library
 ## e.g. install.packages("RSQLite")
 
-## create weeks from 1st January 2020
-startdate <- dmy("01/01/2020")
-dates <- startdate + 0:177
+## create weeks from 22nd February 2020
+startdate <- dmy("22/02/2020")
+dates <- startdate + 0:28
 
 lockdownDate1 <- dmy("21/03/2020")
 lockdownDate2 <- dmy("13/05/2020")
@@ -50,16 +42,16 @@ week_lookup <- filter(week_lookup, week %in% WEEKS)
 write.table(week_lookup, "week_lookup.csv", row.names = FALSE, col.names = FALSE, sep = ",")
 
 ## create ward lookup table
-ward_lookup <- expand.grid(ward = 1:8588, week = unique(week_lookup$week))
+ward_lookup <- expand.grid(ward = 1:8071, week = unique(week_lookup$week))
 write.table(ward_lookup, "ward_lookup.csv", row.names = FALSE, col.names = FALSE, sep = ",")
 
 ## read in inputs
-design <- readRDS("inputs/design.rds")
+inputs <- readRDS("inputs/inputs.rds")
 parRanges <- readRDS("inputs/parRanges.rds")
 
 ## write out as csvs
 system(paste0("mkdir -p ", filedir, "inputs"))
-write_csv(design, paste0(filedir, "inputs/design.csv"))
+write_csv(inputs, paste0(filedir, "inputs/inputs.csv"))
 write_csv(parRanges, paste0(filedir, "inputs/parRanges.csv"))
 
 ## here we are going to extract cumulative hospital counts
@@ -69,7 +61,7 @@ write_csv(parRanges, paste0(filedir, "inputs/parRanges.csv"))
 ## this next part creates the script file to pass to LOTUS
 
 ## extract data
-paths <- map2(design$output, design$repeats, function(hash, reps) {
+paths <- map2(inputs$output, inputs$repeats, function(hash, reps) {
   
     ## generate output hashes
     hashes <- map2(hash, 1:reps, c)
@@ -107,11 +99,11 @@ write.table(paths, "job_lookup.txt", col.names = FALSE, row.names = FALSE, quote
 
 ## write number of jobs to file
 code <- readLines("submit_quantile_template.sbatch")
-code <- gsub("RANGES", paste0("1-", length(design$output)), code)
+code <- gsub("RANGES", paste0("1-", length(inputs$output)), code)
 writeLines(code, "submit_quantile.sbatch")
 
 ## write csv to query
-paths <- select(design, output)
+paths <- select(inputs, output)
 write.table(paths, "quantile_lookup.txt", col.names = FALSE, row.names = FALSE, quote = FALSE)
 
 print("All done.")

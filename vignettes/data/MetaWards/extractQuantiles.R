@@ -73,10 +73,6 @@ Hprev <- filter(output, out == "Hprev") %>%
     select(-out)
 write_csv(Hprev, paste0(filedir, "raw_outputs/", hash, "/Hprev.csv"))
 
-Cprev <- filter(output, out == "Cprev") %>%
-    select(-out)
-write_csv(Cprev, paste0(filedir, "raw_outputs/", hash, "/Cprev.csv"))
-
 Deaths <- filter(output, out == "Deaths") %>%
     select(-out)
 write_csv(Deaths, paste0(filedir, "raw_outputs/", hash, "/Deaths.csv"))
