@@ -29,7 +29,7 @@ how to download and generate the contact matrix data used in the model.
 
 ## Setting up design
 
-The R script `convertDesign.R` contains a simple example of sampling
+The R script `convertDesign.R` contains a ***simple example*** of sampling
 from a $(0, 1)$ LHS sampler, and then converting the design into
 the correct format for MetaWards, which is written into the `inputs/disease.dat`
 file. This uses `convertDesigntoInput()` and `convertInputToDisease()` tools
@@ -37,24 +37,32 @@ that can be found in the `R_tools/dataTools.R` script, and are described in the
 vignette. (These tools also accept designs in $(-1, 1)$ spaces as long as you
 set the `scale` argument to `convertDesignToInput()`.)
 
+Other designs can be added using this code as a guide.
+
 ### Tests
 
 There are some tests in the `tests/` folder. The `bash` script file `testScript.sh`
-gives details. These are mostly brute force sense checks on the outputs. Paths to
-the `MetaWardsData` folder will have to be updated on different machines.
+gives details. These run tests in a single population, and compare outputs to a deterministic
+model (to check that the finalsizes match those that are obtained from the NGM matrix
+using the approach of [Andreasen (2011)](https://link.springer.com/article/10.1007%2Fs11538-010-9623-3)). 
+They also compare the MetaWards runs to those obtained form an equivalent single
+population model coded in R in order to check various aspects of the implementation. 
+Paths to the `MetaWardsData` folder will have to be updated on different machines.
 
 ## Running the model on Catalyst
 
-Once the design has been generated and the `inputs/disease.dat` file specified, the
-whole folder can be zipped and sent to Christopher, who will run it using the
-`jobscript.sh` script. 
+When the vignette is generated, this produces a `.zip` file called `metawards.zip` that
+contains all the code necessary to run the model on an individual machine. This can be unzipped
+and the varius design files edited at will as required.
 
-You can amend this script if you want to change anything (for example, the 
-`--nsteps 177` default number of days to run the model for might want amending).
+Similarly, generating the vignette also creates a .zip. file called `metawardsCatalyst.zip`
+that contains the same, but with additional code for runnign on Catalyst and post-processing
+on JASMIN. Once the design has been included, this can be sent to Christopher, who will run it 
+using the `catalystJobscript.sh` script and copy the results to JASMIN in the `covid19` workspace. 
 
-Once the model has been run, Christopher will transfer to JASMIN.
+## JASMIN post-processing
 
-## Copying files to JASMIN
+### Copying files to JASMIN
 
 Assuming you're set up on JASMIN, and have access to the GWS for the `covid19`
 project. Then you need to login to a transfer server to copy the files across.
@@ -91,7 +99,7 @@ Once this is done, disconnect from the `xfer*` node.
 exit
 ```
 
-## Create scripts
+### Create scripts
 
 Firstly, from the login node, log in to `sci1.jasmin.ac.uk` e.g.
 
@@ -135,7 +143,7 @@ filedir="/gws/nopw/j04/covid19/public/wave0/"
 to point to the correct output folder that we wish other people to access (with
 trailing `/` as before).
 
-## Extracting outputs and producing summary tables on JASMIN
+### Extracting outputs and producing summary tables on JASMIN
 
 This next step can be done in parallel, and can be run by submitting a batch
 job script via SLURM:
@@ -149,7 +157,7 @@ wall time etc.), then either edit the `submit_job.sbatch` file directly,
 or alter the `submit_job_template.sbatch` template file and then re-run `setupSLURM.R` as
 above.
 
-## Extracting quantiles
+### Extracting quantiles
 
 Once the above has been done, submit the following job file via SLURM:
 
