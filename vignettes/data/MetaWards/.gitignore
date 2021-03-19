@@ -33,6 +33,8 @@ data/hospitalCatchments/WD19*
 data/hospitalCatchments/*.pdf
 data/hospitalCatchments/*.csv
 data/contactData/*.csv
+data/seedDeaths/*.pdf
+data/seedDeaths/*.csv
 vignette/*.log
 vignette/*.gz
 vignette/*.pdf
