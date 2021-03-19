@@ -46,8 +46,8 @@ ward_lookup <- expand.grid(ward = 1:8071, week = unique(week_lookup$week))
 write.table(ward_lookup, "ward_lookup.csv", row.names = FALSE, col.names = FALSE, sep = ",")
 
 ## read in inputs
-inputs <- readRDS("inputs/inputs.rds")
-parRanges <- readRDS("inputs/parRanges.rds")
+inputs <- readRDS("../inputs/inputs.rds")
+parRanges <- readRDS("../inputs/parRanges.rds")
 
 ## write out as csvs
 system(paste0("mkdir -p ", filedir, "inputs"))

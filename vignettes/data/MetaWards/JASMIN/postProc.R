@@ -18,7 +18,7 @@ if(length(args) > 0) {
 }
 
 ## source in dataTools (for reconstruct function)
-source("R_tools/dataTools.R")
+source("../R_tools/dataTools.R")
 
 ## read in ward and week lookups
 weeks <- read_csv("week_lookup.csv", col_names = FALSE)
@@ -34,7 +34,7 @@ colnames(wards) <- c("ward", "week")
 print(paste0("Currently evaluating: ", hash))
 
 ## create path
-path <- paste0("raw_outputs/", hash, "/stages.db")
+path <- paste0("../raw_outputs/", hash, "/stages.db")
 
 ## unzip DB
 system(paste0("bzip2 -dkf ", path, ".bz2"))
