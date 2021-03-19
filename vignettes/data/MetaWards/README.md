@@ -107,10 +107,10 @@ Firstly, from the login node, log in to `sci1.jasmin.ac.uk` e.g.
 ssh USERNAME@sci1.jasmin.ac.uk
 ```
 
-Then change directory to the relevant folder:
+Then change directory to the relevant folder containing the JASMIN code e.g.
 
 ```
-cd /gws/nopw/j04/covid19/FOLDER
+cd /gws/nopw/j04/covid19/FOLDER/JASMIN
 ```
 
 Now load the `jaspy` module:
