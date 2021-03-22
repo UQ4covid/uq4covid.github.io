@@ -174,9 +174,9 @@ user <- "# Normal status" %>%
   c(paste0(".nage = ", nrow(ages))) %>%
   c("") %>%
   c("# names of input files for seeding") %>%
-  c(".nseeds = 100") %>%
   c(".ward_seed_filename = \"inputs/ward_seeds.csv\"") %>%
   c(".age_seed_filename = \"inputs/age_seeds.csv\"") %>%
+  c(".time_seed_filename = \"inputs/time_seeds.csv\"") %>%
   c("") %>%
   c("# turn off movements in school-age children") %>%
   c("age2:static_play_at_home = 1.0")
@@ -206,13 +206,11 @@ write_csv(age_seed, "../inputs/age_seeds.csv", col_names = FALSE)
 ```{js, code = readLines("../inputs/age_seeds.csv"), eval = FALSE}
 ```
 
-Here the first column is the age demographic and the second is the probability of seeding into that age-demographic.
+Here the first column is the age demographic and the second is the probability of seeding into that age-demographic. We take the number of deaths observed on each day up to the 14th March 2020, and seed the same number of individuals exactly three weeks earlier. To do this we take a multinomial sample to decide how many individuals are seeded into each age-class, and then we split these across wards as described below. These are stored in the file `inputs/time_seeds.csv`, the first column of which is the date of the seeding, and the second is how many individuals are seeded on that day.
 
-We take a multinomial sample of size 100 to decide how many individuals are seeded into each age-class, and then we split these across wards as described below.
+We take all recorded deaths up to and including the 14th March, and generate the proportions of these deaths across the relevant NHS trusts. This generates a probability of seeding infection in each trust. We then split these probabilities across all wards in these trusts proportionately to the ward population sizes. We then sample initial seeds by taking a multinomial sample of the relevant size (according to the age-class samples above) across all relevant wards. Details and instructions can be found in `data/seedDeaths/README.md`. This creates a file `inputs/ward_seeds.csv` that contains the necessary probabilities for ward seeding. This file has the same form as the `age_seeds.csv` file described above, but the first column is the ward ID, and the second is the probabilities.
 
-We take the first 100 observed deaths, and generate the proportions of these deaths across the relevant NHS trusts. This generates a probability of seeding infection in each trust. We then split these probabilities across all wards in these trusts proportionately to the ward population sizes. We then sample initial seeds by taking a multinomial sample of the relevant size (according to the age-class samples above) across all relevant wards. Details and instructions can be found in `data/seedDeaths/README.md`. This creates a file `inputs/ward_seeds.csv` that contains the necessary probabilities for ward seeding. This file has the same form as the `age_seeds.csv` file described above, but the first column is the ward ID, and the second is the probabilities.
-
-The first 100 deaths occur before 14th March 2020, and so we seed three weeks before this and start simulations on 22nd February 2020.
+For each of the observed deaths before 14th March, we seed three weeks before the recorded death time, using the procedure described above. We start simulations on 9th February 2020 with the first seed added on the 10th February.
 
 > **Note**: the user inputs file must contain the relative path names to the age and ward seed files, and also the number of seeds required---see [here](#user).
 

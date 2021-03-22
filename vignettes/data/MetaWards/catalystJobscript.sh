@@ -23,5 +23,5 @@ metawards -d model_code/ncov.json -m 2011to2019Data\
     --iterator model_code/iterator\
     -u inputs/user_inputs.txt -o raw_outputs --force-overwrite-output \
     --extractor model_code/ward_extractor\
-    --start-date 2020/02/22 --theme simple --nsteps 28 --no-spinner \
+    --start-date 2020/02/09 --theme simple --nsteps 41 --no-spinner \
     --nthreads 4

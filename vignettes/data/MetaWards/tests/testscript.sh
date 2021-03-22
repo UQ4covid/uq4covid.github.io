@@ -55,3 +55,13 @@ cd ..
 cd test6
 ./testscript.sh
 cd ..
+
+## same as test1 but turning off transmission and using
+## different seeds at different time points to
+## assess seeding function - this only prints output
+## as text file to check manually
+
+cd test7
+./testscript.sh
+cd ..
+
