@@ -802,7 +802,8 @@ You can very easily wrap these ideas into an R function that can scroll through 
 ## create ZIP file for code
 tempdir <- getwd()
 setwd("..")
-system("zip metawards.zip convertDesign.R downloadQuantiles.R runscript.sh model_code/*.py model_code/*.json R_tools/* vignette/ModelDescription.html inputs/*.csv inputs/user_inputs.txt inputs/hospStays.rds inputs/pathways.rds")
+system("rm metawards.zip")
+system("zip metawards.zip convertDesign.R runscript.sh model_code/*.py model_code/*.json R_tools/* vignette/ModelDescription.html inputs/*.csv inputs/user_inputs.txt inputs/hospStays.rds inputs/pathways.rds")
 system("zip -d metawards.zip inputs/Pop\\ by\\ CTRY.csv")
 setwd(tempdir)
 ```
@@ -811,7 +812,8 @@ setwd(tempdir)
 ## create ZIP file for Catalyst
 tempdir <- getwd()
 setwd("..")
-system("zip metawardsCatalyst.zip *.sh *.sbatch *.R model_code/*.py model_code/*.json R_tools/* vignette/ModelDescription.html inputs/*.csv inputs/user_inputs.txt inputs/hospStays.rds inputs/pathways.rds README.md")
+system("rm metawardsCatalyst.zip")
+system("zip metawardsCatalyst.zip *.sh *.R JASMIN/* model_code/*.py model_code/*.json R_tools/* vignette/ModelDescription.html inputs/*.csv inputs/user_inputs.txt inputs/hospStays.rds inputs/pathways.rds README.md")
 system("zip -d metawardsCatalyst.zip runscript.sh inputs/Pop\\ by\\ CTRY.csv")
 setwd(tempdir)
 ```
