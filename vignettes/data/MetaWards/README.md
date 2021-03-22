@@ -99,7 +99,7 @@ Once this is done, disconnect from the `xfer*` node.
 exit
 ```
 
-### Create scripts
+### Create script
 
 Firstly, from the login node, log in to `sci1.jasmin.ac.uk` e.g.
 
@@ -132,16 +132,7 @@ This must be a sub-directory of `/gws/nopw/j04/covid19/public`. Then run the scr
 R CMD BATCH --no-restore --no-save --slave setupSLURM.R
 ```
 
-This will create two files called `submit_job.sbatch` and `submit_quantile.sbatch`
-that we can submit to SLURM. Edit the `createSum.sh` and `createQuantiles.sh` files 
-and change the lines:
-
-```
-filedir="/gws/nopw/j04/covid19/public/wave0/"
-```
-
-to point to the correct output folder that we wish other people to access (with
-trailing `/` as before).
+This will create a file called `submit_job.sbatch` that we can submit to SLURM. 
 
 ### Extracting outputs and producing summary tables on JASMIN
 
@@ -157,51 +148,12 @@ wall time etc.), then either edit the `submit_job.sbatch` file directly,
 or alter the `submit_job_template.sbatch` template file and then re-run `setupSLURM.R` as
 above.
 
-### Extracting quantiles
-
-Once the above has been done, submit the following job file via SLURM:
-
-```
-sbatch submit_quantile.sbatch
-```
-
-This will run once the scheduler allows. If you want to change any of the settings (like
-wall time etc.), then either edit the `submit_quantile.sbatch` file directly,
-or alter the `submit_quantile_template.sbatch` template file and then re-run `setupSLURM.R` as
-above.
-
-
 ## Querying files from external sources
 
 All relevant files should be accessible on a server than can be directly accessed
 at [https://gws-access.jasmin.ac.uk/public/covid19/](https://gws-access.jasmin.ac.uk/public/covid19/). You cannot query an SQLite database from a server like this, you can only
 download files. Thus the `age*.db` databases in each sub-directory contain the
-raw outputs, but the summary measures are in the `weeksums.csv` files. These hold 
+raw outputs, but the summary measures are in the `weeksums_*.csv` files. These hold 
 weekly average `Hprev` and total `Deaths` for each week / ward combination 
 for every week since just before the first lockdown. 
-
-In the baseline directory for each design point (e.g. `Ens0000` and not `Ens0000x001` etc.)
-there are two files: `Hprev.csv` and `Deaths.csv` that contain the
-quantiles of the different outputs over the replicates for each design point.
-
-The R script `downloadQuantiles.R` provides some parallel code that can be run from 
-any user machine to download these and concatenate the outputs across the design
-points accordingly. Just change the lines:
-
-```
-filedir <- "https://gws-access.jasmin.ac.uk/public/covid19/wave0/"
-week <- 12
-output <- "Hprev"
-ncores <- 24
-```
-
-accordingly. The first line needs to point to the correct directory on the server 
-(with trailing `/`). The `week` object can either be a vector of weeks to extract,
-or `NA`, in which case it will extract all weeks. The `output` object is the name
-of the output to extract (it must be one of: `Hprev` or `Deaths`). Finally,
-the `ncores` object gives the number of cores to use to read entries in parallel
-(Windows user will have to set this to be 1).
-
-If you want to extract for a subset of design points, then swap `design$output` in 
-the `mclapply()` function for a vector of design hashes.
 

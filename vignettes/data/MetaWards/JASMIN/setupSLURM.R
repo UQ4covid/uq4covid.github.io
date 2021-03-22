@@ -59,7 +59,7 @@ write_csv(parRanges, paste0(filedir, "inputs/parRanges.csv"))
 ## hospital deaths, critical care counts and critical care
 ## deaths at each week since lockdown
 
-## this next part creates the script file to pass to LOTUS
+## this next part creates the script file to pass to SLURM
 
 ## extract data
 paths <- map2(inputs$output, inputs$repeats, function(hash, reps) {
@@ -92,20 +92,12 @@ paths <- reduce(paths, c)
 ## write number of jobs to file
 code <- readLines("submit_job_template.sbatch")
 code <- gsub("RANGES", paste0("1-", length(paths)), code)
+code <- gsub("FILEDIR", filedir, code)
 writeLines(code, "submit_job.sbatch")
 
 ## write csv to query
 paths <- data.frame(path = paths)
 write.table(paths, "job_lookup.txt", col.names = FALSE, row.names = FALSE, quote = FALSE)
-
-## write number of jobs to file
-code <- readLines("submit_quantile_template.sbatch")
-code <- gsub("RANGES", paste0("1-", length(inputs$output)), code)
-writeLines(code, "submit_quantile.sbatch")
-
-## write csv to query
-paths <- select(inputs, output)
-write.table(paths, "quantile_lookup.txt", col.names = FALSE, row.names = FALSE, quote = FALSE)
 
 print("All done.")
 

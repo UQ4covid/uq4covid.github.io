@@ -704,27 +704,17 @@ wave
 +-- raw_outputs
 | +-- EnsID
 | | +-- age*.db
-| | +-- weeksums.csv
-| | +-- Cprev.csv
-| | +-- Hprev.csv
-| | +-- Deaths.csv
+| | +-- weeksums_*.csv
 | +-- EnsIDx002
 | | +-- age*.db
-| | +-- weeksums.csv
+| | +-- weeksums_*.csv
 | +-- EnsIDx003
 | | +-- age*.db
-| | +-- weeksums.csv
+| | +-- weeksums_*.csv
 | +-- ...
 ```
 
-The `age*.db` files are the unzipped raw outputs for that design point (described above). The `weeksums.csv` files are weekly summaries of mean hospital prevalence (`Hprev` column), mean critical care prevalence (`Cprev` column) and total hospital + critical care deaths (`Deaths` column) on a weekly basis for each ward and week since lockdown. 
-
-For a given ensemble ID (`Ens0000` say), the folder `Ens0000` corresponds to the first replicate for that design point. Other replicates are appended with the replicate number e.g. `Ens0000x002`, `Ens0000x003` and so on. The **main folder only** (e.g. `Ens0000`) for each design point also contains three more `.csv` files: `Hprev.csv`, `Cprev.csv` and `Deaths.csv`. These contain 0.025, 0.25, 0.5, 0.75 and 0.975 quantiles of the `Hprev`, `Cprev` and `Deaths` counts respectively taken across the replicates, and are designed to be used to build our emulators.
-
-The main repo contains scripts to produce these in parallel on JASMIN, greatly speeding up the post-processing time. However, JASMIN is not open for general use, so these are not useful outside of the current working group. However, the results of this post-processing are detailed above and can be downloaded from the given link. A script file `downloadQuantiles.R` gives some R code that can be used to download the quantile data from a set of design IDs onto any end-user machine:
-
-```{r, code = readLines("../downloadQuantiles.R"), eval = FALSE}
-```
+The `age*.db` files are the unzipped raw outputs for that design point (described above). The `weeksums_*.csv` files are weekly summaries of mean hospital prevalence (`Hprev` column) and total deaths (`Deaths` column) on a weekly basis for each ward and week within each age-class. For a given ensemble ID (`Ens0000` say), replicates are appended with the replicate number e.g. `Ens0000x001`, `Ens0000x002` and so on. 
 
 #### More detail on manipulating model outputs {#recon}
 
@@ -734,7 +724,7 @@ If you've run the model yourselves, or want to use the data differently, then as
 bzip2 -dkf age1.db.bz2
 ```
 
-You will notice that the unzipped `stages1.db` file is larger than the compressed version. As such, you might need to remove `age1.db` at the end if you have limited hard drive space (to this end, the `bzip -dkf` flag used above ensures that the original compressed file is not deleted when uncompressed). 
+You will notice that the unzipped `age1.db` file is larger than the compressed version. As such, you might need to remove `age1.db` at the end if you have limited hard drive space (to this end, the `bzip -dkf` flag used above ensures that the original compressed file is not deleted when uncompressed). 
 
 The database contains a single table called `compact`. To store the outputs efficiently, we have introduced various tricks, described [above](#extractor). To clarify, each `age*.db` database contains a table called `compact` with entries:
 
@@ -773,7 +763,7 @@ compact <- tbl(con, "compact")
 compact
 ```
 
-By default, the package only pulls enough data from the database to produce a summary on the screen (notice that it prints the dimensions as `?? x 19`). If the database is small enough, then the `collect()` function can be used to import tables directly into R as a `tibble`. Alternatively, the `dbplyr` package can convert `tidyverse`-style commands into SQL and run these directly within the database. For large databases this is likely to be much more efficient, in terms of speed and memory usage. You can then `collect()` the results of the query into R.
+By default, the package only pulls enough data from the database to produce a summary on the screen (notice that it prints the dimensions as `?? x 13`). If the database is small enough, then the `collect()` function can be used to import tables directly into R as a `tibble`. Alternatively, the `dbplyr` package can convert `tidyverse`-style commands into SQL and run these directly within the database. For large databases this is likely to be much more efficient, in terms of speed and memory usage. You can then `collect()` the results of the query into R.
 
 As an example of this latter approach, we will set up a query that sums the **new** hospital cases over the first 20 days in each ward. **Remember**: for each ward the database only contains days when some event happens. For cumulative *incidence* counts this is fine, since the missing data will be zero in each case, so we just need to filter first to remove all time points $> 20$. To set up the query:
 
@@ -808,7 +798,7 @@ hosp
 
 Now you can play with `hosp` as much as you like. **Note** that `hosp` here only contains information about wards that have some infections, and only from the time since initial infection. Hence for calibration you might need to expand to fill in the missing wards. Fortunately, R (especially `tidyverse`) has lots of tools for doing this. 
 
-You can very easily wrap these ideas into an R function that can scroll through the design IDs, extract relevant outputs and bind to the inputs. Note that this data processing takes a lot of time, so running in parallel is very helpful. Hence why we do all this on JASMIN.
+You can very easily wrap these ideas into an R function that can scroll through the design IDs, extract relevant outputs and bind to the inputs.
 
 ```{r, message = messageFlag, warning = warningFlag, include = FALSE}
 ## create ZIP file for code

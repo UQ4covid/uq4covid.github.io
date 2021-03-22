@@ -7,5 +7,5 @@
 
 module add jaspy
 
-./createSum.sh ${SLURM_ARRAY_TASK_ID}
+./createSum.sh ${SLURM_ARRAY_TASK_ID} FILEDIR
 
