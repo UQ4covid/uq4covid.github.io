@@ -452,7 +452,7 @@ DD"
 p1 / p2 / p3 / p4 + plot_layout(design = layout)
 ```
 
-For the remainder of infectivity time, $T_{I_2}$, we noted that Cevik et al. (2020) found no live virus beyond day 9 of symptom onset. As such, we used simulation to find upper and lower bounds for $T_{I_2}$. The upper bound of $T_{I_2}$ was chosen so that when $T_{I_1}$ was at its lower bound, the probability that the infectivity time post onset ($T_{I_1} + T_{I_2}$) was > 9 days was $\approx 0.05$. Conversely, if $T_{I_1}$ is set to its upper bound, then even for very low values of $T_{I_2}$ we were unable to get upper tail probabilities for $T_{I_1} + T_{I_2}$ of less than $\approx 0.13$, hence we set a lower bound for $T_{I_2}$ of 0.0001. At the upper bound for $T_{I_1}$ and $T_{I_2}$ these tail probabilities were $\approx 0.15$.
+For the remainder of infectivity time, $T_{I_2}$, we noted that [Cevik et al. (2020)](https://www.thelancet.com/journals/lanmic/article/PIIS2666-5247(20)30172-5/fulltext) found no live virus beyond day 9 of symptom onset. As such, we used simulation to find upper and lower bounds for $T_{I_2}$. The upper bound of $T_{I_2}$ was chosen so that when $T_{I_1}$ was at its lower bound, the probability that the infectivity time post onset ($T_{I_1} + T_{I_2}$) was > 9 days was $\approx 0.05$. Conversely, if $T_{I_1}$ is set to its upper bound, then even for very low values of $T_{I_2}$ we were unable to get upper tail probabilities for $T_{I_1} + T_{I_2}$ of less than $\approx 0.13$, hence we set a lower bound for $T_{I_2}$ of 0.0001. At the upper bound for $T_{I_1}$ and $T_{I_2}$ these tail probabilities were $\approx 0.15$.
 
 ```{r, fig.width = 5, fig.height = 2.5, echo = FALSE, fig.align = "center"}
 p1 <- data.frame(
@@ -472,7 +472,7 @@ p1 <- data.frame(
 p1
 ```
 
-For the hospital stay times we used **DATA SOURCE HERE**. Below we plot the distribution of stay times by age, along with the best fitting exponential model in each case.
+For the hospital stay times we used data from the CHESS study which is not publicly available. Below we plot the distribution of stay times by age, along with the best fitting exponential model in each case.
 
 ```{r, echo = FALSE, out.width = "75%", out.height = "75%", fig.align = "center"}
 knitr::include_graphics("../data/hospitalStays/expFits.svg")
