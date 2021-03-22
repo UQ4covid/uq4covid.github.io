@@ -4,6 +4,7 @@ from metawards.iterators import advance_play
 from metawards.iterators import advance_fixed
 from datetime import datetime
 import numpy as np
+import sys
 
 # use caching to store matrix read in from filename
 seed_file_cache = {}
@@ -26,6 +27,28 @@ def read_age_file(filename):
         Console.debug("Age-level seeding probabilities:", variables = [age_probs])
         seed_file_cache[filename] = age_probs
     return seed_file_cache[filename]
+    
+def read_time_file(filename):
+    global seed_file_cache
+    if filename not in seed_file_cache:
+        with open(filename, "r") as FILE:
+            time_seeds = [[num for num in line.split(',')] for line in FILE]
+        Console.debug("Times of seeding:", variables = [time_seeds])
+        
+        # convert to dates and counts
+        time_seeds = np.array(time_seeds)
+        time_seeds_count = time_seeds[:, 1].astype(int)
+        
+        time_seeds_date = [[i.split('-')] for i in time_seeds[:, 0]]
+        time_seeds_date = [[int(i[0][0]), int(i[0][1]), int(i[0][2])] for i in time_seeds_date]
+        time_seeds_date = [datetime(i[0], i[1], i[2]).date() for i in time_seeds_date]
+
+        # store outputs
+        seed_file_cache[filename] = time_seeds
+        seed_file_cache["time_seeds_count"] = time_seeds_count
+        seed_file_cache["time_seeds_date"] = time_seeds_date
+    
+    return seed_file_cache["time_seeds_count"], seed_file_cache["time_seeds_date"]
     
 # determine the lock-down status based on the population and current network
 def get_lock_down_vars(network, population):
@@ -84,34 +107,47 @@ def advance_initial_seeds(network, population, infections, profiler, rngs, **kwa
     # extract files name for initial seeding probabilities
     ward_seed_filename = params.user_params["ward_seed_filename"]
     age_seed_filename = params.user_params["age_seed_filename"]
+    time_seed_filename = params.user_params["time_seed_filename"]
     
     # start profiler
     p = profiler.start("additional_seeds")
     
-    # only generate seeds once
-    if ward_seed_filename and age_seed_filename not in seed_file_cache:
-        # extract required number of seeds
-        nseeds = params.user_params["nseeds"]
+    # set up lookups or read from cache
+    age_probs = read_age_file(age_seed_filename)
+    ward_probs = read_seed_file(ward_seed_filename)
+    time_seed_count, time_seed_date = read_time_file(time_seed_filename) 
+    
+    # extract current date    
+    date = population.date
         
-        # set up age-class probabilities in cache or read from cache
-        age_probs = read_age_file(age_seed_filename)
+    # filter to extract number of seeds
+    filter_time_seed = [i == date for i in time_seed_date]
+    nseeds = time_seed_count[filter_time_seed]
+    
+    if len(nseeds) > 1:
+        sys.exit("Error with number of seeds")
+    
+    if len(nseeds) > 0:
+    
+        nseeds = nseeds[0]
+    
+        # set up age probs
         age_probs = np.array(age_probs)
         age_probs_ind = age_probs[:, 0].astype(int)
         age_probs = age_probs[:, 1].astype(float)
         
-        # select seeds in age-classes at random according to initial probabilities
-        age_seeds = np.random.multinomial(nseeds, age_probs)
-        
-        # set up ward probabilities in cache or read from cache
-        ward_probs = read_seed_file(ward_seed_filename)
+        # set up ward probs
         ward_probs = np.array(ward_probs)
         ward_probs_ind = ward_probs[:, 0].astype(int)
         ward_probs = ward_probs[:, 1].astype(float)
         
+        # select seeds in age-classes at random according to initial probabilities
+        age_seeds = np.random.multinomial(nseeds, age_probs)
+        
         # run over each age demographic
         for demographic in range(len(age_seeds)):
             
-            ## check if any seeding done in demographic
+            # check if any seeding done in demographic
             if age_seeds[demographic] > 0:
                 
                 # select seeds in wards at random according to initial probabilities
@@ -183,3 +219,4 @@ def iterate_lockdown(population, **kwargs):
         return [advance_initial_seeds, advance_lockdown_weekend]
     else:
         return [advance_initial_seeds, advance_lockdown_week]
+

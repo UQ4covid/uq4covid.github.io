@@ -22,14 +22,19 @@ p2 <- deaths %>%
 p <- p1 + p2
 ggsave("deathCounts.pdf", p)
 
-## extract first 100 deaths and amalgamate to proportion
-## of deaths per trust
+## extract deaths before 14th March 
 seeds <- deaths %>%
     arrange(date) %>%
     group_by(date) %>%
     summarise(deaths = sum(value)) %>%
-    mutate(deaths = cumsum(deaths)) %>%
-    filter(deaths <= 100) %>%
+    filter(date <= "2020-03-14")
+## write lookup table mapped to three weeks before
+mutate(seeds, date = date - 21) %>%
+    filter(deaths > 0) %>%
+    write_csv("../../inputs/time_seeds.csv", col_names = FALSE)
+
+## amalgamate to proportion of deaths per trust
+seeds <- seeds %>%
     select(-deaths) %>%
     inner_join(deaths, by = "date") %>%
     filter(value > 0) %>%

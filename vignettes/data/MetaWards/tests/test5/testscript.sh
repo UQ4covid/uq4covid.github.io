@@ -13,9 +13,9 @@ rm *.pdf
 
 ## set up user inputs
 cp ../user_inputs_default.txt user_inputs.txt
-printf '\n.nseeds = 10\n' >> user_inputs.txt
 printf '\n.ward_seed_filename = \"ward_seeds.csv\"\n' >> user_inputs.txt
 printf '\n.age_seed_filename = \"age_seeds.csv\"\n' >> user_inputs.txt
+printf '\n.time_seed_filename = \"time_seeds.csv\"\n' >> user_inputs.txt
 printf '\n\n.contact_matrix1_filename = \"contact_matrix1.csv\"\n' >> user_inputs.txt
 printf '\n\n.contact_matrix2_filename = \"contact_matrix2.csv\"\n' >> user_inputs.txt
 
@@ -38,6 +38,9 @@ cp ../../inputs/coMix_matrix.csv contact_matrix2.csv
 rm ward_seeds.csv
 touch ward_seeds.csv
 printf '1,1' >> ward_seeds.csv
+rm time_seeds.csv
+touch time_seeds.csv
+printf '2020-01-01,10' >> time_seeds.csv
 rm age_seeds.csv
 touch age_seeds.csv
 printf '1,1\n' >> age_seeds.csv
@@ -81,7 +84,7 @@ metawards --nproc $nprocessors --nthreads $nthreads -m single -P 100000\
     --iterator ../../model_code/iterator\
     -u user_inputs.txt -o raw_outputs --force-overwrite-output \
     --extractor ../../model_code/ward_extractor\
-    --start-date 2020/01/01 --theme simple --nsteps 150
+    --start-date 2019/12/31 --theme simple --nsteps 150
 
 ## run R script
 R CMD BATCH --no-restore --no-save --slave test.R 
