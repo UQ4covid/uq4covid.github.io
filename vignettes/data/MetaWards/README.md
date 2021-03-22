@@ -119,7 +119,7 @@ Now load the `jaspy` module:
 module load jaspy
 ```
 
-Now edit the `setupLOTUS.R` script and change `filedir` to point to the public
+Now edit the `setupSLURM.R` script and change `filedir` to point to the public
 directory that you want the files saved into (with trailing `/`) e.g.
 
 ```
