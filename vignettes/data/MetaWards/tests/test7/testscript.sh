@@ -75,6 +75,7 @@ printf '0 0 0 0 ' >> disease.dat
 printf '1 test' >> disease.dat
 
 ## run MetaWards
+rm nohup.out
 nohup metawards --nproc $nprocessors --nthreads $nthreads -m single -P 100000\
     -d ncov_age.json\
     -D demographics_age.json --mixer ../../model_code/mix_pathways\
