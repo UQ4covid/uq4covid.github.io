@@ -1,6 +1,6 @@
 The script files and data sources used here are to generate plausible ranges for the age-specific transition probabilities.
 
-The data (`hospitalisationImperial.csv`) is a copy of Table 3 from Verity et al., *Lancet Infectious Diseases*, 2020. The data (`IFRImperial.csv`) is a copy of Table 1 from Verity et al., *Lancet Infectious Diseases*, 2020. 
+The data (`hospitalisationImperial.csv`) is a copy of Table 3 from [Verity et al., *Lancet Infectious Diseases*, 2020](https://www.thelancet.com/journals/laninf/article/PIIS1473-3099(20)30243-7/fulltext). The data (`IFRImperial.csv`) is a copy of Table 1 from [Verity et al., *Lancet Infectious Diseases*, 2020](https://www.thelancet.com/journals/laninf/article/PIIS1473-3099(20)30243-7/fulltext). 
 
 The estimates of the infection fatality risk and the probability of hospitalisation given infection from the CDC (`CasesHospDeathInHospForUS_Update.xlsx`) are  obtained in the following way.
 
