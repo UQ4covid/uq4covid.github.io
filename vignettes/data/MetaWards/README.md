@@ -13,19 +13,31 @@ assumes that you have cloned the MetaWardsData as detailed
 
 Some data generation must be done in advance as documented below.
 
-The file `README.md` in the `data/ward2011ToWard2019Mapping` folder contains information about
-where to download the relevant shapefiles and lookup tables to convert
+The folder `data/ward2011ToWard2019Mapping` folder contains 
+the relevant shapefiles, lookup tables and code to convert
 the 2011 ward-level commuter data to the 2019 wards and LADs. There is also
 code to generate the relevant data for use in the MetaWards model runs.
 
-The file `README.md` in the `data/hospitalStays` folder contains information about
-how to inform the length of hospital stays from line list data provided by Rob Challen.
+The `data/hospitalStays` folder contains information about
+how to inform the length of hospital stays from CHESS data. (See `data/hospitalStays/README.md`.)
 
-The input data `data/populationByAge/Pop by CTRY.csv` is from Rob Challen and contains 
-population counts in different age-classes in different countries.
+The input data `data/populationByAge/Pop by CTRY.csv` is from ONS census and contains 
+population counts in different age-classes in different countries. (See `data/populationByAge/README.md`.)
 
 The file `README.md` in the `data/contactData` folder contains information about
-how to download and generate the contact matrix data used in the model.
+how to download and generate the contact matrices used in the model.
+
+The `data/hospitalCatchments` folder contains scripts provided by Rob Challen for mapping
+NHS Trusts to 2019 wards.
+
+The `data/intervals` folder contains relevant screenshots from [Challen et al. (2020)](https://www.medrxiv.org/content/10.1101/2020.11.17.20231548v2).
+
+The `data/pathways` folder contains data from [Verity et al. (2020)](https://www.thelancet.com/journals/laninf/article/PIIS1473-3099(20)30243-7/fulltext)
+and the CDC website, along with code to generate plausible ranges for various
+transition probability parameters.
+
+The `data/seedDeaths` folder contains code to generate seeding times and probabilities.
+This relies on death data we are not able to share publicly.
 
 ## Setting up design
 
@@ -56,7 +68,7 @@ contains all the code necessary to run the model on an individual machine. This 
 and the varius design files edited at will as required.
 
 Similarly, generating the vignette also creates a .zip. file called `metawardsCatalyst.zip`
-that contains the same, but with additional code for runnign on Catalyst and post-processing
+that contains the same, but with additional code for running on Catalyst and post-processing
 on JASMIN. Once the design has been included, this can be sent to Christopher, who will run it 
 using the `catalystJobscript.sh` script and copy the results to JASMIN in the `covid19` workspace. 
 
