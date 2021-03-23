@@ -37,10 +37,10 @@ cp ../../inputs/coMix_matrix.csv contact_matrix2.csv
 ## set up seeds
 rm ward_seeds.csv
 touch ward_seeds.csv
-printf '1,1' >> ward_seeds.csv
+printf '1,1,1' >> ward_seeds.csv
 rm time_seeds.csv
 touch time_seeds.csv
-printf '2020-01-01,10' >> time_seeds.csv
+printf '2020-01-01,1,10' >> time_seeds.csv
 rm age_seeds.csv
 touch age_seeds.csv
 printf '1,1\n' >> age_seeds.csv

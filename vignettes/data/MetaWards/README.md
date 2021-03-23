@@ -166,6 +166,6 @@ All relevant files should be accessible on a server than can be directly accesse
 at [https://gws-access.jasmin.ac.uk/public/covid19/](https://gws-access.jasmin.ac.uk/public/covid19/). You cannot query an SQLite database from a server like this, you can only
 download files. Thus the `age*.db` databases in each sub-directory contain the
 raw outputs, but the summary measures are in the `weeksums_*.csv` files. These hold 
-weekly average `Hprev` and total `Deaths` for each week / ward combination 
-for every week since just before the first lockdown. 
+weekly average hospital prevalence (`Hprev`), along with the number of hospital deaths
+(`Hdeaths`) and other deaths (`Cdeaths`) for each week / ward combination.
 

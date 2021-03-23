@@ -208,11 +208,13 @@ write_csv(age_seed, "../inputs/age_seeds.csv", col_names = FALSE)
 
 Here the first column is the age demographic and the second is the probability of seeding into that age-demographic. We take the number of deaths observed on each day up to the 14th March 2020, and seed the same number of individuals exactly three weeks earlier. To do this we take a multinomial sample to decide how many individuals are seeded into each age-class, and then we split these across wards as described below. These are stored in the file `inputs/time_seeds.csv`, the first column of which is the date of the seeding, and the second is how many individuals are seeded on that day.
 
-We take all recorded deaths up to and including the 14th March, and generate the proportions of these deaths across the relevant NHS trusts. This generates a probability of seeding infection in each trust. We then split these probabilities across all wards in these trusts proportionately to the ward population sizes. We then sample initial seeds by taking a multinomial sample of the relevant size (according to the age-class samples above) across all relevant wards. Details and instructions can be found in `data/seedDeaths/README.md`. This creates a file `inputs/ward_seeds.csv` that contains the necessary probabilities for ward seeding. This file has the same form as the `age_seeds.csv` file described above, but the first column is the ward ID, and the second is the probabilities.
+We take all recorded deaths up to and including the 14th March, and for each we seed an infection three weeks before in a random ward that is mapped to the trust (proportionately to the population size in each ward). Details and instructions can be found in `data/seedDeaths/README.md`. This creates a file `inputs/ward_seeds.csv` that contains the necessary probabilities for ward seeding. This file has the same form as the `age_seeds.csv` file described above, but the first column is the ward ID, the second is trust ID, and the third is the probabilities of seeding. It also creates a file `inputs/time_seeds.csv`, which has a column of dates, a column of trust IDs and a column for the number of seeds on each date in each trust.
 
-For each of the observed deaths before 14th March, we seed three weeks before the recorded death time, using the procedure described above. We start simulations on 9th February 2020 with the first seed added on the 10th February.
+> **Due to data confidentiality, we are not able to share the seeding files publicly.**
 
-> **Note**: the user inputs file must contain the relative path names to the age and ward seed files, and also the number of seeds required---see [here](#user).
+We start simulations on 9th February 2020 with the first seed added on the 10th February.
+
+> **Note**: the user inputs file must contain the relative path names to the age and ward seed files---see [here](#user).
 
 To implement this probabilistic seeding, we need a custom `iterator` function, which can be viewed below. 
 
@@ -803,7 +805,7 @@ You can very easily wrap these ideas into an R function that can scroll through 
 tempdir <- getwd()
 setwd("..")
 system("rm metawards.zip")
-system("zip metawards.zip convertDesign.R runscript.sh model_code/*.py model_code/*.json R_tools/* vignette/ModelDescription.html inputs/*.csv inputs/user_inputs.txt inputs/hospStays.rds inputs/pathways.rds")
+system("zip metawards.zip convertDesign.R runscript.sh model_code/*.py model_code/*.json R_tools/* vignette/ModelDescription.html inputs/*_matrix.csv inputs/user_inputs.txt inputs/hospStays.rds inputs/pathways.rds")
 system("zip -d metawards.zip inputs/Pop\\ by\\ CTRY.csv")
 setwd(tempdir)
 ```
