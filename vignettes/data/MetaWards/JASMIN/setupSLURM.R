@@ -18,9 +18,9 @@ library(lubridate)
 ## may also need to install RSQLite library
 ## e.g. install.packages("RSQLite")
 
-## create weeks from 22nd February 2020
-startdate <- dmy("22/02/2020")
-dates <- startdate + 0:28
+## create weeks from 9th February 2020
+startdate <- dmy("09/02/2020")
+dates <- startdate + 0:41
 
 lockdownDate1 <- dmy("21/03/2020")
 lockdownDate2 <- dmy("13/05/2020")
@@ -38,7 +38,7 @@ lockdown2 <- dmy("13/05/2020")
 WEEKS <- unique(tweeks)
 
 ## create week/day lookup table
-week_lookup <- data.frame(day = as.numeric(dates - startdate), week = tweeks)
+week_lookup <- data.frame(day = as.numeric(dates - startdate), date = dates, week = tweeks)
 week_lookup <- filter(week_lookup, week %in% WEEKS)
 write.table(week_lookup, "week_lookup.csv", row.names = FALSE, col.names = FALSE, sep = ",")
 
