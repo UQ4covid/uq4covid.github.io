@@ -21,8 +21,9 @@ source("../R_tools/dataTools.R")
 ## read in ward and week lookups
 weeks <- read_csv("week_lookup.csv", col_names = FALSE)
 wards <- read_csv("ward_lookup.csv", col_names = FALSE)
-colnames(weeks) <- c("day", "week")
+colnames(weeks) <- c("day", "date", "week")
 colnames(wards) <- c("ward", "week")
+weeks <- mutate(weeks, date = as.Date(date, format = "%Y-%m-%d"))
 
 ## here we are going to extract cumulative hospital counts
 ## hospital deaths, critical care counts and critical care
@@ -80,12 +81,16 @@ for(file in files) {
     ## join with week lookup and generate summary measures
     output <- inner_join(output, weeks, by = "day") %>%
         group_by(ward, week) %>%
-        summarise(Hprev = sum(H) / 7, Deaths = max(DH) + max(DI)) %>%
+        summarise(Hprev = sum(H) / 7, Hdeaths = max(DH), Cdeaths = max(DI)) %>%
         ungroup()
         
     ## expand to empty wards
     output <- left_join(wards, output, by = c("ward", "week")) %>%
-        mutate_all(~replace_na(., 0))
+        mutate_all(~replace_na(., 0)) %>%
+        left_join(
+            group_by(weeks, week) %>%
+            summarise(date = max(date))
+        , by = "week")
         
     ## age class
     agec <- strsplit(file, "\\.")[[1]][1]
