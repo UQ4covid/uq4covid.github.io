@@ -65,3 +65,16 @@ cd test7
 ./testscript.sh
 cd ..
 
+## same as test7 but running on full ward structure with
+## probabilistic seeding in some wards
+
+cd test8
+./testscript.sh
+cd ..
+
+## same as test8 but with probabilistic age-seeding
+
+cd test9
+./testscript.sh
+cd ..
+
