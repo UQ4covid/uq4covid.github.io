@@ -45,7 +45,7 @@ The model structure above allows for different progression pathways. We also spl
 
 We are calibrating to hospitalised deaths, and so to simplify the model and aid calibration, we assume that the $H$ class is non-infectious, but split the $I$ class into two stages, $I_1$ and $I_2$. Therefore, on average individuals are infectious for longer if they do not go to hospital. Some evidence suggests that individuals can remain symptomatic for much longer than they remain infectious, but from a transmission perspective, once individuals cease to be infectious they are equivalent to "recovered" individuals. As such, the $R_I$ class corresponds to recovered and non-infectious symptomatic individuals, and $T_P + T_{I_1} + T_{I_2}$ to the average infectious period (not average symptomatic period). The incubation period is thus $T_E + T_P$, and the time between symptom onset and admission to hospital is $T_{I_1}$. We also make the simplifying assumption that asymptomatic infections last the same time as symptomatic infections.
 
-We need to specify initial proportions of individuals in each age-class, which are provided in the `inputs/Pop by CTRY.csv` file from Rob.
+We need to specify initial proportions of individuals in each age-class, which are provided in the `data/populationByAge/Pop by CTRY.csv` file from Rob.
 
 ```{r, warning = FALSE, message = FALSE, include = FALSE}
 library(tidyverse)
@@ -89,7 +89,7 @@ where $N^W = `r format(as.integer(workers), big.mark = ",")`$ and $N^P = `r form
 
 ```{r, warning = warningFlag, message = messageFlag, echo = FALSE, results = "asis"}
 ## read in age-bands by country
-ages <- read_csv("../inputs/Pop\ by\ CTRY.csv") %>%
+ages <- read_csv("../data/populationByAge/Pop\ by\ CTRY.csv") %>%
   filter(!is.na(ageCat)) %>%
   filter(code == "E92000001") %>%
   select(-gender, -code) %>%
