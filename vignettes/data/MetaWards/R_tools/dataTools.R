@@ -149,11 +149,14 @@ convertInputToDisease <- function(input, C, N, S0, ages) {
     stopifnot(all(disease$nu > 0 & disease$nu < 1))
     
     ## finalise data set
-    disease <- mutate(disease, `beta[1]` = nu) %>%
+    disease <- mutate(disease, nuA = nuA * nu) %>%
+        mutate(`beta[1]` = nu) %>% 
         mutate(`beta[2]` = nu) %>%
         rename(`beta[3]` = nu) %>%
         rename(`beta[6]` = nuA) %>%
         inner_join(select(input, repeats, output), by = "output")
+    
+    stopifnot(all(disease$`beta[6]` < disease$`beta[1]`))
     
     print(paste0(nrow(input) - nrow(disease), " invalid inputs removed"))
     print(paste0(nrow(disease), " samples remaining"))
