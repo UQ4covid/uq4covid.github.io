@@ -71,16 +71,16 @@ paths <- map2(inputs$output, inputs$repeats, function(hash, reps) {
     print(paste0("Currently evaluating: ", hash))
     
     ## run through hashes and extract runs
-    output <- map_chr(hashes, function(hash) {
+    output <- map_chr(hashes, function(hash, append) {
     
         ## extract replicate and hash
         replicate <- hash[2]
         hash <- hash[1]
 
         ## create path
-        path <- paste0(hash, ifelse(replicate > 1, paste0("x", str_pad(replicate, 3, pad = "0")), ""))
+        path <- paste0(hash, ifelse(append, paste0("x", str_pad(replicate, 3, pad = "0")), ""))
         path
-    })
+    }, append = (reps > 1))
     
     print(paste0(hash, ": Finished"))
     
