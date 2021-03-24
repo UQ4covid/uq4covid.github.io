@@ -1,153 +1,80 @@
 #!/bin/bash
 
-mkdir -p raw_outputs
+## first test checks a simple SEPID model in a single population
+## using the standard MW approach specifying parameters
+## through the beta[] and progress[] rates, and setting
+## no age-specific mixing and seeding only in one demographic
+## these outbeaks can then be compared to deterministic and
+## stochastic models developed in R
 
-export METAWARDSDATA=$HOME/Documents/covid/MetaWardsData
+cd test1
+./testscript.sh
+cd ..
 
+## same as test1 except except with age-specific mixing thus 
+## same R0 = 3 results in different nu. Only discrete-time 
+## stochastic model now used. Deterministic model used to 
+## assess R0 and NGM validity.
 
+cd test2
+./testscript.sh
+cd ..
 
-## test for no progression from R to D
-cp diseaseTest.dat disease.dat
+## same as test2 but using custom mover function
+## (note you have to swap the order of the events in Rcpp
+## due to the mover function being applied in a different
+## order to the standard progression terms in MW)
 
-## beta[1] .pE .pEA 
-printf '1 0.5 0 ' >> disease.dat
-## .pA 
-printf '0 ' >> disease.dat
-## .pI .pIH .pIR 
-printf '0.5 0 0 ' >> disease.dat
-## .pH .pHC .pHR 
-printf '0 0 0 ' >> disease.dat
-## .pC .pCR
-printf '0 0 ' >> disease.dat
-## .lock_1_restrict .lock_2_release .GP_A .GP_H .GP_C repeats 
-printf '0 0 0 0 0 1' >> disease.dat
+cd test3
+./testscript.sh
+cd ..
 
-## run MetaWards
-metawards --nproc 24 --nthreads 1 -d ../model_code/ncov.json -D ../model_code/demographics.json --mixer ../model_code/mix_pathways --mover ../model_code/move_pathways --input disease.dat -a ExtraSeedsLondon.dat -u ../model_code/lockdown_states.txt -o raw_outputs --force-overwrite-output --iterator ../model_code/iterate --extractor ../model_code/ward_extractor --start-date 2020/01/01 --theme simple --nsteps 10
+## same as test3 but with FULL PATHWAYS through stages:
+## consequently amended discrete-time stochastic model
+## and same R0 leads to different nu
 
-## run R check
-R CMD BATCH --no-save --no-restore --slave extract_output_T1.R
+cd test4
+./testscript.sh
+cd ..
 
+## same as test4 but with a change of contact matrix
+## partway through the outbreak---starts off as no
+## mixing between ages and then flips to coMix
+## deterministic model removed here and no final sizes
+## since difficult to calculate when contact matrices 
+## change
 
+cd test5
+./testscript.sh
+cd ..
 
-## turn hospitals on
-cp diseaseTest.dat disease.dat
+## same as test4 but with different probabilities of
+## transition through different pathways - mainly used
+## to test R0 and check mover code
 
-## beta[1] .pE .pEA 
-printf '1 0.5 0 ' >> disease.dat
-## .pA 
-printf '0 ' >> disease.dat
-## .pI .pIH .pIR 
-printf '0.5 0.5 0 ' >> disease.dat
-## .pH .pHC .pHR 
-printf '0.5 0 0 ' >> disease.dat
-## .pC .pCR
-printf '0 0 ' >> disease.dat
-## .lock_1_restrict .lock_2_release .GP_A .GP_H .GP_C repeats 
-printf '0 0 0 0 0 1' >> disease.dat
+cd test6
+./testscript.sh
+cd ..
 
-## run MetaWards
-metawards --nproc 24 --nthreads 1 -d ../model_code/ncov.json -D ../model_code/demographics.json --mixer ../model_code/mix_pathways --mover ../model_code/move_pathways --input disease.dat -a ExtraSeedsLondon.dat -u ../model_code/lockdown_states.txt -o raw_outputs --force-overwrite-output --iterator ../model_code/iterate --extractor ../model_code/ward_extractor --start-date 2020/01/01 --theme simple --nsteps 10
+## same as test1 but turning off transmission and using
+## different seeds at different time points to
+## assess seeding function - this only prints output
+## as text file to check manually
 
-## run R check
-R CMD BATCH --no-save --no-restore --slave extract_output_T2.R
+cd test7
+./testscript.sh
+cd ..
 
+## same as test7 but running on full ward structure with
+## probabilistic seeding in some wards
 
+cd test8
+./testscript.sh
+cd ..
 
-## turn asymptomatics on
-cp diseaseTest.dat disease.dat
+## same as test8 but with probabilistic age-seeding
 
-## beta[1] .pE .pEA 
-printf '1 0.5 1 ' >> disease.dat
-## .pA 
-printf '0.5 ' >> disease.dat
-## .pI .pIH .pIR 
-printf '0 0 0 ' >> disease.dat
-## .pH .pHC .pHR 
-printf '0 0 0 ' >> disease.dat
-## .pC .pCR
-printf '0 0 ' >> disease.dat
-## .lock_1_restrict .lock_2_release .GP_A .GP_H .GP_C repeats 
-printf '0 0 0 0 0 1' >> disease.dat
-
-## run MetaWards
-metawards --nproc 24 --nthreads 1 -d ../model_code/ncov.json -D ../model_code/demographics.json --mixer ../model_code/mix_pathways --mover ../model_code/move_pathways --input disease.dat -a ExtraSeedsLondon.dat -u ../model_code/lockdown_states.txt -o raw_outputs --force-overwrite-output --iterator ../model_code/iterate --extractor ../model_code/ward_extractor --start-date 2020/01/01 --theme simple --nsteps 10
-
-## run R check
-R CMD BATCH --no-save --no-restore --slave extract_output_T3.R
-
-
-
-## turn everything on
-cp diseaseTest.dat disease.dat
-
-## beta[1] .pE .pEA 
-printf '1 0.5 0.5 ' >> disease.dat
-## .pA 
-printf '0.5 ' >> disease.dat
-## .pI .pIH .pIR 
-printf '0.5 0.7 0.1 ' >> disease.dat
-## .pH .pHC .pHR 
-printf '0.8 0.8 0.1 ' >> disease.dat
-## .pC .pCR
-printf '0.5 0.1 ' >> disease.dat
-## .lock_1_restrict .lock_2_release .GP_A .GP_H .GP_C repeats 
-printf '0 0 0.2 0.2 0.2 1' >> disease.dat
-
-## run MetaWards
-metawards --nproc 24 --nthreads 1 -d ../model_code/ncov.json -D ../model_code/demographics.json --mixer ../model_code/mix_pathways --mover ../model_code/move_pathways --input disease.dat -a ExtraSeedsLondon.dat -u ../model_code/lockdown_states.txt -o raw_outputs --force-overwrite-output --iterator ../model_code/iterate --extractor ../model_code/ward_extractor --start-date 2020/01/01 --theme simple --nsteps 50
-
-## run R check
-R CMD BATCH --no-save --no-restore --slave extract_output_T4.R
-
-
-
-## check for saturation across wards with high-ish R0
-## just SEIR for simplicity
-cp diseaseTest.dat disease.dat
-
-## beta[1] .pE .pEA 
-printf '1.75 0.5 0 ' >> disease.dat
-## .pA 
-printf '0 ' >> disease.dat
-## .pI .pIH .pIR 
-printf '0.5 0 1 ' >> disease.dat
-## .pH .pHC .pHR 
-printf '0 0 0 ' >> disease.dat
-## .pC .pCR
-printf '0 0 ' >> disease.dat
-## .lock_1_restrict .lock_2_release .GP_A .GP_H .GP_C repeats 
-printf '0 0 0 0 0 1' >> disease.dat
-
-## run MetaWards
-metawards --nproc 24 --nthreads 1 -d ../model_code/ncov.json -D ../model_code/demographics.json --mixer ../model_code/mix_pathways --mover ../model_code/move_pathways --input disease.dat -a ExtraSeedsLondon.dat -u ../model_code/lockdown_states.txt -o raw_outputs --force-overwrite-output --iterator ../model_code/iterate --extractor ../model_code/ward_extractor --start-date 2020/01/01 --theme simple --nsteps 100
-
-## run R check
-R CMD BATCH --no-save --no-restore --slave extract_output_T5.R
-
-
-
-## check for saturation across wards with high-ish R0
-## just SEIR for simplicity
-cp diseaseTest.dat disease.dat
-
-## beta[1] .pE .pEA 
-printf '1 0.5 0 ' >> disease.dat
-## .pA 
-printf '0 ' >> disease.dat
-## .pI .pIH .pIR 
-printf '0.5 0 1 ' >> disease.dat
-## .pH .pHC .pHR 
-printf '0 0 0 ' >> disease.dat
-## .pC .pCR
-printf '0 0 ' >> disease.dat
-## .lock_1_restrict .lock_2_release .GP_A .GP_H .GP_C repeats 
-printf '0 0 0 0 0 1' >> disease.dat
-
-## run MetaWards
-metawards --nproc 24 --nthreads 1 -d ../model_code/ncov.json -D ../model_code/demographics.json --mixer ../model_code/mix_pathways --mover ../model_code/move_pathways --input disease.dat -a ExtraSeedsLondon.dat -u ../model_code/lockdown_states.txt -o raw_outputs --force-overwrite-output --iterator ../model_code/iterate --extractor ../model_code/ward_extractor --start-date 2020/01/01 --theme simple --nsteps 100
-
-## run R check
-R CMD BATCH --no-save --no-restore --slave extract_output_T6.R
-
+cd test9
+./testscript.sh
+cd ..
 

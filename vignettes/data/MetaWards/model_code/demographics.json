@@ -1,6 +1,6 @@
 {
-  "demographics" : ["genpop", "asymp", "hospital", "critical"],
-  "work_ratios"  : [ 1.0, 0.0, 0.0, 0.0 ],
-  "play_ratios"  : [ 1.0, 0.0, 0.0, 0.0 ],
-  "diseases"     : [ "ncov", "ncov", "ncov", "ncov" ]
+	"demographics" : ["age1", "age2", "age3", "age4", "age5", "age6", "age7", "age8"],
+	"work_ratios" : [0, 0, 0.235, 0.205, 0.195, 0.205, 0.16, 0],
+	"play_ratios" : [0.100108, 0.256943, 0.099855, 0.086539, 0.083213, 0.086539, 0.068235, 0.218568],
+	"diseases" : ["ncov", "ncov", "ncov", "ncov", "ncov", "ncov", "ncov", "ncov"]
 }

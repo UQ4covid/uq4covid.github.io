@@ -10,7 +10,7 @@ output:
 
 <center>
 
-**Requires MetaWards 1.2.0**
+**Requires MetaWards 1.5.1**
 
 Please download files for running the model from **[here](metawards.zip)**.
 
@@ -20,157 +20,555 @@ Please download files for running the model from **[here](metawards.zip)**.
 
 The basic model structure is:
 
-* $E$: infected but not infectious;
-* $A$: asymptomatic and infectious;
-* $I$: symptomatic and infectious;
-* $H$: hospitalised and infectious;
-* $C$: in critical care (ICU) and infectious;
+* $S$: susceptible;
+* $E$: latent (infected but not infectious);
+* $A$: infectious but asymptomatic;
+* $P$: infectious and pre-symptomatic;
+* $I$: infectious and symptomatic (split into $I_1$ and $I_2$ for timing purposes);
+* $H$: hospitalised (see below);
 * $R$: recovered and immune;
 * $D$: died.
 
-```{r, echo = FALSE}
-library(DiagrammeR)
-grViz("digraph simpmod {
-    graph[layout = dot, rankdir = LR]
-    node [shape = rectangle]
-    
-    S [group = gp]; E [group = gp]; I [group = gp]; RI [label = 'R@_{I}', group = gp]; DI [label = 'D@_{I}', group = gp]; 
-    A [group = as]; RA [label = 'R@_{A}', group = as];
-    H [group = hos]; RH [label = 'R@_{H}', group = hos]; DH [label = 'D@_{H}', group = hos]; 
-    C [group = crit]; RC [label = 'R@_{C}', group = crit]; DC [label = 'D@_{C}', group = crit];
-    genpop [label = 'Gen. Pop.', group = gp]
-    asymp [label = 'Asymptomatics', group = as]
-    hospital [label = 'Hospital Patient', group = hos]
-    critical [label = 'Critical Care', group = crit]
-    St00 [style = 'invis', group = st]; St0 [label = 'Stage 0', group = st]; 
-    St1 [label = 'Stage 1', group = st]; 
-    St2 [label = 'Stage 2', group = st]; St3 [label = 'Stage 3', group = st]; 
-    
-    genpop -> S [style = 'invis']
-    hospital -> H [style = 'invis']
-    critical -> C [style = 'invis']
-    asymp -> A [style = 'invis']
-    S -> E -> I -> RI
-    I -> DI [weight = 0]
-    I -> H -> C -> RC 
-    C -> DC [weight = 0]
-    H -> RH 
-    H -> DH [weight = 0] 
-    RI -> DI [style = 'invis']
-    RH -> DH [style = 'invis']
-    RC -> DC [style = 'invis']
-    E -> A [weight = 0]
-    A -> RA 
-    St00 -> St0 -> St1 -> St2 -> St3 [style = 'invis']
-    subgraph {
-      rank = same; St0; E;
-    }
-    subgraph {
-      rank = same; St00 -> asymp -> genpop -> hospital -> critical [style = 'invis']
-    }
-    subgraph cluster {
-      subgraph {
-        rank = same; A -> I -> H -> C [style = 'invis']
-      }
-      style = filled;
-      color = lightgrey;
-      label = 'Infectious Classes'
-    }
-    subgraph {
-      rank = same; St2; RA, RI, RC; RH;
-    }
-    subgraph {
-      rank = same; St3; DI; DH; DC;
-    }
-    
-}", height = '100%', width = '100%')
-```
+**Each of these classes will be split into $J$ age-classes, with interactions between the classes described in detail below.**
+
+![](model.svg)
 
 ## MetaWards setup
 
-The model structure above allows for different progression pathways. MetaWards deals with this by assigning individuals to different "demographics", where each demographic can be used to represent different progression pathways. There are also `mover` functions that can be used to move individuals between demographics, and `mixer` functions that scale the force-of-infection (FOI) terms between the different demographics (explained later). There are currently seven pathways, which will be described below, but can be summarised as:
+The model structure above allows for different progression pathways. We also split the population up into different age demographics, to allow for variable mixing between the age-groups. We define a customised `mover` function that is used to move individuals through different pathways, and `mixer` functions that scale the force-of-infection (FOI) terms between the different age demographics (explained later). There are currently five pathways, which will be described below, but can be summarised as:
 
-* `SEAR`: asymptomatic infections, always recover.
-* `SEIR`: symptomatic infections, leading to recovery.
-* `SEID`: symptomatic infections, leading to death.
-* `SEIHR`: symptomatic infections, leading to hospital and then recovery.
-* `SEIHD`: symptomatic infections, leading to hospital and then death.
-* `SEIHCR`: symptomatic infections, leading to hospital, then critical care (ICU) and then recovery.
-* `SEIHCD`: symptomatic infections, leading to hospital, then critical care (ICU) and then death.
+* $SEAR$: asymptomatic infections, always recover.
+* $SEPIR$: symptomatic infections, leading to recovery.
+* $SEPID$: symptomatic infections, leading to death.
+* $SEPIHR$: symptomatic infections, leading to hospital and then recovery.
+* $SEPIHD$: symptomatic infections, leading to hospital and then death.
 
-Individuals in the `genpop` demographic move through the $SEIR$ and $SEID$ pathways; the `asymp` demographic moves through the `SEAR` pathway; some individuals in the `genpop` demographic can be moved to the `hospital` demographic, and thus follow the `SEIHR` and `SEIHD` pathways; and finally, some individuals in the `hospital` demographic can be moved to the `critical` demographic, and thus follow the `SEIHCR` and `SEIHCD` pathways.
+We are calibrating to hospitalised deaths, and so to simplify the model and aid calibration, we assume that the $H$ class is non-infectious, but split the $I$ class into two stages, $I_1$ and $I_2$. Therefore, on average individuals are infectious for longer if they do not go to hospital. Some evidence suggests that individuals can remain symptomatic for much longer than they remain infectious, but from a transmission perspective, once individuals cease to be infectious they are equivalent to "recovered" individuals. As such, the $R_I$ class corresponds to recovered and non-infectious symptomatic individuals, and $T_P + T_{I_1} + T_{I_2}$ to the average infectious period (not average symptomatic period). The incubation period is thus $T_E + T_P$, and the time between symptom onset and admission to hospital is $T_{I_1}$. We also make the simplifying assumption that asymptomatic infections last the same time as symptomatic infections.
 
-We need to specify initial proportions of individuals in each pathway such that $\sum_{i \in \mathcal{P}} p_i = 1$, where $\mathcal{P} = \{GP, A, H, C\}$.
+We need to specify initial proportions of individuals in each age-class, which are provided in the `data/populationByAge/Pop by CTRY.csv` file from Rob.
 
-> Here we assume the same ratios in the `work` and `play` populations, but in practice these could be changed.
+```{r, warning = FALSE, message = FALSE, include = FALSE}
+library(tidyverse)
+library(patchwork)
+library(ggpubr)
+library(png)
+
+## quick way of turning warning and messaging flags on or off
+warningFlag <- FALSE
+messageFlag <- FALSE
+
+## read in commuter data
+players <- sum(read_delim("~/Documents/covid/MetaWardsData/model_data/2011to2019Data/PlaySize19.dat", " ", col_names = FALSE)$X2)
+workers <- sum(read_delim("~/Documents/covid/MetaWardsData/model_data/2011to2019Data/WorkSize19.dat", " ", col_names = FALSE)$X2)
+```
+
+<button data-toggle="collapse" data-target="#workplay">Click for worker / player generation</button>
+<div id="workplay" class="collapse boxed">
+
+Note that the total number of individuals in the table below is different to the number of individuals in the commuter data that is used in MetaWards, since the commuter data come from the 2011 census, whereas the age-distributions above come from more recent population counts. Hence we use the more recent data to figure out the proportions of individuals in each age-category, which we pass to the MetaWards model.
+
+However, we also need to specify the proportions of the workers and players that are in each age category. In this case we make the assumption that all individuals $<18$ years old or $\geq 70$ years old are players only, and furthermore we assume that school-age children don't move from their home wards---essentially assuming that most children go to school in their home wards. (Note the play movements of the $<5$ year olds reflects the movements of the parents/carers). To implement this in MetaWards we can set the proportions of workers/players in each age-class as described below, and then set an age-specific parameter `static_play_at_home` for each age-class that we wish to restrict movements for. This latter part is done in the user input file [here](#user).
+
+For the worker/player proportions, consider that if $p_j$ is the proportion of individuals in age-class $j$ in the population, then the proportion of workers in age-class $j$ is:
+$$
+    p^W_j = \left\{\begin{array}{ll}
+        0 & \mbox{if $a_j < 18$},\\
+        \frac{p_j}{\sum_{\{k : 18 \leq a_k < 70\}} p_k} & \mbox{if $j$ s.t. $18 \leq a_j < 70$},\\
+        0 & \mbox{if $a_j \geq 70$}.
+      \end{array}\right.
+$$
+To generate the proportions of players in each age-class, we need to use the fact that the sum of workers and players in each age-class must equal the number in the population. Hence we require that
+\begin{align*}
+    p^P_jN^P + p^W_j N^W &= p_j \left(N^P + N^W\right)\\
+    \Rightarrow p^P_j &= \frac{p_j \left(N^P + N^W\right) - p^W_j N^W}{N^P},
+\end{align*}
+where $N^W = `r format(as.integer(workers), big.mark = ",")`$ and $N^P = `r format(as.integer(players), big.mark = ",")`$ are the total number of workers and players in the population.
+</div>
+
+<a name="ages"></a>
+
+```{r, warning = warningFlag, message = messageFlag, echo = FALSE, results = "asis"}
+## read in age-bands by country
+ages <- read_csv("../data/populationByAge/Pop\ by\ CTRY.csv") %>%
+  filter(!is.na(ageCat)) %>%
+  filter(code == "E92000001") %>%
+  select(-gender, -code) %>%
+  mutate(prop = round(count / sum(count), 3)) %>%
+  mutate(propW = prop, propP = prop) %>%
+  mutate(propW = ifelse(ageCat == "<5" | ageCat == "5-17" | ageCat == "70+", 0, propW)) %>%
+  mutate(propW = round(propW / sum(propW), 3)) %>%
+  mutate(propP = round((prop * (workers + players) - propW * workers) / players, 6))
+stopifnot(sum(ages$prop) == 1 & sum(ages$propW) == 1 & sum(ages$propP) == 1)
+C <- read.csv("../inputs/coMix_matrix.csv", header = FALSE)
+stopifnot(all(dim(C) == nrow(ages)))
+C <- read.csv("../inputs/POLYMOD_matrix.csv", header = FALSE)
+stopifnot(all(dim(C) == nrow(ages)))
+rename(ages, `Prop. Pop.` = prop, `Prop. Workers` = propW, `Prop. Players` = propP) %>%
+  rename(Age = ageCat, Count = count) %>%
+  mutate_at(-c(1:2), ~signif(., 3)) %>%
+  mutate(Count = format(Count, big.mark = ",")) %>%
+  knitr::kable()
+```
+
+```{r, warning = warningFlag, message = messageFlag, echo = FALSE}
+## create demographics file
+demo <- "{" %>%
+  c(paste0("\t\"demographics\" : [", paste0(paste0("\"age", 1:nrow(ages), "\""), collapse = ", "), "],")) %>%
+  c(paste0("\t\"work_ratios\" : [", paste0(ages$propW, collapse = ", "), "],")) %>%
+  c(paste0("\t\"play_ratios\" : [", paste0(ages$propP, collapse = ", "), "],")) %>%
+  c(paste0("\t\"diseases\" : [", paste0(rep("\"ncov\"", nrow(ages)), collapse = ", "), "]")) %>%
+  c("}")
+writeLines(demo, "../model_code/demographics.json")
+```
 
 The demographics in MetaWards is set up using the `demographics.json` file.
 
 <button data-toggle="collapse" data-target="#demographics">Click for MetaWards <code>demographics</code> file</button>
-<div id="demographics" class="collapse">
+<div id="demographics" class="collapse boxed">
 
 ```{js, code = readLines("../model_code/demographics.json"), eval = FALSE}
 ```
 
 </div>
 
-The number of stages can be set with the MetaWards disease file, called `ncov.json` here.
+The stages can be set with the MetaWards disease file, called `ncov.json` here.
 
+<a name="diseasefile"></a>
 <button data-toggle="collapse" data-target="#disease">Click for MetaWards <code>disease</code> file</button>
-<div id="disease" class="collapse">
-
-All pathways have an $SEI(R/D)$ structure, so `ncov.json` contains:
+<div id="disease" class="collapse boxed">
 
 ```{js, code = readLines("../model_code/ncov.json"), eval = FALSE}
 ```
 
-We will discuss these choices in more detail in the subsequent sections, in particular the role of the `beta` parameters in the next section. Note that the `progress` parameters are all set to zero here, since all movements will be controlled via the custom `mover` function.
+We will discuss these choices in more detail in the subsequent sections. Note that the `progress` parameters are all set to zero here, since all movements will be controlled via the custom `mover` function, and the `beta` parameters are all set to one for infectious classes, but different values for different infectious classes will be passed in when the model is run, and the mixing between the age-classes will be controlled by a custom `mixer` function.
+
+</div>
+
+## User inputs {#user}
+
+Various functions require additional user inputs. These are stored in the `inputs/user_inputs.txt` file. This contains information on the dates of lockdown and other parameters that are necessary to govern various custom functions as described in more detail in various sections of this vignette. For example, the input `.nage` controls the number of age-classes in the model as described above.
+
+```{r, warning = warningFlag, message = messageFlag, echo = FALSE}
+user <- "# Normal status" %>%
+  c(".can_work[0]  = True") %>%
+  c("") %>%
+  c("# Lockdown 1") %>%
+  c(".can_work[1]  = False") %>%
+  c("") %>%
+  c("# Lockdown 2") %>%
+  c(".can_work[2]  = True") %>%
+  c("") %>%
+  c("# Lockdown dates") %>%
+  c(".lockdown_date_1_year = 2020") %>%
+  c(".lockdown_date_1_month = 3") %>%
+  c(".lockdown_date_1_day = 21") %>%
+  c(".lockdown_date_2_year = 2020") %>%
+  c(".lockdown_date_2_month = 5") %>%
+  c(".lockdown_date_2_day = 13") %>%
+  c("") %>%
+  c("# contact matrix") %>%
+  c(".contact_matrix1_filename = \"inputs/POLYMOD_matrix.csv\"") %>%
+  c(".contact_matrix2_filename = \"inputs/coMix_matrix.csv\"") %>%
+  c("") %>%
+  c("# number of age classes") %>%
+  c(paste0(".nage = ", nrow(ages))) %>%
+  c("") %>%
+  c("# names of input files for seeding") %>%
+  c(".ward_seed_filename = \"inputs/ward_seeds.csv\"") %>%
+  c(".age_seed_filename = \"inputs/age_seeds.csv\"") %>%
+  c(".time_seed_filename = \"inputs/time_seeds.csv\"") %>%
+  c("") %>%
+  c("# turn off movements in school-age children") %>%
+  c("age2:static_play_at_home = 1.0")
+writeLines(user, "../inputs/user_inputs.txt")
+```
+
+<button data-toggle="collapse" data-target="#usercode">Click for user inputs</button>
+<div id="usercode" class="collapse boxed">
+
+```{python, code = readLines("../inputs/user_inputs.txt"), eval = FALSE}
+``` 
+
+</div>
+
+## Seeding
+
+We seed infections proportionately to the age-structure of the population (described [above](#ages)). These are stored in a file called `inputs/age_seeds.csv`, containing the probabilities below:
+
+```{r, echo = FALSE}
+age_seed <- ages %>%
+  mutate(prop = round(count / sum(count), 3)) %>%
+  mutate(class = 1:n()) %>%
+  select(class, prop)
+write_csv(age_seed, "../inputs/age_seeds.csv", col_names = FALSE)
+```
+
+```{js, code = readLines("../inputs/age_seeds.csv"), eval = FALSE}
+```
+
+Here the first column is the age demographic and the second is the probability of seeding into that age-demographic. We take the number of deaths observed on each day up to the 14th March 2020, and seed the same number of individuals exactly three weeks earlier. To do this we take a multinomial sample to decide how many individuals are seeded into each age-class, and then we split these across wards as described below. These are stored in the file `inputs/time_seeds.csv`, the first column of which is the date of the seeding, and the second is how many individuals are seeded on that day.
+
+We take all recorded deaths up to and including the 14th March, and for each we seed an infection three weeks before in a random ward that is mapped to the trust (proportionately to the population size in each ward). Details and instructions can be found in `data/seedDeaths/README.md`. This creates a file `inputs/ward_seeds.csv` that contains the necessary probabilities for ward seeding. This file has the same form as the `age_seeds.csv` file described above, but the first column is the ward ID, the second is trust ID, and the third is the probabilities of seeding. It also creates a file `inputs/time_seeds.csv`, which has a column of dates, a column of trust IDs and a column for the number of seeds on each date in each trust.
+
+> **Due to data confidentiality, we are not able to share the seeding files publicly.**
+
+We start simulations on 9th February 2020 with the first seed added on the 10th February.
+
+> **Note**: the user inputs file must contain the relative path names to the age and ward seed files---see [here](#user).
+
+To implement this probabilistic seeding, we need a custom `iterator` function, which can be viewed below. 
+
+<button data-toggle="collapse" data-target="#iterator">Click for custom <code>iterator</code> function</button>
+<div id="iterator" class="collapse boxed">
+
+The contents of the `iterator.py` file is below. This contains code to initiate seeds and deal with lockdown (see [here](#lockdown)).
+
+```{python, code = readLines("../model_code/iterator.py"), eval = FALSE}
+```
 
 </div>
 
 ## Parameters {#parameters}
 
-For generic states $X$ and $Y$ say, the progress of an individual from state $X$ to state $Y$ in a given day is governed by probability $q_{XY}$, where:
+For generic states $X$ and $Y$ say, the progress of an individual in age-class $j$ ($j = 1, \dots, J$) from state $X$ to state $Y$ in a given day is governed by probability $q^j_{XY}$, where:
 
-* $q_{SE}$ driven by $\beta$ parameters, defined by $R_0$ and length of infectious period (see [here](#code));
-* $q_{EA} = p_{EA}\left(1 - e^{-\gamma_{E}}\right)$ where $\gamma_E = \frac{1}{T_E}$ with $T_E$ the mean incubation period;
-* $q_{EI} = \left(1 - p_{EA}\right)\left(1 - e^{-\gamma_{E}}\right)$;
-* $q_{AR} = 1 - e^{-\gamma_I}$ where $\gamma_I = \frac{1}{T_I}$ with $T_I$ the mean infectious period;
-* $q_{IH} = p_{IH}\left(1 - e^{-\gamma_{I}}\right)$;
-* $q_{IR} = p_{IR}\left(1 - e^{-\gamma_{I}}\right)$;
-* $q_{ID} = \left(1 - p_{IH} - p_{IR}\right)\left(1 - e^{-\gamma_{I}}\right)$;
-* $q_{HC} = p_{HC}\left(1 - e^{-\gamma_{H}}\right)$ where $\gamma_{H} = \frac{1}{T_H}$ with $T_H$ the mean length of a hospital stay;
-* $q_{HR} = p_{HR}\left(1 - e^{-\gamma_{H}}\right)$;
-* $q_{HD} = \left(1 - p_{HC} - p_{HR}\right)\left(1 - e^{-\gamma_{H}}\right)$;
-* $q_{CR} = p_{CR}\left(1 - e^{-\gamma_{C}}\right)$ where $\gamma_C = \frac{1}{T_C}$ with $T_C$ is the mean length of time spent in ICU;
-* $q_{CD} = \left(1 - p_{CR}\right)\left(1 - e^{-\gamma_{C}}\right)$.
+* $q^j_{SE}$ driven by a probability of transmission per infectious contact, $\nu$, which is defined by $R_0$ and the next-generation matrix, which in turn depends on other parameters below and the population contact matrix ($C$) between age-classes. See [here](#translink) for a complete discussion;
+* $q^j_{EP} = p^j_{EP}\left(1 - e^{-\gamma_{E}}\right)$ where $\gamma_E = \frac{1}{T_E}$ with $T_E$ the mean latent period;
+* We model: $\log\left(p^j_{EP}\right) = \alpha_{EP} + \eta \mbox{age}_j$. The $\mbox{age}_j$ term is the middle age in age-class $j$.
+* $q^j_{EA} = \left(1 - p^j_{EP}\right)\left(1 - e^{-\gamma_{E}}\right)$;
+* $q^j_{AR} = 1 - e^{-\gamma_A}$ where $\gamma_A = \frac{1}{T_P + T_{I_1} + T_{I_2}}$ with $T_P + T_{I_1} + T_{I_2}$ the mean infectious period;
+* $q^j_{PI_1} = 1 - e^{-\gamma_{P}}$ where $\gamma_P = \frac{1}{T_P}$ with $T_P$ the mean pre-symptomatic infectious period;
+* $q^j_{I_1H} = p^j_{I_1H}\left(1 - e^{-\gamma_{I_1}}\right)$ where $\gamma_{I_1} = \frac{1}{T_{I_1}}$ with $T_{I_1}$ the mean pre-hospitalisation symptomatic infectious period;
+* $q^j_{I_1D} = p^j_{I_1D}\left(1 - e^{-\gamma_{I_1}}\right)$;
+* $q^j_{I_1I_2} = \left(1 - p^j_{I_1H} - p^j_{I_1D}\right)\left(1 - e^{-\gamma_{I_1}}\right)$;
+* Similarly to before, we model: $\log\left(p^j_{I_1H/D}\right) = \alpha_{I_1H/D} + \eta \mbox{age}_j$.
+* $q^j_{I_2R} = 1 - e^{-\gamma_{I_2}}$ where $\gamma_{I_2} = \frac{1}{T_{I_2}}$ is the residual mean symptomatic infectious period for non-hospitalised individuals;
+* $q^j_{HD} = p^j_{HD}\left(1 - e^{-\gamma_{H}^j}\right)$ where $\gamma_H^j = \frac{1}{T_H^j}$ with $T_H^j$ the mean length of hospital stay for age class $j$;
+* $q^j_{HR} = \left(1 - p^j_{HD}\right)\left(1 - e^{-\gamma_{H}^j}\right)$;
+* Similarly to before, we model: $\log\left(p^j_{HD}\right) = \alpha_{HD} + \eta \mbox{age}_j$. 
+* We also model: $\log\left(T_H^j\right) = \alpha_{T_H} + \eta_{T_H} \mbox{age}_j$ where $\eta_{T_H} > 0$. 
 
-Lockdown can be controlled either by constraining movements over a certain distance, or by scaling the $\beta$ parameters. We do the latter at the moment. 
+We also require inputs for $R_0$, a parameter $\nu_A$ which scales the force-of-infection between asymptomatics and the general population, and further scaling parameters that we use to model various lockdown measures (described [below](#lockdown)).
 
-MetaWards has a specific structure in terms of how it progresses movements between the stages. To get the correct splits between the pathways specified above we do all non-infection movements through a custom `mover` function specified [below](#mover). Note that in the `ncov.json` file specified [above](#diseasefile), we set all `progress` parameters to be 0. Thus, all transition probabilities other than new infections are driven by user-defined parameters that are passed to the `mover` function, which we call `move_pathways.py` here.
+<a name="translink"></a>
+<button data-toggle="collapse" data-target="#trans">Click for details on transmission terms</button>
+<div id="trans" class="collapse boxed">
+
+From the model structure above, in a single population, the **force-of-infection**, $\lambda^j$, acting on an individual in age-class $j$ is:
+\begin{align*}
+    \lambda^j &= \sum_{k=1}^J \frac{\beta^{kj}}{N^k}\left(P^k + I_1^k + I_2^k + \nu_A A^k\right)
+\end{align*}
+In practice we model the transmission parameters as:
+$$
+  \beta^{kj} = \nu c^{kj},
+$$
+where $0 < \nu < 1$ is a probability of infection per contact, and $c^{kj}$ is the **population contact rate** that an individual in class $j$ has with individuals in class $k$. We use the population contact matrix $C = \{c^{kj}; k = 1, \dots, J; j = 1, \dots, J\}$ from the **POLYMOD** survey in the early stages of the outbreak, and then the **CoMix** survey after the first lockdown.
+
+A challenge is that we parameterise our model in terms of $R_0$, not $\nu$, and thus we need a way to derive $\nu$ from $R_0$ for a given run. To this end, $R_0$ can be derived as the **maximum eigenvalue** of the **next-generation matrix** (NGM). Firstly, let $F_i(x)$ be the rate of new infections into *infected* class $i$, and $V_i(x)$ be the rate of transitions from *infected* class $i$. Then define matrices:
+$$
+    \mathbf{F} = \left[\frac{\partial F_i\left(x_0\right)}{\partial x_j}\right] \quad \mbox{and} \quad \mathbf{V} = \left[\frac{\partial V_i\left(x_0\right)}{\partial x_j}\right] \quad \mbox{for}~1 \leq i, j, \leq J,
+$$
+where $x_0$ corresponds to the states at the disease-free equilibrium. Then, the NGM, $\mathbf{K}$, is:
+$$
+    \mathbf{K} = \mathbf{FV}^{-1},
+$$
+and $R_0$ is the maximum eigenvalue of $\mathbf{K}$.
+
+From the model structure above, in a single population with age-structure, the **infected classes** are $E^j$, $A^j$, $P^j$, $I_1^j$ and $I_2^j$ for age-classes $j = 1, \dots, J$. In a deterministic model these would have rates-of-change of:
+\begin{align*}
+    \frac{dE^j}{dt} &= S^j\left[\sum_{k=1}^J \frac{\beta^{kj}}{N^k}\left(P^k + I_1^k + I_2^k + \nu_A A^k\right) \right] - \gamma_E E^j\\
+    \frac{dA^j}{dt} &= \left(1 - p_{EP}^j\right)\gamma_E E^j - \gamma_A A^j\\
+    \frac{dP^j}{dt} &= p_{EP}^j\gamma_E E^j - \gamma_P P^j\\
+    \frac{dI_1^j}{dt} &= \gamma_P P^j - \gamma_{I_1} I_1^j\\
+    \frac{dI_2^j}{dt} &= \left(1 - p_{I_1H}^j - p_{I_1D}^j\right)\gamma_{I_1} I_1^j - \gamma_{I_2} I_2^j\\
+\end{align*}
+Here $\beta^{kj}$ is the transmission rate from class $k$ to class $j$ and $N_k$ is the total number of individuals in class $k$. The parameter $\nu_A$ scales the force-of-infection from the $A$ class relative to the other infectious classes.
+
+The **non-zero** components needed to derive the NGM are:
+\begin{align*}
+    \frac{\partial F_{E^i}\left(x_0\right)}{\partial E^j} &= 0 &\qquad  \forall i, j,\\
+    \frac{\partial F_{E^i}\left(x_0\right)}{\partial A^j} &= \frac{\beta^{ji}\nu_A S^i}{N^j} &\qquad \forall i, j\\
+    \frac{\partial F_{E^i}\left(x_0\right)}{\partial P^j} &= \frac{\beta^{ji}S^i}{N^j} &\qquad \forall i, j\\
+    \frac{\partial F_{E^i}\left(x_0\right)}{\partial I_1^j} &= \frac{\beta^{ji}S^i}{N^j} &\qquad \forall i, j\\
+    \frac{\partial F_{E^i}\left(x_0\right)}{\partial I_2^j} &= \frac{\beta^{ji}S^i}{N^j} &\qquad \forall i, j\\
+\end{align*}
+and
+\begin{align*}
+    \frac{\partial V_{E^i}\left(x_0\right)}{\partial E^j} &= \left\{\begin{array}{cc} 
+        \gamma_E & \mathrm{for}~i = j,\\
+        0 & \mathrm{otherwise,}
+        \end{array}\right. &\\
+    \frac{\partial V_{A^i}\left(x_0\right)}{\partial E^j} &= \left\{\begin{array}{cc} 
+        -\left(1 - p_{EP}^i\right)\gamma_E & \mathrm{for}~i = j,\\
+        0 & \mathrm{otherwise,}
+        \end{array}\right. &\\
+    \frac{\partial V_{A^i}\left(x_0\right)}{\partial A^j} &= \left\{\begin{array}{cc} 
+        \gamma_A & \mathrm{for}~i = j,\\
+        0 & \mathrm{otherwise,}
+        \end{array}\right. &\\
+    \frac{\partial V_{P^i}\left(x_0\right)}{\partial E^j} &= \left\{\begin{array}{cc} 
+        -p_{EP}^i\gamma_E & \mathrm{for}~i = j,\\
+        0 & \mathrm{otherwise,}
+        \end{array}\right. &\\
+    \frac{\partial V_{P^i}\left(x_0\right)}{\partial P^j} &= \left\{\begin{array}{cc} 
+        \gamma_P & \mathrm{for}~i = j,\\
+        0 & \mathrm{otherwise,}
+        \end{array}\right. &\\
+    \frac{\partial V_{I_1^i}\left(x_0\right)}{\partial P^j} &= \left\{\begin{array}{cc} 
+        -\gamma_P & \mathrm{for}~i = j,\\
+        0 & \mathrm{otherwise,}
+        \end{array}\right. &\\
+    \frac{\partial V_{I_1^i}\left(x_0\right)}{\partial I_1^j} &= \left\{\begin{array}{cc} 
+        \gamma_{I_1} & \mathrm{for}~i = j,\\
+        0 & \mathrm{otherwise,}
+        \end{array}\right. &\\
+    \frac{\partial V_{I_2^i}\left(x_0\right)}{\partial I_1^j} &= \left\{\begin{array}{cc} 
+        -\left(1 - p_{I_1H}^i - p_{I_1D}^i\right)\gamma_{I_1} & \mathrm{for}~i = j,\\
+        0 & \mathrm{otherwise,}
+        \end{array}\right. &\\
+    \frac{\partial V_{I_2^i}\left(x_0\right)}{\partial I_2^j} &= \left\{\begin{array}{cc} 
+        \gamma_{I_2} & \mathrm{for}~i = j,\\
+        0 & \mathrm{otherwise.}
+        \end{array}\right. &\\
+\end{align*}
+Since the non-zero components of $\mathbf{F}$ all contain $\beta^{ji}$, where
+$$
+    \beta^{ji} = \nu c^{ji},
+$$
+we can thus write
+$$
+    \mathbf{K} = \nu\mathbf{G}\mathbf{V}^{-1}
+$$
+where $\mathbf{G}$ is equivalent to replacing $\beta^{ji}$ by $c^{ji}$ in $\mathbf{F}$. As such:
+\begin{align*}
+    R_0 &= \nu~\mathrm{eig}_M\left(\mathbf{G}\mathbf{V}^{-1}\right)\\
+    \Rightarrow \nu &= \frac{R_0}{\mathrm{eig}_M\left(\mathbf{G}\mathbf{V}^{-1}\right)}
+\end{align*}
+where $\mathrm{eig}_M(\mathbf{K})$ denotes the maximum eigenvalue of $\mathbf{K}$.
+
+**When using a mixture of contact matrices, we parameterise $\nu$ using the NGM evaluated at the initial contact structure, which represents the contact matrix expected in a completely susceptible population at the start of the outbreak.**
+
+</div>
+
+<br>
+
+### Parameter ranges {#parranges}
+
+We have derived plausible parameter bounds from data and the literature. **We note that the analyses below are not intended to find accurate estimates for these parameters, but to find plausible ranges for these parameters.**
+
+\begin{align}
+    \mbox{$R_0$}&: (2, 4.5) \qquad \mbox{from Leon and Rob}\\
+    T_E&: (0.1, 2)\\
+    T_P&: (1.2, 3)\\
+    T_{I_1}&: (2.8, 4.5)\\
+    T_{I_2}&: (0.0001, 0.5)\\
+    \alpha_{EP}, \alpha_{I_1H}, \alpha_{I_1D}, \alpha_{HD}, \eta&: \mbox{drawn from distribution as described below}\\
+    \alpha_{T_H}, \eta_{T_H}&: \mbox{drawn from distribution as described below}\\
+    \nu_A&: (0, 1)
+\end{align}
+
+<a name="priorslink"></a>
+<button data-toggle="collapse" data-target="#priors">Click for details on plausible range choices</button>
+<div id="priors" class="collapse boxed">
+
+For the mean latent period, $T_E$, we set the upper bound such that the latent period distribution has an upper tail probability that is consistent with the **generation interval** distribution from [Challen et al. (2020)](https://www.medrxiv.org/content/10.1101/2020.11.17.20231548v2). This provides a conservative upper bound, since the generation time is equivalent to $T_E + T_P$ in our model. We choose a lower bound such that it is possible to have a short, but non-zero latent period. The figure below shows the latent period distributions at the lower and upper bounds of the parameter ranges for $T_E$.
+
+```{r, fig.width = 5, fig.height = 5, echo = FALSE, fig.align = "center"}
+p1 <- data.frame(
+    Lower = rexp(1000, rate = 1 / 0.1),
+    Upper = rexp(1000, rate = 1 / 2)) %>%
+  gather(bound, value) %>%
+  ggplot(aes(x = value, y = ..density..)) +
+    geom_histogram(bins = 50) +
+    facet_wrap(~bound) +
+    xlab("Latent period distribution") +
+    ylab("Density")
+gen <- readPNG("../data/intervals/generation.png")
+p2 <- ggplot() + background_image(gen) + coord_fixed()
+layout <- "
+AA
+BB"
+p1 / p2 + plot_layout(design = layout)
+```
+
+To generate ranges for the length of the pre-symptomatic period, $T_P$, we note that the **incubation period** is equivalent to $T_E + T_P$ in our model, and hence through simulation we generated incubation period distributions at the lower and upper bounds of $T_E$, and chose bounds for $T_P$ such that at the lower bounds of $T_E$ and $T_P$ the incubation period distribution looks like the lower-mean incubation period distribution in [Challen et al. (2020)](https://www.medrxiv.org/content/10.1101/2020.11.17.20231548v2), and at the upper bounds of $T_E$ and $T_P$ the incubation period distribution looks like the higher-mean incubation period distribution in [Challen et al. (2020)](https://www.medrxiv.org/content/10.1101/2020.11.17.20231548v2). The figure below shows the incubation period distributions at the lower and upper bounds of the parameter ranges for $T_E$ and $T_P$, against the reference distributions in [Challen et al. (2020)](https://www.medrxiv.org/content/10.1101/2020.11.17.20231548v2).
+
+```{r, fig.width = 5, fig.height = 5, echo = FALSE, fig.align = "center"}
+p1 <- data.frame(
+  Lower = sapply(c(0.1, 1.2), function(x) rexp(10000, rate = 1 / x)) %>%
+      apply(1, sum)
+  ) %>%
+  cbind(
+      Upper = sapply(c(2, 3), function(x) rexp(10000, rate = 1 / x)) %>%
+          apply(1, sum)
+  ) %>%
+  gather(bound, value) %>%
+  ggplot(aes(x = value, y = ..density..)) +
+    geom_histogram(bins = 50) +
+    facet_wrap(~bound) +
+    xlab("Incubation period distribution") +
+    ylab("Density")
+inc <- readPNG("../data/intervals/incubation.png")
+p2 <- ggplot() + background_image(inc)# + coord_fixed()
+layout <- "
+AA
+BB"
+p1 / p2 + plot_layout(design = layout)
+```
+
+To generate ranges for the length of the infectious period, $T_{I_1}$, we note that this is equivalent to the **time-from-onset-to-admission** in our model, and hence through simulation chose bounds for $T_{I_1}$ such that the distribution of $T_1$ was approximately consistent with the time-from-onset-to-admission in [Challen et al. (2020)](https://www.medrxiv.org/content/10.1101/2020.11.17.20231548v2), and also that the time-from-infection-to-admission, $T_E + T_P + T_{I_1}$, was consistent with the time-from-infection-to-admission in [Challen et al. (2020)](https://www.medrxiv.org/content/10.1101/2020.11.17.20231548v2), at both the lower and upper bounds for $T_E$ and $T_P$. The figure below shows these distributions at the lower and upper bounds of the parameter ranges, against the reference distributions in [Challen et al. (2020)](https://www.medrxiv.org/content/10.1101/2020.11.17.20231548v2).
+
+```{r, fig.width = 5, fig.height = 10, echo = FALSE, message = messageFlag, warning = warningFlag, fig.align = "center"}
+p1 <- data.frame(
+    Lower = rexp(10000, rate = 1 / 2.8),
+    Upper = rexp(10000, rate = 1 / 4.5)) %>%
+  gather(bound, value) %>%
+  ggplot(aes(x = value, y = ..density..)) +
+    geom_histogram(bins = 50) +
+    facet_wrap(~bound) +
+    xlab("Time-from-onset-to-admission distribution") +
+    ylab("Density")
+onsetToAdmission <- readPNG("../data/intervals/onsetToAdmission.png")
+p2 <- ggplot() + background_image(onsetToAdmission) + coord_fixed()
+p3 <- data.frame(
+  Lower = sapply(c(0.1, 1.2, 2.8), function(x) rexp(10000, rate = 1 / x)) %>%
+      apply(1, sum)
+  ) %>%
+  cbind(
+      Upper = sapply(c(2, 3, 4.5), function(x) rexp(10000, rate = 1 / x)) %>%
+          apply(1, sum)
+  ) %>%
+  gather(bound, value) %>%
+  ggplot(aes(x = value, y = ..density..)) +
+    geom_histogram(bins = 50) +
+    facet_wrap(~bound) +
+    xlab("Time-from-infection-to-admission distribution") +
+    ylab("Density")
+infectionToAdmission <- readPNG("../data/intervals/infectionToAdmission.png")
+p4 <- ggplot() + background_image(infectionToAdmission) + coord_fixed()
+layout <- "
+AA
+BB
+CC
+DD"
+p1 / p2 / p3 / p4 + plot_layout(design = layout)
+```
+
+For the remainder of infectivity time, $T_{I_2}$, we noted that [Cevik et al. (2020)](https://www.thelancet.com/journals/lanmic/article/PIIS2666-5247(20)30172-5/fulltext) found no live virus beyond day 9 of symptom onset. As such, we used simulation to find upper and lower bounds for $T_{I_2}$. The upper bound of $T_{I_2}$ was chosen so that when $T_{I_1}$ was at its lower bound, the probability that the infectivity time post onset ($T_{I_1} + T_{I_2}$) was > 9 days was $\approx 0.05$. Conversely, if $T_{I_1}$ is set to its upper bound, then even for very low values of $T_{I_2}$ we were unable to get upper tail probabilities for $T_{I_1} + T_{I_2}$ of less than $\approx 0.13$, hence we set a lower bound for $T_{I_2}$ of 0.0001. At the upper bound for $T_{I_1}$ and $T_{I_2}$ these tail probabilities were $\approx 0.15$.
+
+```{r, fig.width = 5, fig.height = 2.5, echo = FALSE, fig.align = "center"}
+p1 <- data.frame(
+  Lower = sapply(c(2.8, 0.0001), function(x) rexp(10000, rate = 1 / x)) %>%
+      apply(1, sum)
+  ) %>%
+  cbind(
+      Upper = sapply(c(4.5, 0.5), function(x) rexp(10000, rate = 1 / x)) %>%
+          apply(1, sum)
+  ) %>%
+  gather(bound, value) %>%
+  ggplot(aes(x = value, y = ..density..)) +
+    geom_histogram(bins = 50) +
+    facet_wrap(~bound) +
+    xlab("Post onset infectivity time distribution") +
+    ylab("Density")
+p1
+```
+
+For the hospital stay times we used data from the CHESS study which is not publicly available. Below we plot the distribution of stay times by age, along with the best fitting exponential model in each case.
+
+```{r, echo = FALSE, out.width = "75%", out.height = "75%", fig.align = "center"}
+knitr::include_graphics("../data/hospitalStays/expFits.svg")
+```
+
+If we plot the log(mean hospital stay time) from the fitted exponential models against the midpoints of each age-category, then we get an approximate increasing linear relationship with age. To capture estimation uncertainties more robustly, we built a hierarchical Bayesian model (fitted using MCMC implemented in NIMBLE) to estimate both the mean hospital stay times in each age category, and then simultaneously the slope and intercept from Gaussian linear regression model fitted to the log(mean hospital stay time) from the exponential models. Full details can be found in the `data/hospitalStays/` folder.
+
+As a comparison, below we show the log(mean hospital stay time) estimates from the non-Bayesian models (fitted independently to each age-distribution) against the fitted line from the hierarchical Bayesian model, with 99% credible intervals.
+
+```{r, echo = FALSE, out.width = "50%", out.height = "50%", fig.align = "center"}
+knitr::include_graphics("../data/hospitalStays/fittedLnBayes.svg")
+```
+
+The intercept and slope of this line provide the parameters we use to determine the age-structured hospital stay times, and we've decided to draw from the posterior distribution using a space-filling design for these parameters. We do this by generating large numbers of samples from the posterior, and then sub-sampling these using a maximin design to get appropriate coverage. To avoid having to run the MCMC each time we want more design points, we approximate the posterior distribution using a truncated finite Gaussian mixture model, fitted using the `mclust` package in R. The posterior distributions from the MCMC and the approximating FMM are shown below. 
+
+```{r, echo = FALSE, out.width = "75%", out.height = "75%", fig.align = "center"}
+knitr::include_graphics("../data/hospitalStays/mixturePosterior.png")
+```
+
+For the probabilities of transitioning along different pathways by age, we used two sources of information to generate plausible ranges to use as initial inputs into the calibration. We use model estimates of the *infection fatality risk* and the *probability of hospitalisation given infection* from [Verity et al. (2020)](https://www.thelancet.com/journals/laninf/article/PIIS1473-3099(20)30243-7/fulltext), and also some data from the CDC.
+
+The estimates of the infection fatality risk and the probability of hospitalisation given infection from the CDC are  obtained in the following way.
+
+1. The cumulative number of cases and deaths for each age group by 26/02/2021 were downloaded from [https://covid.cdc.gov/covid-data-tracker/#demographics](https://covid.cdc.gov/covid-data-tracker/#demographics).
+2. We use the cumulative hospitalisation proportion (per 100,000 population) on 20/02/2021 (available from [https://gis.cdc.gov/grasp/COVIDNet/COVID19_3.html](https://gis.cdc.gov/grasp/COVIDNet/COVID19_3.html)), and the US population by age (available from [https://www.statista.com/statistics/241488/population-of-the-us-by-sex-and-age/](https://www.statista.com/statistics/241488/population-of-the-us-by-sex-and-age/)) to estimate the number of hospitalisations for the entire US population.
+3. We obtain the number of in hospital deaths by age group from [https://data.cdc.gov/dataset/NVSS-Provisional-COVID-19-Deaths-by-Place-of-Death/4va6-ph5s/data](https://data.cdc.gov/dataset/NVSS-Provisional-COVID-19-Deaths-by-Place-of-Death/4va6-ph5s/data), by filtering the data for the entire US using the category "Place of death" / "Healthcare setting, inpatient". 
+
+These estimates are provided in the `data/pathways/CasesHospDeathInHospForUS_Update.xlsx` file.
+
+If we plot the log(probability of hospitalisation given infection), and the log(infection fatality risk) against the midpoints of each age-category, then we get an approximate increasing linear relationship with age in all cases, and after discussions we have decided to use log-linear relationships between the probabilities of transitions along certain pathways, and age, with the same slope parameter in each case, constrained such that there is always an increasing risk of more severe outcomes with age. We allow the intercepts to vary between the different transition pathways. Hence we have five parameters to calibrate: the intercepts $\alpha_{EP}$, $\alpha_{I_1D}$, $\alpha_{I_1H}$, $\alpha_{HD}$ and the common slope $\eta$.
+
+To derive plausible ranges for these parameters, we used an ad-hoc MCMC approach based on simulated data sets. Firstly, we took the infection fatality risks and probabilities of hospitalisation estimates from [Verity et al. (2020)](https://www.thelancet.com/journals/laninf/article/PIIS1473-3099(20)30243-7/fulltext), and for each age-class we generated a pseudo-data set by randomly sampling from a binomial distribution with 100 trials and a probability of success given by the relevant estimate. This gave us age-specific counts for hospitalisations ($y_{iH}$) and death *given* infection ($y_{iD}$) given $n_i = 100$ "trials" for age-classes $i$. We then fitted a model to this pseudo-data set, targeting a posterior of the form:
+\begin{align}
+    & \pi\left(\alpha_{EP}, \alpha_{I_1D}, \alpha_{I_1H}, \alpha_{HD}, \eta \mid \mathbf{y}, \mathbf{n}\right) \propto\\
+    & \qquad \pi\left(\mathbf{y} \mid \alpha_{EP}, \alpha_{I_1D}, \alpha_{I_1H}, \alpha_{HD}, \eta, \mathbf{n}\right) \pi\left(\alpha_{EP}, \alpha_{I_1D}, \alpha_{I_1H}, \alpha_{HD}, \eta\right).
+\end{align}
+The likelihood component, $\pi\left(\mathbf{y} \mid \alpha_{EP}, \alpha_{I_1D}, \alpha_{I_1H}, \alpha_{HD}, \eta, \mathbf{n}\right)$, depends on a set of latent variables, $\mathbf{x}$, and can be written as:
+$$
+    \pi\left(\mathbf{y} \mid \alpha_{EP}, \alpha_{I_1D}, \alpha_{I_1H}, \alpha_{HD}, \eta, \mathbf{n}\right) = \int_{\mathcal{X}}\pi\left(\mathbf{y} \mid \mathbf{x}, \mathbf{n}\right)\pi\left(\mathbf{x} \mid \alpha_{EP}, \alpha_{I_1D}, \alpha_{I_1H}, \alpha_{HD}, \eta\right) d \mathcal{X},
+$$
+where $\mathcal{X}$ is the (multidimensional) parameter space for the latent states. Here the latent states correspond to the individuals transitioning down the different pathways in the model, and $\pi\left(\mathbf{y} \mid \mathbf{x}, \mathbf{n}\right)$ is a binomial probability mass function based on probabilities derived from $\mathbf{x}$ (here we assume that given $\mathbf{x}$, the data $y_{iH}$ and $y_{iD}$ are independent). To approximate the integral we used Monte Carlo simulation such that
+$$
+    \hat{\pi}\left(\mathbf{y} \mid \alpha_{EP}, \alpha_{I_1D}, \alpha_{I_1H}, \alpha_{HD}, \eta, \mathbf{n}\right) = \frac{1}{M}\sum_{j=1}^M \pi\left(\mathbf{y} \mid \mathbf{x}_j, \mathbf{n}\right),
+$$
+where (with a slight abuse of notation) $x_j \sim \pi\left(\mathbf{x} \mid \alpha_{EP}, \alpha_{I_1D}, \alpha_{I_1H}, \alpha_{HD}, \eta\right)$ gives the number of individuals from 100,000 who end up running through each pathway, and for age-class $i$ and count $y_i$: $\pi\left(y_i \mid x_i, n\right) \sim \mbox{Bin}\left(100, x_i / 100,000\right)$ with $x_i$ the relevant simulated count. We used this estimator in place of the true likelihood in a Metropolis-Hastings algorithm to get an approximate "posterior". We found $M = 1$ simulation was sufficient, but we had to run long chains to get good mixing.
+
+We repeated this approach for 10 pseudo-data sets derived from the [Verity et al. (2020)](https://www.thelancet.com/journals/laninf/article/PIIS1473-3099(20)30243-7/fulltext) estimates, and also 10 pseudo-data sets derived from the CDC data. The **union** of these posterior samples across all 20 data sets provided our plausible ranges. Full details can be found in the `data/pathways/` folder.
+
+As a comparison, below we show the probability of hospitalisation given infection estimates from both the Verity and CDC data against the 99% prediction intervals generated from our union posterior samples. 
+
+```{r, echo = FALSE, out.width = "50%", out.height = "50%", fig.align = "center"}
+knitr::include_graphics("../data/pathways/fittedHosp.svg")
+```
+
+As a comparison, below we show the probability of death given infection estimates from both the Verity and CDC data against the 99% prediction intervals generated from our union posterior samples. 
+
+```{r, echo = FALSE, out.width = "50%", out.height = "50%", fig.align = "center"}
+knitr::include_graphics("../data/pathways/fittedDeaths.svg")
+```
+
+For our input designs we draw from the union posterior distributions using a space-filling maximin sampling design over a large set of posterior samples. To avoid having to run the MCMC each time we want more design points, we approximate the posterior distribution using a truncated finite Gaussian mixture model, fitted using the `mclust` package in R. The posterior distributions from the MCMC and the approximating FMM are shown below. **In practice we require checks that $\eta > 0$ and that for any combination of parameters the probabilities of transition in all age-classes are bounded by 1.**
+
+```{r, echo = FALSE, out.width = "75%", out.height = "75%", fig.align = "center"}
+knitr::include_graphics("../data/pathways/simsMixturePosterior.png")
+```
+
+</div>
+
+## Mover functions
+
+MetaWards has a specific structure in terms of how it progresses movements between the stages. To get the correct splits between the **pathways** specified above we do all non-infection movements through a custom `mover` function specified below. Note that in the `ncov.json` file specified [above](#diseasefile), we set all `progress` parameters to be 0. Thus, all transition probabilities other than new infections are driven by user-defined parameters that are passed to the `mover` function, which we call `move_pathways.py` here.
 
 <button data-toggle="collapse" data-target="#mover">Click for MetaWards <code>mover</code> file</button>
-<div id="mover" class="collapse">
+<div id="mover" class="collapse boxed">
 
-The `mover` function applies movements in order, and so it is important to get the order correct. In particular we need to reverse the order of the stage movements (e.g. do movements out of the $C$ demographic *before* movements out of the $H$ demographic). This is to ensure that individuals that move from $H \to C$ say, can't then immediately move out of $C$. The file `move_pathways.py` contains the code below.
+The `mover` function applies movements in order, and so it is important to get the order correct. In particular we need to reverse the order of the stage movements (e.g. do movements out of the $H$ demographic *before* movements out of the $I_1$ demographic). This is to ensure that individuals that move from $I_1 \to H$ say, can't then immediately move out of $H$. The file `move_pathways.py` contains the code below.
+
+> **Additional note**: The functions in the `mover` file operate in turn. Therefore the movement probabilities below must be altered between each function, in order to get the correct proportions moved. For example, consider that we have $n$ individuals in the $I_1$ class and we want to move a proportion $p_{I_1}p_{I_1H}$ from $I_1 \to H$, a proportion $p_{I_1}p_{I_1D}$ from $I_1 \to D_I$, and a proportion $p_{I_1}\left(1 - p_{I_1H} - p_{I_1D}\right)$ from $I_1 \to I_2$, where $p_{I_1} = 1 - e^{-\gamma_{I_1}}$.
+> 
+> In this case the first `mover` function takes a random binomial sample from the $n$ individuals with probability $p_{I_1}p_{I_1H}$ as requested, resulting in $n_{I_1H}$ moves. However, the second `mover` function now operates on the $n - n_{I_1H}$ individuals, so we need to adjust the sampling probabilities to adjust for this. Hence the second `mover` function needs to sample from the $n - n_{I_1H}$ individuals with probability $\frac{p_{I_1}p_{I_1D}}{1 - p_{I_1}p_{I_1H}}$ in order to generate the correct proportions of moves that we would expect, resulting in $n_{I_1D}$ moves. Similarly, the third `mover` function now operates on the $n - n_{I_1H} - n_{I_1D}$ remaining individuals, and thus we would need to adjust the sampling probability to $\frac{p_{I_1}\left(1 - p_{I_1H} - p_{I_1D}\right)}{1 - p_{I_1}\left(p_{I_1H} + p_{I_1D}\right)}$. The remaining individuals remain in $I_1$.
 
 ```{python, code = readLines("../model_code/move_pathways.py"), eval = FALSE}
 ```
-
-> **Additional note**: The functions in the `mover` file operate in turn. Therefore the movement probabilities [above](#parameters) must be altered between each function, in order to get the correct proportions moved. For example, consider that we have $n$ individuals in the $I$ class and we want to move a proportion $p_Ip_{IH}$ from $I \to H$, a proportion $p_Ip_{IR}$ from $I \to R_I$, and a proportion $p_I\left(1 - p_{IH} - p_{IR}\right)$ from $I \to D_I$, where $p_I = 1 - e^{-\gamma_I}$.
-> 
-> In this case the first `mover` function takes a random binomial sample from the $n$ individuals with probability $p_Ip_{IH}$ as requested, resulting in $n_{IH}$ moves. However, the second `mover` function now operates on the $n - n_{IH}$ individuals, so we need to adjust the sampling probabilities to adjust for this. Hence the second `mover` function needs to sample from the $n - n_{IH}$ individuals with probability $\frac{p_Ip_{IR}}{1 - p_Ip_{IH}}$ in order to generate the correct proportions of moves that we would expect, resulting in $n_{IR}$ moves. Similarly, the third `mover` function now operates on the $n - n_{IH} - n_{IR}$ remaining individuals, and thus we would need to adjust the sampling probability to $\frac{p_I\left(1 - p_{IH} - p_{IR}\right)}{1 - p_I\left(p_{IH} + p_{IR}\right)}$. The remaining individuals remain in $I$.
 
 </div>
 
 ## Interaction matrices
 
-The **interaction matrix** scales the force-of-infection (FOI) that different demographics have on other demographics. We have three free parameters here: $\beta^S_{A \to GP}$, $\beta^S_{H \to GP}$ and $\beta^S_{C \to GP}$ which scale the impact of aymptomatics, hospital cases and critical care cases on the FOI to the general population. We store this information in a file called `mix_pathways.py`. 
+We will use an **interaction matrix** to input the contact matrices that scale the force-of-infection (FOI) from each age-class to the other age-classes (see [here](#translink)). When using interaction matrices in this way, the MetaWards `beta` parameters correspond to the probability of transmission given an infected contact, $\nu$, and for asymptomatics we scale `beta` by $0 < \nu_A < 1$. Full details are given [here](#translink). 
 
-<button data-toggle="collapse" data-target="#mixer">Click for MetaWards <code>mixing</code> file</button>
-<div id="mixer" class="collapse">
+The `mix_pathways.py` file contains the custom mixer code. Note that we pass in the relative paths to the contact matrix filenames through the user inputs (see [here](#user)), and we start with the POLYMOD contact matrix and then switch to the CoMix contact matrix after the first lockdown. The `merge_matrix_multi_population` merge function is required to get the correct frequency-dependent mixing (see MetaWards tutorial section [here](https://metawards.org/tutorial/part05/04_contacts.html)).
 
-Since most of the classes are already infected, it's only the first row that has to contain non-zero entries. Here the `GP_A`, `GP_H` and `GP_C` parameters scale the impact of aymptomatics, hospital cases and critical care cases on the force-of-infection to the general population. All demographics other than `genpop` are already infected, so have no further force-of-infection acting on them, and thus the other parameters can be set to zero. These parameters are all $> 0$.
+<button data-toggle="collapse" data-target="#mixer">Click for MetaWards <code>mixer</code> file</button>
+<div id="mixer" class="collapse boxed">
 
 ```{python, code = readLines("../model_code/mix_pathways.py"), eval = FALSE}
 ```
@@ -179,55 +577,34 @@ Since most of the classes are already infected, it's only the first row that has
 
 ## Lockdown
 
-Chris Fenton wrote a neat custom `iterator` function, that models lockdown by scaling the FOI terms for different time periods, which each represent a different stage of interventions. We store this information in a custom `iterator` function (specified in `iterator.py` here), with the corresponding parameters in `lockdown_states.txt`.
+Lockdown scales the FOI terms for different time periods, which each represent a different stage of interventions. Furthermore, for full lockdown we switch off all worker movements. When partial relaxing of lockdown is introduced, we allow worker movements to begin again, but scale the FOI (albeit less stringently than during full lockdown). We store this information in a custom `iterator` function with the corresponding parameters in `inputs/user_inputs.txt`.
 
-<button data-toggle="collapse" data-target="#ldown">Click for MetaWards <code>iterator</code> files</button>
-<div id="ldown" class="collapse">
-
-The custom iterator is in the `iterate.py` file:
-
-```{python, code = readLines("../model_code/iterate.py"), eval = FALSE}
-```
-
-This requires an additional input file containing the dates of the different stages (which are fixed parameters here). This is stored in the `lockdown_states.txt` file:
-
-```{python, code = readLines("../model_code/lockdown_states.txt"), eval = FALSE}
-```
-
-</div>
+See [here](#seeding) for full iterator function.
 
 ## Extractor {#extractor}
 
-We also have a custom `extractor` function, that saves the outputs as a compressed SQL database called `stages.db.bz2`. This is important since the outputs are very large (all classes across all days and all wards, for multiple replicates of each design point). 
+We also have a custom `extractor` function, that saves the outputs as a compressed SQL database for each age-class, called `age*.db.bz2` (where `*` varies by age-class). 
 
-The database for a given run contains a single table called `compact`. To store the outputs efficiently, we have introduced various tricks:
+Each database for a given run contains a single table called `compact`. For efficiency we:
 
-1. Extraneous classes are removed where not relevant for different demographics. For example, for the `genpop` demographic we return `stage_0`--`stage_3`. However, for the `asymp` demographic we only return `stage_1` and `stage_2`, and for the `hospital` and `critical` demographics, we return `stage_1`--`stage_3`.
-2. We only return data for time points *after initial infection in a ward*. This also means that wards that are not infected do not return any results. 
+* only store time points where an event happens within that age-class;
+* only store the *incidence* data (i.e. new cases), and not the time-series counts.
 
-These tricks **hugely** reduce the size of the output data, but means that we have to do some **post-processing** in order to extract quantities of interest. Since the data are stored as an SQL database, we can either query the database directly, or use some of the tools in e.g. R (see below) to interface with it. So, to clarify, the `stages.db` database contains a table called `compact` with entries:
+This also means that wards and/or age-classes that are not infected do not return any results. 
+
+This trick **hugely** reduces the size of the output data, but means that we have to do some **post-processing** in order to extract quantities of interest. Since the data are stored as an SQL database, we can either query the database directly, or use some of the tools in e.g. R (see [below](#recon)) to interface with it and to reconstruct time-series counts if required. 
+
+So, to clarify, the `stages*.db` databases each contain a table called `compact` with entries:
 
 * `day`, `ward`
-* `Einc`, `E`, `Iinc`, `I`, `RI`, `DI`
-* `Ainc`, `A`, `RA`
-* `Hinc`, `H`, `RH`, `DH`
-* `Cinc`, `C`, `RC`, `DC`
-
-For the `genpop` demographic, these entries correspond to:
-
-* `Einc`: **new** infections on each day (i.e. new moves into $E$)
-* `E`: current infections on each day (i.e. number of individuals in $E$)
-* `Iinc`: **new** infectious individuals on each day (i.e. new moves into $I$)
-* `I`: current infectious individuals on each day (i.e. number of individuals in $I$)
-* `RI`: current removals on each day (i.e. number of individuals in $R$)
-* `DI`: current deaths on each day (i.e. number of individuals in $D$)
-
-Similarly for the other demographics (refer to the model structure [here](#model)).
+* `Einc`, `Pinc`, `I1inc`, `I2inc`, `RIinc`, `DIinc`
+* `Ainc`, `RAinc`
+* `Hinc`, `RHinc`, `DHinc`
 
 We save this custom `extractor` function in the file `ward_extractor.py`.
 
 <button data-toggle="collapse" data-target="#ext">Click for MetaWards <code>extractor</code> file</button>
-<div id="ext" class="collapse">
+<div id="ext" class="collapse boxed">
 
 ```{python, code = readLines("../model_code/ward_extractor.py"), eval = FALSE}
 ```
@@ -236,55 +613,30 @@ We save this custom `extractor` function in the file `ward_extractor.py`.
 
 ## Input and output code {#code}
 
+### Inputs
+
 To run designs, we need to generate a `disease.csv` file containing different parameters to use for different runs. For consistency, we will define three spaces:
 
 * *input* space: this relates to the parameters ranges (defined below);
 * *design* space: this will usually be in $(0, 1)$ or $(-1, 1)$ space;
 * *disease* space: this relates to parameters that are fed into MetaWards.
 
-The *input* and *design* spaces are fairly trivial to convert between, but some more work has to be done to convert between the *input* space and the *disease* space. To ensure orthogonality, we reparameterise a couple of the parameters such that:
-\begin{align}
-    p_{IR} &= \left(1 - p_{IH}\right) p^\prime_{IR}\\
-    p_{HR} &= \left(1 - p_{HC}\right) p^\prime_{HR}
-\end{align}
-and thus we have parameter ranges:
-\begin{align}
-    \mbox{$R_0$}&: (2, 4)\\
-    \mbox{mean incubation period ($T_E$)}&: (4, 6)\\
-    \mbox{mean infectious period ($T_I$)}&: (2, 4)\\
-    \mbox{mean hospital stay ($T_H$)}&: (4, 12)\\
-    \mbox{mean time in critical care ($T_C$)}&: (4, 12)\\
-    \mbox{lockdown 1 restrict}&: (0, 1)\\
-    \mbox{lockdown 2 release}&: (0, 1)\\
-    p_{EA}&: (0, 1)\\
-    p_{IH}&: (0, 1)\\
-    p^\prime_{IR}&: (0, 1)\\
-    p_{HC}&: (0, 1)\\
-    p^\prime_{HR}&: (0, 1)\\
-    p_{CR}&: (0, 1)\\
-    \beta^S_{A \to GP}&: (0, 1)\\
-    \beta^S_{H \to GP}&: (0, 1)\\
-    \beta^S_{C \to GP}&: (0, 1).
-\end{align}
+The *input* and *design* spaces are fairly trivial to convert between, but some more work has to be done to convert between the *input* space and the *disease* space. Thus we have parameter ranges as described [above](#parranges).
 
 In R we can set up the *input* parameter ranges as follows:
 
 ```{r}
-## set up parameter ranges
+## set up parameter ranges for uniform ranges
 parRanges <- data.frame(
-    parameter = c("r_zero", "incubation_time", "infectious_time", "hospital_time",
-                  "critical_time", "lock_1_restrict", "lock_2_release",
-                  "pEA", "pIH", "pIRprime", "pHC", "pHRprime", "pCR", 
-                  "GP_A", "GP_H", "GP_C"),
-    lower = c(2, 4, 2, 4, 4, rep(0, 11)),
-    upper = c(4, 6, 4, 12, 12, rep(1, 11)),
+    parameter = c("R0", "TE", "TP", "TI1", "TI2", 
+                  "nuA", "lock_1_restrict", "lock_2_release"),
+    lower = c(2, 0.1, 1.2, 2.8, 0.0001, 0, 0, 0),
+    upper = c(4.5, 2, 3, 4.5, 0.5, 1, 1, 1),
     stringsAsFactors = FALSE
-)
+) 
 ```
 
 Firstly we want a function to convert between the *design* and *input* spaces. A short R function called `convertDesignToInput()` which does this is given below and can be found in the `R_tools/dataTools.R` script file. This requires a `design` data frame with columns denoting each *input* parameter in `parRanges` and rows corresponding to design points. There should be an additional column called `output` that defines a unique identifier for each design point, and a column called `repeats` that contains the number of repeats for each design point. The `convertDesignToInput()` function also requires the `parRanges` data frame (defined above). We use the `scale` argument to define whether the design is on the $(0, 1)$ (`scale = "zero_one"`) or $(-1, 1)$ (`scale = "negone_one"`) space.
-
-> **Note**: this function converts the probabilities correctly for the `mover` defined [above](#mover).
 
 ```{r, echo = FALSE}
 library(knitr)
@@ -292,17 +644,29 @@ read_chunk("../R_tools/dataTools.R")
 ```
 
 <button data-toggle="collapse" data-target="#convert">Click for R <code>convertDesignToInput</code> function</button>
-<div id="convert" class="collapse">
+<div id="convert" class="collapse boxed">
 
 ```{r, convertDesignToInput}
 ```
 
 </div>
 
-Once we have done this, we need to transform from the *input* space to the *disease* space for MetaWards. A `convertInputToDisease()` R function is given below and can be found in the `R_tools/dataTools.R` script file. This requires an `input` data frame, with columns denoting each *input* parameter and rows corresponding to each input points, a number of `repeats` and a column of unique identifiers (`output`).
+Next we have to generate design points for the age-dependent parameters using the process described [above](#parranges). To do this we have two generated finite mixture models that are stored in the files `inputs/pathways.rds` and `inputs/hospStays.rds`, and we use these to generate sets of design points, which we sub-sample using a maximin space-filling design. This approach is implemented in the `FMMmaximin()` function shown below. This takes an `mclust` model object containing the finite mixture model, a required number of design points (`nsamp`), and a number of points to pass to the maximin sampler (`nseed`):
+
+<button data-toggle="collapse" data-target="#maximin">Click for R <code>FMMmaximin</code> function</button>
+<div id="maximin" class="collapse boxed">
+
+```{r, maximin}
+```
+
+</div>
+
+Note that we **do not** have to run the `convertDesignToInput()` function on these design points, since they are already in the *input* space.
+
+Once we have generated design points in this way, we need to transform from the *input* space to the *disease* space for MetaWards. A `convertInputToDisease()` R function is given below and can be found in the `R_tools/dataTools.R` script file. This requires an `input` data frame, with columns denoting each *input* parameter (`R0`, `TE`, `TP`, `TI1`, `TI2`, `alphaEP`, `alphaI1H`, `alphaI1D`, `alphaHD`, `eta`, `alphaTH`, `etaTH`, `nuA`, `lock_1_restrict`, `lock_2_release`) and rows corresponding to each input point, a number of `repeats` and a column of unique identifiers (`output`).
 
 <button data-toggle="collapse" data-target="#convert1">Click for R <code>convertInputToDisease</code> function</button>
-<div id="convert1" class="collapse">
+<div id="convert1" class="collapse boxed">
 
 ```{r, convertInputToDisease}
 ```
@@ -314,26 +678,19 @@ Also in `R_tools/dataTools.R` is a function `ensembleIDGen()` that creates uniqu
 ```{r, code = readLines("../convertDesign.R"), eval = FALSE}
 ```
 
-This produces a file `inputs/disease.dat` that can be passed to MetaWards to run the model. The batch code below provides the command line instructions needed to the model using these inputs. If you don't run Linux, then the file should give you an idea of how to run the model on your own system.
+This produces a file `inputs/disease.dat` that can be passed to MetaWards to run the model. The `bash` script below provides the command line instructions needed to the model using these inputs for the start of the epidemic to the first lockdown. If you don't run Linux, then the file should give you an idea of how to run the model on your own system.
 
-<button data-toggle="collapse" data-target="#run">Click to show code</button>
-<div id="run" class="collapse">
+<button data-toggle="collapse" data-target="#run">Click to show `runscript.sh`</button>
+<div id="run" class="collapse boxed">
 
-```{bash, eval = FALSE}
-mkdir -p raw_outputs
-
-R CMD BATCH --no-restore --slave --no-save convertDesign.R 
-
-export METAWARDSDATA=$HOME/Documents/covid/MetaWardsData
-
-metawards -d model_code/ncov.json -D model_code/demographics.json --mixer model_code/mix_pathways --mover model_code/move_pathways --input inputs/disease.dat -a ExtraSeedsLondon.dat -u model_code/lockdown_states.txt -o raw_outputs --force-overwrite-output --iterator model_code/iterate --extractor model_code/ward_extractor --start-date 2020/01/01 --theme simple --nsteps 100
+```{bash, code = readLines("../runscript.sh"), eval = FALSE}
 ```
 
 </div>
 
 ### Outputs 
 
-As described [above](#extractor) each model run produces a file called `stages.db.bz2`, which is a compressed database containing the outputs. In practice, it is time-consuming to unzip and extract all of these outputs for all design points, and extract and collate the various quantities we need for our emulation and history matching process. To this end we have been kindly offered a processing and data storage solution on [JASMIN](https://www.jasmin.ac.uk/). 
+As described [above](#extractor) each model run produces a series of files called `age1.db.bz2`, `age2.db.bz2` etc., which are compressed databases containing the outputs for each age-class. In practice, it is time-consuming to unzip and extract all of these outputs for all design points, and extract and collate the various quantities we need for our emulation and history matching process. To this end we have been kindly offered a processing and data storage solution on [JASMIN](https://www.jasmin.ac.uk/). 
 
 The simulation outputs from our model are stored at the public repository:
 
@@ -346,59 +703,58 @@ wave
 +-- inputs
 +-- raw_outputs
 | +-- EnsID
-| | +-- stages.db
-| | +-- weeksums.csv
-| | +-- Cprev.csv
-| | +-- Hprev.csv
-| | +-- Deaths.csv
+| | +-- age*.db
+| | +-- weeksums_*.csv
 | +-- EnsIDx002
-| | +-- stages.db
-| | +-- weeksums.csv
+| | +-- age*.db
+| | +-- weeksums_*.csv
 | +-- EnsIDx003
-| | +-- stages.db
-| | +-- weeksums.csv
+| | +-- age*.db
+| | +-- weeksums_*.csv
 | +-- ...
 ```
 
-The `stages.db` files are the unzipped raw outputs for that design point (described above). The `weeksums.csv` files are weekly summaries of mean hospital prevalence (`Hprev` column), mean critical care prevalence (`Cprev` column) and total hospital + critical care deaths (`Deaths` column) on a weekly basis for each ward and week since lockdown. 
+The `age*.db` files are the unzipped raw outputs for that design point (described above). The `weeksums_*.csv` files are weekly summaries of mean hospital prevalence (`Hprev` column) and total deaths (`Deaths` column) on a weekly basis for each ward and week within each age-class. For a given ensemble ID (`Ens0000` say), replicates are appended with the replicate number e.g. `Ens0000x001`, `Ens0000x002` and so on. 
 
-For a given ensemble ID (`Ens0000` say), the folder `Ens0000` corresponds to the first replicate for that design point. Other replicates are appended with the replicate number e.g. `Ens0000x002`, `Ens0000x003` and so on. The **main folder only** (e.g. `Ens0000`) for each design point also contains three more `.csv` files: `Hprev.csv`, `Cprev.csv` and `Deaths.csv`. These contain 0.025, 0.25, 0.5, 0.75 and 0.975 quantiles of the `Hprev`, `Cprev` and `Deaths` counts respectively taken across the replicates, and are designed to be used to build our emulators.
+#### More detail on manipulating model outputs {#recon}
 
-The main repo contains scripts to produce these in parallel on JASMIN, greatly speeding up the post-processing time. However, JASMIN is not open for general use, so these are not useful outside of the current working group. However, the results of this post-processing are detailed above and can be downloaded from the given link. A script file `downloadQuantiles.R` gives some R code that can be used to download the quantile data from a set of design IDs onto any end-user machine:
-
-```{r, code = readLines("../downloadQuantiles.R"), eval = FALSE}
-```
-
-#### More detail on manipulating model outputs
-
-If you've run the model yourselves, or want to use the data differently, then as an example of how to manipulate the raw outputs, migrate to an output folder containing `stages.db.bz2` (or download one from the repo above). If this is a zipped file, then you will have to unzip it. In Linux this can be done on the command line e.g.
+If you've run the model yourselves, or want to use the data differently, then as an example of how to manipulate the raw outputs, migrate to an output folder containing e.g. `age1.db.bz2` (or download one from the repo above). If this is a zipped file, then you will have to unzip it. In Linux this can be done on the command line e.g.
 
 ```{bash}
-bzip2 -dkf stages.db.bz2
+bzip2 -dkf age1.db.bz2
 ```
 
-You will notice that the unzipped `stages.db` file is larger than the compressed version, though Chris has done a great job in storing the outputs in a memory efficient way. As such, you might need to remove `stages.db` at the end if you have limited hard drive space (to this end, the `bzip -dkf` flag I used above ensures that the original compressed file is not deleted when uncompressed). 
+You will notice that the unzipped `age1.db` file is larger than the compressed version. As such, you might need to remove `age1.db` at the end if you have limited hard drive space (to this end, the `bzip -dkf` flag used above ensures that the original compressed file is not deleted when uncompressed). 
 
-The database contains a single table called `compact`. To store the outputs efficiently, we have introduced various tricks, described [above](#extractor). To clarify, the `stages.db` database contains a table called `compact` with entries:
+The database contains a single table called `compact`. To store the outputs efficiently, we have introduced various tricks, described [above](#extractor). To clarify, each `age*.db` database contains a table called `compact` with entries:
 
 * `day`, `ward`
-* `Einc`, `E`, `Iinc`, `I`, `RI`, `DI`
-* `Ainc`, `A`, `RA`
-* `Hinc`, `H`, `RH`, `DH`
-* `Cinc`, `C`, `RC`, `DC`
+* `Einc`, `Pinc`, `I1inc`, `I2inc`, `RIinc`, `DIinc`
+* `Ainc`, `RAinc`
+* `Hinc`, `RHinc`, `DHinc`
 
 If you're happy with SQL, you can query these directly with e.g. SQLite. If you are an R user, then the `dplyr` package (or more specifically the `dbplyr` package) provides some useful R tools for querying SQL databases using `tidyverse`-type notation. More details about these tools can be found [here](https://cran.r-project.org/web/packages/dbplyr/vignettes/dbplyr.html).
 
-As a quick example, imagine that we want to extract the **cumulative hospital cases** on say day 100 from R. Here we will need to extract the **new hospital cases** from day 1--100, and then sum them up for each ward. Therefore we need to extract `day`, `ward` and `Hinc` from the `compact` table.
+If required, the script `R_tools/dataTools.R`, that provides a function called `reconstruct()` that is written using `Rcpp` and can be used to reconstruct the time-series counts from the incidence data.
 
-```{r, message = FALSE, warning = FALSE}
+<button data-toggle="collapse" data-target="#reconrcpp">Click for R <code>reconstruct</code> function</button>
+<div id="reconrcpp" class="collapse boxed">
+
+```{r, reconstruct}
+```
+
+</div>
+
+As a quick example, imagine that we want to extract the **cumulative hospital cases** on say day 20 from R for the lowest age-class. (**Note that we do not need the time-series counts for this, only the incidence data.**) Here we will need to extract the **new hospital cases** from day 1--20, and then sum them up for each ward. Therefore we need to extract `day`, `ward` and `Hinc` from the `compact` table.
+
+```{r, message = messageFlag, warning = warningFlag}
 ## load library
 ## (you might also need to install the 'RSQLite' 
 ## and `dbplyr` packages which 'dplyr' calls)
 library(dplyr)
 
 ## establish connection to database
-con <- DBI::dbConnect(RSQLite::SQLite(), "stages.db")
+con <- DBI::dbConnect(RSQLite::SQLite(), "age1.db")
 
 ## connect to the 'compact' table
 compact <- tbl(con, "compact")
@@ -407,14 +763,14 @@ compact <- tbl(con, "compact")
 compact
 ```
 
-By default, the package only pulls enough data from the database to produce a summary on the screen (notice that it prints the dimensions as `?? x 19`). If the database is small enough, then the `collect()` function can be used to import tables directly into R as a `tibble`. Alternatively, the `dbplyr` package can convert `tidyverse`-style commands into SQL and run these directly within the database. For large databases this is likely to be much more efficient, in terms of speed and memory usage. You can then `collect()` the results of the query into R.
+By default, the package only pulls enough data from the database to produce a summary on the screen (notice that it prints the dimensions as `?? x 13`). If the database is small enough, then the `collect()` function can be used to import tables directly into R as a `tibble`. Alternatively, the `dbplyr` package can convert `tidyverse`-style commands into SQL and run these directly within the database. For large databases this is likely to be much more efficient, in terms of speed and memory usage. You can then `collect()` the results of the query into R.
 
-As an example of this latter approach, we will set up a query that sums the **new** hospital cases over the first 100 days in each ward. **Remember**: for each ward the database only contains days after the initial infection occurs. For cumulative *incidence* counts this is fine, since the missing data will be zero in each case, so we just need to filter first to remove all time points $> 100$. To set up the query:
+As an example of this latter approach, we will set up a query that sums the **new** hospital cases over the first 20 days in each ward. **Remember**: for each ward the database only contains days when some event happens. For cumulative *incidence* counts this is fine, since the missing data will be zero in each case, so we just need to filter first to remove all time points $> 20$. To set up the query:
 
 ```{r}
 ## Hinc contains the new cases, so sum these
 ## over each ward for days 1--100
-hosp_db <- filter(compact, day <= 100) %>%
+hosp_db <- filter(compact, day <= 20) %>%
     select(ward, Hinc) %>%
     group_by(ward) %>%
     summarise(Hcum = sum(Hinc))
@@ -442,13 +798,25 @@ hosp
 
 Now you can play with `hosp` as much as you like. **Note** that `hosp` here only contains information about wards that have some infections, and only from the time since initial infection. Hence for calibration you might need to expand to fill in the missing wards. Fortunately, R (especially `tidyverse`) has lots of tools for doing this. 
 
-You can very easily wrap these ideas into an R function that can scroll through the design IDs, extract relevant outputs and bind to the inputs. Note that this data processing takes a lot of time, so running in parallel is very helpful. Hence why we do all this on JASMIN.
+You can very easily wrap these ideas into an R function that can scroll through the design IDs, extract relevant outputs and bind to the inputs.
 
-```{r, echo = FALSE, message = FALSE, warning = FALSE}
+```{r, message = messageFlag, warning = warningFlag, include = FALSE}
+## create ZIP file for code
 tempdir <- getwd()
 setwd("..")
-source("convertDesign.R")
-system("zip metawards.zip model_code/* R_tools/* vignette/* convertDesign.R downloadQuantiles.R runscript.sh README.sh")
+system("rm metawards.zip")
+system("zip metawards.zip convertDesign.R runscript.sh model_code/*.py model_code/*.json R_tools/* vignette/ModelDescription.html inputs/*_matrix.csv inputs/user_inputs.txt inputs/hospStays.rds inputs/pathways.rds")
+system("zip -d metawards.zip inputs/Pop\\ by\\ CTRY.csv")
+setwd(tempdir)
+```
+
+```{r, message = messageFlag, warning = warningFlag, include = FALSE}
+## create ZIP file for Catalyst
+tempdir <- getwd()
+setwd("..")
+system("rm metawardsCatalyst.zip")
+system("zip metawardsCatalyst.zip *.sh *.R JASMIN/* model_code/*.py model_code/*.json R_tools/* vignette/ModelDescription.html inputs/*.csv inputs/user_inputs.txt inputs/hospStays.rds inputs/pathways.rds README.md")
+system("zip -d metawardsCatalyst.zip runscript.sh inputs/Pop\\ by\\ CTRY.csv")
 setwd(tempdir)
 ```
 
