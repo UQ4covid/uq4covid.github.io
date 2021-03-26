@@ -99,7 +99,9 @@ From here, change directory to the `covid19` GWS workspace:
 cd /gws/nopw/j04/covid19/
 ```
 
-Transfer of runs to this folder can be done via `scp` or `rsync`, e.g.
+**NOTE**: you can only copy files **to** JASMIN if you are connected to a network that
+allows access to JASMIN (e.g. the University of Exeter network). This won't work
+over a VPN. You can connect from JASMIN to another external IP via `scp` or `rsync`, e.g.
 
 ```
 scp USER@REMOTEIP:PATHTOFOLDER .
