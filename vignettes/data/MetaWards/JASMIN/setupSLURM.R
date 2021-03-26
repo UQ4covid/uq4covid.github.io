@@ -4,8 +4,11 @@
 # system("module load jaspy")
 print("HAVE YOU LOADED jaspy?")
 
-## set directory to save outputs to
+## set directory to save outputs to and startdate
 filedir <- "/gws/nopw/j04/covid19/public/wave0/"
+startdate <- dmy("09/02/2020")
+
+## make public directory if it's not there
 system(paste0("mkdir -p ", filedir))
 
 ## load libraries
@@ -18,8 +21,7 @@ library(lubridate)
 ## may also need to install RSQLite library
 ## e.g. install.packages("RSQLite")
 
-## create weeks from 9th February 2020
-startdate <- dmy("09/02/2020")
+## create weeks from startdate
 dates <- startdate + 0:41
 
 lockdownDate1 <- dmy("21/03/2020")

@@ -125,6 +125,8 @@ Then change directory to the relevant folder containing the JASMIN code e.g.
 cd /gws/nopw/j04/covid19/FOLDER/JASMIN
 ```
 
+where `FOLDER` is replaced with the correct folder path e.g. `catalyst/wave0`.
+
 Now load the `jaspy` module:
 
 ```
@@ -138,7 +140,11 @@ directory that you want the files saved into (with trailing `/`) e.g.
 filedir <- "/gws/nopw/j04/covid19/public/wave0/"
 ```
 
-This must be a sub-directory of `/gws/nopw/j04/covid19/public`. Then run the script:
+This must be a sub-directory of `/gws/nopw/j04/covid19/public`. You will also need
+to change the `startdate` to match the start of the MetaWards simulation. This allows
+the day / week lookup table to be correctly generated.
+
+Then run the script:
 
 ```
 R CMD BATCH --no-restore --no-save --slave setupSLURM.R
