@@ -8,9 +8,10 @@ library(magrittr)
 ## extract command line arguments
 args <- commandArgs(TRUE)
 if(length(args) > 0) {
-    stopifnot(length(args) == 2)
+    stopifnot(length(args) == 3)
     filedir <- args[1]
     hash <- args[2]
+    id <- args[3]
 } else {
     stop("No arguments")
 }
@@ -19,11 +20,15 @@ if(length(args) > 0) {
 source("../R_tools/dataTools.R")
 
 ## read in ward and week lookups
-weeks <- read_csv("week_lookup.csv", col_names = FALSE)
-wards <- read_csv("ward_lookup.csv", col_names = FALSE)
+weeks <- read_csv("../JASMINsetup/week_lookup.csv", col_names = FALSE)
+wards <- read_csv("../JASMINsetup/ward_lookup.csv", col_names = FALSE)
 colnames(weeks) <- c("day", "date", "week")
 colnames(wards) <- c("ward", "week")
 weeks <- mutate(weeks, date = as.Date(date, format = "%Y-%m-%d"))
+
+## combine lookups
+lookup <- full_join(weeks, wards, by = "week") %>%
+    select(-date)
 
 ## here we are going to extract cumulative hospital counts
 ## hospital deaths, critical care counts and critical care
@@ -33,17 +38,14 @@ weeks <- mutate(weeks, date = as.Date(date, format = "%Y-%m-%d"))
 print(paste0("Currently evaluating: ", hash))
 
 ## extract files
-files <- list.files(paste0("../raw_outputs/", hash))
-files <- files[grep(glob2rx("age*.db.bz2"), files)]
+files <- list.files(paste0(filedir, "raw_outputs/", hash))
+files <- files[grep(glob2rx("age*.db"), files)]
 
-for(file in files) {
+## create output file
+output <- map(files, function(file, filedir, hash, lookup) {
 
-    ## set path
-    path <- paste0("../raw_outputs/", hash, "/", file)
-    path <- gsub(".bz2", "", path)
-
-    ## unzip DB
-    system(paste0("bzip2 -dkf ", path, ".bz2"))
+    ## set up path
+    path <- paste0(filedir, "raw_outputs/", hash, "/", file)
 
     ## open database connection
     con <- DBI::dbConnect(RSQLite::SQLite(), path)
@@ -79,29 +81,34 @@ for(file in files) {
         select(day, ward, everything())
 
     ## join with week lookup and generate summary measures
-    output <- inner_join(output, weeks, by = "day") %>%
+    ## expanding data sets where necessary        
+    output <- select(output, day, ward, H, DH, DI) %>%
+        full_join(lookup, by = c("day", "ward")) %>%
+        arrange(ward, day) %>%
+        mutate(H = ifelse(day == 0 & is.na(H), 0, H)) %>%
+        mutate(DH = ifelse(day == 0 & is.na(DH), 0, DH)) %>%
+        mutate(DI = ifelse(day == 0 & is.na(DI), 0, DI)) %>%
+        group_by(ward) %>%
+        fill(H) %>%
+        fill(DH) %>%
+        fill(DI) %>%
         group_by(ward, week) %>%
         summarise(Hprev = sum(H) / 7, Hdeaths = max(DH), Cdeaths = max(DI)) %>%
         ungroup()
-        
-    ## expand to empty wards
-    output <- left_join(wards, output, by = c("ward", "week")) %>%
-        mutate_all(~replace_na(., 0)) %>%
-        left_join(
-            group_by(weeks, week) %>%
-            summarise(date = max(date))
-        , by = "week")
-        
-    ## age class
-    agec <- strsplit(file, "\\.")[[1]][1]
-
-    ## write table out
-    system(paste0("mkdir -p ", filedir, "raw_outputs/", hash))
-    system(paste0("mv ", path, " ", filedir, "raw_outputs/", hash))
-    write_csv(output, paste0(filedir, "raw_outputs/", hash, "/weeksums_", agec, ".csv"))
     
-    print(paste0("Done: ", agec))
-}
+    ## return summaries
+    output
+}, filedir = filedir, hash = hash, lookup = lookup)
+
+## create uber file
+names(output) <- files
+output <- bind_rows(output, .id = "age") %>%
+    mutate(age = gsub(".db", "", age)) %>%
+    mutate(age = gsub("age", "", age)) %>%
+    mutate(age = as.numeric(age))
+
+## write table out
+saveRDS(output, paste0(filedir, "raw_outputs/", hash, "/output_", id, ".rds"))
  
 print(paste0(hash, ": Finished"))
 

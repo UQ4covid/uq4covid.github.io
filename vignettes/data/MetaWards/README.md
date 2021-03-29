@@ -74,6 +74,9 @@ using the `catalystJobscript.sh` script and copy the results to JASMIN in the `c
 
 ## JASMIN post-processing
 
+Note that all runs processed on Catalyst will be copied into `/gws/nopw/j04/covid19/catalyst`
+after they have been run, in which case you can skip the next sub-section.
+
 ### Copying files to JASMIN
 
 Assuming you're set up on JASMIN, and have access to the GWS for the `covid19`
@@ -113,9 +116,10 @@ Once this is done, disconnect from the `xfer*` node.
 exit
 ```
 
-### Create script
+### Extract all `.zip` files
 
-Firstly, from the login node, log in to `sci1.jasmin.ac.uk` e.g.
+Firstly, from the login node, log in to one of the scientific processing nodes
+e.g.
 
 ```
 ssh USERNAME@sci1.jasmin.ac.uk
@@ -124,7 +128,7 @@ ssh USERNAME@sci1.jasmin.ac.uk
 Then change directory to the relevant folder containing the JASMIN code e.g.
 
 ```
-cd /gws/nopw/j04/covid19/FOLDER/JASMIN
+cd /gws/nopw/j04/covid19/FOLDER/JASMINsetup
 ```
 
 where `FOLDER` is replaced with the correct folder path e.g. `catalyst/wave0`.
@@ -136,15 +140,17 @@ module load jaspy
 ```
 
 Now edit the `setupSLURM.R` script and change `filedir` to point to the public
-directory that you want the files saved into (with trailing `/`) e.g.
+directory that you want the files saved into (with trailing `/`). This must be a 
+sub-directory of `/gws/nopw/j04/covid19/public`. You will also need
+to change the `startdate` to match the start of the MetaWards simulation, and 
+`ndays` to reflect the number of days that the simulation is run over e.g.
 
 ```
+## set directory to save outputs to and startdate
 filedir <- "/gws/nopw/j04/covid19/public/wave0/"
+startdate <- "09/02/2020"
+ndays <- 41
 ```
-
-This must be a sub-directory of `/gws/nopw/j04/covid19/public`. You will also need
-to change the `startdate` to match the start of the MetaWards simulation. This allows
-the day / week lookup table to be correctly generated.
 
 Then run the script:
 
@@ -152,12 +158,8 @@ Then run the script:
 R CMD BATCH --no-restore --no-save --slave setupSLURM.R
 ```
 
-This will create a file called `submit_job.sbatch` that we can submit to SLURM. 
-
-### Extracting outputs and producing summary tables on JASMIN
-
-This next step can be done in parallel, and can be run by submitting a batch
-job script via SLURM:
+This will create a file called `submit_job.sbatch` that we can submit 
+to SLURM via:
 
 ```
 sbatch submit_job.sbatch
@@ -168,12 +170,114 @@ wall time etc.), then either edit the `submit_job.sbatch` file directly,
 or alter the `submit_job_template.sbatch` template file and then re-run `setupSLURM.R` as
 above.
 
+After all of these jobs have completed, the unzipped SQLite3 databases can be found on the
+public repository.
+
+### Producing summary tables on JASMIN
+
+**Note**: We have provided a template folder `JASMINsummary` that contains code that
+can be amended to produce different summary measures as required. In the discussion
+below we will extract weekly average hospital prevalences and weekly
+cumulative deaths for all wards and weeks.
+
+If you wish to write your own post-processing code, it is a good idea to copy
+the `JASMINsummary` folder and rename it, and then make changes to the code
+as detailed below.
+
+The discussion below will assume that you are just running the default 
+post-processing code.
+
+Firstly, from the login node, log in to e.g `sci1.jasmin.ac.uk` as before:
+
+```
+ssh USERNAME@sci1.jasmin.ac.uk
+```
+
+Then change directory to the relevant folder containing the JASMIN code e.g.
+
+```
+cd /gws/nopw/j04/covid19/FOLDER/JASMINsummary
+```
+
+where `FOLDER` is replaced with the correct folder path e.g. `catalyst/wave0`.
+
+Now load the `jaspy` module:
+
+```
+module load jaspy
+```
+
+Now edit the `setupSLURM.R` script and change `filedir` to point to the public
+directory that contains the unzipped databases (with trailing `/`). You also
+need to set a unique identifier that will be appended to your summary runs (`id`).
+Hence amend the lines below as appropriate:
+
+```
+## set directory to save outputs to and unique ID
+filedir <- "/gws/nopw/j04/covid19/public/wave0/"
+id <- "user"
+```
+
+If you wanted to run the script for a subset of inputs, you could filter
+the `inputs` data frame accordingly in this file directly after reading it in.
+
+Once you're happy, you can run the script:
+
+```
+R CMD BATCH --no-restore --no-save --slave setupSLURM.R
+```
+
+This will create a file called `submit_job.sbatch` that we can use to submit jobs
+to SLURM.
+
+Before we do that, the script file `createSum.R` contains the code necessary
+to extract the necessary summary measures. You should be able to edit
+lines 85--97 accordingly to generate different summary measures as required.
+
+Once you're happy, the jobs can be submitted via:
+
+```
+sbatch submit_job.sbatch
+```
+
+This will run once the scheduler allows. If you want to change any of the settings (like
+wall time etc.), then either edit the `submit_job.sbatch` file directly,
+or alter the `submit_job_template.sbatch` template file and then re-run `setupSLURM.R` as
+above.
+
+This creates a data frame, saved as an `.rds` file in each folder on the public repo. Once 
+all these jobs have completed, you may want to run a script to collate these results together
+in one data frame or file for ease of downloading / querying. To this end there are two
+auxiliary files: `collateSum.R` and `collateSumSQL.R`. 
+
+**Important**: the former collates
+all the summaries into a single `.csv` file that is stored in the main
+repo e.g. `/gws/nopw/j04/covid19/public/wave0/raw_outputs/summaries_ID.csv` (where `ID` is
+the explicit unique identifier used in the `setupSLURM.R` script). Please note, only
+do this if you have created summaries at some higher spatial resolution (e.g. trusts / LADs
+and not wards), otherwise the file will be too large to create on JASMIN and make
+querying more difficult. 
+
+For ward-level summaries, it is better to use the `collateSumSQL.R` script, which
+collates all the summaries into a single SQLite `.db` database that is stored in the main
+repo e.g. `/gws/nopw/j04/covid19/public/wave0/raw_outputs/summaries_ID.db` (where `ID` is
+the explicit unique identifier used in the `setupSLURM.R` script) e.g.
+
+```
+R CMD BATCH --no-restore --no-save --slave collateSumSQL.R
+```
+
+Once this has been checked, you can run the `cleanup.R` script to remove all the
+intermediate data frames and clean up the repo. It's a good idea to wait until you're sure
+the collate function has run properly before cleaning up these files.
+
+```
+R CMD BATCH --no-restore --no-save --slave cleanup.R
+```
+
 ## Querying files from external sources
 
 All relevant files should be accessible on a server than can be directly accessed
 at [https://gws-access.jasmin.ac.uk/public/covid19/](https://gws-access.jasmin.ac.uk/public/covid19/). You cannot query an SQLite database from a server like this, you can only
-download files. Thus the `age*.db` databases in each sub-directory contain the
-raw outputs, but the summary measures are in the `weeksums_*.csv` files. These hold 
-weekly average hospital prevalence (`Hprev`), along with the number of hospital deaths
-(`Hdeaths`) and other deaths (`Cdeaths`) for each week / ward combination.
+download files. 
 
