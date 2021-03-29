@@ -15,7 +15,10 @@ con <- DBI::dbConnect(RSQLite::SQLite(), paste0(filedir, "raw_outputs/summaries_
 ## read in output files
 output <- map(hashes, function(hash, filedir, id, con) {
     output <- readRDS(paste0(filedir, "raw_outputs/", hash, "/output_", id, ".rds")) %>%
-        mutate(output = hash)
+        mutate(output = hash) %>%
+        mutate(output = gsub("x([0-9]{3})$", "_\\1", output)) %>%
+        separate(output, c("output", "replicate"), sep = "_") %>%
+        mutate(replicate = as.numeric(replicate))
     DBI::dbWriteTable(con, "compact", output, append = TRUE)
 }, filedir = filedir, id = id, con = con)
 
