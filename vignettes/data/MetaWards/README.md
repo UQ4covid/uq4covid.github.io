@@ -210,6 +210,10 @@ module load jaspy
 Now edit the `setupSLURM.R` script and change `filedir` to point to the public
 directory that contains the unzipped databases (with trailing `/`). You also
 need to set a unique identifier that will be appended to your summary runs (`id`).
+
+**Note**: the unique user ID is important to stop your outputs from overwriting 
+anyone else's.
+
 Hence amend the lines below as appropriate:
 
 ```
@@ -245,22 +249,24 @@ wall time etc.), then either edit the `submit_job.sbatch` file directly,
 or alter the `submit_job_template.sbatch` template file and then re-run `setupSLURM.R` as
 above.
 
-This creates a data frame, saved as an `.rds` file in each folder on the public repo. Once 
+This creates a data frame, saved as a `output_ID.rds` file in each folder on the public repo
+(where `ID` is replaced with the unique identifier from your `setupSLURM.R` script). Once 
 all these jobs have completed, you may want to run a script to collate these results together
 in one data frame or file for ease of downloading / querying. To this end there are two
 auxiliary files: `collateSum.R` and `collateSumSQL.R`. 
 
-**Important**: the former collates
-all the summaries into a single `.csv` file that is stored in the main
-repo e.g. `/gws/nopw/j04/covid19/public/wave0/raw_outputs/summaries_ID.csv` (where `ID` is
+**Important**: the former collates all the summaries into a single `.csv` file that is stored 
+in the main repo e.g. 
+`/gws/nopw/j04/covid19/public/wave0/raw_outputs/summaries_ID.csv` (where `ID` is
 the explicit unique identifier used in the `setupSLURM.R` script). Please note, only
 do this if you have created summaries at some higher spatial resolution (e.g. trusts / LADs
 and not wards), otherwise the file will be too large to create on JASMIN and make
 querying more difficult. 
 
 For ward-level summaries, it is better to use the `collateSumSQL.R` script, which
-collates all the summaries into a single SQLite `.db` database that is stored in the main
-repo e.g. `/gws/nopw/j04/covid19/public/wave0/raw_outputs/summaries_ID.db` (where `ID` is
+collates all the summaries into a single compressed SQLite database 
+that is stored in the main repo e.g. 
+`/gws/nopw/j04/covid19/public/wave0/raw_outputs/summaries_ID.db` (where `ID` is
 the explicit unique identifier used in the `setupSLURM.R` script) e.g.
 
 ```
@@ -268,8 +274,9 @@ R CMD BATCH --no-restore --no-save --slave collateSumSQL.R
 ```
 
 Once this has been checked, you can run the `cleanup.R` script to remove all the
-intermediate data frames and clean up the repo. It's a good idea to wait until you're sure
-the collate function has run properly before cleaning up these files.
+intermediate `output_ID.rds` data frames and clean up the repo. It's a good idea to wait 
+until you're sure the collate function has run properly before cleaning up these files.
+You can easily amend the cleanup file to leave the intermediate data frames as required.
 
 ```
 R CMD BATCH --no-restore --no-save --slave cleanup.R

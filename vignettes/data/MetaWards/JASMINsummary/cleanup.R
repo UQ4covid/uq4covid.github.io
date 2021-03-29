@@ -14,7 +14,9 @@ output <- map(hashes, function(hash, filedir, id) {
     system(paste0("rm ", filedir, "raw_outputs/", hash, "/output_", id, ".rds"))
 }, filedir = filedir, id = id)
 
+## remove output files and uncompressed db
 system("rm *.err *.out *.Rout")
+system(paste0("rm ", filedir, "raw_outputs/summaries_", id, ".db"))
 
 print("Finished")
 
