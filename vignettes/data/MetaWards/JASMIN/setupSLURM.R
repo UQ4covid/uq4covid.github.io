@@ -4,8 +4,11 @@
 # system("module load jaspy")
 print("HAVE YOU LOADED jaspy?")
 
-## set directory to save outputs to
+## set directory to save outputs to and startdate
 filedir <- "/gws/nopw/j04/covid19/public/wave0/"
+startdate <- dmy("09/02/2020")
+
+## make public directory if it's not there
 system(paste0("mkdir -p ", filedir))
 
 ## load libraries
@@ -18,8 +21,7 @@ library(lubridate)
 ## may also need to install RSQLite library
 ## e.g. install.packages("RSQLite")
 
-## create weeks from 9th February 2020
-startdate <- dmy("09/02/2020")
+## create weeks from startdate
 dates <- startdate + 0:41
 
 lockdownDate1 <- dmy("21/03/2020")
@@ -71,16 +73,16 @@ paths <- map2(inputs$output, inputs$repeats, function(hash, reps) {
     print(paste0("Currently evaluating: ", hash))
     
     ## run through hashes and extract runs
-    output <- map_chr(hashes, function(hash) {
+    output <- map_chr(hashes, function(hash, append) {
     
         ## extract replicate and hash
         replicate <- hash[2]
         hash <- hash[1]
 
         ## create path
-        path <- paste0(hash, ifelse(replicate > 1, paste0("x", str_pad(replicate, 3, pad = "0")), ""))
+        path <- paste0(hash, ifelse(append, paste0("x", str_pad(replicate, 3, pad = "0")), ""))
         path
-    })
+    }, append = (reps > 1))
     
     print(paste0(hash, ": Finished"))
     

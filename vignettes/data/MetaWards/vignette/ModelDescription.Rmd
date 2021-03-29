@@ -12,7 +12,7 @@ output:
 
 **Requires MetaWards 1.5.1**
 
-Please download files for running the model from **[here](metawards.zip)**.
+Please download files for running the model from **[here](../metawards.zip)**.
 
 </center>
 
