@@ -6,37 +6,20 @@ print("HAVE YOU LOADED jaspy?")
 
 ## set directory to save outputs to and startdate
 filedir <- "/gws/nopw/j04/covid19/public/wave0/"
-startdate <- dmy("09/02/2020")
+startdate <- "09/02/2020"
+ndays <- 41
 
 ## make public directory if it's not there
 system(paste0("mkdir -p ", filedir))
 
 ## load libraries
-library(dplyr)
-library(readr)
-library(purrr)
-library(stringr)
+library(tidyverse)
 library(lubridate)
 
-## may also need to install RSQLite library
-## e.g. install.packages("RSQLite")
-
 ## create weeks from startdate
-dates <- startdate + 0:41
-
-lockdownDate1 <- dmy("21/03/2020")
-lockdownDate2 <- dmy("13/05/2020")
-wld1 <- week(lockdownDate1)
-wld2 <- week(lockdownDate2)
+startdate <- dmy(startdate)
+dates <- startdate + 0:ndays
 tweeks <- week(dates)
-
-## lockdown 
-lockdown1 <- dmy("21/03/2020")
-lockdown2 <- dmy("13/05/2020")
-
-## extract weeks after lockdown
-# WEEKS <- unique(tweeks[dates >= lockdown1])
-# WEEKS <- c(min(WEEKS) - 1, WEEKS)
 WEEKS <- unique(tweeks)
 
 ## create week/day lookup table
@@ -56,10 +39,6 @@ parRanges <- readRDS("../inputs/parRanges.rds")
 system(paste0("mkdir -p ", filedir, "inputs"))
 write_csv(inputs, paste0(filedir, "inputs/inputs.csv"))
 write_csv(parRanges, paste0(filedir, "inputs/parRanges.csv"))
-
-## here we are going to extract cumulative hospital counts
-## hospital deaths, critical care counts and critical care
-## deaths at each week since lockdown
 
 ## this next part creates the script file to pass to SLURM
 
