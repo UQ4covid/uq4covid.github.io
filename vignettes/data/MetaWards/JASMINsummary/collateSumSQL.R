@@ -22,5 +22,8 @@ output <- map(hashes, function(hash, filedir, id, con) {
 ## disconnect from database
 DBI::dbDisconnect(con)
 
+## compress file
+system(paste0("bzip2 -zf ", filedir, "raw_outputs/summaries_", id, ".db"))
+
 print("Finished")
 
