@@ -94,4 +94,5 @@ mismatches <- anti_join(trust19Lookup, Ward19Lookup, by = c("code" = "WD19CD"))
 stopifnot(nrow(mismatches) == 0)
 
 ## save amended trust lookup table
+write_csv(trust19Lookup, "trust19Lookup.csv")
 write_csv(trust19Lookup, "../../inputs/trust19Lookup.csv")
