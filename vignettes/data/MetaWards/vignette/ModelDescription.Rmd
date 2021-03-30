@@ -737,6 +737,7 @@ If you're happy with SQL, you can query these directly with e.g. SQLite. If you 
 
 If required, the script `R_tools/dataTools.R`, that provides a function called `reconstruct()` that is written using `Rcpp` and can be used to reconstruct the time-series counts from the incidence data.
 
+<a name="reconstruct"></a>
 <button data-toggle="collapse" data-target="#reconrcpp">Click for R <code>reconstruct</code> function</button>
 <div id="reconrcpp" class="collapse boxed">
 
@@ -765,6 +766,10 @@ compact
 
 By default, the package only pulls enough data from the database to produce a summary on the screen (notice that it prints the dimensions as `?? x 13`). If the database is small enough, then the `collect()` function can be used to import tables directly into R as a `tibble`. Alternatively, the `dbplyr` package can convert `tidyverse`-style commands into SQL and run these directly within the database. For large databases this is likely to be much more efficient, in terms of speed and memory usage. You can then `collect()` the results of the query into R.
 
+> **Note**: if you need to reconstruct the time-series counts from the incidence data, then you will need to `collect()` the necessary information to R first, and then run the `reconstruct()` function as shown [below](#collect).
+
+***Querying databases***
+
 As an example of this latter approach, we will set up a query that sums the **new** hospital cases over the first 20 days in each ward. **Remember**: for each ward the database only contains days when some event happens. For cumulative *incidence* counts this is fine, since the missing data will be zero in each case, so we just need to filter first to remove all time points $> 20$. To set up the query:
 
 ```{r}
@@ -789,14 +794,83 @@ Now let's run the query and return the results to R by passing `hosp_db` to the 
 ## run query and pull to R
 hosp <- collect(hosp_db)
 
-## disconnect from database
-DBI::dbDisconnect(con)
-
 ## print to screen
 hosp
 ```
 
-Now you can play with `hosp` as much as you like. **Note** that `hosp` here only contains information about wards that have some infections, and only from the time since initial infection. Hence for calibration you might need to expand to fill in the missing wards. Fortunately, R (especially `tidyverse`) has lots of tools for doing this. 
+Now you can play with `hosp` as much as you like. **Note** that `hosp` here only contains information about wards that have some infections, and only from the time since initial infection. Hence for calibration you might need to expand to fill in the missing wards. Fortunately, R (especially `tidyverse`) has lots of tools for doing this, and an example is given in the next section.
+
+<a name="collect"></a>
+***Collecting and reconstructing counts in R*** 
+
+Imagine now that we wish to extract the number of asymptomatic infections on each of the first 20 days in each ward. **Remember**: for each ward the database only contains days when some event happens, and only contains *incidence* counts, so we will have collect the data into R, and then run the `reconstruct()` function provided [above](#reconstruct) in each ward. 
+
+> **Note**: the `reconstruct()` function requires that the data are in time order, but do not require time points to be expanded (since no events happen on days that are not present in the data set). For multiple wards the reconstruct function has to run on each ward separately, and hence the code below first orders the data, and then nests it by ward, before running the reconstruct function on each ward separately. It then removes the nesting.
+
+To set up the query:
+
+```{r}
+## extract information for days 0-20 and collect to R
+output <- filter(compact, day <= 20) %>%
+    collect()
+
+## now sort by day, group by ward and run reconstruct()
+output <- arrange(output, day) %>%
+    group_by(ward) %>%
+    nest() %>%
+    mutate(data = map(data, ~{
+        output <- reconstruct(
+            .$Einc, .$Pinc, .$I1inc, .$I2inc, .$RIinc, 
+            .$DIinc, .$Ainc, .$RAinc,
+            .$Hinc, .$RHinc, .$DHinc
+        ) %>%
+        magrittr::set_colnames(c(
+            "Einc", "E", "Pinc", "P", "I1inc", "I1", "I2inc", "I2", 
+            "RI", "DI",
+            "Ainc", "A", "RA",
+            "Hinc", "H", "RH", "DH"
+        )) %>%
+        as_tibble()
+        output$day <- .$day
+        output
+    })) %>%
+    unnest(cols = data) %>%
+    ungroup() %>%
+    select(day, ward, everything())
+
+## examine data frame (reordered to put A columns first for later comparison)
+select(output, day, ward, Ainc, A, RA, everything()) %>%
+    filter(ward == 459) %>%
+    print(n = Inf)
+```
+
+At this point we have a set of time-series counts, which we will now expand to fill in the missing ward / day combinations. (This can be done with `complete()`, but we've found it's generally faster by joining to a lookup table as below.)
+
+```{r}
+## create lookup to expand ward / time combinations
+lookup <- expand.grid(ward = 1:8071, day = 0:20) %>%
+    as_tibble()
+
+## joint to lookup, and fill in missing information correctly
+asymp <- select(output, day, ward, A) %>%
+    full_join(lookup, by = c("day", "ward")) %>%
+    arrange(ward, day) %>%
+    mutate(A = ifelse(day == 0 & is.na(A), 0, A)) %>%
+    group_by(ward) %>%
+    fill(A) %>%
+    ungroup()
+
+## examine output
+filter(asymp, ward == 459) %>%
+    print(n = Inf)
+```
+
+Once you do not need access to the SQLite database any more, you should disconnect:
+
+```{r}
+## disconnect from database
+DBI::dbDisconnect(con)
+```
 
 You can very easily wrap these ideas into an R function that can scroll through the design IDs, extract relevant outputs and bind to the inputs.
 
@@ -805,7 +879,7 @@ You can very easily wrap these ideas into an R function that can scroll through 
 tempdir <- getwd()
 setwd("..")
 system("rm metawards.zip")
-system("zip metawards.zip convertDesign.R runscript.sh model_code/*.py model_code/*.json R_tools/* vignette/ModelDescription.html inputs/*_matrix.csv inputs/user_inputs.txt inputs/hospStays.rds inputs/pathways.rds")
+system("zip metawards.zip convertDesign.R runscript.sh model_code/*.py model_code/*.json R_tools/* vignette/ModelDescription.html inputs/*_matrix.csv inputs/user_inputs.txt inputs/hospStays.rds inputs/pathways.rds inputs/*Lookup.csv")
 system("zip -d metawards.zip inputs/Pop\\ by\\ CTRY.csv")
 setwd(tempdir)
 ```
@@ -815,7 +889,7 @@ setwd(tempdir)
 tempdir <- getwd()
 setwd("..")
 system("rm metawardsCatalyst.zip")
-system("zip metawardsCatalyst.zip *.sh *.R JASMIN* model_code/*.py model_code/*.json R_tools/* vignette/ModelDescription.html inputs/*.csv inputs/user_inputs.txt inputs/hospStays.rds inputs/pathways.rds README.md")
+system("zip metawardsCatalyst.zip *.sh *.R JASMIN* model_code/*.py model_code/*.json R_tools/* vignette/ModelDescription.html inputs/*.csv inputs/user_inputs.txt inputs/hospStays.rds inputs/pathways.rds inputs/*Lookup.csv README.md")
 system("zip -d metawardsCatalyst.zip runscript.sh inputs/Pop\\ by\\ CTRY.csv")
 setwd(tempdir)
 ```

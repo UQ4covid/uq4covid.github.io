@@ -378,3 +378,4 @@ write_delim(PlayMatrix_new, paste0(pathToNewData, "/PlayMatrix19.dat"), col_name
 write_delim(PlaySize_new, paste0(pathToNewData, "/PlaySize19.dat"), col_names = FALSE)
 write_delim(CBB2019, paste0(pathToNewData, "/CBB2019.dat"), col_names = FALSE)
 write_csv(Ward19_Lookup, paste0(pathToNewData, "/Ward19_Lookup.csv"))
+write_csv(Ward19_Lookup, "../../inputs/Ward19_Lookup.csv")
