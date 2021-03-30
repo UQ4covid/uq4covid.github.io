@@ -65,30 +65,58 @@ Paths to the `MetaWardsData` folder will have to be updated on different machine
 
 When the vignette is generated, this produces a `.zip` file called `metawards.zip` that
 contains all the code necessary to run the model on an individual machine. This can be unzipped
-and the varius design files edited at will as required.
+and the various design files edited at will as required.
 
-Similarly, generating the vignette also creates a .zip. file called `metawardsCatalyst.zip`
+Similarly, generating the vignette also creates a `.zip` file called `metawardsCatalyst.zip`
 that contains the same, but with additional code for running on Catalyst and post-processing
-on JASMIN. Once the design has been included, this can be sent to Christopher, who will run it 
-using the `catalystJobscript.sh` script and copy the results to JASMIN in the `covid19` workspace. 
+on JASMIN. **This will not work unless you have all the necessary datasets described above,
+some of which are not publicly available.** Once the design has been included, this can be sent 
+to Christopher, who will run it using the `catalystJobscript.sh` script and copy the results 
+to JASMIN in the `covid19` workspace. 
 
 ## JASMIN post-processing
 
-Note that all runs processed on Catalyst will be copied into `/gws/nopw/j04/covid19/catalyst`
-after they have been run, in which case you can skip the next sub-section.
-
-### Copying files to JASMIN
+### Logging on to JASMIN
 
 Assuming you're set up on JASMIN, and have access to the GWS for the `covid19`
-project. Then you need to login to a transfer server to copy the files across.
-If you're not on the University network, then something like the following should 
-work (of course, replacing relevant login details and paths):
+project, then if you're not on the University network, then something like the following 
+should work (of course, replacing relevant login details and paths):
 
 ```
 eval $(ssh-agent -s)
 ssh-add PATH_TO_PRIVATE_KEY
 ssh -A USERNAME@login2.jasmin.ac.uk
 ```
+
+For more details about how to set-up an account on JASMIN, see 
+[https://help.jasmin.ac.uk/article/189-get-started-with-jasmin](https://help.jasmin.ac.uk/article/189-get-started-with-jasmin).
+
+### Install necessary R libraries
+
+**Note**: in order to run R scripts on JASMIN you will have to ensure that you install the necessary
+R libraries in your personal libraries. Once you're on the login node as described above, `ssh` 
+into one of the scientific processing nodes e.g.
+
+```
+ssh USERNAME@sci1.jasmin.ac.uk
+```
+
+Then load `jaspy`, which gives access to R:
+
+```
+module load jaspy
+```
+
+Now you should load R and then install whatever packages you need in the usual way. You will need at
+least `tidyverse` and `RSQLite` for the code below to work (e.g. `install.packages("tidyverse", "RSQLite")`).
+
+### Copying files to JASMIN
+
+Note that all runs processed on Catalyst will be copied into `/gws/nopw/j04/covid19/catalyst`
+after they have been run, in which case you can skip this section.
+
+Assuming you're set up on JASMIN, and have access to the GWS for the `covid19`
+project. Then you need to login to a transfer server to copy the files across.
 
 Once you're connected to the login node, you can `ssh` into the transfer node as:
 
@@ -118,8 +146,10 @@ exit
 
 ### Extract all `.zip` files
 
-Firstly, from the login node, log in to one of the scientific processing nodes
-e.g.
+**Note**: the extraction code below only has to happen once, and for any runs from Catalyst
+I will aim to do this soon after the runs are transferred, hence you can skip this section.
+
+Firstly, from the login node, log in to one of the scientific processing nodes e.g.
 
 ```
 ssh USERNAME@sci1.jasmin.ac.uk
@@ -139,15 +169,15 @@ Now load the `jaspy` module:
 module load jaspy
 ```
 
-Now edit the `setupSLURM.R` script and change `filedir` to point to the public
-directory that you want the files saved into (with trailing `/`). This must be a 
+Now edit the `setupSLURM.R` script and change `filedir` to create a directory in the `public`
+folder where the outputs will be stored. This will be made a
 sub-directory of `/gws/nopw/j04/covid19/public`. You will also need
 to change the `startdate` to match the start of the MetaWards simulation, and 
 `ndays` to reflect the number of days that the simulation is run over e.g.
 
 ```
 ## set directory to save outputs to and startdate
-filedir <- "/gws/nopw/j04/covid19/public/wave0/"
+filedir <- "wave0"
 startdate <- "09/02/2020"
 ndays <- 41
 ```
@@ -158,8 +188,7 @@ Then run the script:
 R CMD BATCH --no-restore --no-save --slave setupSLURM.R
 ```
 
-This will create a file called `submit_job.sbatch` that we can submit 
-to SLURM via:
+This will create a file called `submit_job.sbatch` that we can submit to SLURM via:
 
 ```
 sbatch submit_job.sbatch
@@ -170,7 +199,7 @@ wall time etc.), then either edit the `submit_job.sbatch` file directly,
 or alter the `submit_job_template.sbatch` template file and then re-run `setupSLURM.R` as
 above.
 
-After all of these jobs have completed, the unzipped SQLite3 databases can be found on the
+After all of these jobs have completed, the unzipped SQLite databases can be found on the
 public repository.
 
 ### Producing summary tables on JASMIN
@@ -182,7 +211,14 @@ cumulative deaths for all wards and weeks.
 
 If you wish to write your own post-processing code, it is a good idea to copy
 the `JASMINsummary` folder and rename it, and then make changes to the code
-as detailed below.
+as detailed below e.g.
+
+```
+cp -r JASMINsummary JASMINsummary_new
+```
+
+**Note:** for the code to work you must not move your copy of `JASMINsummary` to any other
+location, since various relative links are used throughout for ease.
 
 The discussion below will assume that you are just running the default 
 post-processing code.
@@ -196,7 +232,7 @@ ssh USERNAME@sci1.jasmin.ac.uk
 Then change directory to the relevant folder containing the JASMIN code e.g.
 
 ```
-cd /gws/nopw/j04/covid19/FOLDER/JASMINsummary
+cd /gws/nopw/j04/covid19/FOLDER/JASMINsummary_new
 ```
 
 where `FOLDER` is replaced with the correct folder path e.g. `catalyst/wave0`.
@@ -207,18 +243,16 @@ Now load the `jaspy` module:
 module load jaspy
 ```
 
-Now edit the `setupSLURM.R` script and change `filedir` to point to the public
-directory that contains the unzipped databases (with trailing `/`). You also
-need to set a unique identifier that will be appended to your summary runs (`id`).
+Now edit the `setupSLURM.R` script and set a unique identifier that will be appended 
+to your summary runs (see below).
 
 **Note**: the unique user ID is important to stop your outputs from overwriting 
 anyone else's.
 
-Hence amend the lines below as appropriate:
+Hence amend the line below as appropriate:
 
 ```
-## set directory to save outputs to and unique ID
-filedir <- "/gws/nopw/j04/covid19/public/wave0/"
+## set unique ID
 id <- "user"
 ```
 
