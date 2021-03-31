@@ -17,6 +17,7 @@ filedir <- gsub("//$", "/", paste0(filedir, "/"))
 
 ## make public directory if it's not there
 system(paste0("mkdir -p ", filedir))
+system(paste0("chmod -R u=rwx,g=rwx,o=r ", filedir))
 
 ## write to external file
 system(paste0("echo ", filedir, " > filedir.txt"))
