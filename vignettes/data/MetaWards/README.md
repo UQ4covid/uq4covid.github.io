@@ -199,6 +199,22 @@ wall time etc.), then either edit the `submit_job.sbatch` file directly,
 or alter the `submit_job_template.sbatch` template file and then re-run `setupSLURM.R` as
 above.
 
+You can check job status by using e.g.
+
+```
+squeue -u USERNAME
+```
+
+where `USERNAME` is replaced by yur user name.
+
+To cancel jobs, you can use:
+
+```
+scancel PID
+```
+
+where `PID` is replcaed by the PID number (which you can get via `squeue`.
+
 After all of these jobs have completed, the unzipped SQLite databases can be found on the
 public repository.
 
@@ -209,13 +225,22 @@ can be amended to produce different summary measures as required. In the discuss
 below we will extract weekly average hospital prevalences and weekly
 cumulative deaths for all wards and weeks.
 
-If you wish to write your own post-processing code, it is a good idea to copy
-the `JASMINsummary` folder and rename it, and then make changes to the code
-as detailed below e.g.
+If you wish to write your own post-processing code, you will need to copy
+the `JASMINsummary` folder and rename it to something of the form:
+
+```
+JASMINsummary_UNIQUEID
+```
+
+where `UNIQUEID` is replaced with a unique identifier. For example, to run the
+default code with unique ID `new`, we can run:
 
 ```
 cp -r JASMINsummary JASMINsummary_new
 ```
+
+**Note**: the unique ID is important to stop your outputs from overwriting 
+anyone else's.
 
 **Note:** for the code to work you must not move your copy of `JASMINsummary` to any other
 location, since various relative links are used throughout for ease.
@@ -243,27 +268,14 @@ Now load the `jaspy` module:
 module load jaspy
 ```
 
-Now edit the `setupSLURM.R` script and set a unique identifier that will be appended 
-to your summary runs (see below).
-
-**Note**: the unique user ID is important to stop your outputs from overwriting 
-anyone else's.
-
-Hence amend the line below as appropriate:
-
-```
-## set unique ID
-id <- "user"
-```
-
-If you wanted to run the script for a subset of inputs, you could filter
-the `inputs` data frame accordingly in this file directly after reading it in.
-
-Once you're happy, you can run the script:
+Now run the `setupSLURM.R` script:
 
 ```
 R CMD BATCH --no-restore --no-save --slave setupSLURM.R
 ```
+
+**Note**: If you wanted to run the script for a subset of inputs, you could filter
+the `inputs` data frame accordingly in the `setupSLURM.R` file by editing accordingly.
 
 This will create a file called `submit_job.sbatch` that we can use to submit jobs
 to SLURM.
@@ -283,16 +295,16 @@ wall time etc.), then either edit the `submit_job.sbatch` file directly,
 or alter the `submit_job_template.sbatch` template file and then re-run `setupSLURM.R` as
 above.
 
-This creates a data frame, saved as a `output_ID.rds` file in each folder on the public repo
-(where `ID` is replaced with the unique identifier from your `setupSLURM.R` script). Once 
+This creates a data frame, saved as a `output_UNIQUEID.rds` file in each folder on the public repo
+(where `UNIQUEID` is replaced with the unique identifier from your `setupSLURM.R` script). Once 
 all these jobs have completed, you may want to run a script to collate these results together
 in one data frame or file for ease of downloading / querying. To this end there are two
 auxiliary files: `collateSum.R` and `collateSumSQL.R`. 
 
 **Important**: the former collates all the summaries into a single `.csv` file that is stored 
 in the main repo e.g. 
-`/gws/nopw/j04/covid19/public/wave0/raw_outputs/summaries_ID.csv` (where `ID` is
-the explicit unique identifier used in the `setupSLURM.R` script). Please note, only
+`/gws/nopw/j04/covid19/public/wave0/raw_outputs/summaries_UNIQUEID.csv` (where `UNIQUEID` is
+as above). Please note, only
 do this if you have created summaries at some higher spatial resolution (e.g. trusts / LADs
 and not wards), otherwise the file will be too large to create on JASMIN and make
 querying more difficult. 
@@ -300,15 +312,15 @@ querying more difficult.
 For ward-level summaries, it is better to use the `collateSumSQL.R` script, which
 collates all the summaries into a single compressed SQLite database 
 that is stored in the main repo e.g. 
-`/gws/nopw/j04/covid19/public/wave0/raw_outputs/summaries_ID.db` (where `ID` is
-the explicit unique identifier used in the `setupSLURM.R` script) e.g.
+`/gws/nopw/j04/covid19/public/wave0/raw_outputs/summaries_UNIQUEID.db`.
+To run use:
 
 ```
 R CMD BATCH --no-restore --no-save --slave collateSumSQL.R
 ```
 
 Once this has been checked, you can run the `cleanup.R` script to remove all the
-intermediate `output_ID.rds` data frames and clean up the repo. It's a good idea to wait 
+intermediate `output_UNIQUEID.rds` data frames and clean up the repo. It's a good idea to wait 
 until you're sure the collate function has run properly before cleaning up these files.
 You can easily amend the cleanup file to leave the intermediate data frames as required.
 

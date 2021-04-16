@@ -4,8 +4,16 @@
 # system("module load jaspy")
 print("HAVE YOU LOADED jaspy?")
 
-## set unique ID
-id <- "user"
+## extract and check unique ID
+id <- basename(getwd())
+id <- strsplit(id, "JASMINsummary_")[[1]]
+if(length(id) != 2) {
+    stop("Folder name not of form 'JASMINsummary_*'")
+}
+id <- id[2]
+if(id == "") {
+    stop("Folder name not of form 'JASMINsummary_*'")
+}
 
 ## check folder exists
 filedir <- readLines("../JASMINsetup/filedir.txt")
