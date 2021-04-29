@@ -4,9 +4,22 @@
 # system("module load jaspy")
 print("HAVE YOU LOADED jaspy?")
 
-## set directory to save outputs to and unique ID
-filedir <- "/gws/nopw/j04/covid19/public/wave0/"
-id <- "user"
+## extract and check unique ID
+id <- basename(getwd())
+id <- strsplit(id, "JASMINsummary_")[[1]]
+if(length(id) != 2) {
+    stop("Folder name not of form 'JASMINsummary_*'")
+}
+id <- id[2]
+if(id == "") {
+    stop("Folder name not of form 'JASMINsummary_*'")
+}
+
+## check folder exists
+filedir <- readLines("../JASMINsetup/filedir.txt")
+if(!dir.exists(filedir)) {
+    stop(paste0(filedir, " directory does not exist; you need to run \"JASMINsetup\" code"))
+}
 
 ## write to output file
 system(paste0("echo ", filedir, " > filedir.txt"))
@@ -47,6 +60,12 @@ paths <- map2(inputs$output, inputs$repeats, function(hash, reps) {
     output
 })
 paths <- reduce(paths, c)
+
+## check these paths existed in setup runs
+pathsSetup <- readLines("../JASMINsetup/job_lookup.txt")
+if(!all(paths %in% pathsSetup)) {
+    stop("Some 'paths' have not been extracted")
+}
 
 ## write number of jobs to file
 code <- readLines("submit_job_template.sbatch")

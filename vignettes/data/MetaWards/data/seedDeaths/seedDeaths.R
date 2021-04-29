@@ -46,6 +46,7 @@ seeds <- semi_join(seeds, trust19Lookup, by = c("code" = "trustId")) %>%
 ## write lookup table mapped to three weeks before
 mutate(seeds, date = date - 21) %>%
     select(date, trust, deaths) %>%
+    mutate(deaths = 100 * deaths) %>%
     write_csv("../../inputs/time_seeds.csv", col_names = FALSE)
 
 ## set path to MetaWardsData
@@ -83,8 +84,3 @@ stopifnot(
 ## write seeds file
 write_csv(seeds, "../../inputs/ward_seeds.csv", col_names = FALSE)
     
-    
-    
-    
-    
-

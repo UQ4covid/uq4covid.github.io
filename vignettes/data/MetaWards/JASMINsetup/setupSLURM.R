@@ -4,13 +4,23 @@
 # system("module load jaspy")
 print("HAVE YOU LOADED jaspy?")
 
-## set directory to save outputs to and startdate
-filedir <- "/gws/nopw/j04/covid19/public/wave0/"
+## set name of directory to append to save outputs to and startdate
+## (directory appended to "/gws/nopw/j04/covid19/public")
+filedir <- "wave0"
 startdate <- "09/02/2020"
 ndays <- 41
 
+## check filedir and reformat if necessary
+filedir <- gsub("^/", "", filedir)
+filedir <- paste0("/gws/nopw/j04/covid19/public/", filedir)
+filedir <- gsub("//$", "/", paste0(filedir, "/"))
+
 ## make public directory if it's not there
 system(paste0("mkdir -p ", filedir))
+system(paste0("chmod -R u=rwx,g=rwx,o=r ", filedir))
+
+## write to external file
+system(paste0("echo ", filedir, " > filedir.txt"))
 
 ## load libraries
 library(tidyverse)

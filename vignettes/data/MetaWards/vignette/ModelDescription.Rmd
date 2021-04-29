@@ -889,7 +889,7 @@ setwd(tempdir)
 tempdir <- getwd()
 setwd("..")
 system("rm metawardsCatalyst.zip")
-system("zip metawardsCatalyst.zip *.sh *.R JASMIN* model_code/*.py model_code/*.json R_tools/* vignette/ModelDescription.html inputs/*.csv inputs/user_inputs.txt inputs/hospStays.rds inputs/pathways.rds inputs/*Lookup.csv README.md")
+system("zip metawardsCatalyst.zip *.sh convertDesign.R JASMIN*/* model_code/*.py model_code/*.json R_tools/* vignette/ModelDescription.html inputs/*.csv inputs/user_inputs.txt inputs/hospStays.rds inputs/pathways.rds inputs/*Lookup.csv README.md")
 system("zip -d metawardsCatalyst.zip runscript.sh inputs/Pop\\ by\\ CTRY.csv")
 setwd(tempdir)
 ```
