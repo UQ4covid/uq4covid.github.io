@@ -10,7 +10,7 @@ output:
 
 <center>
 
-**Requires MetaWards 1.5.1**
+**Requires MetaWards `devel` branch install currently**
 
 Please download files for running the model from **[here](../metawards.zip)**.
 

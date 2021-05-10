@@ -115,9 +115,7 @@ def advance_lockdown_week(network, population, **kwargs):
     state, rate, can_work = get_lock_down_vars(network = network, population = population)
 
     advance_infprob(scale_rate = rate, network = network, population = population, **kwargs)
-    advance_play(network = network, population = population, **kwargs)
-    if can_work:
-        advance_fixed(network = network, population = population, **kwargs)
+    advance_work_to_play(network = network, population = population, **kwargs)
 
 # advance in a lockdown state weekend        
 def advance_lockdown_weekend(network, population, **kwargs):
@@ -250,7 +248,7 @@ def iterate_lockdown(stage: str, population, **kwargs):
         if is_weekend:
             return [advance_foi_work_to_play, advance_recovery]
         else:
-            return [advance_foi, advance_recovery]
+            return [advance_foi_work_to_play, advance_recovery]
     elif stage == "infect":
         if is_weekend:
             return [advance_initial_seeds, advance_lockdown_weekend]

@@ -1,7 +1,4 @@
 __pycache__
-tests/*.Rout
-tests/raw_outputs
-tests/disease.dat
 
 images/*.gif
 images/*.Rout
@@ -20,6 +17,7 @@ tests/*/user_inputs.txt
 tests/*/disease.dat
 tests/*/*.Rout
 tests/*/nohup.out
+tests/*/raw_outputs*
 tests/standalone*
 data/ward11toWard19Mapping/Ward*
 data/ward11toWard19Mapping/*.csv
