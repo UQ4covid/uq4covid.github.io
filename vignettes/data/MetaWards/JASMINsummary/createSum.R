@@ -106,8 +106,8 @@ output <- map(files, function(file, filedir, hash, lookup) {
        ## collate to trust
        output <- inner_join(output, TrustLookup, by = "ward") %>%
             group_by(week, trustId) %>%
-            summarise(Hprev_mn = sum(Hprev_mn), HD = sum(Hdeaths), CD = sum(Cdeaths)) %>%
-            select(week, trustId, Hprev_mn, HD, CD) %>%
+            summarise(Hprev_mn = sum(Hprev_mn), cumHD = sum(Hdeaths), cumCD = sum(Cdeaths)) %>%
+            select(week, trustId, Hprev_mn, cumHD, cumCD) %>%
             ungroup()
        print(head(output)) 
     
