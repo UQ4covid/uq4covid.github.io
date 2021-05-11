@@ -89,9 +89,10 @@ output <- map(files, function(file, filedir, hash, lookup) {
 
     ## join with week lookup and generate summary measures
     ## expanding data sets where necessary        
-    output <- select(output, day, ward, H, DH, DI) %>%
+    output <- select(output, day, ward, Hinc, H, DH, DI) %>%
         full_join(lookup, by = c("day", "ward")) %>%
         arrange(ward, day) %>%
+        mutate(Hinc = ifelse(is.na(Hinc), 0, Hinc)) %>%
         mutate(H = ifelse(day == 0 & is.na(H), 0, H)) %>%
         mutate(DH = ifelse(day == 0 & is.na(DH), 0, DH)) %>%
         mutate(DI = ifelse(day == 0 & is.na(DI), 0, DI)) %>%
@@ -99,15 +100,15 @@ output <- map(files, function(file, filedir, hash, lookup) {
         fill(H) %>%
         fill(DH) %>%
         fill(DI) %>%
+        mutate(cumH = cumsum(Hinc)) %>%
         group_by(ward, week) %>%
-        summarise(Hprev_mn = sum(H) / 7, Hdeaths = max(DH), Cdeaths = max(DI)) %>%
+        summarise(cumH = max(cumH), Hprev_mn = sum(H) / 7, cumHD = max(DH), cumCD = max(DI)) %>%
         ungroup()
 
        ## collate to trust
        output <- inner_join(output, TrustLookup, by = "ward") %>%
             group_by(week, trustId) %>%
-            summarise(Hprev_mn = sum(Hprev_mn), cumHD = sum(Hdeaths), cumCD = sum(Cdeaths)) %>%
-            select(week, trustId, Hprev_mn, cumHD, cumCD) %>%
+            summarise(cumH = sum(cumH), Hprev_mn = sum(Hprev_mn), cumHD = sum(cumHD), cumCD = sum(cumCD)) %>%
             ungroup()
        print(head(output)) 
     
