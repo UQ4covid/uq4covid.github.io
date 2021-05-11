@@ -19,6 +19,13 @@ if(length(args) > 0) {
 ## source in dataTools (for reconstruct function)
 source("../R_tools/dataTools.R")
 
+## Add trust and wards for DW
+trusts <- read_csv("../inputs/trust19Lookup.csv")
+ward19 <- read_csv("../inputs/Ward19_Lookup.csv")
+TrustLookup <- inner_join(trusts, ward19, by = c("code" = "WD19CD")) %>%
+    rename(ward = FID) %>%
+    select(ward, trustId)
+
 ## read in ward and week lookups
 weeks <- read_csv("../JASMINsetup/week_lookup.csv", col_names = FALSE)
 wards <- read_csv("../JASMINsetup/ward_lookup.csv", col_names = FALSE)
@@ -93,8 +100,16 @@ output <- map(files, function(file, filedir, hash, lookup) {
         fill(DH) %>%
         fill(DI) %>%
         group_by(ward, week) %>%
-        summarise(Hprev = sum(H) / 7, Hdeaths = max(DH), Cdeaths = max(DI)) %>%
+        summarise(Hprev_mn = sum(H) / 7, Hdeaths = max(DH), Cdeaths = max(DI)) %>%
         ungroup()
+
+       ## collate to trust
+       output <- inner_join(output, TrustLookup, by = "ward") %>%
+            group_by(week, trustId) %>%
+            summarise(Hprev_mn = sum(Hprev_mn), HD = sum(Hdeaths), CD = sum(Cdeaths)) %>%
+            select(week, trustId, Hprev_mn, HD, CD) %>%
+            ungroup()
+       print(head(output)) 
     
     ## return summaries
     output
