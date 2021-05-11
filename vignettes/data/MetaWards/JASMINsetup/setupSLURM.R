@@ -50,6 +50,10 @@ system(paste0("mkdir -p ", filedir, "inputs"))
 write_csv(inputs, paste0(filedir, "inputs/inputs.csv"))
 write_csv(parRanges, paste0(filedir, "inputs/parRanges.csv"))
 
+## copy trust / ward lookups to inputs folder
+system(paste0("cp ../inputs/trust19Lookup.csv ", filedir, "inputs/"))
+system(paste0("cp ../inputs/Ward19_Lookup.csv ", filedir, "inputs/"))
+
 ## this next part creates the script file to pass to SLURM
 
 ## extract data
