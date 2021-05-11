@@ -19,7 +19,7 @@ names(output) <- hashes
 output <- bind_rows(output, .id = "output")
 
 ## write table out
-write_csv(output, paste0(filedir, "raw_outputs/summaries_", id, ".csv"), col_names = TRUE, row_names = FALSE)
+write_csv(output, paste0(filedir, "raw_outputs/summaries_", id, ".csv"), col_names = TRUE)
 
 ## compress file
 system(paste0("bzip2 -zf ", filedir, "raw_outputs/summaries_", id, ".csv"))
