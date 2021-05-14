@@ -31,7 +31,7 @@ convertInputToDisease <- function(input, C, N, S0, ages) {
     stopifnot(all(c("R0", "nuA", "TE", "TP", "TI1", "TI2", "alphaEP", 
         "alphaI1H", "alphaI1D", "alphaHD", "eta", 
         "alphaTH", "etaTH", "lock_1_restrict", 
-        "lock_2_release", "repeats", "output") %in% colnames(input)))
+        "lock_2_release", "ns", "repeats", "output") %in% colnames(input)))
     
     ## check unique ID
     stopifnot(length(unique(input$output)) == length(input$output))
@@ -111,8 +111,12 @@ convertInputToDisease <- function(input, C, N, S0, ages) {
     disease$`.lock_1_restrict` <- input$lock_1_restrict
     disease$`.lock_2_release` <- input$lock_2_release
     
+    ## add seeding multiplier
+    disease$`.ns` <- ceiling(input$ns)
+    
     ## remove any invalid inputs
     stopifnot(any(disease$nuA >= 0 | disease$nuA <= 1))
+    stopifnot(all(disease$`.ns` >= 1))
     disease <- filter_at(disease, vars(starts_with(".p")), all_vars(. >= 0 & . <= 1))
 
     ## set up data for calculating transmission parameter

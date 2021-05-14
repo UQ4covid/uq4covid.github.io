@@ -7,7 +7,7 @@ source("../../R_tools/dataTools.R")
 ## read in pars
 pars <- read_delim("disease.dat", delim = " ") %>%
     select(-contains("beta"), -contains("lock_"), 
-    nu_1 = `beta[1]`, nuA_1 = `beta[6]`, -repeats, -output) %>%
+    nu_1 = `beta[1]`, nuA_1 = `beta[6]`, -repeats, -output, -`.ns`) %>%
     gather(par, value) %>%
     separate(par, c("par", "age"), sep = "_") %>%
     complete(age, par) %>%

@@ -206,9 +206,9 @@ write_csv(age_seed, "../inputs/age_seeds.csv", col_names = FALSE)
 ```{js, code = readLines("../inputs/age_seeds.csv"), eval = FALSE}
 ```
 
-Here the first column is the age demographic and the second is the probability of seeding into that age-demographic. We take the number of deaths observed on each day up to the 14th March 2020, and seed the same number of individuals exactly three weeks earlier. To do this we take a multinomial sample to decide how many individuals are seeded into each age-class, and then we split these across wards as described below. These are stored in the file `inputs/time_seeds.csv`, the first column of which is the date of the seeding, and the second is how many individuals are seeded on that day.
+Here the first column is the age demographic and the second is the probability of seeding into that age-demographic. We take the number of deaths observed on each day up to the 14th March 2020, and seed the same number of individuals exactly three weeks earlier. To do this we take a multinomial sample to decide how many individuals are seeded into each age-class, and then we split these across wards as described below. These are stored in the file `inputs/time_seeds.csv`, the first column of which is the date of the seeding, and the second is a baseline for how many individuals are seeded on that day. In practice we multiply these baseline values by a scaling factor `nseedMult`, which is included as a variable input in the model code below.
 
-We take all recorded deaths up to and including the 14th March, and for each we seed an infection three weeks before in a random ward that is mapped to the trust (proportionately to the population size in each ward). Details and instructions can be found in `data/seedDeaths/README.md`. This creates a file `inputs/ward_seeds.csv` that contains the necessary probabilities for ward seeding. This file has the same form as the `age_seeds.csv` file described above, but the first column is the ward ID, the second is trust ID, and the third is the probabilities of seeding. It also creates a file `inputs/time_seeds.csv`, which has a column of dates, a column of trust IDs and a column for the number of seeds on each date in each trust.
+We take all recorded deaths up to and including the 14th March, and for each we seed an infection three weeks before in a random ward that is mapped to the trust (proportionately to the population size in each ward). Details and instructions can be found in `data/seedDeaths/README.md`. This creates a file `inputs/ward_seeds.csv` that contains the necessary probabilities for ward seeding. This file has the same form as the `age_seeds.csv` file described above, but the first column is the ward ID, the second is trust ID, and the third is the probabilities of seeding. It also creates a file `inputs/time_seeds.csv`, which has a column of dates, a column of trust IDs and a column for the baseline number of seeds on each date in each trust.
 
 > **Due to data confidentiality, we are not able to share the seeding files publicly.**
 
@@ -248,7 +248,7 @@ For generic states $X$ and $Y$ say, the progress of an individual in age-class $
 * Similarly to before, we model: $\log\left(p^j_{HD}\right) = \alpha_{HD} + \eta \mbox{age}_j$. 
 * We also model: $\log\left(T_H^j\right) = \alpha_{T_H} + \eta_{T_H} \mbox{age}_j$ where $\eta_{T_H} > 0$. 
 
-We also require inputs for $R_0$, a parameter $\nu_A$ which scales the force-of-infection between asymptomatics and the general population, and further scaling parameters that we use to model various lockdown measures (described [below](#lockdown)).
+We also require inputs for $R_0$, a parameter $\nu_A$ which scales the force-of-infection between asymptomatics and the general population, and further scaling parameters that we use to model various lockdown measures (described [below](#lockdown)). We also need the scaling parameter for the number of seeds, $n_s$.
 
 <a name="translink"></a>
 <button data-toggle="collapse" data-target="#trans">Click for details on transmission terms</button>
@@ -364,7 +364,8 @@ We have derived plausible parameter bounds from data and the literature. **We no
     T_{I_2}&: (0.0001, 0.5)\\
     \alpha_{EP}, \alpha_{I_1H}, \alpha_{I_1D}, \alpha_{HD}, \eta&: \mbox{drawn from distribution as described below}\\
     \alpha_{T_H}, \eta_{T_H}&: \mbox{drawn from distribution as described below}\\
-    \nu_A&: (0, 1)
+    \nu_A&: (0, 1)\\
+    n_s&: (10, 100)
 \end{align}
 
 <a name="priorslink"></a>
@@ -629,9 +630,9 @@ In R we can set up the *input* parameter ranges as follows:
 ## set up parameter ranges for uniform ranges
 parRanges <- data.frame(
     parameter = c("R0", "TE", "TP", "TI1", "TI2", 
-                  "nuA", "lock_1_restrict", "lock_2_release"),
-    lower = c(2, 0.1, 1.2, 2.8, 0.0001, 0, 0, 0),
-    upper = c(4.5, 2, 3, 4.5, 0.5, 1, 1, 1),
+                  "nuA", "lock_1_restrict", "lock_2_release", "ns"),
+    lower = c(2, 0.1, 1.2, 2.8, 0.0001, 0, 0, 0, 10),
+    upper = c(4.5, 2, 3, 4.5, 0.5, 1, 1, 1, 100),
     stringsAsFactors = FALSE
 ) 
 ```

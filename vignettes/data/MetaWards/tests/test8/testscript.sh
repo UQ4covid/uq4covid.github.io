@@ -76,8 +76,8 @@ printf '0 0 0 0 0 0 0 0 1 1 1 1 1 1 1 1 ' >> disease.dat
 printf '1 1 ' >> disease.dat
 ## beta[1] beta[2] beta[3] beta[6]
 printf '0 0 0 0 ' >> disease.dat
-## repeats output
-printf '1 test' >> disease.dat
+## ns repeats output
+printf '1 1 test' >> disease.dat
 
 ## run MetaWards
 rm nohup.out

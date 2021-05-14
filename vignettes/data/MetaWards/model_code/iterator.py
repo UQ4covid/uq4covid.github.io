@@ -55,7 +55,7 @@ def read_age_file(filename):
         
     return seed_file_cache["age_probs_ind"], seed_file_cache["age_probs"]
     
-def read_time_file(filename):
+def read_time_file(filename, nseedMult):
     global seed_file_cache
     if filename not in seed_file_cache:
         with open(filename, "r") as FILE:
@@ -66,6 +66,7 @@ def read_time_file(filename):
         time_seeds = np.array(time_seeds)
         time_seeds_trust = time_seeds[:, 1].astype(int)
         time_seeds_count = time_seeds[:, 2].astype(int)
+        time_seeds_count = time_seeds_count * nseedMult
         
         time_seeds_date = [[i.split('-')] for i in time_seeds[:, 0]]
         time_seeds_date = [[int(i[0][0]), int(i[0][1]), int(i[0][2])] for i in time_seeds_date]
@@ -137,6 +138,7 @@ def advance_initial_seeds(network, population, infections, profiler, rngs, **kwa
     ward_seed_filename = params.user_params["ward_seed_filename"]
     age_seed_filename = params.user_params["age_seed_filename"]
     time_seed_filename = params.user_params["time_seed_filename"]
+    ns = int(params.user_params["ns"])
     
     # start profiler
     p = profiler.start("additional_seeds")
@@ -144,7 +146,7 @@ def advance_initial_seeds(network, population, infections, profiler, rngs, **kwa
     # set up lookups or read from cache
     age_probs_ind, age_probs = read_age_file(age_seed_filename)
     ward_probs_ind, ward_probs_trust, ward_probs = read_seed_file(ward_seed_filename)
-    time_seed_date, time_seed_trust, time_seed_count = read_time_file(time_seed_filename) 
+    time_seed_date, time_seed_trust, time_seed_count = read_time_file(time_seed_filename, ns) 
     
     # extract current date    
     date = population.date
