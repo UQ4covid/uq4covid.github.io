@@ -20,6 +20,7 @@ tests/*/nohup.out
 tests/*/raw_outputs*
 tests/standalone*
 data/ward11toWard19Mapping/Ward*
+data/ward11toWard19Mapping/Local*
 data/ward11toWard19Mapping/*.csv
 data/ward11toWard19Mapping/*.pdf
 data/pathways/*.pdf

@@ -24,16 +24,16 @@ def read_seed_file(filename):
         # convert to correct format
         ward_probs = np.array(ward_probs)
         ward_probs_ind = ward_probs[:, 0].astype(int)
-        ward_probs_trust = ward_probs[:, 1].astype(int)
+        ward_probs_LAD = ward_probs[:, 1].astype(int)
         ward_probs = ward_probs[:, 2].astype(float)
         
         # save in cache        
         seed_file_cache[filename] = "STORED"
         seed_file_cache["ward_probs_ind"] = ward_probs_ind
-        seed_file_cache["ward_probs_trust"] = ward_probs_trust
+        seed_file_cache["ward_probs_LAD"] = ward_probs_LAD
         seed_file_cache["ward_probs"] = ward_probs
         
-    return seed_file_cache["ward_probs_ind"], seed_file_cache["ward_probs_trust"], seed_file_cache["ward_probs"]
+    return seed_file_cache["ward_probs_ind"], seed_file_cache["ward_probs_LAD"], seed_file_cache["ward_probs"]
 
 # read in age lookup
 def read_age_file(filename):
@@ -64,7 +64,7 @@ def read_time_file(filename, nseedMult):
         
         # convert to dates and counts
         time_seeds = np.array(time_seeds)
-        time_seeds_trust = time_seeds[:, 1].astype(int)
+        time_seeds_LAD = time_seeds[:, 1].astype(int)
         time_seeds_count = time_seeds[:, 2].astype(int)
         time_seeds_count = time_seeds_count * nseedMult
         
@@ -75,10 +75,10 @@ def read_time_file(filename, nseedMult):
         # store outputs
         seed_file_cache[filename] = "STORED"
         seed_file_cache["time_seeds_date"] = time_seeds_date
-        seed_file_cache["time_seeds_trust"] = time_seeds_trust
+        seed_file_cache["time_seeds_LAD"] = time_seeds_LAD
         seed_file_cache["time_seeds_count"] = time_seeds_count
     
-    return seed_file_cache["time_seeds_date"], seed_file_cache["time_seeds_trust"], seed_file_cache["time_seeds_count"]
+    return seed_file_cache["time_seeds_date"], seed_file_cache["time_seeds_LAD"], seed_file_cache["time_seeds_count"]
     
 # determine the lock-down status based on the population and current network
 def get_lock_down_vars(network, population):
@@ -145,8 +145,8 @@ def advance_initial_seeds(network, population, infections, profiler, rngs, **kwa
     
     # set up lookups or read from cache
     age_probs_ind, age_probs = read_age_file(age_seed_filename)
-    ward_probs_ind, ward_probs_trust, ward_probs = read_seed_file(ward_seed_filename)
-    time_seed_date, time_seed_trust, time_seed_count = read_time_file(time_seed_filename, ns) 
+    ward_probs_ind, ward_probs_LAD, ward_probs = read_seed_file(ward_seed_filename)
+    time_seed_date, time_seed_LAD, time_seed_count = read_time_file(time_seed_filename, ns) 
     
     # extract current date    
     date = population.date
@@ -157,16 +157,16 @@ def advance_initial_seeds(network, population, infections, profiler, rngs, **kwa
     
     if len(time_seed_count) > 0:
         
-        # loop over trusts
-        time_seed_trust = time_seed_trust[filter_time_seed]
+        # loop over LADs
+        time_seed_LAD = time_seed_LAD[filter_time_seed]
         
-        for j in range(len(time_seed_trust)):
+        for j in range(len(time_seed_LAD)):
         
-            # extract trust
-            trust = time_seed_trust[j]
+            # extract LAD
+            LAD = time_seed_LAD[j]
             
             # extract wards
-            filter_wards = [i == trust for i in ward_probs_trust]
+            filter_wards = [i == LAD for i in ward_probs_LAD]
             tward_probs = ward_probs[filter_wards]
             tward_probs_ind = ward_probs_ind[filter_wards]
     
