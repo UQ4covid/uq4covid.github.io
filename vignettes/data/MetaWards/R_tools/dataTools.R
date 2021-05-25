@@ -117,7 +117,11 @@ convertInputToDisease <- function(input, C, N, S0, ages) {
     ## remove any invalid inputs
     stopifnot(any(disease$nuA >= 0 | disease$nuA <= 1))
     stopifnot(all(disease$`.ns` >= 1))
-    disease <- filter_at(disease, vars(starts_with(".p")), all_vars(. >= 0 & . <= 1))
+    stopifnot(
+        select(disease, starts_with(".p")) %>%
+        summarise_all(~{all(. >= 0 & . <= 1)}) %>%
+        apply(1, all)
+    )
 
     ## set up data for calculating transmission parameter
     temp <- select(disease, output, starts_with(".pEP"), starts_with(".pI1H"), starts_with(".pI1D")) %>%
@@ -171,7 +175,7 @@ convertInputToDisease <- function(input, C, N, S0, ages) {
 
 ## @knitr maximin
 ## function to generate maximin samples given an arbitrary FMM
-FMMmaximin <- function(model, nsamp, limits, nseed = 10000) {
+FMMmaximin <- function(model, nsamp, limits, limitFn = NULL, nseed = 10000, ...) {
     
     ## check inputs and dependencies
     require(mclust)
@@ -184,6 +188,12 @@ FMMmaximin <- function(model, nsamp, limits, nseed = 10000) {
     stopifnot(is.matrix(limits))
     stopifnot(ncol(limits) == 2 & nrow(limits) == nrow(model$parameters$mean))
     stopifnot(all(limits[, 1] < limits[, 2]))
+    if(!is.null(limitFn)) {
+        stopifnot(class(limitFn) == "function")
+        stopifnot(formalArgs(limitFn)[1] == "x")
+        cat("When using 'limitFn' ensure that function takes matrix as first argument 'x'
+            and returns vector of logicals for inclusion of length 'nrow(x)'\n")
+    }
     
     ## produce large number of samples from model and ensure they are
     ## consistent with limits
@@ -198,10 +208,15 @@ FMMmaximin <- function(model, nsamp, limits, nseed = 10000) {
             sims1 <- sims1[sims1[, i] >= limits[i, 1], ]
             sims1 <- sims1[sims1[, i] <= limits[i, 2], ]
         }
-        if(nrow(sims) == 1) {
-            sims <- sims1
-        } else {
-            sims <- rbind(sims, sims1)
+        if(!is.null(limitFn)) {
+            sims1 <- sims1[limitFn(sims1, ...), ]
+        }
+        if(nrow(sims1) > 0) {
+            if(nrow(sims) == 1) {
+                sims <- sims1
+            } else {
+                sims <- rbind(sims, sims1)
+            }
         }
     }
     sims <- sims[1:nseed, ]
