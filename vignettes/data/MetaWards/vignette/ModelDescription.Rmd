@@ -246,7 +246,7 @@ For generic states $X$ and $Y$ say, the progress of an individual in age-class $
 * Similarly to before, we model: $\log\left(p^j_{HD}\right) = \alpha_{HD} + \eta \mbox{age}_j$. 
 * We also model: $\log\left(T_H^j\right) = \alpha_{T_H} + \eta_{T_H} \mbox{age}_j$ where $\eta_{T_H} > 0$. 
 
-We also require inputs for $R_0$, a parameter $\nu_A$ which scales the force-of-infection between asymptomatics and the general population, and further scaling parameters that we use to model various lockdown measures (described [below](#lockdown)). We also need the scaling parameter for the number of seeds, $n_s$.
+We also require inputs for $R_0$, a parameter $\nu_A$ which scales the force-of-infection between asymptomatics and the general population, and further scaling parameters that we use to model various lockdown measures (described [below](#lockdown)). We also need the scaling parameter for the number of seeds, $n_s$, and a parameter $p_{\text{home/weekend}}$ which scales the number of movements at weekends.
 
 <a name="translink"></a>
 <button data-toggle="collapse" data-target="#trans">Click for details on transmission terms</button>
@@ -363,7 +363,8 @@ We have derived plausible parameter bounds from data and the literature. **We no
     \alpha_{EP}, \alpha_{I_1H}, \alpha_{I_1D}, \alpha_{HD}, \eta&: \mbox{drawn from distribution as described below}\\
     \alpha_{T_H}, \eta_{T_H}&: \mbox{drawn from distribution as described below}\\
     \nu_A&: (0, 1)\\
-    n_s&: (10, 100)
+    n_s&: (10, 100)\\
+    p_{\text{home/weekend}}&: (0, 1)
 \end{align}
 
 <a name="priorslink"></a>
@@ -628,9 +629,9 @@ In R we can set up the *input* parameter ranges as follows:
 ## set up parameter ranges for uniform ranges
 parRanges <- data.frame(
     parameter = c("R0", "TE", "TP", "TI1", "TI2", 
-                  "nuA", "lock_1_restrict", "lock_2_release", "ns"),
-    lower = c(2, 0.1, 1.2, 2.8, 0.0001, 0, 0, 0, 10),
-    upper = c(4.5, 2, 3, 4.5, 0.5, 1, 1, 1, 100),
+                  "nuA", "lock_1_restrict", "lock_2_release", "ns", "p_home_weekend"),
+    lower = c(2, 0.1, 1.2, 2.8, 0.0001, 0, 0, 0, 10, 0),
+    upper = c(4.5, 2, 3, 4.5, 0.5, 1, 1, 1, 100, 1),
     stringsAsFactors = FALSE
 ) 
 ```

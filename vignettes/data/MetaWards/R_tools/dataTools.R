@@ -31,7 +31,7 @@ convertInputToDisease <- function(input, C, N, S0, ages) {
     stopifnot(all(c("R0", "nuA", "TE", "TP", "TI1", "TI2", "alphaEP", 
         "alphaI1H", "alphaI1D", "alphaHD", "eta", 
         "alphaTH", "etaTH", "lock_1_restrict", 
-        "lock_2_release", "ns", "repeats", "output") %in% colnames(input)))
+        "lock_2_release", "ns", "p_home_weekend", "repeats", "output") %in% colnames(input)))
     
     ## check unique ID
     stopifnot(length(unique(input$output)) == length(input$output))
@@ -113,6 +113,9 @@ convertInputToDisease <- function(input, C, N, S0, ages) {
     
     ## add seeding multiplier
     disease$`.ns` <- ceiling(input$ns)
+    
+    ## add weekend movement scaling
+    disease$`.p_home_weekend` <- input$p_home_weekend
     
     ## remove any invalid inputs
     stopifnot(any(disease$nuA >= 0 | disease$nuA <= 1))

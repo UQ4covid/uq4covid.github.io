@@ -124,9 +124,34 @@ def advance_lockdown_week(network, population, **kwargs):
 def advance_lockdown_weekend(network, population, **kwargs):
 
     state, rate, can_work = get_lock_down_vars(network = network, population = population)
+    
+    ## update dyn_play_at_home
+    dyn_play_at_home = []
+    for i in range(0, len(network.subnets)):
+        dyn_play_at_home.append(network.subnets[i].params.dyn_play_at_home)
+        network.subnets[i].params.dyn_play_at_home = network.subnets[i].params.user_params["p_home_weekend"]
 
     advance_infprob(scale_rate = rate, network = network, population = population, **kwargs)
     advance_work_to_play(network = network, population = population, **kwargs)
+    
+    ## reset dyn_play_at_home
+    for i in range(0, len(network.subnets)):
+        network.subnets[i].params.dyn_play_at_home = dyn_play_at_home[i]
+        
+# advance FOI weekend
+def advance_foi_work_to_play_weekend(network, population, **kwargs):
+    
+    ## update dyn_play_at_home
+    dyn_play_at_home = []
+    for i in range(0, len(network.subnets)):
+        dyn_play_at_home.append(network.subnets[i].params.dyn_play_at_home)
+        network.subnets[i].params.dyn_play_at_home = network.subnets[i].params.user_params["p_home_weekend"]
+
+    advance_foi_work_to_play(network = network, population = population, **kwargs)
+    
+    ## reset dyn_play_at_home
+    for i in range(0, len(network.subnets)):
+        network.subnets[i].params.dyn_play_at_home = dyn_play_at_home[i]
 
 # set custom advance function
 def advance_initial_seeds(network, population, infections, profiler, rngs, **kwargs):
@@ -250,7 +275,7 @@ def iterate_lockdown(stage: str, population, **kwargs):
     # weekends
     if stage == "foi":
         if is_weekend:
-            return [advance_foi_work_to_play, advance_recovery]
+            return [advance_foi_work_to_play_weekend, advance_recovery]
         else:
             return [advance_foi, advance_recovery]
     elif stage == "infect":
