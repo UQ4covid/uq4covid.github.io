@@ -86,4 +86,8 @@ cd ..
 #./testscript.sh
 #cd ..
 
-
+## same as test8 but testing out zero moves at weekends
+## and adding back in transmission
+cd test11
+./testscript.sh
+cd ..

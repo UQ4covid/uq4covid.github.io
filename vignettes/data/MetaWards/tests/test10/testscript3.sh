@@ -70,8 +70,8 @@ printf '0.3 0.3 0.3 0.3 0.3 0.3 0.3 0.3 0.2 0.2 0.2 0.2 0.2 0.2 0.0 0.0 ' >> dis
 printf '1 1 ' >> disease.dat
 ## beta[1] beta[2] beta[3] beta[6]
 printf '0.158833090606437 0.158833090606437 0.158833090606437 0.04764993 ' >> disease.dat
-## ns repeats output
-printf '1 10 test' >> disease.dat
+## ns pweekend repeats output
+printf '1 0 10 test' >> disease.dat
 
 ## run MetaWards
 metawards --nproc $nprocessors --nthreads $nthreads -m test\

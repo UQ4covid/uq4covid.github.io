@@ -68,8 +68,8 @@ printf '0 0 0 0 0 0 0 0 1 1 1 1 1 1 1 1 ' >> disease.dat
 printf '1 1 ' >> disease.dat
 ## beta[1] beta[2] beta[3] beta[6]
 printf '0.5350124159 0.5350124159 0 0 ' >> disease.dat
-## ns repeats output
-printf '1 10 test' >> disease.dat
+## ns pweekend repeats output
+printf '1 0 10 test' >> disease.dat
 
 ## run MetaWards
 metawards --nproc $nprocessors --nthreads $nthreads -m single -P 100000\
