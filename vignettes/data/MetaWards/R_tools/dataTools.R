@@ -82,6 +82,18 @@ convertInputToDisease <- function(input, C, N, S0, ages) {
                 as_tibble()
         }, ages = ages)) %>%
         unnest(cols = temp)
+    ## check for multinomial validity
+    temp <- select(disease, starts_with(".pI1")) %>%
+        select(-starts_with(".pI1_")) %>%
+        mutate(ind = 1:n()) %>%
+        gather(par, prob, -ind) %>%
+        separate(par, c("par", "age"), sep = "_") %>%
+        group_by(age, ind) %>% 
+        summarise(prob = sum(prob)) %>%
+        pluck("prob")
+    if(any(temp < 0) | any(temp > 1)) {
+        stop("Some multinomial pI1* probs invalid")
+    }
     
     ## progressions out of the I2 class
     for(j in 1:length(ages)) {

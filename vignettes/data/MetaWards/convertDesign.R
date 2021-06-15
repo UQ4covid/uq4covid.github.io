@@ -19,7 +19,7 @@ parRanges <- data.frame(
 C <- as.matrix(read.csv("inputs/POLYMOD_matrix.csv", header = FALSE))
 
 ## generate LHS design
-ndesign <- 1000
+ndesign <- 10
 design <- randomLHS(ndesign, nrow(parRanges))
 colnames(design) <- parRanges$parameter
 design <- as_tibble(design)
@@ -43,8 +43,10 @@ hospStaysInput <- FMMmaximin(
     rename(alphaTH = x1, etaTH = x2)
 
 ## generate design points for other transition probabilities
+
+## this function checks validity of inputs
 pathwaysLimitFn <- function(x, ages) {
-    apply(x, 1, function(x, ages) {
+    singleProbs <- apply(x, 1, function(x, ages) {
         eta <- x[5]
         alphas <- x[-5]
         y <- sapply(alphas, function(a, eta, ages) {
@@ -53,7 +55,19 @@ pathwaysLimitFn <- function(x, ages) {
         }, eta = eta, ages = ages)
         all(y)
     }, ages = ages)
+    multiProbs <- apply(x[, -c(1, 3)], 1, function(x, ages) {
+        alphaI1D <- x[1]
+        alphaI1H <- x[2]
+        eta <- x[3]
+        pI1D <- exp(alphaI1D + eta * ages)
+        pI1H <- exp(alphaI1H + eta * ages)
+        p <- pI1D + pI1H
+        all(p >= 0 & p <= 1)
+    }, ages = ages)
+    multiProbs & singleProbs
 }
+
+## produces design points subject to constraints
 pathwaysInput <- FMMmaximin(
         pathways, 
         ndesign,
@@ -94,11 +108,9 @@ stopifnot(nrow(disease) == ndesign)
 
 # ## plot inputs
 # library(GGally)
-# select(disease, output) %>%
-#     mutate(valid = 1) %>%
-#     right_join(inputs, by = "output") %>%
-#     arrange(!is.na(valid)) %>%
-#     ggpairs(aes(colour = valid), columns = 3:17, upper = "blank")
+# p <- select(inputs, -output, -repeats) %>%
+#     ggpairs(upper = "blank")
+# ggsave("design.pdf", p, width = 10, height = 10)
 
 ## reorder samples
 inputs <- arrange(inputs, output)
