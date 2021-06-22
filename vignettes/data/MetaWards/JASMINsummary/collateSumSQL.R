@@ -10,6 +10,9 @@ id <- readLines("id.txt")
 hashes <- readLines("job_lookup.txt")
 
 ## set up connection to database
+if(file.exists(paste0(filedir, "raw_outputs/summaries_", id, ".db"))) {
+    system(paste0("rm ", filedir, "raw_outputs/summaries_", id, ".db"))
+}
 con <- DBI::dbConnect(RSQLite::SQLite(), paste0(filedir, "raw_outputs/summaries_", id, ".db"))
 
 ## read in output files
