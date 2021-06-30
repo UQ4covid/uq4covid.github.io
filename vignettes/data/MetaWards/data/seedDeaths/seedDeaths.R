@@ -33,10 +33,9 @@ Ward19Lookup <- read_csv(paste0(path, "Ward19_Lookup.csv"))
 seeds <- deaths %>%
     arrange(date) %>%
     group_by(date, areaCode) %>%
-    summarise(deaths = sum(cumDeathsByDeathDate)) %>%
+    summarise(deaths = sum(cumDeathsByDeathDate), .groups = "drop") %>%
     filter(date <= "2020-03-14") %>%
-    filter(deaths > 0) %>%
-    ungroup()
+    filter(deaths > 0)
     
 ## check LTLA names match
 temp <- anti_join(seeds, Ward19Lookup, by = c("areaCode" = "LAD19CD"))
@@ -95,7 +94,7 @@ seeds <- select(seeds, areaCode, lad) %>%
     arrange(lad, FID)
 stopifnot(
     group_by(seeds, lad) %>%
-    summarise(prop = sum(prop)) %>%
+    summarise(prop = sum(prop), .groups = "drop") %>%
     pluck("prop") %>%
     {all(. == 1)}
 )
