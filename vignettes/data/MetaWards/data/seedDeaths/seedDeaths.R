@@ -11,20 +11,56 @@ path <- paste0("../../../../../../MetaWardsData/model_data/2011to2019Data/")
 deaths <- read_csv("ltla_2021-05-18.csv", guess_max = 30000) %>%
     filter(date <= "2020-04-01")
 
+## load LAD to region lookup table
+regionLookup <- read_csv("Local_Authority_District_to_Region_(April_2019)_Lookup_in_England.csv")
+
+## check everything matches
+temp <- anti_join(deaths, regionLookup, by = c("areaCode" = "LAD19CD"))
+
 ## examine cases by date
 p1 <- deaths %>%
     group_by(date) %>%
-    summarise(deaths = sum(cumDeathsByDeathDate)) %>%
+    summarise(deaths = sum(cumDeathsByDeathDate), .groups = "drop") %>%
+    arrange(date) %>%
     mutate(deaths = c(deaths[1], diff(deaths))) %>%
     ggplot(aes(x = date, y = deaths)) +
-        geom_line() + xlab("Date") + ylab("Deaths")
+    geom_line() + xlab("Date") + ylab("Deaths")
 p2 <- deaths %>%
     group_by(date) %>%
-    summarise(deaths = sum(cumDeathsByDeathDate)) %>%
+    summarise(deaths = sum(cumDeathsByDeathDate), .groups = "drop") %>%
     ggplot(aes(x = date, y = deaths)) +
-        geom_line() + xlab("Date") + ylab("Cumulative Deaths")
-p <- p1 + p2
-ggsave("deathCounts.pdf", p)
+    geom_line() + xlab("Date") + ylab("Cumulative Deaths")
+p3 <- deaths %>%
+    inner_join(regionLookup, by = c("areaCode" = "LAD19CD")) %>%
+    group_by(date, RGN19NM) %>%
+    summarise(deaths = sum(cumDeathsByDeathDate), .groups = "drop") %>%
+    arrange(date) %>%
+    group_by(RGN19NM) %>%
+    mutate(deaths = c(deaths[1], diff(deaths))) %>%
+    ggplot(aes(x = date, y = deaths, colour = RGN19NM)) +
+    geom_line() + xlab("Date") + ylab("Deaths") +
+    labs(colour = "Region")
+p4 <- deaths %>%
+    inner_join(regionLookup, by = c("areaCode" = "LAD19CD")) %>%
+    group_by(date, RGN19NM) %>%
+    summarise(deaths = sum(cumDeathsByDeathDate), .groups = "drop") %>%
+    ggplot(aes(x = date, y = deaths, colour = RGN19NM)) +
+    geom_line() + xlab("Date") + ylab("Cumulative Deaths") +
+    labs(colour = "Region")
+p <- (p1 + p2) / (p3 + p4) + plot_layout(guides = "collect")
+ggsave("deathCounts.pdf", p, width = 10, height = 8)
+
+## proportions by region
+p <- deaths %>%
+    inner_join(regionLookup, by = c("areaCode" = "LAD19CD")) %>%
+    group_by(date, RGN19NM) %>%
+    summarise(deaths = sum(cumDeathsByDeathDate), .groups = "drop_last") %>%
+    mutate(prop = deaths / sum(deaths)) %>%
+    ggplot(aes(x = date, y = prop, fill = RGN19NM)) +
+    geom_bar(stat = "identity") + xlab("Date") + 
+    ylab("Proportion cumulative deaths") +
+    labs(fill = "Region")
+ggsave("deathsProps.pdf", p)
 
 ## now read in ward to LAD lookup
 Ward19Lookup <- read_csv(paste0(path, "Ward19_Lookup.csv"))
