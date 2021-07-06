@@ -30,7 +30,7 @@ stopifnot(
 ## check FIDs complete
 stopifnot(all((Ward_Lookup$FID - 1:nrow(Ward_Lookup)) == 0))
 
-## load Ward19 lookup has single entry per ward CD and NM
+## check Ward19 lookup has single entry per ward CD and NM
 stopifnot(
   group_by(Ward19_Lookup, WD19CD, WD19NM) %>%
     count() %>%
