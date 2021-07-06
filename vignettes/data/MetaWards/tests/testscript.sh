@@ -78,3 +78,16 @@ cd test9
 ./testscript.sh
 cd ..
 
+## same as test6 but with full ward-structure turned on
+## this is to test the "work_to_play" functions, so could
+## be turned off since the work_to_play code is now
+## included in the main MetaWards code
+#cd test10
+#./testscript.sh
+#cd ..
+
+## same as test8 but testing out zero moves at weekends
+## and adding back in transmission
+cd test11
+./testscript.sh
+cd ..

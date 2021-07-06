@@ -2,6 +2,10 @@ from metawards.utils import Console
 from metawards.iterators import advance_infprob
 from metawards.iterators import advance_play
 from metawards.iterators import advance_fixed
+from metawards.iterators import advance_foi
+from metawards.iterators import advance_recovery
+from metawards.iterators import advance_foi_work_to_play
+from metawards.iterators import advance_work_to_play
 from datetime import datetime
 import numpy as np
 import sys
@@ -20,16 +24,16 @@ def read_seed_file(filename):
         # convert to correct format
         ward_probs = np.array(ward_probs)
         ward_probs_ind = ward_probs[:, 0].astype(int)
-        ward_probs_trust = ward_probs[:, 1].astype(int)
+        ward_probs_LAD = ward_probs[:, 1].astype(int)
         ward_probs = ward_probs[:, 2].astype(float)
         
         # save in cache        
         seed_file_cache[filename] = "STORED"
         seed_file_cache["ward_probs_ind"] = ward_probs_ind
-        seed_file_cache["ward_probs_trust"] = ward_probs_trust
+        seed_file_cache["ward_probs_LAD"] = ward_probs_LAD
         seed_file_cache["ward_probs"] = ward_probs
         
-    return seed_file_cache["ward_probs_ind"], seed_file_cache["ward_probs_trust"], seed_file_cache["ward_probs"]
+    return seed_file_cache["ward_probs_ind"], seed_file_cache["ward_probs_LAD"], seed_file_cache["ward_probs"]
 
 # read in age lookup
 def read_age_file(filename):
@@ -51,7 +55,7 @@ def read_age_file(filename):
         
     return seed_file_cache["age_probs_ind"], seed_file_cache["age_probs"]
     
-def read_time_file(filename):
+def read_time_file(filename, nseedMult):
     global seed_file_cache
     if filename not in seed_file_cache:
         with open(filename, "r") as FILE:
@@ -60,8 +64,9 @@ def read_time_file(filename):
         
         # convert to dates and counts
         time_seeds = np.array(time_seeds)
-        time_seeds_trust = time_seeds[:, 1].astype(int)
+        time_seeds_LAD = time_seeds[:, 1].astype(int)
         time_seeds_count = time_seeds[:, 2].astype(int)
+        time_seeds_count = time_seeds_count * nseedMult
         
         time_seeds_date = [[i.split('-')] for i in time_seeds[:, 0]]
         time_seeds_date = [[int(i[0][0]), int(i[0][1]), int(i[0][2])] for i in time_seeds_date]
@@ -70,10 +75,10 @@ def read_time_file(filename):
         # store outputs
         seed_file_cache[filename] = "STORED"
         seed_file_cache["time_seeds_date"] = time_seeds_date
-        seed_file_cache["time_seeds_trust"] = time_seeds_trust
+        seed_file_cache["time_seeds_LAD"] = time_seeds_LAD
         seed_file_cache["time_seeds_count"] = time_seeds_count
     
-    return seed_file_cache["time_seeds_date"], seed_file_cache["time_seeds_trust"], seed_file_cache["time_seeds_count"]
+    return seed_file_cache["time_seeds_date"], seed_file_cache["time_seeds_LAD"], seed_file_cache["time_seeds_count"]
     
 # determine the lock-down status based on the population and current network
 def get_lock_down_vars(network, population):
@@ -119,9 +124,34 @@ def advance_lockdown_week(network, population, **kwargs):
 def advance_lockdown_weekend(network, population, **kwargs):
 
     state, rate, can_work = get_lock_down_vars(network = network, population = population)
+    
+    ## update dyn_play_at_home
+    dyn_play_at_home = []
+    for i in range(0, len(network.subnets)):
+        dyn_play_at_home.append(network.subnets[i].params.dyn_play_at_home)
+        network.subnets[i].params.dyn_play_at_home = network.subnets[i].params.user_params["p_home_weekend"]
 
     advance_infprob(scale_rate = rate, network = network, population = population, **kwargs)
-    advance_play(network = network, population = population, **kwargs)
+    advance_work_to_play(network = network, population = population, **kwargs)
+    
+    ## reset dyn_play_at_home
+    for i in range(0, len(network.subnets)):
+        network.subnets[i].params.dyn_play_at_home = dyn_play_at_home[i]
+        
+# advance FOI weekend
+def advance_foi_work_to_play_weekend(network, population, **kwargs):
+    
+    ## update dyn_play_at_home
+    dyn_play_at_home = []
+    for i in range(0, len(network.subnets)):
+        dyn_play_at_home.append(network.subnets[i].params.dyn_play_at_home)
+        network.subnets[i].params.dyn_play_at_home = network.subnets[i].params.user_params["p_home_weekend"]
+
+    advance_foi_work_to_play(network = network, population = population, **kwargs)
+    
+    ## reset dyn_play_at_home
+    for i in range(0, len(network.subnets)):
+        network.subnets[i].params.dyn_play_at_home = dyn_play_at_home[i]
 
 # set custom advance function
 def advance_initial_seeds(network, population, infections, profiler, rngs, **kwargs):
@@ -133,14 +163,15 @@ def advance_initial_seeds(network, population, infections, profiler, rngs, **kwa
     ward_seed_filename = params.user_params["ward_seed_filename"]
     age_seed_filename = params.user_params["age_seed_filename"]
     time_seed_filename = params.user_params["time_seed_filename"]
+    ns = int(params.user_params["ns"])
     
     # start profiler
     p = profiler.start("additional_seeds")
     
     # set up lookups or read from cache
     age_probs_ind, age_probs = read_age_file(age_seed_filename)
-    ward_probs_ind, ward_probs_trust, ward_probs = read_seed_file(ward_seed_filename)
-    time_seed_date, time_seed_trust, time_seed_count = read_time_file(time_seed_filename) 
+    ward_probs_ind, ward_probs_LAD, ward_probs = read_seed_file(ward_seed_filename)
+    time_seed_date, time_seed_LAD, time_seed_count = read_time_file(time_seed_filename, ns) 
     
     # extract current date    
     date = population.date
@@ -151,16 +182,16 @@ def advance_initial_seeds(network, population, infections, profiler, rngs, **kwa
     
     if len(time_seed_count) > 0:
         
-        # loop over trusts
-        time_seed_trust = time_seed_trust[filter_time_seed]
+        # loop over LADs
+        time_seed_LAD = time_seed_LAD[filter_time_seed]
         
-        for j in range(len(time_seed_trust)):
+        for j in range(len(time_seed_LAD)):
         
-            # extract trust
-            trust = time_seed_trust[j]
+            # extract LAD
+            LAD = time_seed_LAD[j]
             
             # extract wards
-            filter_wards = [i == trust for i in ward_probs_trust]
+            filter_wards = [i == LAD for i in ward_probs_LAD]
             tward_probs = ward_probs[filter_wards]
             tward_probs_ind = ward_probs_ind[filter_wards]
     
@@ -226,7 +257,7 @@ def advance_initial_seeds(network, population, infections, profiler, rngs, **kwa
     p.stop()
 
 # custom iterator function
-def iterate_lockdown(population, **kwargs):
+def iterate_lockdown(stage: str, population, **kwargs):
 
     # is this a weekday or a weekend?
     if population.date is None:
@@ -240,9 +271,19 @@ def iterate_lockdown(population, **kwargs):
         is_weekend = (day >= 5)
 
     # need custom advance functions to scale rates after lockdown
-    # in period before lockdown this is the same as iterate_working_week
-    if is_weekend:
-        return [advance_initial_seeds, advance_lockdown_weekend]
+    # in period before lockdown this treats workers as players at
+    # weekends
+    if stage == "foi":
+        if is_weekend:
+            return [advance_foi_work_to_play_weekend, advance_recovery]
+        else:
+            return [advance_foi, advance_recovery]
+    elif stage == "infect":
+        if is_weekend:
+            return [advance_initial_seeds, advance_lockdown_weekend]
+        else:
+            return [advance_initial_seeds, advance_lockdown_week]
     else:
-        return [advance_initial_seeds, advance_lockdown_week]
+        # we don't do anything at the "analyse" or "finalise" stages
+        return []
 

@@ -1,0 +1,6 @@
+{
+	"demographics" : ["age1", "age2", "age3", "age4", "age5", "age6", "age7", "age8"],
+	"work_ratios" : [0.06, 0.154, 0.154, 0.134, 0.128, 0.134, 0.105, 0.131],
+	"play_ratios" : [0.06, 0.154, 0.154, 0.134, 0.128, 0.134, 0.105, 0.131],
+	"diseases" : ["ncov_age", "ncov_age", "ncov_age", "ncov_age", "ncov_age", "ncov_age", "ncov_age", "ncov_age"]
+}

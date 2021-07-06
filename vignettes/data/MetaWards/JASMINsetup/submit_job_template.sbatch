@@ -6,7 +6,5 @@
 #SBATCH --time=00:05:00
 #SBATCH --array=RANGES
 
-module add jaspy
-
 ./unZIP.sh ${SLURM_ARRAY_TASK_ID} FILEDIR
 

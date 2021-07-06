@@ -1,5 +1,8 @@
 #!/bin/bash
 
+## load jaspy to access R
+module load jaspy
+
 ## read in jobs
 readarray -t jobs < "job_lookup.txt"
 

@@ -31,7 +31,7 @@ convertInputToDisease <- function(input, C, N, S0, ages) {
     stopifnot(all(c("R0", "nuA", "TE", "TP", "TI1", "TI2", "alphaEP", 
         "alphaI1H", "alphaI1D", "alphaHD", "eta", 
         "alphaTH", "etaTH", "lock_1_restrict", 
-        "lock_2_release", "repeats", "output") %in% colnames(input)))
+        "lock_2_release", "ns", "p_home_weekend", "repeats", "output") %in% colnames(input)))
     
     ## check unique ID
     stopifnot(length(unique(input$output)) == length(input$output))
@@ -82,6 +82,18 @@ convertInputToDisease <- function(input, C, N, S0, ages) {
                 as_tibble()
         }, ages = ages)) %>%
         unnest(cols = temp)
+    ## check for multinomial validity
+    temp <- select(disease, starts_with(".pI1")) %>%
+        select(-starts_with(".pI1_")) %>%
+        mutate(ind = 1:n()) %>%
+        gather(par, prob, -ind) %>%
+        separate(par, c("par", "age"), sep = "_") %>%
+        group_by(age, ind) %>% 
+        summarise(prob = sum(prob)) %>%
+        pluck("prob")
+    if(any(temp < 0) | any(temp > 1)) {
+        stop("Some multinomial pI1* probs invalid")
+    }
     
     ## progressions out of the I2 class
     for(j in 1:length(ages)) {
@@ -111,9 +123,20 @@ convertInputToDisease <- function(input, C, N, S0, ages) {
     disease$`.lock_1_restrict` <- input$lock_1_restrict
     disease$`.lock_2_release` <- input$lock_2_release
     
+    ## add seeding multiplier
+    disease$`.ns` <- ceiling(input$ns)
+    
+    ## add weekend movement scaling
+    disease$`.p_home_weekend` <- input$p_home_weekend
+    
     ## remove any invalid inputs
     stopifnot(any(disease$nuA >= 0 | disease$nuA <= 1))
-    disease <- filter_at(disease, vars(starts_with(".p")), all_vars(. >= 0 & . <= 1))
+    stopifnot(all(disease$`.ns` >= 1))
+    stopifnot(
+        select(disease, starts_with(".p")) %>%
+        summarise_all(~{all(. >= 0 & . <= 1)}) %>%
+        apply(1, all)
+    )
 
     ## set up data for calculating transmission parameter
     temp <- select(disease, output, starts_with(".pEP"), starts_with(".pI1H"), starts_with(".pI1D")) %>%
@@ -167,7 +190,7 @@ convertInputToDisease <- function(input, C, N, S0, ages) {
 
 ## @knitr maximin
 ## function to generate maximin samples given an arbitrary FMM
-FMMmaximin <- function(model, nsamp, limits, nseed = 10000) {
+FMMmaximin <- function(model, nsamp, limits, limitFn = NULL, nseed = 10000, ...) {
     
     ## check inputs and dependencies
     require(mclust)
@@ -180,6 +203,12 @@ FMMmaximin <- function(model, nsamp, limits, nseed = 10000) {
     stopifnot(is.matrix(limits))
     stopifnot(ncol(limits) == 2 & nrow(limits) == nrow(model$parameters$mean))
     stopifnot(all(limits[, 1] < limits[, 2]))
+    if(!is.null(limitFn)) {
+        stopifnot(class(limitFn) == "function")
+        stopifnot(formalArgs(limitFn)[1] == "x")
+        cat("When using 'limitFn' ensure that function takes matrix as first argument 'x'
+            and returns vector of logicals for inclusion of length 'nrow(x)'\n")
+    }
     
     ## produce large number of samples from model and ensure they are
     ## consistent with limits
@@ -194,10 +223,15 @@ FMMmaximin <- function(model, nsamp, limits, nseed = 10000) {
             sims1 <- sims1[sims1[, i] >= limits[i, 1], ]
             sims1 <- sims1[sims1[, i] <= limits[i, 2], ]
         }
-        if(nrow(sims) == 1) {
-            sims <- sims1
-        } else {
-            sims <- rbind(sims, sims1)
+        if(!is.null(limitFn)) {
+            sims1 <- sims1[limitFn(sims1, ...), ]
+        }
+        if(nrow(sims1) > 0) {
+            if(nrow(sims) == 1) {
+                sims <- sims1
+            } else {
+                sims <- rbind(sims, sims1)
+            }
         }
     }
     sims <- sims[1:nseed, ]
