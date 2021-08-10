@@ -19,6 +19,13 @@ if(length(args) > 0) {
 ## source in dataTools (for reconstruct function)
 source("../R_tools/dataTools.R")
 
+## Add trust and wards for DW
+trusts <- read_csv("../inputs/trust19Lookup.csv")
+ward19 <- read_csv("../inputs/Ward19_Lookup.csv")
+TrustLookup <- inner_join(trusts, ward19, by = c("code" = "WD19CD")) %>%
+    rename(ward = FID) %>%
+    select(ward, trustId)
+
 ## read in ward and week lookups
 weeks <- read_csv("../JASMINsetup/week_lookup.csv", col_names = FALSE)
 wards <- read_csv("../JASMINsetup/ward_lookup.csv", col_names = FALSE)
@@ -82,9 +89,10 @@ output <- map(files, function(file, filedir, hash, lookup) {
 
     ## join with week lookup and generate summary measures
     ## expanding data sets where necessary        
-    output <- select(output, day, ward, H, DH, DI) %>%
+    output <- select(output, day, ward, Hinc, H, DH, DI) %>%
         full_join(lookup, by = c("day", "ward")) %>%
         arrange(ward, day) %>%
+        mutate(Hinc = ifelse(is.na(Hinc), 0, Hinc)) %>%
         mutate(H = ifelse(day == 0 & is.na(H), 0, H)) %>%
         mutate(DH = ifelse(day == 0 & is.na(DH), 0, DH)) %>%
         mutate(DI = ifelse(day == 0 & is.na(DI), 0, DI)) %>%
@@ -92,9 +100,17 @@ output <- map(files, function(file, filedir, hash, lookup) {
         fill(H) %>%
         fill(DH) %>%
         fill(DI) %>%
+        mutate(cumH = cumsum(Hinc)) %>%
         group_by(ward, week) %>%
-        summarise(Hprev = sum(H) / 7, Hdeaths = max(DH), Cdeaths = max(DI)) %>%
+        summarise(cumH = max(cumH), Hprev_mn = sum(H) / 7, cumHD = max(DH), cumCD = max(DI)) %>%
         ungroup()
+
+       ## collate to trust
+       output <- inner_join(output, TrustLookup, by = "ward") %>%
+            group_by(week, trustId) %>%
+            summarise(cumH = sum(cumH), Hprev_mn = sum(Hprev_mn), cumHD = sum(cumHD), cumCD = sum(cumCD)) %>%
+            ungroup()
+       print(head(output)) 
     
     ## return summaries
     output
