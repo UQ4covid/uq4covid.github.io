@@ -213,10 +213,71 @@ To cancel jobs, you can use:
 scancel PID
 ```
 
-where `PID` is replcaed by the PID number (which you can get via `squeue`.
+where `PID` is replaced by the PID number (which you can get via `squeue`).
 
 After all of these jobs have completed, the unzipped SQLite databases can be found on the
 public repository.
+
+### Checking JASMIN runs
+
+Sometimes there are errors for runs, which may result from a code or run error, but
+more often-than-not result from some error on a JASMIN node, such as an inability
+to generate a temporary directory when a script was run.
+
+As a quick method to check runs one can search for `: Finished` in each relevant 
+`.Rout` file. If the R script has run to completion then this line will be present
+in the file. A quick way to do this is using `grep`. So in the `JASMINsetup` folder
+you can use e.g.
+
+```
+grep -L ": Finished" unZIP_*.Rout
+```
+
+If this returns nothing then all scripts should have completed successfully,
+if not then this returns a list of `.Rout` files corresponding to failed
+runs. These output files can be explored for reasons for the failure.
+If the scripts just require re-running, then one can update the `job_lookup.txt`
+file with the failed runs using e.g.
+
+```
+grep -L ": Finished" unZIP_*.Rout > job_lookup.txt
+```
+
+Then you can use e.g. `sed` to extract just the has IDs needed for the scripts:
+
+```
+sed -i 's/unZIP_//g' job_lookup.txt
+sed -i 's/.Rout//g' job_lookup.txt
+```
+
+Then a quick check of how many scripts to run:
+
+```
+wc -l job_lookup.txt
+```
+
+and finally amend the line `#SBATCH --array=...` in `submit_job.sbatch` to reflect
+the new number of scripts. This job file can then be submitted to the queue in the usual
+way. 
+
+A similar approach can be used to monitor the summary table processing below.
+
+**Important point**: If you change the `job_lookup.txt` script as above then you will have 
+to reset this before you run the summary approach below or any of the collation scripts. 
+To do this you can do as below (note the **lower case** `-l` argument to `grep` to extract 
+matched filenames rather than mismatched filenames):
+
+```
+grep -l ": Finished" unZIP_*.Rout > job_lookup.txt
+sed -i 's/unZIP_//g' job_lookup.txt
+sed -i 's/.Rout//g' job_lookup.txt
+```
+
+and check
+
+```
+wc -l job_lookup.txt
+```
 
 ### Producing summary tables on JASMIN
 
