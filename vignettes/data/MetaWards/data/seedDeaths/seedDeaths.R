@@ -67,9 +67,12 @@ Ward19Lookup <- read_csv(paste0(path, "Ward19_Lookup.csv"))
 
 ## extract deaths before 14th March 
 seeds <- deaths %>%
-    arrange(date) %>%
     group_by(date, areaCode) %>%
     summarise(deaths = sum(cumDeathsByDeathDate), .groups = "drop") %>%
+    arrange(date) %>%
+    group_by(areaCode) %>%
+    mutate(deaths = c(deaths[1], diff(deaths))) %>%
+    ungroup() %>%
     filter(date <= "2020-03-14") %>%
     filter(deaths > 0)
     
