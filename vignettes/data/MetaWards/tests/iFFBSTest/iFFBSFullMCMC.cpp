@@ -230,12 +230,12 @@ double loglikelihood (double beta, double betaA, arma::mat *pXsum, arma::imat *n
     double ll = (*nXsum)(0, 0) * log(1.0 - pini) + (*nXsum)(0, 1) * log(pini);
                 
     // observation process
-    ll += R::dunif((*P)(0), (*nXcum)(0, 4) - 0.1, (*nXcum)(0, 4) + 0.1, 1);
-    ll += R::dunif((*RA)(0), (*nXcum)(0, 3) - 0.1, (*nXcum)(0, 3) + 0.1, 1);
-    ll += R::dunif((*DI)(0), (*nXcum)(0, 8) - 0.1, (*nXcum)(0, 8) + 0.1, 1);
-    ll += R::dunif((*RI)(0), (*nXcum)(0, 7) - 0.1, (*nXcum)(0, 7) + 0.1, 1);
-    ll += R::dunif((*RH)(0), (*nXcum)(0, 10) - 0.1, (*nXcum)(0, 10) + 0.1, 1);
-    ll += R::dunif((*DH)(0), (*nXcum)(0, 11) - 0.1, (*nXcum)(0, 11) + 0.1, 1);
+    ll += R::dnorm((*P)(0), (*nXcum)(0, 4), 5.0, 1);
+    ll += R::dnorm((*RA)(0), (*nXcum)(0, 3), 5.0, 1);
+    ll += R::dnorm((*DI)(0), (*nXcum)(0, 8), 5.0, 1);
+    ll += R::dnorm((*RI)(0), (*nXcum)(0, 7), 5.0, 1);
+    ll += R::dnorm((*RH)(0), (*nXcum)(0, 10), 5.0, 1);
+    ll += R::dnorm((*DH)(0), (*nXcum)(0, 11), 5.0, 1);
     
     double norm, norm1;
     for(int j = 1; j < (*t).n_elem; j++) {
@@ -253,7 +253,7 @@ double loglikelihood (double beta, double betaA, arma::mat *pXsum, arma::imat *n
         ll += ((*nXcum)(j, 4) - (*nXcum)(j - 1, 4)) * (*pXsum)(1, 4);
                 
         // observation process
-        ll += R::dunif((*P)(j), (*nXcum)(j, 4) - 0.1, (*nXcum)(j, 4) + 0.1, 1);
+        ll += R::dnorm((*P)(j), (*nXcum)(j, 4), 5.0, 1);
         
         // A to A
         ll += ((*nXsum)(j - 1, 2) - ((*nXcum)(j, 3) - (*nXcum)(j - 1, 3))) * (*pXsum)(2, 2);
@@ -261,7 +261,7 @@ double loglikelihood (double beta, double betaA, arma::mat *pXsum, arma::imat *n
         ll += ((*nXcum)(j, 3) - (*nXcum)(j - 1, 3)) * (*pXsum)(2, 3);
                 
         // observation process
-        ll += R::dunif((*RA)(j), (*nXcum)(j, 3) - 0.1, (*nXcum)(j, 3) + 0.1, 1);
+        ll += R::dnorm((*RA)(j), (*nXcum)(j, 3), 5.0, 1);
         
         // P to P
         ll += ((*nXsum)(j - 1, 4) - ((*nXcum)(j, 5) - (*nXcum)(j - 1, 5))) * (*pXsum)(4, 4);
@@ -278,7 +278,7 @@ double loglikelihood (double beta, double betaA, arma::mat *pXsum, arma::imat *n
         ll += ((*nXcum)(j, 9) - (*nXcum)(j - 1, 9)) * (*pXsum)(5, 9);
                 
         // observation process
-        ll += R::dunif((*DI)(j), (*nXcum)(j, 8) - 0.1, (*nXcum)(j, 8) + 0.1, 1);
+        ll += R::dnorm((*DI)(j), (*nXcum)(j, 8), 5.0, 1);
         
         // I2 to I2
         ll += ((*nXsum)(j - 1, 6) - ((*nXcum)(j, 7) - (*nXcum)(j - 1, 7))) * (*pXsum)(6, 6);
@@ -286,7 +286,7 @@ double loglikelihood (double beta, double betaA, arma::mat *pXsum, arma::imat *n
         ll += ((*nXcum)(j, 7) - (*nXcum)(j - 1, 7)) * (*pXsum)(6, 7);
                 
         // observation process
-        ll += R::dunif((*RI)(j), (*nXcum)(j, 7) - 0.1, (*nXcum)(j, 7) + 0.1, 1);
+        ll += R::dnorm((*RI)(j), (*nXcum)(j, 7), 5.0, 1);
         
         // H to H
         ll += ((*nXsum)(j - 1, 9) - ((*nXcum)(j, 10) - (*nXcum)(j - 1, 10)) - ((*nXcum)(j, 11) - (*nXcum)(j - 1, 11))) * (*pXsum)(9, 9);
@@ -296,10 +296,10 @@ double loglikelihood (double beta, double betaA, arma::mat *pXsum, arma::imat *n
         ll += ((*nXcum)(j, 11) - (*nXcum)(j - 1, 11)) * (*pXsum)(9, 11);
                 
         // observation process
-        ll += R::dunif((*RH)(j), (*nXcum)(j, 10) - 0.1, (*nXcum)(j, 10) + 0.1, 1);
+        ll += R::dnorm((*RH)(j), (*nXcum)(j, 10), 5.0, 1);
                 
         // observation process
-        ll += R::dunif((*DH)(j), (*nXcum)(j, 11) - 0.1, (*nXcum)(j, 11) + 0.1, 1);
+        ll += R::dnorm((*DH)(j), (*nXcum)(j, 11), 5.0, 1);
         
         // S to S
         (*pXsum)(0, 0) = (-beta * ((*nXsum)(j, 4) + (*nXsum)(j, 5) + (*nXsum)(j, 6)) - betaA * beta * (*nXsum)(j, 2)) / ((double) Npop);
@@ -364,17 +364,17 @@ void forwardsFilter(int i, double beta, double betaA, arma::imat *Xind, arma::cu
             
             // set observation process
             l = (*nXcum)(0, 8) + (k == 8 ? 1:0);
-            (*pXind)(i, 0, k) += R::dunif((*DI)(0), l - 0.1, l + 0.1, 1);
+            (*pXind)(i, 0, k) += R::dnorm((*DI)(0), l, 5.0, 1);
             l = (*nXcum)(0, 11) + (k == 11 ? 1:0);
-            (*pXind)(i, 0, k) += R::dunif((*DH)(0), l - 0.1, l + 0.1, 1);
+            (*pXind)(i, 0, k) += R::dnorm((*DH)(0), l, 5.0, 1);
             l = (*nXcum)(0, 3) + (k == 3 ? 1:0);
-            (*pXind)(i, 0, k) += R::dunif((*RA)(0), l - 0.1, l + 0.1, 1);
+            (*pXind)(i, 0, k) += R::dnorm((*RA)(0), l, 5.0, 1);
             l = (*nXcum)(0, 7) + (k == 7 ? 1:0);
-            (*pXind)(i, 0, k) += R::dunif((*RI)(0), l - 0.1, l + 0.1, 1);
+            (*pXind)(i, 0, k) += R::dnorm((*RI)(0), l, 5.0, 1);
             l = (*nXcum)(0, 10) + (k == 10 ? 1:0);
-            (*pXind)(i, 0, k) += R::dunif((*RH)(0), l - 0.1, l + 0.1, 1);
+            (*pXind)(i, 0, k) += R::dnorm((*RH)(0), l, 5.0, 1);
             l = (*nXcum)(0, 4) + (k == 4 ? 1:0);
-            (*pXind)(i, 0, k) += R::dunif((*P)(0), l - 0.1, l + 0.1, 1);
+            (*pXind)(i, 0, k) += R::dnorm((*P)(0), l, 5.0, 1);
                 
             // if infective state then update transmission probs
             if(k == 4 || k == 5 || k == 6) {
@@ -561,20 +561,20 @@ void forwardsFilter(int i, double beta, double betaA, arma::imat *Xind, arma::cu
         for(k = 0; k < 12; k++) {
             
             if((*pXind)(i, j, k) > R_NegInf) {
-                
+            
                 // set observation process
                 l = (*nXcum)(j, 8) + (k == 8 ? 1:0);
-                (*pXind)(i, j, k) += R::dunif((*DI)(j), l - 0.1, l + 0.1, 1);
+                (*pXind)(i, j, k) += R::dnorm((*DI)(j), l, 5.0, 1);
                 l = (*nXcum)(j, 11) + (k == 11 ? 1:0);
-                (*pXind)(i, j, k) += R::dunif((*DH)(j), l - 0.1, l + 0.1, 1);
+                (*pXind)(i, j, k) += R::dnorm((*DH)(j), l, 5.0, 1);
                 l = (*nXcum)(j, 3) + (k == 3 ? 1:0);
-                (*pXind)(i, j, k) += R::dunif((*RA)(j), l - 0.1, l + 0.1, 1);
+                (*pXind)(i, j, k) += R::dnorm((*RA)(j), l, 5.0, 1);
                 l = (*nXcum)(j, 7) + (k == 7 ? 1:0);
-                (*pXind)(i, j, k) += R::dunif((*RI)(j), l - 0.1, l + 0.1, 1);
+                (*pXind)(i, j, k) += R::dnorm((*RI)(j), l, 5.0, 1);
                 l = (*nXcum)(j, 10) + (k == 10 ? 1:0);
-                (*pXind)(i, j, k) += R::dunif((*RH)(j), l - 0.1, l + 0.1, 1);
+                (*pXind)(i, j, k) += R::dnorm((*RH)(j), l, 5.0, 1);
                 l = (*nXcum)(j, 4) + (k == 4 ? 1:0);
-                (*pXind)(i, j, k) += R::dunif((*P)(j), l - 0.1, l + 0.1, 1);
+                (*pXind)(i, j, k) += R::dnorm((*P)(j), l, 5.0, 1);
                     
                 // if infective state then update transmission probs
                 if(k == 4 || k == 5 || k == 6) {
@@ -759,17 +759,17 @@ void forwardsFilter(int i, double beta, double betaA, arma::imat *Xind, arma::cu
         if((*pXind)(i, j, k) > R_NegInf) {
             // set observation process
             l = (*nXcum)(j, 8) + (k == 8 ? 1:0);
-            (*pXind)(i, j, k) += R::dunif((*DI)(j), l - 0.1, l + 0.1, 1);
+            (*pXind)(i, j, k) += R::dnorm((*DI)(j), l, 5.0, 1);
             l = (*nXcum)(j, 11) + (k == 11 ? 1:0);
-            (*pXind)(i, j, k) += R::dunif((*DH)(j), l - 0.1, l + 0.1, 1);
+            (*pXind)(i, j, k) += R::dnorm((*DH)(j), l, 5.0, 1);
             l = (*nXcum)(j, 3) + (k == 3 ? 1:0);
-            (*pXind)(i, j, k) += R::dunif((*RA)(j), l - 0.1, l + 0.1, 1);
+            (*pXind)(i, j, k) += R::dnorm((*RA)(j), l, 5.0, 1);
             l = (*nXcum)(j, 7) + (k == 7 ? 1:0);
-            (*pXind)(i, j, k) += R::dunif((*RI)(j), l - 0.1, l + 0.1, 1);
+            (*pXind)(i, j, k) += R::dnorm((*RI)(j), l, 5.0, 1);
             l = (*nXcum)(j, 10) + (k == 10 ? 1:0);
-            (*pXind)(i, j, k) += R::dunif((*RH)(j), l - 0.1, l + 0.1, 1);
+            (*pXind)(i, j, k) += R::dnorm((*RH)(j), l, 5.0, 1);
             l = (*nXcum)(j, 4) + (k == 4 ? 1:0);
-            (*pXind)(i, j, k) += R::dunif((*P)(j), l - 0.1, l + 0.1, 1);
+            (*pXind)(i, j, k) += R::dnorm((*P)(j), l, 5.0, 1);
         }
     }  
     
