@@ -101,10 +101,10 @@ into one of the scientific processing nodes e.g.
 ssh USERNAME@sci1.jasmin.ac.uk
 ```
 
-Then load `jaspy`, which gives access to R:
+Then load `jasr`, which gives access to R:
 
 ```
-module load jaspy
+module load jasr
 ```
 
 Now you should load R and then install whatever packages you need in the usual way. You will need at
@@ -163,10 +163,10 @@ cd /gws/nopw/j04/covid19/FOLDER/JASMINsetup
 
 where `FOLDER` is replaced with the correct folder path e.g. `catalyst/wave0`.
 
-Now load the `jaspy` module:
+Now load the `jasr` module:
 
 ```
-module load jaspy
+module load jasr
 ```
 
 Now edit the `setupSLURM.R` script and change `filedir` to create a directory in the `public`
@@ -323,10 +323,10 @@ cd /gws/nopw/j04/covid19/FOLDER/JASMINsummary_new
 
 where `FOLDER` is replaced with the correct folder path e.g. `catalyst/wave0`.
 
-Now load the `jaspy` module:
+Now load the `jasr` module:
 
 ```
-module load jaspy
+module load jasr
 ```
 
 Now run the `setupSLURM.R` script:
