@@ -232,15 +232,14 @@ seeds <- filter(output, output %in% output[1:9]) %>%
                 sourceCpp("iFFBSPartialMCMC.cpp")
                 
                 ## set parameters
-                DH_prime <- deaths$deaths
-                DI_prime <- rep(0, length(DH_prime))
-                pini <- 1 / (Npop * length(DH_prime))
+                D_prime <- deaths$deaths
+                pini <- 1 / (Npop * length(D_prime))
                 
                 ## run iFFBS algorithm
-                post <- iFFBS(DI_prime, DH_prime, 1:length(DI_prime), 
+                post <- iFFBS(D_prime, 1:length(D_prime), 
                     Npop, 2000, pini, pars = pars, fixPars = 1, outputCum = 1)
 
-                colnames(post) <- c(apply(expand.grid(c("S", "E", "A", "RA", "P", "I1", "I2", "RI", "DI", "H", "RH", "DH"), 1:length(DI_prime)), 1, function(x) paste0(x[1], "_", as.numeric(x[2]))), "loglike")
+                colnames(post) <- c(apply(expand.grid(c("S", "E", "A", "RA", "P", "I1", "I2", "RI", "DI", "H", "RH", "DH"), 1:length(D_prime)), 1, function(x) paste0(x[1], "_", as.numeric(x[2]))), "loglike")
                 post
             }, pars = pars)
             seeds

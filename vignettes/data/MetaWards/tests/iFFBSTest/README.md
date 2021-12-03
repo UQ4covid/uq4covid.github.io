@@ -15,8 +15,8 @@ the initialisation easier and to control deviations along
 the time series more strongly than the Poisson.
 
 The `iFFBSPartial.R` contains code to run a slightly simpler
-version of the model which calibrates to `DH` and `DI`
-only, and requires **exact** matching. This includes tests
+version of the model which calibrates to `DH + DI` only, and 
+requires **exact** matching. This includes tests
 that aim to assess how the filter performs for **fixed**
 parameters but unknown states, and examines patterns over
 different design points and LADs.

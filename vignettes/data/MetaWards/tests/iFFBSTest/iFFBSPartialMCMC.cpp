@@ -222,7 +222,7 @@ void updateTransProbs (arma::mat *pXsum, arma::imat *nXsum, arma::vec *pars, int
 }
 
 // log-likelihood function
-double loglikelihood (double beta, double betaA, arma::mat *pXsum, arma::imat *nXsum, arma::imat *nXcum, arma::ivec *t, double pini, int Npop, arma::ivec *DI, arma::ivec *DH) {
+double loglikelihood (double beta, double betaA, arma::mat *pXsum, arma::imat *nXsum, arma::imat *nXcum, arma::ivec *t, double pini, int Npop, arma::ivec *D) {
                 
     // states: S, E, A, RA, P, I1, I2, RI, DI, H, RH, DH
     //         0, 1, 2, 3,  4, 5,  6,  7,  8,  9, 10, 11
@@ -230,8 +230,7 @@ double loglikelihood (double beta, double betaA, arma::mat *pXsum, arma::imat *n
     double ll = (*nXsum)(0, 0) * log(1.0 - pini) + (*nXsum)(0, 1) * log(pini);
                 
     // observation process
-    ll += R::dunif((*DI)(0), (*nXcum)(0, 8) - 0.1, (*nXcum)(0, 8) + 0.1, 1);
-    ll += R::dunif((*DH)(0), (*nXcum)(0, 11) - 0.1, (*nXcum)(0, 11) + 0.1, 1);
+    ll += R::dunif((*D)(0), (*nXcum)(0, 8) + (*nXcum)(0, 11) - 0.1, (*nXcum)(0, 8) + (*nXcum)(0, 11) + 0.1, 1);
     
     double norm, norm1;
     for(int j = 1; j < (*t).n_elem; j++) {
@@ -266,9 +265,6 @@ double loglikelihood (double beta, double betaA, arma::mat *pXsum, arma::imat *n
         ll += ((*nXcum)(j, 8) - (*nXcum)(j - 1, 8)) * (*pXsum)(5, 8);
         // I1 to H
         ll += ((*nXcum)(j, 9) - (*nXcum)(j - 1, 9)) * (*pXsum)(5, 9);
-                
-        // observation process
-        ll += R::dunif((*DI)(j), (*nXcum)(j, 8) - 0.1, (*nXcum)(j, 8) + 0.1, 1);
         
         // I2 to I2
         ll += ((*nXsum)(j - 1, 6) - ((*nXcum)(j, 7) - (*nXcum)(j - 1, 7))) * (*pXsum)(6, 6);
@@ -283,7 +279,7 @@ double loglikelihood (double beta, double betaA, arma::mat *pXsum, arma::imat *n
         ll += ((*nXcum)(j, 11) - (*nXcum)(j - 1, 11)) * (*pXsum)(9, 11);
                 
         // observation process
-        ll += R::dunif((*DH)(j), (*nXcum)(j, 11) - 0.1, (*nXcum)(j, 11) + 0.1, 1);
+        ll += R::dunif((*D)(j), (*nXcum)(j, 8) + (*nXcum)(j, 11) - 0.1, (*nXcum)(j, 8) + (*nXcum)(j, 11) + 0.1, 1);
         
         // S to S
         (*pXsum)(0, 0) = (-beta * ((*nXsum)(j, 4) + (*nXsum)(j, 5) + (*nXsum)(j, 6)) - betaA * beta * (*nXsum)(j, 2)) / ((double) Npop);
@@ -300,7 +296,7 @@ double loglikelihood (double beta, double betaA, arma::mat *pXsum, arma::imat *n
 }
 
 // forwards filtering function
-void forwardsFilter(int i, double beta, double betaA, arma::imat *Xind, arma::cube *pXind, arma::imat *nXsum, arma::imat *nXcum, arma::mat *pXsum, arma::ivec *t, arma::ivec *DI, arma::ivec *DH, int Npop, double pini, arma::vec *tempProb, int print) {
+void forwardsFilter(int i, double beta, double betaA, arma::imat *Xind, arma::cube *pXind, arma::imat *nXsum, arma::imat *nXcum, arma::mat *pXsum, arma::ivec *t, arma::ivec *D, int Npop, double pini, arma::vec *tempProb, int print) {
 
     //set up variables
     int k, j, l;
@@ -348,9 +344,8 @@ void forwardsFilter(int i, double beta, double betaA, arma::imat *Xind, arma::cu
             
             // set observation process
             l = (*nXcum)(0, 8) + (k == 8 ? 1:0);
-            (*pXind)(i, 0, k) += R::dunif((*DI)(0), l - 0.1, l + 0.1, 1);
-            l = (*nXcum)(0, 11) + (k == 11 ? 1:0);
-            (*pXind)(i, 0, k) += R::dunif((*DH)(0), l - 0.1, l + 0.1, 1);
+            l += (*nXcum)(0, 11) + (k == 11 ? 1:0);
+            (*pXind)(i, 0, k) += R::dunif((*D)(0), l - 0.1, l + 0.1, 1);
                 
             // if infective state then update transmission probs
             if(k == 4 || k == 5 || k == 6) {
@@ -540,9 +535,8 @@ void forwardsFilter(int i, double beta, double betaA, arma::imat *Xind, arma::cu
             
                 // set observation process
                 l = (*nXcum)(j, 8) + (k == 8 ? 1:0);
-                (*pXind)(i, j, k) += R::dunif((*DI)(j), l - 0.1, l + 0.1, 1);
-                l = (*nXcum)(j, 11) + (k == 11 ? 1:0);
-                (*pXind)(i, j, k) += R::dunif((*DH)(j), l - 0.1, l + 0.1, 1);
+                l += (*nXcum)(j, 11) + (k == 11 ? 1:0);
+                (*pXind)(i, j, k) += R::dunif((*D)(j), l - 0.1, l + 0.1, 1);
                     
                 // if infective state then update transmission probs
                 if(k == 4 || k == 5 || k == 6) {
@@ -727,9 +721,8 @@ void forwardsFilter(int i, double beta, double betaA, arma::imat *Xind, arma::cu
         if((*pXind)(i, j, k) > R_NegInf) {
             // set observation process
             l = (*nXcum)(j, 8) + (k == 8 ? 1:0);
-            (*pXind)(i, j, k) += R::dunif((*DI)(j), l - 0.1, l + 0.1, 1);
-            l = (*nXcum)(j, 11) + (k == 11 ? 1:0);
-            (*pXind)(i, j, k) += R::dunif((*DH)(j), l - 0.1, l + 0.1, 1);
+            l += (*nXcum)(j, 11) + (k == 11 ? 1:0);
+            (*pXind)(i, j, k) += R::dunif((*D)(j), l - 0.1, l + 0.1, 1);
         }
     }  
     
@@ -870,8 +863,7 @@ void backwardsSampler (int i, double beta, double betaA, arma::cube *pXind, arma
 
 // [[Rcpp::export]]
 arma::mat iFFBS(
-    arma::ivec DI_prime,
-    arma::ivec DH_prime,
+    arma::ivec D_prime,
     arma::ivec t,
     int Npop,
     int Niter,
@@ -891,7 +883,7 @@ arma::mat iFFBS(
     // calculate how many infections (for initialisation)
     int Ninf = 0, Ninf_prev = 0;
     for(j = 0; j < t.n_elem; j++) {
-        Ninf += DI_prime(j) + DH_prime(j);
+        Ninf += D_prime(j);
     }
     int Nsus = Npop - Ninf;
     int Nposs = 10 * Ninf;
@@ -901,22 +893,15 @@ arma::mat iFFBS(
     }
     
     // set up observed cumulative counts
-    arma::ivec DI(DI_prime.n_elem);
-    DI(0) = DI_prime(0);
-    for(i = 1; i < DI_prime.n_elem; i++) DI(i) = DI(i - 1) + DI_prime(i);
-    arma::ivec DH(DH_prime.n_elem);
-    DH(0) = DH_prime(0);
-    for(i = 1; i < DH_prime.n_elem; i++) DH(i) = DH(i - 1) + DH_prime(i);
+    arma::ivec D(D_prime.n_elem);
+    D(0) = D_prime(0);
+    for(i = 1; i < D_prime.n_elem; i++) D(i) = D(i - 1) + D_prime(i);
     
     // print outputs if required
     if(print == 1) {
-        Rprintf("DI:\n");
+        Rprintf("D:\n");
         for(int c = 0; c < t.n_elem; c++) {
-            Rprintf("%d ", DI(c));
-        }
-        Rprintf("\nDH:\n");
-        for(int c = 0; c < t.n_elem; c++) {
-            Rprintf("%d ", DH(c));
+            Rprintf("%d ", D(c));
         }
         Rprintf("\n");
     }
@@ -993,21 +978,19 @@ arma::mat iFFBS(
         Xind.zeros();
         k = 0;
         for(j = (t.n_elem - 1); j >= 0; j--) {
-            for(i = 0; i < DI_prime(j); i++) {
-                Xind(k, j) = 8;
-                Xind(k, j - 1) = 5;
-                Xind(k, j - 2) = 4;
-                Xind(k, j - 3) = 1;
-                k++;
-            }
-        }
-        for(j = (t.n_elem - 1); j >= 0; j--) {
-            for(i = 0; i < DH_prime(j); i++) {
-                Xind(k, j) = 11;
-                Xind(k, j - 1) = 9;
-                Xind(k, j - 2) = 5;
-                Xind(k, j - 3) = 4;
-                Xind(k, j - 4) = 1;
+            for(i = 0; i < D_prime(j); i++) {
+                if(R::runif(0.0, 1.0) < 0.5) {
+                    Xind(k, j) = 8;
+                    Xind(k, j - 1) = 5;
+                    Xind(k, j - 2) = 4;
+                    Xind(k, j - 3) = 1;
+                } else {
+                    Xind(k, j) = 11;
+                    Xind(k, j - 1) = 9;
+                    Xind(k, j - 2) = 5;
+                    Xind(k, j - 3) = 4;
+                    Xind(k, j - 4) = 1;
+                } 
                 k++;
             }
         }
@@ -1086,7 +1069,7 @@ arma::mat iFFBS(
         }
         
         // calculate log-likelihood
-        acc = loglikelihood(pars(9), pars(10), &pXsum, &nXsum, &nXcum, &t, pini, Npop, &DI, &DH);
+        acc = loglikelihood(pars(9), pars(10), &pXsum, &nXsum, &nXcum, &t, pini, Npop, &D);
         
         // add priors
         acc += R::dexp(pars(9), 1.0, 1);
@@ -1269,7 +1252,7 @@ arma::mat iFFBS(
             if(k == 0) {  
                 
                 // calculate log-likelihood
-                acc = loglikelihood(pars(9), pars(10), &pXsum, &nXsum, &nXcum, &t, pini, Npop, &DI, &DH);
+                acc = loglikelihood(pars(9), pars(10), &pXsum, &nXsum, &nXcum, &t, pini, Npop, &D);
                 
                 // add priors
                 acc += R::dexp(pars(9), 1.0, 1);
@@ -1278,7 +1261,7 @@ arma::mat iFFBS(
                 updateTransProbs(&pXsum, &nXsum, &parsProp, Npop, pini);    
                 
                 // calculate log-likelihood
-                accprop = loglikelihood (parsProp(9), parsProp(10), &pXsum, &nXsum, &nXcum, &t, pini, Npop, &DI, &DH);
+                accprop = loglikelihood (parsProp(9), parsProp(10), &pXsum, &nXsum, &nXcum, &t, pini, Npop, &D);
                 
                 // add priors
                 accprop += R::dexp(parsProp(9), 1.0, 1);
@@ -1326,7 +1309,7 @@ arma::mat iFFBS(
             }
             
             // forwards filter
-            forwardsFilter(i, pars(9), pars(10), &Xind, &pXind, &nXsum, &nXcum, &pXsum, &t, &DI, &DH, Npop, pini, &tempProb, print);
+            forwardsFilter(i, pars(9), pars(10), &Xind, &pXind, &nXsum, &nXcum, &pXsum, &t, &D, Npop, pini, &tempProb, print);
             
             // backwards sampler
             backwardsSampler (i, pars(9), pars(10), &pXind, &t, &Xind, &pXsum, &nXsum, &pXback, Npop, pini, print);
@@ -1422,7 +1405,7 @@ arma::mat iFFBS(
             }
 
             // forwards filter
-            forwardsFilter(i, pars(9), pars(10), &Xind, &pXind, &nXsum, &nXcum, &pXsum, &t, &DI, &DH,  Npop, pini, &tempProb, print);
+            forwardsFilter(i, pars(9), pars(10), &Xind, &pXind, &nXsum, &nXcum, &pXsum, &t, &D,  Npop, pini, &tempProb, print);
             
             // now extract probability of remaining susceptible
             psus = exp(pXind(i, t.n_elem - 1, 0));
@@ -1545,14 +1528,14 @@ arma::mat iFFBS(
                     output(iter, npars + r * 12 + c) = (outputCum == 0 ? nXsum(r, c):nXcum(r, c));
                 }
             }
-            output(iter, npars + t.n_elem * 12) = loglikelihood(pars(9), pars(10), &pXsum, &nXsum, &nXcum, &t, pini, Npop, &DI, &DH);
+            output(iter, npars + t.n_elem * 12) = loglikelihood(pars(9), pars(10), &pXsum, &nXsum, &nXcum, &t, pini, Npop, &D);
         } else {        
             for(int r = 0; r < t.n_elem; r++) {
                 for(int c = 0; c < 12; c++) {
                     output(iter, r * 12 + c) = (outputCum == 0 ? nXsum(r, c):nXcum(r, c));
                 }
             }
-            output(iter, t.n_elem * 12) = loglikelihood(pars(9), pars(10), &pXsum, &nXsum, &nXcum, &t, pini, Npop, &DI, &DH);
+            output(iter, t.n_elem * 12) = loglikelihood(pars(9), pars(10), &pXsum, &nXsum, &nXcum, &t, pini, Npop, &D);
         }   
                     
         // print some output to the screen for book-keeping
