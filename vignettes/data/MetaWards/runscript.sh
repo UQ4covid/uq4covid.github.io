@@ -4,7 +4,10 @@
 mkdir -p raw_outputs
 
 ## run design code
-R CMD BATCH --no-restore --slave --no-save convertDesign.R 
+R CMD BATCH --no-restore --slave --no-save convertDesign.R
+
+## run seeding code
+R CMD BATCH --no-restore --slave --no-save R_tools/simulateSeedStates.R
 
 ## set path to MetaWardsData repository
 export METAWARDSDATA=$HOME/Documents/covid/MetaWardsData
@@ -18,4 +21,4 @@ metawards -d model_code/ncov.json -m 2011to2019Data\
     --iterator model_code/iterator\
     -u inputs/user_inputs.txt -o raw_outputs --force-overwrite-output \
     --extractor model_code/ward_extractor\
-    --start-date 2020/02/09 --theme simple --nsteps 41
+    --start-date 2020/03/06 --theme simple --nsteps 15

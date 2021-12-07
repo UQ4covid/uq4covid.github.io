@@ -13,7 +13,10 @@ cd $PBS_O_WORKDIR
 
 mkdir -p raw_outputs
 
-#R CMD BATCH --no-restore --slave --no-save convertDesign.R 
+#R CMD BATCH --no-restore --slave --no-save convertDesign.R
+
+## run seeding code
+R CMD BATCH --no-restore --slave --no-save R_tools/simulateSeedStates.R
 
 metawards -d model_code/ncov.json -m 2011to2019Data\
     -D model_code/demographics.json\
@@ -23,5 +26,5 @@ metawards -d model_code/ncov.json -m 2011to2019Data\
     --iterator model_code/iterator\
     -u inputs/user_inputs.txt -o raw_outputs --force-overwrite-output \
     --extractor model_code/ward_extractor\
-    --start-date 2020/02/09 --theme simple --nsteps 41 --no-spinner \
+    --start-date 2020/03/06 --theme simple --nsteps 15 --no-spinner \
     --nthreads 4

@@ -10,7 +10,7 @@ output:
 
 <center>
 
-**Requires MetaWards `devel` branch install currently**
+**Requires MetaWards >1.6.0 currently**
 
 Please download files for running the model from **[here](../metawards.zip)**.
 
@@ -176,7 +176,7 @@ user <- "# Normal status" %>%
   c("# names of input files for seeding") %>%
   c(".ward_seed_filename = \"inputs/ward_seeds.csv\"") %>%
   c(".age_seed_filename = \"inputs/age_seeds.csv\"") %>%
-  c(".time_seed_filename = \"inputs/time_seeds.csv\"") %>%
+  c(".ini_states_filename = \"inputs/seeds.csv\"") %>%
   c("") %>%
   c("# turn off movements in school-age children") %>%
   c("age2:static_play_at_home = 1.0")
@@ -206,13 +206,17 @@ write_csv(age_seed, "../inputs/age_seeds.csv", col_names = FALSE)
 ```{js, code = readLines("../inputs/age_seeds.csv"), eval = FALSE}
 ```
 
-Here the first column is the age demographic and the second is the probability of seeding into that age-demographic. We take the number of deaths observed on each day up to the 14th March 2020, and seed the same number of individuals exactly three weeks earlier. To do this we take a multinomial sample to decide how many individuals are seeded into each age-class, and then we split these across wards as described below. These are stored in the file `inputs/time_seeds.csv`, the first column of which is the date of the seeding, and the second is a baseline for how many individuals are seeded on that day. In practice we multiply these baseline values by a scaling factor `nseedMult`, which is included as a variable input in the model code below.
+Here the first column is the age demographic and the second is the probability of seeding into that age-demographic. Since we do not know where initial importations of infections happened, or where these infections happened, we need some way to inform this. We want to avoid treating the number/timing of initial importations as additional unknown parameters in the model, since this vastly increases the volume of parameter space to search. Instead we have developed a **data driven prior** for the states of the system at a given point in time, which depends on some data and also the parameters of the model.
 
-We take all recorded deaths up to and including the 14th March, recorded at the LAD-level, and for each we seed an infection three weeks before in a random ward that is mapped to the LAD (proportionately to the population size in each ward). Details and instructions can be found in `data/seedDeaths/README.md`. This creates a file `inputs/ward_seeds.csv` that contains the necessary probabilities for ward seeding. This file has the same form as the `age_seeds.csv` file described above, but the first column is the ward ID, the second is a LAD grouping ID, and the third contains the probabilities of seeding. It also creates a file `inputs/time_seeds.csv`, which has a column of dates, a column of LAD grouping IDs and a column for the baseline number of seeds on each date in each LAD.
+The general approach is to take deaths observed in each Lower Tier Local Authority (LTLA) region on each day up to some fixed time point early on in the epidemic. Here we choose the 13th March 2020. We then fit a simplified version of the MetaWards model to each LTLA independently, where we assume a single population of individuals in each LTLA, and we remove age-structure from the model (taking a weighted average of the transition parameters across all the age-classes as inputs).
 
-We start simulations on 9th February 2020 with the first seed added on the 10th February.
+In addition to the transmission process, we also introduce a fixed parameter $p_{\text{ini}}$, which corresponds to the probability of an introduction of infection on a given day, that is independent of the transmission process. For a fixed set of parameters, we fit the model from 1st January 2020--13th March 2020 using an individual forwards-filtering backwards sampling (iFFBS) algorithm^[[Touloupou *et al.* (2020)](https://www.tandfonline.com/doi/full/10.1080/10618600.2019.1654880)]. Here the unknowns are the states of the system and the model is calibrated to the observed number of deaths in each LTLA. This provide a posterior distribution for the states of the system at each time point between 1st January 2020--13th March 2020, that is conditional on data. We take random samples from this distribution to provide initial states for our MetaWards model runs. We use truncated sampling to ensure that there is at least one individual that is either infectious, or can progress to infectiousness, to ensure that there is a non-zero probability of an outbreak in a given LTLA region. By separating out the data used to generate the seeds, and the data used to calibrate the model, we try to avoid too many of the pitfalls of using the data twice.
 
-> **Note**: the user inputs file must contain the relative path names to the age and ward seed files---see [here](#user).
+We then take multinomial samples to decide how individuals are seeded into each age-class, and then we split these across wards in each LTLA as described below. Details and instructions can be found in `data/seedDeaths/README.md`. This creates a file `inputs/ward_seeds.csv` that contains the necessary probabilities for ward seeding. This file has the same form as the `age_seeds.csv` file described above, but the first column is the ward ID, the second is a LAD grouping ID, and the third contains the probabilities of seeding. It also creates a file `inputs/seedInfo.rds`, which contains the data necessary to fit the iFFBS model for a given set of parameters. The file `R_tools/simulateSeedStates.R` will fit the iFFBS models according to each set of design points and generate a file called `inputs/seeds.csv` that contains initial states for use in MetaWards. The iFFBS code is contained in the `R_tool/iFFBS.cpp` file.
+
+> **Note**: we have made a few extensions to the standard iFFBS algorithm to make it more efficient for large populations with low numbers of infections.
+
+> **Note**: the user inputs file must contain the relative path names to the age, ward and seed files---see [here](#user).
 
 To implement this probabilistic seeding, we need a custom `iterator` function, which can be viewed below. 
 
@@ -246,7 +250,7 @@ For generic states $X$ and $Y$ say, the progress of an individual in age-class $
 * Similarly to before, we model: $\log\left(p^j_{HD}\right) = \alpha_{HD} + \eta \mbox{age}_j$. 
 * We also model: $\log\left(T_H^j\right) = \alpha_{T_H} + \eta_{T_H} \mbox{age}_j$ where $\eta_{T_H} > 0$. 
 
-We also require inputs for $R_0$, a parameter $\nu_A$ which scales the force-of-infection between asymptomatics and the general population, and further scaling parameters that we use to model various lockdown measures (described [below](#lockdown)). We also need the scaling parameter for the number of seeds, $n_s$, and a parameter $p_{\text{home/weekend}}$ which scales the number of movements at weekends.
+We also require inputs for $R_0$, a parameter $\nu_A$ which scales the force-of-infection between asymptomatics and the general population, and further scaling parameters that we use to model various lockdown measures (described [below](#lockdown)). We also need a parameter $p_{\text{home/weekend}}$ which scales the number of movements at weekends.
 
 <a name="translink"></a>
 <button data-toggle="collapse" data-target="#trans">Click for details on transmission terms</button>
@@ -363,7 +367,6 @@ We have derived plausible parameter bounds from data and the literature. **We no
     \alpha_{EP}, \alpha_{I_1H}, \alpha_{I_1D}, \alpha_{HD}, \eta&: \mbox{drawn from distribution as described below}\\
     \alpha_{T_H}, \eta_{T_H}&: \mbox{drawn from distribution as described below}\\
     \nu_A&: (0, 1)\\
-    n_s&: (10, 100)\\
     p_{\text{home/weekend}}&: (0, 1)
 \end{align}
 
@@ -629,9 +632,9 @@ In R we can set up the *input* parameter ranges as follows:
 ## set up parameter ranges for uniform ranges
 parRanges <- data.frame(
     parameter = c("R0", "TE", "TP", "TI1", "TI2", 
-                  "nuA", "lock_1_restrict", "lock_2_release", "ns", "p_home_weekend"),
-    lower = c(2, 0.1, 1.2, 2.8, 0.0001, 0, 0, 0, 10, 0),
-    upper = c(4.5, 2, 3, 4.5, 0.5, 1, 1, 1, 100, 1),
+                  "nuA", "lock_1_restrict", "lock_2_release", "p_home_weekend"),
+    lower = c(2, 0.1, 1.2, 2.8, 0.0001, 0, 0, 0, 0),
+    upper = c(4.5, 2, 3, 4.5, 0.5, 1, 1, 1, 1),
     stringsAsFactors = FALSE
 ) 
 ```

@@ -9,9 +9,9 @@ source("R_tools/dataTools.R")
 ## set up parameter ranges for uniform ranges
 parRanges <- data.frame(
     parameter = c("R0", "TE", "TP", "TI1", "TI2", 
-                  "nuA", "lock_1_restrict", "lock_2_release", "ns", "p_home_weekend"),
-    lower = c(2, 0.1, 1.2, 2.8, 0.0001, 0, 0, 0, 10, 0),
-    upper = c(4.5, 2, 3, 4.5, 0.5, 1, 1, 1, 100, 1),
+                  "nuA", "lock_1_restrict", "lock_2_release", "p_home_weekend"),
+    lower = c(2, 0.1, 1.2, 2.8, 0.0001, 0, 0, 0, 0),
+    upper = c(4.5, 2, 3, 4.5, 0.5, 1, 1, 1, 1),
     stringsAsFactors = FALSE
 ) 
 

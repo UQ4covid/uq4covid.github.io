@@ -36,8 +36,7 @@ The `data/pathways` folder contains data from [Verity et al. (2020)](https://www
 and the CDC website, along with code to generate plausible ranges for various
 transition probability parameters.
 
-The `data/seedDeaths` folder contains code to generate seeding times and probabilities.
-This relies on death data we are not able to share publicly.
+The `data/seedDeaths` folder contains code to generate seeding information.
 
 ## Setting up design
 

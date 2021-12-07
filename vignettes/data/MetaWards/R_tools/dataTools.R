@@ -31,7 +31,7 @@ convertInputToDisease <- function(input, C, N, S0, ages) {
     stopifnot(all(c("R0", "nuA", "TE", "TP", "TI1", "TI2", "alphaEP", 
         "alphaI1H", "alphaI1D", "alphaHD", "eta", 
         "alphaTH", "etaTH", "lock_1_restrict", 
-        "lock_2_release", "ns", "p_home_weekend", "repeats", "output") %in% colnames(input)))
+        "lock_2_release", "p_home_weekend", "repeats", "output") %in% colnames(input)))
     
     ## check unique ID
     stopifnot(length(unique(input$output)) == length(input$output))
@@ -123,15 +123,11 @@ convertInputToDisease <- function(input, C, N, S0, ages) {
     disease$`.lock_1_restrict` <- input$lock_1_restrict
     disease$`.lock_2_release` <- input$lock_2_release
     
-    ## add seeding multiplier
-    disease$`.ns` <- ceiling(input$ns)
-    
     ## add weekend movement scaling
     disease$`.p_home_weekend` <- input$p_home_weekend
     
     ## remove any invalid inputs
     stopifnot(any(disease$nuA >= 0 | disease$nuA <= 1))
-    stopifnot(all(disease$`.ns` >= 1))
     stopifnot(
         select(disease, starts_with(".p")) %>%
         summarise_all(~{all(. >= 0 & . <= 1)}) %>%
@@ -285,6 +281,8 @@ ensembleIDGen <- function(ensembleID = "a0", ensembleSize) {
 
 ## @knitr reconstruct
 ## write Rcpp function to reconstruct counts from incidence
+## first element of Einc etc. must be initial states and the following
+## must be the incidence at a given time
 library(Rcpp)
 cppFunction('IntegerMatrix reconstruct(IntegerVector Einc, IntegerVector Pinc, 
     IntegerVector I1inc, IntegerVector I2inc, IntegerVector RIinc, IntegerVector DIinc, 
@@ -297,9 +295,39 @@ cppFunction('IntegerMatrix reconstruct(IntegerVector Einc, IntegerVector Pinc,
     // set up output matrix
     IntegerMatrix output(n, 17);
     
+    // set up initial counts
+    output(0, 0) = 0;
+    output(0, 1) = Einc[0];
+    output(0, 2) = 0;
+    output(0, 3) = Pinc[0];
+    output(0, 4) = 0;
+    output(0, 5) = I1inc[0];
+    output(0, 6) = 0;
+    output(0, 7) = I2inc[0];
+    output(0, 8) = RIinc[0];
+    output(0, 9) = DIinc[0];
+    output(0, 10) = 0;
+    output(0, 11) = Ainc[0];
+    output(0, 12) = RAinc[0];
+    output(0, 13) = 0;
+    output(0, 14) = Hinc[0];
+    output(0, 15) = RHinc[0];
+    output(0, 16) = DHinc[0];
+    
+    int E = Einc[0]; 
+    int P = Pinc[0]; 
+    int I1 = I1inc[0]; 
+    int I2 = I2inc[0];
+    int RI = RIinc[0];
+    int DI = DIinc[0];
+    int A = Ainc[0];
+    int RA = RAinc[0];
+    int H = Hinc[0];
+    int RH = RHinc[0];
+    int DH = DHinc[0];
+    
     // reconstruct counts
-    int E = 0, P = 0, I1 = 0, I2 = 0, RI = 0, DI = 0, A = 0, RA = 0, H = 0, RH = 0, DH = 0;
-    for(int i = 0; i < n; i++) {
+    for(int i = 1; i < n; i++) {
     
         E += Einc[i] - Pinc[i] - Ainc[i];
         output(i, 0) = Einc[i];
