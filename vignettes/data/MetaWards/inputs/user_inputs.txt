@@ -25,7 +25,7 @@
 # names of input files for seeding
 .ward_seed_filename = "inputs/ward_seeds.csv"
 .age_seed_filename = "inputs/age_seeds.csv"
-.time_seed_filename = "inputs/time_seeds.csv"
+.ini_states_filename = "inputs/seeds.csv"
 
 # turn off movements in school-age children
 age2:static_play_at_home = 1.0
