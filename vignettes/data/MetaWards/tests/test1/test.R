@@ -70,16 +70,24 @@ for(i in 1:8) {
     ## loop over repeats
     for(j in 1:10) {
         ## establish connection
-        system(paste0("bzip2 -dkf raw_outputs/testx", str_pad(j, 3, pad = "0"), "/age", i, ".db.bz2"))
-        con <- DBI::dbConnect(RSQLite::SQLite(), paste0("raw_outputs/testx", str_pad(j, 3, pad = "0"), "/age", i, ".db"))
+        system(paste0("bzip2 -dkf raw_outputs/Ens0000x", str_pad(j, 3, pad = "0"), "/age", i, ".db.bz2"))
+        con <- DBI::dbConnect(RSQLite::SQLite(), paste0("raw_outputs/Ens0000x", str_pad(j, 3, pad = "0"), "/age", i, ".db"))
 
         ## extract data
         compact <- tbl(con, "compact") %>%
             collect()
+        compact_ini <- tbl(con, "compact_ini") %>%
+            collect() %>%
+            set_names(colnames(compact))
         
         DBI::dbDisconnect(con)
         
         stopifnot((i == 1 & nrow(compact) > 0) | (i != 0 & nrow(compact) == 0))
+        stopifnot((i == 1 & nrow(compact_ini) == 1) | (i != 0 & nrow(compact_ini) == 0))
+        
+        ## bind together
+        compact <- rbind(compact_ini, compact) %>%
+            arrange(day)
         
         if(nrow(compact) > 0) {
             ## reconstruct counts from incidence

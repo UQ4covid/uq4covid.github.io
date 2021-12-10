@@ -47,9 +47,7 @@ for(i in 1:8) {
             ) %>%
             unnest(cols = data) %>%
             select(day, ward, everything()) %>%
-            arrange(day, ward) %>%
-            {filter(., rowSums(.[, -c(1, 2)]) != 0)} %>%
-            as.data.frame()
+            arrange(day, ward)
         } else {
             rec[[i]][[j]] <- "No infection"
         }
@@ -62,4 +60,5 @@ for(i in 1:3) {
         print(rec[[j]][[i]])
      }
  }
+        
 

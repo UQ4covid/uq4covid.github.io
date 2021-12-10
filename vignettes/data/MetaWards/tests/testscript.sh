@@ -57,9 +57,9 @@ cd test6
 cd ..
 
 ## same as test1 but turning off transmission and using
-## different seeds at different time points to
+## different seeds at different replicates to
 ## assess seeding function - this only prints output
-## as text file to check manually
+## as text files to check manually
 
 cd test7
 ./testscript.sh
@@ -82,6 +82,8 @@ cd ..
 ## this is to test the "work_to_play" functions, so could
 ## be turned off since the work_to_play code is now
 ## included in the main MetaWards code
+
+## THIS HASN'T BEEN AMENDED TO WORK WITH NEW UPDATES
 #cd test10
 #./testscript.sh
 #cd ..
