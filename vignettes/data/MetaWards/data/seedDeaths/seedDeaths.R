@@ -6,7 +6,7 @@ library(lubridate)
 library(magrittr)
 
 ## set enddate
-enddate <- "2020-03-13"
+enddate <- "2020-03-06"
 
 ## set path to MetaWardsData
 path <- paste0("../../../../../../MetaWardsData/model_data/2011to2019Data/")

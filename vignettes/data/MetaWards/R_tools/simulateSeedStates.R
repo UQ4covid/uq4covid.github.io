@@ -11,7 +11,7 @@ library(stringr)
 deaths <- readRDS("inputs/seedsInfo.rds")
 
 ## set startdate (dmy)
-startdate <- "07-03-2020"
+startdate <- "06-03-2020"
 
 ## NGM for single population (order: E, A, P, I1, I2)
 NGM <- function(R0 = NA, nu = NA, S0, N, nuA, gammaE, pEP, gammaA, gammaP, gammaI1, pI1H, pI1D, gammaI2) {
@@ -186,7 +186,7 @@ seeds <- mclapply(1:nrow(pars), function(i, pars, deaths, seed_time) {
         ## set parameters
         D_prime <- deaths$cumDeaths
         D_prime <- c(D_prime[1], diff(D_prime))
-        pini <- 1 / (Npop * length(D_prime))
+        pini <- 20 / (Npop * length(D_prime))
         
         npost <- 0
         cycle <- 1
