@@ -159,7 +159,11 @@ pars <- pars %>%
         function(R0, nuA, gammaE, pEP, gammaA, gammaP, gammaI1, pI1H, pI1D, gammaI2, S0, N) {
             NGM(R0 = R0, nu = NA, S0, N, nuA, gammaE, pEP, gammaA, gammaP, gammaI1, pI1H, pI1D, gammaI2)$nu
         }, S0 = 149999, N = 150000)) %>%
-    select(output, repeats, nu, nuA, pE, pEP, pA, pP, pI1, pI1H, pI1D, pI2, pH, pHD) 
+    select(output, repeats, nu, nuA, pE, pEP, pA, pP, pI1, pI1H, pI1D, pI2, pH, pHD)
+
+## round any on boundaries to prevent overflow
+pars <- mutate(pars, across(starts_with("p"), ~ifelse(. == 1, 0.999999, .))) %>%
+    mutate(across(starts_with("p"), ~ifelse(. == 0, 0.000001, .)))
 
 ######################################################
 #### get state distributions across multiple LADs ####
