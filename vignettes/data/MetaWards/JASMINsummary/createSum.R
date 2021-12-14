@@ -57,12 +57,21 @@ output <- map(files, function(file, filedir, hash, lookup) {
     ## open database connection
     con <- DBI::dbConnect(RSQLite::SQLite(), path)
 
-    ## collect database
+    ## collect databases
     compact <- tbl(con, "compact") %>%
         collect()
+    compact_ini <- tbl(con, "compact_ini") %>%
+        collect() %>%
+        set_names(colnames(compact))
         
     ## disconnect from database
     DBI::dbDisconnect(con)
+    
+    ## combine databases together and complete 
+    ## initial conditions
+    compact <- rbind(compact_ini, compact) %>%
+        complete(day = 1, ward)
+    compact[is.na(compact)] <- 0
         
     ## reconstruct counts from incidence
     output <- arrange(compact, day) %>%

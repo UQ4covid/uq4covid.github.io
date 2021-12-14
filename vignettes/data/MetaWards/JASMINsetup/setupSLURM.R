@@ -7,8 +7,8 @@ print("HAVE YOU LOADED jaspy?")
 ## set name of directory to append to save outputs to and startdate
 ## (directory appended to "/gws/nopw/j04/covid19/public")
 filedir <- "wave0"
-startdate <- "09/02/2020"
-ndays <- 41
+startdate <- "06/03/2020"
+ndays <- 15
 
 ## check filedir and reformat if necessary
 filedir <- gsub("^/", "", filedir)
