@@ -5,7 +5,8 @@ library(sf)
 library(lubridate)
 library(magrittr)
 
-## set enddate
+## set dates
+startdate <- "2020-02-01"
 enddate <- "2020-03-06"
 
 ## set path to MetaWardsData
@@ -83,10 +84,10 @@ seeds <- deaths %>%
     select(areaCode, date, cumDeaths) %>%
     filter(date <= enddate) %>%
     filter(deaths > 0) %>%
-    complete(date = seq(dmy("01/01/2020"), ymd(enddate), by = 1), areaCode = unique(Ward19Lookup$LAD19CD)) %>%
+    complete(date = seq(ymd(startdate), ymd(enddate), by = 1), areaCode = unique(Ward19Lookup$LAD19CD)) %>%
     arrange(areaCode, date) %>%
     group_by(areaCode) %>%
-    mutate(cumDeaths = ifelse(date == dmy("01/01/2020") & is.na(cumDeaths), 0, cumDeaths)) %>%
+    mutate(cumDeaths = ifelse(date == ymd(startdate) & is.na(cumDeaths), 0, cumDeaths)) %>%
     fill(cumDeaths) %>%
     ungroup()
 
