@@ -886,7 +886,7 @@ arma::mat iFFBS(
         Ninf += D_prime(j);
     }
     int Nsus = Npop - Ninf;
-    int Nposs = 10 * Ninf;
+    int Nposs = 10 * Ninf + 1;
     Nposs = (Nposs > Npop ? Npop:Nposs);
     if(print == 1) {
         Rprintf("Npop = %d Ninf = %d Nposs = %d\n", Npop, Ninf, Nposs);
