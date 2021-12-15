@@ -10,8 +10,9 @@ library(stringr)
 ## load seeds file
 deaths <- readRDS("inputs/seedsInfo.rds")
 
-## set startdate (dmy)
-startdate <- "06-03-2020"
+## set dates (dmy)
+enddate <- "06-03-2020"
+startdate <- "01-02-2020"
 
 ## NGM for single population (order: E, A, P, I1, I2)
 NGM <- function(R0 = NA, nu = NA, S0, N, nuA, gammaE, pEP, gammaA, gammaP, gammaI1, pI1H, pI1D, gammaI2) {
@@ -173,59 +174,99 @@ pars <- mutate(pars, across(starts_with("p"), ~ifelse(. == 1, 0.999999, .))) %>%
 sourceCpp("R_tools/iFFBS.cpp")
 
 ## set seeding time at which to draw
-seed_time <- as.numeric(dmy(startdate) - dmy("01-01-2020"))
+seed_time <- as.numeric(dmy(enddate) - dmy(startdate))
 
-## extract LADs with some deaths
-deaths1 <- filter(deaths, deaths > 0) #%>%
-    #rbind(filter(deaths, deaths == 0) %>% mutate(popsize = round(median(popsize))) %>% slice(1))
+## set pini
+pini <- 700 / (sum(deaths$popsize) * seed_time)
+
+## extract LADS without deaths
+nodeaths <- filter(deaths, deaths == 0)
+
+## extract LADs with deaths
+deaths <- filter(deaths, deaths > 0) %>%
+    mutate(nlads = NA)
+
+## group LADS by quartile according to population size
+nodeaths <- mutate(nodeaths, quartile = ntile(popsize, 4))
+nodeaths <- group_by(nodeaths, quartile) %>%
+    summarise(med_popsize = round(median(popsize), 0), nlads = n()) %>%
+    inner_join(nodeaths, by = "quartile") %>%
+    arrange(lad) %>%
+    group_by(quartile) %>%
+    mutate(lad_within = 1:n()) %>%
+    ungroup()
+
+## bind some average LADs to death data
+deaths <- select(nodeaths, -lad_within) %>%
+    group_by(quartile) %>%
+    slice(1) %>%
+    ungroup() %>%
+    select(LAD19CD, popsize = med_popsize, lad = quartile, data, deaths, nlads) %>%
+    rbind(deaths)
 
 ## run simulations across multiple design points in parallel
-seeds <- mclapply(1:nrow(pars), function(i, pars, deaths, seed_time) {
+seeds <- mclapply(1:nrow(pars), function(i, pars, deaths, seed_time, pini) {
     pars <- slice(pars, i)
     reps <- pars$repeats[1]
     pars <- select(pars, pH, pHD, pI1, pI1D, pI1H, pI2, pP, pE, pEP, nu, nuA) %>%
         unlist()
     ## generate seed distributions
-    seeds <- map2(deaths$data, deaths$popsize, function(deaths, Npop, pars, reps) {
+    seeds <- pmap(list(deaths$data, deaths$popsize, deaths$lad, deaths$nlads), function(deaths, Npop, lad, nlads, pars, reps, pini) {
         ## set parameters
         D_prime <- deaths$cumDeaths
         D_prime <- c(D_prime[1], diff(D_prime))
-        pini <- 20 / (Npop * length(D_prime))
         
-        npost <- 0
-        cycle <- 1
-        post <- NULL
-        if(npost < reps & cycle < 3) {
+        if(is.na(nlads)) {
+            npost <- 0
+            cycle <- 1
+            post <- NULL
+            if(npost < reps & cycle < 3) {
+                ## run iFFBS algorithm
+                post1 <- iFFBS(D_prime, 1:length(D_prime), 
+                    Npop, 2000, pini, pars = pars, fixPars = 1, outputCum = 1)
+        
+                ## set names and remove burnin
+                colnames(post1) <- c(apply(expand.grid(c("S", "E", "A", "RA", "P", "I1", "I2", "RI", "DI", "H", "RH", "DH"), 1:length(D_prime)), 1, function(x) paste0(x[1], "_", as.numeric(x[2]))), "loglike")
+                post1 <- as_tibble(post1) %>%
+                    select(ends_with(paste0("_", seed_time))) %>%
+                    slice(-(1:500))
+                ## extract elements with at least one seed
+                post1 <- rowwise(post1) %>%
+                    mutate(ninf = sum(c_across(starts_with(c("E_", "A_", "P_", "I1_", "I2_"))))) %>%
+                    ungroup() %>%
+                    filter(ninf > 0) %>%
+                    select(!ninf)
+                post <- rbind(post, post1)
+                npost <- nrow(post)
+                cycle <- cycle + 1
+            }
+            if(npost < reps & sum(D_prime) > 0) {
+                stop(paste("Can't find enough non-zero states to sample from: npost = ", npost, ", nreps = ", reps))
+            }
+            post <- slice_sample(post, n = reps) %>%
+                mutate(rep = 1:n(), lad = lad, lad_within = NA)
+        } else {
             ## run iFFBS algorithm
             post1 <- iFFBS(D_prime, 1:length(D_prime), 
-                Npop, 2000, pini, pars = pars, fixPars = 1, outputCum = 1)
-    
+                           Npop, 2000, pini, pars = pars, fixPars = 1, outputCum = 1)
+            
+            ## set names and remove burnin
             colnames(post1) <- c(apply(expand.grid(c("S", "E", "A", "RA", "P", "I1", "I2", "RI", "DI", "H", "RH", "DH"), 1:length(D_prime)), 1, function(x) paste0(x[1], "_", as.numeric(x[2]))), "loglike")
             post1 <- as_tibble(post1) %>%
                 select(ends_with(paste0("_", seed_time))) %>%
                 slice(-(1:500))
-            ## extract elements with at least one seed
-            post1 <- rowwise(post1) %>%
-                mutate(ninf = sum(c_across(starts_with(c("E_", "A_", "P_", "I1_", "I2_"))))) %>%
-                ungroup() %>%
-                filter(ninf > 0) %>%
-                select(!ninf)
-            post <- rbind(post, post1)
-            npost <- nrow(post)
-            cycle <- cycle + 1
-        }   
-        if(npost < reps & sum(D_prime) > 0) {
-            stop(paste("Can't find enough non-zero states to sample from: npost = ", npost, ", nreps = ", reps))
+            if(nrow(post1) < (nlads * reps)) {
+                stop("Not enough random samples to set seeds in non-death LADs")
+            }
+            post <- slice_sample(post1, n = reps * nlads) %>%
+                mutate(rep = rep(1:reps, each = nlads), lad = lad, lad_within = rep(1:nlads, times = reps))
         }
-        post <- slice_sample(post, n = reps) %>%
-            mutate(rep = 1:n())
         post
-    }, pars = pars, reps = reps)
-    names(seeds) <- deaths$lad
-    seeds <- bind_rows(seeds, .id = "LAD")
+    }, pars = pars, reps = reps, pini = pini)
+    seeds <- bind_rows(seeds)
     colnames(seeds) <- gsub(paste0("_", seed_time), "", colnames(seeds))
     seeds
-}, pars = pars, deaths = deaths1, seed_time = seed_time, mc.cores = detectCores())
+}, pars = pars, deaths = deaths, seed_time = seed_time, pini = pini, mc.cores = detectCores())
 names(seeds) <- pars$output
 seeds <- bind_rows(seeds, .id = "output")
 
@@ -235,10 +276,39 @@ seeds <- distinct(seeds, output, rep) %>%
     count() %>%
     inner_join(seeds, by = "output") %>%
     mutate(output = ifelse(n > 1, paste0(output, "x", str_pad(rep, 3, pad = "0")), output)) %>%
-    select(!c(n, rep))
+    select(!c(n, rep)) %>%
+    ungroup()
+
+## join back to all LADs
+stopifnot(
+    nrow(
+        select(nodeaths, quartile, lad, lad_within) %>%
+        anti_join(seeds, by = c("quartile" = "lad", "lad_within" = "lad_within"))
+    ) == 0
+)
+seeds <- left_join(
+        seeds, 
+        select(nodeaths, quartile, lad, lad_within), 
+        by = c("lad" = "quartile", "lad_within" = "lad_within")
+    ) %>%
+    select(!lad_within) %>%
+    mutate(lad = ifelse(is.na(lad.y), lad, lad.y)) %>%
+    select(!lad.y) %>%
+    arrange(output, lad)
+stopifnot(
+    group_by(seeds, output) %>%
+    mutate(lad1 = 1:n()) %>%
+    mutate(diff = lad - lad1) %>%
+    ungroup() %>%
+    pluck("diff") %>%
+    {all(. == 0)}
+)
 
 ## reorder to match ncov.json
-seeds <- select(seeds, output, LAD, "E", "P", "I1", "I2", "RI", "DI", "A", "RA", "H", "RH", "DH")
+seeds <- select(seeds, output, LAD = lad, E, P, I1, I2, RI, DI, A, RA, H, RH, DH)
+
+## remove zeros
+seeds <- seeds[rowSums(seeds[, -c(1, 2)]) > 0, ]
 
 ## save seeding file
 write_csv(seeds, "inputs/seeds.csv", col_names = FALSE)
