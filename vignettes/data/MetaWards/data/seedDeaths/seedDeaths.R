@@ -5,9 +5,19 @@ library(sf)
 library(lubridate)
 library(magrittr)
 
-## set dates
-startdate <- "2020-02-01"
-enddate <- "2020-03-06"
+## extract command line arguments
+args <- commandArgs(TRUE)
+if(length(args) > 0) {
+    stopifnot(length(args) == 2)
+    startdate <- args[1]
+    enddate <- args[2]
+} else {
+    stop("No arguments")
+}
+
+# ## set dates
+# startdate <- "2020-02-01"
+# enddate <- "2020-03-11"
 
 ## set path to MetaWardsData
 path <- paste0("../../../../../../MetaWardsData/model_data/2011to2019Data/")
@@ -95,9 +105,9 @@ seeds <- deaths %>%
 group_by(seeds, areaCode) %>%
     slice(1:3)
 
-## quick plot
-ggplot(seeds) +
-    geom_line(aes(x = date, y = cumDeaths, group = areaCode))
+# ## quick plot
+# ggplot(seeds) +
+#     geom_line(aes(x = date, y = cumDeaths, group = areaCode))
     
 ## check LTLA names match
 temp <- anti_join(seeds, Ward19Lookup, by = c("areaCode" = "LAD19CD"))

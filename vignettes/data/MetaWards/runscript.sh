@@ -6,8 +6,13 @@ mkdir -p raw_outputs
 ## run design code
 R CMD BATCH --no-restore --slave --no-save convertDesign.R
 
+# ## run seeding code
+# cd data/seedDeaths
+# R CMD BATCH --no-restore --slave --no-save '--args 2020-02-01 2020-03-11' seedDeaths.R
+# cd ../..
+
 ## run seeding code
-R CMD BATCH --no-restore --slave --no-save R_tools/simulateSeedStates.R
+R CMD BATCH --no-restore --slave --no-save '--args 2020-02-01 2020-03-06' R_tools/simulateSeedStates.R
 
 ## set path to MetaWardsData repository
 export METAWARDSDATA=$HOME/Documents/covid/MetaWardsData

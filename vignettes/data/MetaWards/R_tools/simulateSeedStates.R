@@ -7,12 +7,22 @@ library(parallel)
 library(lubridate)
 library(stringr)
 
+## extract command line arguments
+args <- commandArgs(TRUE)
+if(length(args) > 0) {
+    stopifnot(length(args) == 2)
+    startdate <- args[1]
+    seeddate <- args[2]
+} else {
+    stop("No arguments")
+}
+
 ## load seeds file
 deaths <- readRDS("inputs/seedsInfo.rds")
 
-## set dates (dmy)
-enddate <- "06-03-2020"
-startdate <- "01-02-2020"
+# ## set dates
+# startdate <- "2020-02-01"
+# seeddate <- "2020-03-06"
 
 ## NGM for single population (order: E, A, P, I1, I2)
 NGM <- function(R0 = NA, nu = NA, S0, N, nuA, gammaE, pEP, gammaA, gammaP, gammaI1, pI1H, pI1D, gammaI2) {
@@ -174,7 +184,7 @@ pars <- mutate(pars, across(starts_with("p"), ~ifelse(. == 1, 0.999999, .))) %>%
 sourceCpp("R_tools/iFFBS.cpp")
 
 ## set seeding time at which to draw
-seed_time <- as.numeric(dmy(enddate) - dmy(startdate))
+seed_time <- as.numeric(ymd(seeddate) - ymd(startdate))
 
 ## set pini
 pini <- 700 / (sum(deaths$popsize) * seed_time)
@@ -216,50 +226,27 @@ seeds <- mclapply(1:nrow(pars), function(i, pars, deaths, seed_time, pini) {
         D_prime <- deaths$cumDeaths
         D_prime <- c(D_prime[1], diff(D_prime))
         
-        if(is.na(nlads)) {
-            npost <- 0
-            cycle <- 1
-            post <- NULL
-            if(npost < reps & cycle < 3) {
-                ## run iFFBS algorithm
-                post1 <- iFFBS(D_prime, 1:length(D_prime), 
-                    Npop, 2000, pini, pars = pars, fixPars = 1, outputCum = 1)
+        ## run iFFBS algorithm
+        post1 <- iFFBS(D_prime, 1:length(D_prime), 
+                       Npop, 2000, pini, pars = pars, fixPars = 1)
         
-                ## set names and remove burnin
-                colnames(post1) <- c(apply(expand.grid(c("S", "E", "A", "RA", "P", "I1", "I2", "RI", "DI", "H", "RH", "DH"), 1:length(D_prime)), 1, function(x) paste0(x[1], "_", as.numeric(x[2]))), "loglike")
-                post1 <- as_tibble(post1) %>%
-                    select(ends_with(paste0("_", seed_time))) %>%
-                    slice(-(1:500))
-                ## extract elements with at least one seed
-                post1 <- rowwise(post1) %>%
-                    mutate(ninf = sum(c_across(starts_with(c("E_", "A_", "P_", "I1_", "I2_"))))) %>%
-                    ungroup() %>%
-                    filter(ninf > 0) %>%
-                    select(!ninf)
-                post <- rbind(post, post1)
-                npost <- nrow(post)
-                cycle <- cycle + 1
-            }
-            if(npost < reps & sum(D_prime) > 0) {
-                stop(paste("Can't find enough non-zero states to sample from: npost = ", npost, ", nreps = ", reps))
-            }
-            post <- slice_sample(post, n = reps) %>%
+        ## set names and remove burnin
+        colnames(post1) <- c(apply(expand.grid(c("S", "E", "A", "RA", "P", "I1", "I2", "RI", "DI", "H", "RH", "DH"), 1:length(D_prime)), 1, function(x) paste0(x[1], "_", as.numeric(x[2]))), "loglike")
+        post1 <- as_tibble(post1) %>%
+            select(ends_with(paste0("_", seed_time))) %>%
+            slice(-(1:500))
+        
+        if(nrow(post1) < (ifelse(is.na(nlads), 1, nlads) * reps)) {
+            stop("Not enough random samples to set seeds")
+        }
+        
+        if(is.na(nlads)) {
+            post <- slice_sample(post1, n = reps) %>%
                 mutate(rep = 1:n(), lad = lad, lad_within = NA)
         } else {
-            ## run iFFBS algorithm
-            post1 <- iFFBS(D_prime, 1:length(D_prime), 
-                           Npop, 2000, pini, pars = pars, fixPars = 1, outputCum = 1)
-            
-            ## set names and remove burnin
-            colnames(post1) <- c(apply(expand.grid(c("S", "E", "A", "RA", "P", "I1", "I2", "RI", "DI", "H", "RH", "DH"), 1:length(D_prime)), 1, function(x) paste0(x[1], "_", as.numeric(x[2]))), "loglike")
-            post1 <- as_tibble(post1) %>%
-                select(ends_with(paste0("_", seed_time))) %>%
-                slice(-(1:500))
-            if(nrow(post1) < (nlads * reps)) {
-                stop("Not enough random samples to set seeds in non-death LADs")
-            }
             post <- slice_sample(post1, n = reps * nlads) %>%
-                mutate(rep = rep(1:reps, each = nlads), lad = lad, lad_within = rep(1:nlads, times = reps))
+                mutate(rep = rep(1:reps, each = nlads), lad = lad, 
+                    lad_within = rep(1:nlads, times = reps))
         }
         post
     }, pars = pars, reps = reps, pini = pini)
@@ -309,6 +296,17 @@ seeds <- select(seeds, output, LAD = lad, E, P, I1, I2, RI, DI, A, RA, H, RH, DH
 
 ## remove zeros
 seeds <- seeds[rowSums(seeds[, -c(1, 2)]) > 0, ]
+
+## check all outputs have at least one source of infection
+## across LADS
+stopifnot(
+    all(
+        rowwise(seeds) %>%
+        mutate(ninf = sum(c_across(starts_with(c("E", "A", "P", "I1", "I2"))))) %>%
+        ungroup() %>%
+        group_by(output) %>%
+        summarise(ninf = sum(ninf), .groups = "drop") %>%
+        pluck("ninf") > 0))
 
 ## save seeding file
 write_csv(seeds, "inputs/seeds.csv", col_names = FALSE)

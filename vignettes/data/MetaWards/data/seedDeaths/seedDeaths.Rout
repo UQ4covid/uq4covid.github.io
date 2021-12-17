@@ -1,0 +1,109 @@
+── Attaching packages ─────────────────────────────────────── tidyverse 1.3.0 ──
+✓ ggplot2 3.3.5     ✓ purrr   0.3.4
+✓ tibble  3.1.6     ✓ dplyr   1.0.7
+✓ tidyr   1.1.4     ✓ stringr 1.4.0
+✓ readr   1.4.0     ✓ forcats 0.5.1
+── Conflicts ────────────────────────────────────────── tidyverse_conflicts() ──
+x dplyr::filter() masks stats::filter()
+x dplyr::lag()    masks stats::lag()
+Linking to GEOS 3.9.0, GDAL 3.2.2, PROJ 7.2.1
+
+Attaching package: ‘lubridate’
+
+The following objects are masked from ‘package:base’:
+
+    date, intersect, setdiff, union
+
+
+Attaching package: ‘magrittr’
+
+The following object is masked from ‘package:purrr’:
+
+    set_names
+
+The following object is masked from ‘package:tidyr’:
+
+    extract
+
+
+── Column specification ────────────────────────────────────────────────────────
+cols(
+  areaCode = col_character(),
+  areaName = col_character(),
+  areaType = col_character(),
+  date = col_date(format = ""),
+  cumDeathsByDeathDate = col_double()
+)
+
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+      1       1       1       1       1       1 
+
+── Column specification ────────────────────────────────────────────────────────
+cols(
+  FID = col_double(),
+  LAD19CD = col_character(),
+  LAD19NM = col_character(),
+  RGN19CD = col_character(),
+  RGN19NM = col_character()
+)
+
+# A tibble: 0 × 5
+# … with 5 variables: areaCode <chr>, areaName <chr>, areaType <chr>,
+#   date <date>, cumDeathsByDeathDate <dbl>
+Saving 7 x 7 in image
+
+── Column specification ────────────────────────────────────────────────────────
+cols(
+  FID = col_double(),
+  WD19CD = col_character(),
+  WD19NM = col_character(),
+  LAD19CD = col_character(),
+  LAD19NM = col_character()
+)
+
+# A tibble: 1,017 × 3
+# Groups:   areaCode [339]
+   date       areaCode  cumDeaths
+   <date>     <chr>         <dbl>
+ 1 2020-02-01 E06000001         0
+ 2 2020-02-02 E06000001         0
+ 3 2020-02-03 E06000001         0
+ 4 2020-02-01 E06000002         0
+ 5 2020-02-02 E06000002         0
+ 6 2020-02-03 E06000002         0
+ 7 2020-02-01 E06000003         0
+ 8 2020-02-02 E06000003         0
+ 9 2020-02-03 E06000003         0
+10 2020-02-01 E06000004         0
+# … with 1,007 more rows
+# A tibble: 0 × 3
+# … with 3 variables: date <date>, areaCode <chr>, cumDeaths <dbl>
+
+── Column specification ────────────────────────────────────────────────────────
+cols(
+  X1 = col_double(),
+  X2 = col_double()
+)
+
+
+── Column specification ────────────────────────────────────────────────────────
+cols(
+  X1 = col_double(),
+  X2 = col_double()
+)
+
+Reading layer `Local_Authority_Districts_(December_2019)_Boundaries_UK_BFC' from data source `/home/tj/Documents/covid/uq4covid.github.io/vignettes/data/MetaWards/data/ward11toWard19Mapping/Local_Authority_Districts_(December_2019)_Boundaries_UK_BFC/Local_Authority_Districts_(December_2019)_Boundaries_UK_BFC.shp' 
+  using driver `ESRI Shapefile'
+Simple feature collection with 382 features and 10 fields
+Geometry type: MULTIPOLYGON
+Dimension:     XY
+Bounding box:  xmin: -116.1928 ymin: 5337.901 xmax: 655653.8 ymax: 1220302
+Projected CRS: OSGB 1936 / British National Grid
+# A tibble: 0 × 5
+# … with 5 variables: LAD19CD <chr>, popsize <dbl>, lad <dbl>, data <list>,
+#   deaths <dbl>
+Saving 7 x 7 in image
+`stat_bin()` using `bins = 30`. Pick better value with `binwidth`.
+> proc.time()
+   user  system elapsed 
+ 11.283   0.399  11.678 

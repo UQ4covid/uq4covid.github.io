@@ -11,12 +11,19 @@ source $METADIR/envs/metawards-latest/bin/activate
 # change into the directory from which this job was submitted
 cd $PBS_O_WORKDIR
 
+# set up output folder
 mkdir -p raw_outputs
 
-#R CMD BATCH --no-restore --slave --no-save convertDesign.R
+# ## run design
+# R CMD BATCH --no-restore --slave --no-save convertDesign.R
+
+# ## run seeding code
+# cd data/seedDeaths
+# R CMD BATCH --no-restore --slave --no-save '--args 2020-02-01 2020-03-11' seedDeaths.R
+# cd ../..
 
 ## run seeding code
-R CMD BATCH --no-restore --slave --no-save R_tools/simulateSeedStates.R
+R CMD BATCH --no-restore --slave --no-save '--args 2020-02-01 2020-03-06' R_tools/simulateSeedStates.R
 
 metawards -d model_code/ncov.json -m 2011to2019Data\
     -D model_code/demographics.json\
