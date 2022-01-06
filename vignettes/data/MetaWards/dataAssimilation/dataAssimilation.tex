@@ -1,0 +1,60 @@
+\documentclass[a4paper]{article}
+\usepackage{amsmath, bm, xcolor, tikz, algpseudocode, algorithm, natbib}
+\usetikzlibrary{arrows, positioning, backgrounds, fit}
+
+% formatting
+\usepackage[margin=1in]{geometry}
+\setlength{\parskip}{\baselineskip}
+\setlength{\parindent}{0pt}
+
+\title{Data Assimilation}
+\author{TJ McKinley}
+\date{}
+
+% custom commands for brevity
+\newcommand{\btheta}{\bm{\theta}}
+\newcommand{\bx}{\bm{x}}
+\newcommand{\bX}{\bm{X}}
+\newcommand{\by}{\bm{y}}
+\newcommand{\bp}{\bm{p}}
+\newcommand{\br}{\bm{r}}
+\newcommand{\gap}[1][1]{\vspace{#1\baselineskip}}
+\newcommand{\srm}[1]{\mbox{\scriptsize #1}}
+
+\bibliographystyle{asa}
+
+\begin{document}
+
+\maketitle
+
+We have observed data $\by$ and hidden states $\bx$ with parameters $\btheta$. If we assume that the parameters are fixed, then iFFBS~\citep{touloupouetal:2020} targets:
+\begin{equation}
+    \pi\left(\bx \mid \by\right) \propto \pi\left(\by \mid \bx\right)\pi\left(\bx\right). \label{eq:iFFBS}
+\end{equation}
+Currently $\pi\left(\by \mid \bx\right)$ is deterministic, but could be made stochastic (e.g. Poisson / NB). My understanding from e.g. \cite{lahoz_schneider:2014} is that classical data assimilation takes a forecast $\bx$ and updates it given the data to give an adjusted forecast $\bx^a$ such that:
+\begin{equation}
+    \pi\left(\bx^a \mid \by, \bx\right) \propto \pi\left(\by \mid \bx^a\right)\pi\left(\bx^a \mid \bx\right), \label{eq:DA}
+\end{equation}
+where $\bx$ has p.d.f. $\pi\left(\bx\right)$ as per equation (\ref{eq:iFFBS}). Here $\pi\left(\bx^a \mid \bx\right)$ is some kind of model discrepancy term and $\pi\left(\by \mid \bx^a\right)$ is some kind of observation error. 
+
+Hence the two can be made equivalent (at least in terms of the joint distribution of $\bx$ and $\bx^a$) if we targeted:
+\begin{equation}
+    \pi\left(\bx^a, \bx \mid \by\right) \propto \pi\left(\by \mid \bx^a\right)\pi\left(\bx^a \mid \bx\right)\pi\left(\bx\right). \label{eq:joint}
+\end{equation}
+This could be estimated using iFFBS given functional forms for $\pi\left(\by \mid \bx^a\right)$ and $\pi\left(\bx^a \mid \bx\right)$. This of course updates $\bx$ as well as $\bx^a$ in light of the data $\by$ (this targets the full Bayesian posterior and not the conditional as in (\ref{eq:DA})).
+
+\section{Time-series}
+Let $\pi\left(x_t \mid x_{t-1}\right)$ correspond to the p.d.f. for the propagation of (hidden) states at time $t$ given the states at $t-1$ defined by the simulation model (ignoring the parameters for brevity). Thus:
+\begin{equation}
+    \pi\left(\by, \bx\right) = \pi\left(x_0\right)\prod_{t=1}^T \pi\left(y_t \mid x_t\right)\pi\left(x_t \mid x_{t - 1}\right).
+\end{equation}
+If we don't know $\bx$, then we have to marginalise over the unknown $\bx$, which is what the iFFBS does using MCMC.
+
+I think the DA version would be:
+\begin{equation}
+    \pi\left(\by, \bx^a, \bx\right) = \pi\left(x_0\right)\pi\left(x_0^a \mid x^0\right)\prod_{t=1}^T \pi\left(y_t \mid x_t^a\right)\pi\left(x_t^a \mid x_t\right)\pi\left(x_t \mid x^a_{t - 1}\right).
+\end{equation}
+
+\bibliography{/home/tj/Documents/ref}
+
+\end{document}
