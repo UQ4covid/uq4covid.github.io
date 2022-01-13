@@ -100,6 +100,138 @@ Our proposal (DW and TJ) is that we make a serious attempt at this hybrid method
 
 The main difficulty now is building in single step iterations of MetaWards with a chosen starting state vector efficiently. The MW code does not currently allow for this to be quick at all and it probably never will, so we might be at the mercy of Catalyst at ward level. TJ is going to provide us an RCPP non-spatial version of MW this week. We are then planning a LAD version of MW, probably via the RCPP route that we can run on our own machines. For those of us with a UQ background, the point is to put the model (the likelihood estimates described above) in our hands so that we can figure out emulation/SA/HM etc with it. 
 
+\section*{Model discrepancy constraints}
+
+\textbf{NOTE: WE USE $D()$ TO DENOTE DISCREPANCY ABOVE, BUT WE ALSO USE THIS IN THE MODEL TO CORRESPOND TO DEATH COUNTS, SO I AM USING $M_{state}$ TO DENOTE MODEL DISCREPANCY HERE. THIS IS A FLAG TO COME BACK TO NOTATION LATER.}
+
+Some justification and detail of the model discrepancy process below.
+
+For \textbf{absorbing states} ($D_H$, $R_H$, $D_I$, $R_I$ and $R_A$) we place the model discrepancy on the \textit{incidence} (i.e. new cases) rather than the state counts. For all other states, we place the model discrepancy on the numbers of individuals in each state directly. A key aspect is that we must ensure that any model discrepancy added results in states that are \textit{epidemiologically} valid. Hence we can't have more deaths than infections and such like. This means we add constraints onto the model discrepancy process based on the structure of the model.
+
+Because we're focusing on individual states, we will use the notation e.g. $D_{Ht}$ to denote the state counts from the \textit{simulator} at time $t$ (relating to $X_t$ above), $D^Y_{Ht}$ is the \textit{adjusted} state after model discrepancy is added, and $D^\prime_{Ht}$ is the \textit{incidence}.
+
+\subsection{Absorbing states}
+
+Thinking first about $D^Y_{Ht}$ we have that:
+\begin{eqnarray*}
+    D^Y_{Ht} &=& D^Y_{H(t - 1)} + D^{Y\prime}_{Ht}\\
+    \Rightarrow D^Y_{Ht} &\leq& D^Y_{H(t - 1)} + H^Y_{t-1} \qquad \mbox{since $D^{Y\prime}_{Ht} \leq H^Y_{t - 1}$}.
+\end{eqnarray*}
+We let the adjusted incidence $D^{Y\prime}_{Ht} = D^\prime_{Ht} + M^\prime_{D_Ht}$, and then place a truncated Skellam distribution on $M^\prime_{D_Ht}$, with constraints:
+\begin{equation*}
+    -D^\prime_{Ht} \leq M^\prime_{D_Ht} \leq H^Y_{t - 1} - D^\prime_{Ht}.
+\end{equation*}
+Then the adjusted count is given by
+\begin{equation*}
+    D^Y_{Ht} = D_{Ht} + M^\prime_{D_Ht}.
+\end{equation*}
+This holds since $D_{Ht} = D_{H(t - 1)} + D^\prime_{Ht}$ and thus 
+\begin{eqnarray*}
+    D^Y_{Ht} &=& D_{H(t - 1)} + D^{Y\prime}_{Ht}\\
+    &=& D_{H(t - 1)} + D^\prime_{Ht} + M^\prime_{D_Ht}\\
+    &=& D_{Ht} + M^\prime_{D_Ht}.
+\end{eqnarray*}
+We also know that
+\begin{equation*}
+    D^{Y\prime}_{Ht} + R^{Y\prime}_{Ht} \leq H^Y_{t - 1},
+\end{equation*}
+and hence we can derive a constraint for $M^\prime_{R_Ht}$ conditional on the adjusted $D^{Y\prime}_{Ht}$, such that
+\begin{equation*}
+    -R^\prime_{Ht} \leq M^\prime_{R_Ht} \leq H^Y_{t - 1} - D^{Y\prime}_{Ht} - R^\prime_{Ht}.
+\end{equation*}
+The state $R^Y_{Ht}$ is then updated as before.
+
+We can use similar logic to derive bounds for $M^\prime_{D_It}$ as:
+\begin{equation*}
+    -D^\prime_{It} \leq M^\prime_{D_It} \leq I^Y_{1(t - 1)} - D^\prime_{It};
+\end{equation*}
+$M^\prime_{R_It}$ as:
+\begin{equation*}
+    -R^\prime_{It} \leq M^\prime_{R_It} \leq I^Y_{2(t - 1)} - R^\prime_{It};
+\end{equation*}
+and $M^\prime_{D_At}$ as:
+\begin{equation*}
+    -D^\prime_{At} \leq M^\prime_{D_At} \leq A^Y_{t - 1} - D^\prime_{At}.
+\end{equation*}
+
+\subsection{Non-absorbing states}
+
+Starting initially with $H^Y_t$, we then know that
+\begin{equation*}
+    H^Y_t = H^Y_{t - 1} + H^{Y\prime}_t - D^{Y\prime}_{Ht} - R^{Y\prime}_{Ht},
+\end{equation*}
+and we now place the model discrepancy on the state $H_t$ and not the incidence ($H^\prime_t$) since $H_t$ is not an absorbing state. Therefore, 
+\begin{equation*}
+    H^Y_t = H_t + M_{Ht}
+\end{equation*}
+and also
+\begin{equation*}
+    H^Y_t = H^Y_{t - 1} + H^{Y\prime}_t - D^{Y\prime}_{Ht} - R^{Y\prime}_{Ht}.
+\end{equation*}
+Since $H^{Y\prime}_t \leq I^Y_{1(t - 1)}$, we can derive constraints for the model discrepancy as:
+\begin{equation*}
+    -H_t \leq M_{Ht} \leq H^Y_{t - 1} + I^Y_{1(t - 1)} - D^{Y\prime}_{Ht} - R^{Y\prime}_{Ht} - H_t.
+\end{equation*}
+From this we can derive $H^{Y\prime}_t = H^Y_t - H^Y_{t - 1}$.
+
+Next, we know that
+\begin{equation*}
+    I^Y_{2t} = I^Y_{2(t - 1)} + I^{Y\prime}_{2t} - R^{Y\prime}_{It},
+\end{equation*}
+and also that
+\begin{equation*}
+    H^{Y\prime}_t + I^{Y\prime}_{2t} + D^{Y\prime}_{It} \leq I^Y_{1(t - 1)}.
+\end{equation*}
+Hence we can derive bounds for $M_{I_2t}$ as:
+\begin{equation*}
+    -I_{2t} \leq M_{I_2t} \leq I^Y_{2(t - 1)} + I^Y_{1(t - 1)} - H^{Y\prime}_{t} - D^{Y\prime}_{It} - R^{Y\prime}_{It} - I_{2t},
+\end{equation*}
+and then derive $I^Y_{2t}$ and $I^{Y\prime}_{2t}$.
+
+Similarly, we know that
+\begin{equation*}
+    I^Y_{1t} = I^Y_{1(t - 1)} + I^{Y\prime}_{1t} - H^{Y\prime}_{It} - I^{Y\prime}_{2t} - D^{Y\prime}_{It},
+\end{equation*}
+and also that
+\begin{equation*}
+    I^{Y\prime}_{1t} \leq P^Y_{t - 1}.
+\end{equation*}
+Hence we can derive bounds for $M_{I_1t}$ as:
+\begin{equation*}
+    -I_{1t} \leq M_{I_1t} \leq I^Y_{1(t - 1)} + P^Y_{t - 1} - H^{Y\prime}_{It} - I^{Y\prime}_{2t} - D^{Y\prime}_{It} - I_{1t},
+\end{equation*}
+and then derive $I^Y_{1t}$ and $I^{Y\prime}_{1t}$.
+
+Bounds for $M_{Pt}$ are:
+\begin{equation*}
+    -P_t \leq M_{Pt} \leq P^Y_{t - 1} + E^Y_{t - 1} - I^{Y\prime}_{1t} - P_t,
+\end{equation*}
+which follow from 
+\begin{equation*}
+    P^Y_t = P^Y_{t - 1} + P^{Y\prime}_t - I^{Y\prime}_{1t},
+\end{equation*}
+and the fact that $P^{Y\prime}_t \leq E^Y_{t - 1}$.
+
+Similarly, bounds for $M_{At}$ are:
+\begin{equation*}
+    -A_t \leq M_{At} \leq A^Y_{t - 1} + E^Y_{t - 1} - P^{Y\prime}_{t} - R^{Y\prime}_{At} - A_t,
+\end{equation*}
+which follow from 
+\begin{equation*}
+    A^Y_t = A^Y_{t - 1} + A^{Y\prime}_t - R^{Y\prime}_{At},
+\end{equation*}
+and the fact that $P^{Y\prime}_t + A^{Y\prime}_t \leq E^Y_{t - 1}$.
+
+Finally, bounds for $M_{Et}$ are:
+\begin{equation*}
+    -E_t \leq M_{Et} \leq E^Y_{t - 1} + S^Y_{t - 1} - P^{Y\prime}_{t} - A^{Y\prime}_t - E_t,
+\end{equation*}
+which follow from 
+\begin{equation*}
+    E^Y_t = E^Y_{t - 1} + E^{Y\prime}_t - P^{Y\prime}_t - A^{Y\prime}_t,
+\end{equation*}
+and the fact that $E^{Y\prime}_t \leq S^Y_{t - 1}$.
+
 \section*{Some maths on DA in older notation}
 
 We have observed data $\by$ and hidden states $\bx$ with parameters $\btheta$. If we assume that the parameters are fixed, then iFFBS~\citep{touloupouetal:2020} targets:
