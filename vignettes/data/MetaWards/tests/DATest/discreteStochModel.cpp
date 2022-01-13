@@ -7,7 +7,7 @@ using namespace Rcpp;
 // [[Rcpp::export]]
 IntegerMatrix discreteStochModel(NumericVector pars, int tstart, int tstop, arma::ivec u) {
     
-    int i = 0, j = 0, k = 0;
+    int i = 0, j = 0;
   
     // extract parameters
     double nu = pars[0];
@@ -44,9 +44,6 @@ IntegerMatrix discreteStochModel(NumericVector pars, int tstart, int tstop, arma
     for(i = 0; i < nclasses; i++) {
         out(0, i + 1) = u1(i);
     }
-    
-    // set up transmission rates
-    double beta;
     
     // set up auxiliary variables
     double prob = 0.0;

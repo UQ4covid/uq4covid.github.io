@@ -1,9 +1,9 @@
 ## log-sum-exp function
 log_sum_exp <- function(x, mn = FALSE) {
     maxx <- max(x)
-    x <- maxx + log(sum(exp(x - maxx)))
-    if(mn) x <- x - log(length(x))
-    x
+    y <- maxx + log(sum(exp(x - maxx)))
+    if(mn) y <- y - log(length(x))
+    y
 }
 
 ## function to check counts (mainly useful for error checking)
