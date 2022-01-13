@@ -7,8 +7,8 @@
 \setlength{\parskip}{\baselineskip}
 \setlength{\parindent}{0pt}
 
-\title{Data Assimilation}
-\author{TJ McKinley}
+\title{Data Assimilation and Calibration for large spatio-temporal ID models}
+\author{TJ McKinley and Danny Williamson}
 \date{}
 
 % custom commands for brevity
@@ -18,6 +18,10 @@
 \newcommand{\by}{\bm{y}}
 \newcommand{\bp}{\bm{p}}
 \newcommand{\br}{\bm{r}}
+\newcommand{\bY}{\bm{Y}}
+\newcommand{\bZ}{\bm{Z}}
+\newcommand{\bU}{\bm{U}}
+\newcommand{\bD}{\bm{D}}
 \newcommand{\gap}[1][1]{\vspace{#1\baselineskip}}
 \newcommand{\srm}[1]{\mbox{\scriptsize #1}}
 
@@ -26,6 +30,77 @@
 \begin{document}
 
 \maketitle
+
+\subsection*{Overview}
+We have a slow spatially explicit meta population Covid-19 model, and observations of deaths (and later cases) we may use to calibrate its parameters. Early in the pandemic, the parameters and the initial states are both extremely important and unknown. Whilst there are $O(10)$ parameters, treating the unknown initial states makes calibration an $O(10^5)$ parameter problem that cannot be solved by traditional UQ methods with a model of this complexity. Our intention is to explore a hybrid data assimilation/UQ calibration approach to nudge the initial states and to calibrate the model parameters.
+
+\subsection*{Statistical modelling}
+Let $\bY_{st}$ denote the true Covid-19 state vector at location $s$ and time $t$. This vector includes numbers in the E, A, I and H classes as well as the number of deaths, both in hospitals and the community. We have underreported observations $\bZ_t$ relevant to some part of this state vector, indicated by incidence matrix H. To capture underreporting let 
+\begin{equation}\label{obs}
+\bZ_{st} = H\bY_{st} - \bU_{st}(Y_{st}),
+\end{equation}
+where $\bU_{st}(Y_{st})$ is an underreporting process. Our Covid-19 model has parameters $\btheta$ and a single run generates $\bX_{st}(\btheta)$ for all $s$ and $t$ of interest. Letting $i$ index the output class (e.g. asymptomatics), we model the true Covid-19 state via
+\begin{equation}\label{best}
+Y_{sti} = X_{sti}(\btheta^*) + D_{sti}(X_{sti}),
+\end{equation}
+where $\btheta^*$ is a particular ``best input'' for the calibration parameters and $D$ is a count discrepancy that depends on the model state (to allow for the fact that the higher the count, the larger the discrepancy between the actual count and the model count can be whilst retaining a good model). We should view $\bD(\bX)$ as a tolerance to error process rather than a true discrepancy (a nuance important for history matching and interpretation later).
+
+A model for the error processes is
+\begin{align}
+\bU_{st}\mid\bY_{st} &\sim \mathrm{Poisson}(\mu_s(\bY_{st})) \\
+D_{sti}\mid X_{sti} &\sim \mathrm{tSkellam}(\lambda_{si}(X_{sti}), \lambda_{si}(X_{sti}), -X_{sti}),
+\end{align}
+where the tSkellam distribution is a Skellam distribution truncated below at its third argument. Specifically, let $K \sim \mathrm{Skellam}(m_1, m_2)$ then $K' \sim \mathrm{tSkellam}(m_1, m_2, \tau)$ has $P(K' < \tau) = 0$ and $P(K' = k) = P(K=k)/P(K>\tau)$.
+
+The functions $\mu$ and $\lambda$ are chosen a priori (though some parameters may be unknown and folded into the calibration later) to reflect known spatio-temporal issues with underreporting as well as a principle that the more cases there are, the more we expect to be missed ($\mu$), and to control the standard deviation of $D$ at different levels of $X_{sti}$ (using the property of the untruncated Skellam distribution that the variance is $m_1+m_2$ and the mean is $m_1-m_2$).
+
+\section*{Calibration mode}
+During calibration mode, we assume that the initial states of every simulation $X_{t-p:t}(\btheta)$, ($X_{t-p}(\theta)$) are ``compatible" with $\bZ_{1:t-p}$ under $\theta=\theta^*$. We might phrase this as the initial states are a draw from $\pi(X_{t-p} \mid \btheta=\btheta^*, \bZ_{1:t-p})$, and that is probably the final goal, but ``compatible" can mean ``near enough" given the HM steps. During this phase we use a history matching approach to rule out values of $\btheta$ as being implausible (specifically meaning that they could not be $\btheta^*$) through (\ref{best}) and (\ref{obs}), using any subset of $\bZ_{t-p:t}$. The important thing is not to use data that have been used in drawing the initial states. There are at least 4 approaches to this calibration we could explore: 
+\begin{enumerate}
+\item Emulate and HM to a collection of individual counts. Perhaps this is the most obvious way to proceed and would require a "count implausibility" measure (no such measure currently exists because distance in this discrete subset of the integers is not an obvious concept). We might use something along the lines of $P(\bZ_{st} - \by_{st}| > T) \approx 0$ as an implausibility type rule. The key point is that this version requires emulators of all elements of the model that go into the measure (a many outputs approach to HM). Currently our emulators for this approach are
+\begin{align*}
+X_{sti}(\btheta) &\sim \mathrm{NB}(\phi(\btheta), \psi(\btheta)) \\
+\phi(\btheta) &\sim \mathrm{DGP}(0, k_1(\cdot, \cdot)) \\
+\psi(\btheta) &\sim \mathrm{DGP}(0, k_2(\cdot, \cdot))
+\end{align*}
+\item Construct complex spatio-temporal emulation of $\bX(\btheta)$ based on dimension reduction (kPCA as Wenzhe did, Poisson PCA that James found, something else). Means fewer emulators, a model of the model (always good for finding structures) and can use the same implausibility developed in 1.
+\item Once the implausibility is derived in 1, remove the emulator part of it (so true implausibility with the model embedded) and then emulate the implausibility. Then cut away regions based on the implausibility emulator.
+\item Similar to 3, but emulate the likelihood and kill near 0 regions. This is tricky to think about (as an implausibility over the likelihood needs to be constructed and justified), but has been published (Youngman and Oakley). %One advantage might be that you can generate an unbiased estimate of the likelihood directly from the PF, which doesn't involve any reduction of the data and for which (in theory) an estimate of the variance of the estimator could also be constructed. This would also automatically allow for data assimilation through the bootstrap resampling, but would only require one emulator to be constructed and would do DA and calibration in one step potentially.
+\end{enumerate}
+
+\section*{Data assimilation mode}
+Here, for each parameter set of a design $\btheta_1, \ldots, \btheta_n$, we want to draw from $\pi(X_{t} \mid \btheta_i=\btheta^*, \bZ_{t-p:t})$. I think this involves integrating $\bY$ and not-required $X_i$ from 
+\begin{equation}\label{dwDA}
+    \pi\left(\bZ_{t-p:t}, \bY_{t-p:t}, \bX_{t-p:t}\right) = \pi\left(X_{t-p}\right)\pi\left(Y_{t-p} \mid X_{t-p}\right)\prod_{j=p+1}^0 \pi\left(Z_{t-j} \mid Y_{t-j}\right)\pi\left(Y_{t-j} \mid X_{t-j}\right)\pi\left(X_{t-j} \mid Y_{t-j + 1}\right).
+\end{equation}
+
+$\pi\left(Z_j \mid Y_j\right)$ is available through (\ref{obs}), $\pi\left(Y_j \mid X_j\right)$ through (\ref{best}), both in terms of the density (if we wanted to evaluate (\ref{dwDA}) as a likelihood) or for sampling. $\pi\left(X_j \mid Y_{j - 1}\right)$ is a 1 step call to Metawards and, whilst we might insert a GP here, such a dynamic emulator requires the full MW state vector as input. As such, it is likely that we can only sample from this density (by running MW). 
+
+A Data assimilation targets (\ref{dwDA}). The easiest appropriate method to follow is the Bootstrap Particle Filter (BPF), which follows the following pseudo algorithm \textit{independently for every $\btheta$}:
+\begin{enumerate}
+\item Start at $X_{t-p-1}$ and draw $M$ particles from $\pi(X_{t-p}\mid X_{t-p-1})$.
+\item For each particle $X^i_{t-p}, (i=1, \ldots, M)$, sample from $\pi\left(Y_{t-p} \mid X^i_{t-p}\right)$ under (\ref{best}) (see discrepancy section on Skellam constraints to be written later).
+\item Weight all particles according to $\pi\left(Z_{t-p} \mid Y^{i}_{t-p}\right)$ and then resample the particles $Y^i_{t-p}$ according to these weights.
+\item For j = p + 1, \ldots, 0, 
+\begin{enumerate}
+\item By running Metawards directly for a single time step, for $i = 1, \ldots, M$ sample $\pi\left(X_{t-j} \mid Y^i_{t- j + 1}\right)$.
+\item Use these samples to generate a particle from each $\pi\left(Y_{t-j} \mid X^i_{t-j}\right)$.
+\item Weight the $M$ particles according to $\pi\left(Z_{t-j} \mid Y^{i}_{t-j}\right)$ and then resample the $Y^i_{t-j}$ according to these weights.
+\end{enumerate}
+\end{enumerate}
+
+The final state $Y_t$ or even a previous state can be used as a restart point for running MW in calibration mode via any of the 4 methods mentioned previously. Note any other type of particle filter could be used for the above (essentially amounting to different ways of selecting particles according to the weights in step 3 and 4c.
+
+\section*{A Hybrid DA-Calibration mode}
+This idea is really calibration mode option 4 using extra theory to do everything in 1 step. For option 4, we use (\ref{best}) and (\ref{obs}) to form a likelihood from our simulations at any $\btheta$, and then emulate that likelihood and use it for calibration. For example, under a uniform prior, you can treat this as an emulation of the posterior as a function of $\btheta$ and then map out the high density or 0 density regions as desired. 
+
+Once a DA (such as the BPF) has run over a given time window, the product (over the timesteps) of the average weights (averaged over the $M$ particles at that time) is an unbiased estimate of (\ref{dwDA}) for the chosen time window for each $\btheta$. As such, we can view the DA as the model with the relatively small number of particles inducing noise that may depend on $\btheta$. Theoretically, it is then straightforward to emulate the likelihood (accounting for this additional Monte Carlo type noise via a nugget or stochastic emulator (such as a DGP) as desired. We can explore the sensitivity of the likelihood to the parameters and we can attempt a calibration or a HM based on level sets of the likelihood as we want. 
+
+Our proposal (DW and TJ) is that we make a serious attempt at this hybrid method over January. TJ has already got a version of the BPF working and we've been working this week on sampling from $P(Y|X)$ using truncated Skellam distributions. This is complicated by enforcing certain epidemiological constraints across the model classes (e.g. you can't have more people die than have been exposed etc), but the details of this are now sorted. 
+
+The main difficulty now is building in single step iterations of MetaWards with a chosen starting state vector efficiently. The MW code does not currently allow for this to be quick at all and it probably never will, so we might be at the mercy of Catalyst at ward level. TJ is going to provide us an RCPP non-spatial version of MW this week. We are then planning a LAD version of MW, probably via the RCPP route that we can run on our own machines. For those of us with a UQ background, the point is to put the model (the likelihood estimates described above) in our hands so that we can figure out emulation/SA/HM etc with it. 
+
+\section*{Some maths on DA in older notation}
 
 We have observed data $\by$ and hidden states $\bx$ with parameters $\btheta$. If we assume that the parameters are fixed, then iFFBS~\citep{touloupouetal:2020} targets:
 \begin{equation}
