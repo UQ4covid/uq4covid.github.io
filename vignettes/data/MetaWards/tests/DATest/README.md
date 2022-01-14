@@ -4,7 +4,7 @@ approach to calibrate models and perform DA simultaneously.
 The files `disease.dat` and `inputs.rds` contain the design
 we have been using for the MW model. Since we are running
 without age-structure here, the transmission parameter
-needs adjusting for 
+needs adjusting for the lack of age-structure.
 
 Firstly run `stochModel.R` to simulate data using one
 of the MW design points. Outputs are placed in the `outputs`
@@ -20,5 +20,5 @@ some plots of the particle densities (unweighted, so only an
 approximation here) against the data for comparison, if
 you wish to do this. The PF code is in the `PF.R` file, the 
 truncated Skellam sampler is in the `trSkellam.R` file
-and the next-generation matrix fucntion to convert `nu`
+and the next-generation matrix function to convert `nu`
 is in `NGM.R` (you're probably less interested in this).

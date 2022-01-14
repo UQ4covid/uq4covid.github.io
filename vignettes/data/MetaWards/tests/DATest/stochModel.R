@@ -65,7 +65,7 @@ medRep <- pivot_longer(disSims, !c(rep, t), names_to = "var", values_to = "n") %
         pivot_longer(disSims, !c(rep, t), names_to = "var", values_to = "n"),
         by = c("t", "var")
     ) %>%
-    mutate(diff = abs(median - n)) %>%
+    mutate(diff = (median - n)^2) %>%
     group_by(rep) %>%
     summarise(diff = sum(diff), .groups = "drop") %>%
     arrange(diff) %>%
@@ -79,14 +79,16 @@ scaleFn <- function(count, obsScale) {
     ## create incidence over time
     inc <- diff(c(0, count))
     inc <- rep(1:length(count), times = inc)
-    inc <- sample(inc, round(length(inc) * obsScale))
+    if(length(inc) > 1) {
+        inc <- sample(inc, round(length(inc) * obsScale))
+    }
     inc <- table(inc)
     count <- numeric(length(count))
     count[as.numeric(names(inc))] <- inc
     cumsum(count)
 }
 medRep <- mutate(medRep, DIobs = scaleFn(DI, obsScale = obsScale)) %>%
-    mutate(medRep, DHobs = scaleFn(DH, obsScale))
+    mutate(DHobs = scaleFn(DH, obsScale))
 
 ## plot replicates
 p <- pivot_longer(disSims, !c(rep, t), names_to = "var", values_to = "n") %>%
