@@ -40,11 +40,11 @@ smart_round <- function(x) {
 N <- 150
 N <- smart_round(read_csv("age_seeds.csv", col_names = FALSE)$X2 * N)
 I0 <- smart_round(read_csv("age_seeds.csv", col_names = FALSE)$X2 * 1)
-N <- N - I0
+S0 <- N - I0
 
 ## set initial counts
 u <- matrix(0, 12, 8)
-u[1, ] <- N
+u[1, ] <- S0
 u[2, ] <- I0
 
 ## set seed for reproducibility
