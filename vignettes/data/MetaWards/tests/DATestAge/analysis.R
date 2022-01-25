@@ -37,7 +37,7 @@ smart_round <- function(x) {
 }
 
 ## set up number of initial individuals in each age-class
-N <- 150
+N <- 10000
 N <- smart_round(read_csv("age_seeds.csv", col_names = FALSE)$X2 * N)
 I0 <- smart_round(read_csv("age_seeds.csv", col_names = FALSE)$X2 * 1)
 S0 <- N - I0
