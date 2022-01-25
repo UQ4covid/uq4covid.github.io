@@ -252,6 +252,11 @@ PF <- function(pars, C, data, u, ndays, npart = 10, MD = TRUE, obsScale = 1, dis
             
             ## if zero likelihood then return
             if(!is.finite(ll)) {
+                if(!is.na(whichSave)) {
+                    if(k == whichSave) {
+                        assign("sims", tempOut, pos = 1)
+                    }
+                }
                 return(ll)
             }
             
