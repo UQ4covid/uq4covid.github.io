@@ -50,161 +50,81 @@ u[2, ] <- I0
 ## set seed for reproducibility
 set.seed(666)
 
-## run model with no model discrepancy
-runs_nomd <- PF(pars, C = contact, data = data, u = u, ndays = 30, npart = 100, obsScale = 0.8, MD = FALSE)
+# ## run model with no model discrepancy
+# runs_nomd <- PF(pars, C = contact, data = data, u = u, ndays = 30, npart = 100, obsScale = 0.8, MD = FALSE)
+# 
+# ## repeat but adding some model discrepancy
+# runs_md <- PF(pars, C = contact, data = data, u = u, ndays = 30, npart = 100, obsScale = 0.8, MD = TRUE, disScale = 0.1)
 
-## repeat but adding some model discrepancy
-runs_md <- PF(pars, C = contact, data = data, u = u, ndays = 30, npart = 100, obsScale = 0.8, MD = TRUE, disScale = 0.1)
-
-## run model with no model discrepancy and throw out sims corresponding to true parameters
-## if you want to save out some runs, you can only run for a single design point at a time
-## due to parallelisation - I could fix, but not right now
-runs_nomd <- PF(pars[6, ], C = contact, data = data, u = u, ndays = 30, npart = 100, obsScale = 0.8, MD = FALSE, whichSave = 1)
-
-## plot particle estimates of states (unweighted)
-sims_nomd <- map(sims, ~map(., ~as.vector(t(.)))) %>%
-    map(~do.call("rbind", .)) %>%
-    map(as_tibble) %>%
-    bind_rows(.id = "t") %>%
-    mutate(t = as.numeric(t))
-stageNms <- map(c("S", "E", "A", "RA", "P", "Ione", "DI", "Itwo", "RI", "H", "RH", "DH"), ~paste0(., 1:8)) %>%
-    reduce(c)
-colnames(sims_nomd) <- c("t", stageNms)
-
-## plot replicates
-p <- pivot_longer(sims_nomd, !t, names_to = "var", values_to = "n") %>%
-    group_by(t, var) %>%
-    summarise(
-        LCI = quantile(n, probs = 0.025),
-        LQ = quantile(n, probs = 0.25),
-        median = median(n),
-        UQ = quantile(n, probs = 0.75),
-        UCI = quantile(n, probs = 0.975),
-        .groups = "drop"
-    ) %>%
-    mutate(age = gsub("[^0-9]", "", var)) %>%
-    mutate(var = gsub("[^a-zA-Z]", "", var)) %>%
-    mutate(var = gsub("one", "1", var)) %>%
-    mutate(var = gsub("two", "2", var)) %>%
-    ggplot(aes(x = t)) +
-    geom_ribbon(aes(ymin = LCI, ymax = UCI), alpha = 0.5) +
-    geom_ribbon(aes(ymin = LQ, ymax = UQ), alpha = 0.5) +
-    geom_line(aes(y = median)) +
-    geom_line(
-        aes(y = n),
-        data = pivot_longer(select(data, !ends_with("obs")) %>% filter(t <= 30), !t, names_to = "var", values_to = "n") %>%
-            mutate(age = gsub("[^0-9]", "", var)) %>%
-            mutate(var = gsub("[^a-zA-Z]", "", var)) %>%
-            mutate(var = gsub("one", "1", var)) %>%
-            mutate(var = gsub("two", "2", var)),
-        col = "red", linetype = "dashed"
-    ) +
-    geom_line(
-        aes(y = n),
-        data = pivot_longer(select(data, t, ends_with("obs")) %>% filter(t <= 30), !t, names_to = "var", values_to = "n") %>%
-            mutate(var = gsub("obs", "", var)) %>%
-            mutate(age = gsub("[^0-9]", "", var)) %>%
-            mutate(var = gsub("[^a-zA-Z]", "", var)),
-        col = "blue", linetype = "dashed"
-    ) +
-    facet_grid(var ~ age, scales = "free") +
-    xlab("Days") + 
-    ylab("Counts")
-ggsave("sims_nomd.pdf", p, width = 10, height = 10)
-
-## repeat but adding some model discrepancy
-runs_md <- PF(pars[6, ], C = contact, data = data, u = u, ndays = 30, npart = 100, obsScale = 0.8, MD = TRUE, disScale = 0.1, whichSave = 1)
-
-## plot particle estimates of states (unweighted)
-sims_md <- map(sims, ~map(., ~as.vector(t(.)))) %>%
-    map(~do.call("rbind", .)) %>%
-    map(as_tibble) %>%
-    bind_rows(.id = "t") %>%
-    mutate(t = as.numeric(t))
-stageNms <- map(c("S", "E", "A", "RA", "P", "Ione", "DI", "Itwo", "RI", "H", "RH", "DH"), ~paste0(., 1:8)) %>%
-    reduce(c)
-colnames(sims_md) <- c("t", stageNms)
-
-## plot replicates
-p <- pivot_longer(sims_md, !t, names_to = "var", values_to = "n") %>%
-    group_by(t, var) %>%
-    summarise(
-        LCI = quantile(n, probs = 0.025),
-        LQ = quantile(n, probs = 0.25),
-        median = median(n),
-        UQ = quantile(n, probs = 0.75),
-        UCI = quantile(n, probs = 0.975),
-        .groups = "drop"
-    ) %>%
-    mutate(age = gsub("[^0-9]", "", var)) %>%
-    mutate(var = gsub("[^a-zA-Z]", "", var)) %>%
-    mutate(var = gsub("one", "1", var)) %>%
-    mutate(var = gsub("two", "2", var)) %>%
-    ggplot(aes(x = t)) +
-    geom_ribbon(aes(ymin = LCI, ymax = UCI), alpha = 0.5) +
-    geom_ribbon(aes(ymin = LQ, ymax = UQ), alpha = 0.5) +
-    geom_line(aes(y = median)) +
-    geom_line(
-        aes(y = n),
-        data = pivot_longer(select(data, !ends_with("obs")) %>% filter(t <= 30), !t, names_to = "var", values_to = "n") %>%
-            mutate(age = gsub("[^0-9]", "", var)) %>%
-            mutate(var = gsub("[^a-zA-Z]", "", var)) %>%
-            mutate(var = gsub("one", "1", var)) %>%
-            mutate(var = gsub("two", "2", var)),
-        col = "red", linetype = "dashed"
-    ) +
-    geom_line(
-        aes(y = n),
-        data = pivot_longer(select(data, t, ends_with("obs")) %>% filter(t <= 30), !t, names_to = "var", values_to = "n") %>%
-            mutate(var = gsub("obs", "", var)) %>%
-            mutate(age = gsub("[^0-9]", "", var)) %>%
-            mutate(var = gsub("[^a-zA-Z]", "", var)),
-        col = "blue", linetype = "dashed"
-    ) +
-    facet_grid(var ~ age, scales = "free") +
-    xlab("Days") + 
-    ylab("Counts")
-ggsave("sims_md.pdf", p, width = 10, height = 10)
-
-## plot both together
-p <- mutate(sims_nomd, type = "No MD") %>%
-    rbind(mutate(sims_md, type = "MD")) %>%
-    pivot_longer(!c(t, type), names_to = "var", values_to = "n") %>%
-    group_by(t, var, type) %>%
-    summarise(
-        LCI = quantile(n, probs = 0.025),
-        LQ = quantile(n, probs = 0.25),
-        median = median(n),
-        UQ = quantile(n, probs = 0.75),
-        UCI = quantile(n, probs = 0.975),
-        .groups = "drop"
-    ) %>%
-    mutate(age = gsub("[^0-9]", "", var)) %>%
-    mutate(var = gsub("[^a-zA-Z]", "", var)) %>%
-    mutate(var = gsub("one", "1", var)) %>%
-    mutate(var = gsub("two", "2", var)) %>%
-    ggplot(aes(x = t)) +
-    geom_ribbon(aes(ymin = LCI, ymax = UCI, fill = type), alpha = 0.5) +
-    geom_ribbon(aes(ymin = LQ, ymax = UQ, fill = type), alpha = 0.5) +
-    geom_line(aes(y = median, colour = type)) +
-    geom_line(
-        aes(y = n),
-        data = pivot_longer(select(data, !ends_with("obs")) %>% filter(t <= 30), !t, names_to = "var", values_to = "n") %>%
-            mutate(age = gsub("[^0-9]", "", var)) %>%
-            mutate(var = gsub("[^a-zA-Z]", "", var)) %>%
-            mutate(var = gsub("one", "1", var)) %>%
-            mutate(var = gsub("two", "2", var)),
-        col = "red", linetype = "dashed"
-    ) +
-    geom_line(
-        aes(y = n),
-        data = pivot_longer(select(data, t, ends_with("obs")) %>% filter(t <= 30), !t, names_to = "var", values_to = "n") %>%
-            mutate(var = gsub("obs", "", var)) %>%
-            mutate(age = gsub("[^0-9]", "", var)) %>%
-            mutate(var = gsub("[^a-zA-Z]", "", var)),
-        col = "blue", linetype = "dashed"
-    ) +
-    facet_grid(var ~ age, scales = "free") +
-    xlab("Days") + 
-    ylab("Counts")
-ggsave("sims_combined.pdf", p, width = 10, height = 10)
+for(k in 1:6) {
+    ## run model with no model discrepancy and throw out sims corresponding to true parameters
+    ## if you want to save out some runs, you can only run for a single design point at a time
+    ## due to parallelisation - I could fix, but not right now
+    runs_nomd <- PF(pars[k, ], C = contact, data = data, u = u, ndays = 50, npart = 100, obsScale = 0.8, MD = FALSE, whichSave = 1)
+    
+    ## plot particle estimates of states (unweighted)
+    sims_nomd <- map(sims, ~map(., ~as.vector(t(.)))) %>%
+        map(~do.call("rbind", .)) %>%
+        map(as_tibble) %>%
+        bind_rows(.id = "t") %>%
+        mutate(t = as.numeric(t))
+    stageNms <- map(c("S", "E", "A", "RA", "P", "Ione", "DI", "Itwo", "RI", "H", "RH", "DH"), ~paste0(., 1:8)) %>%
+        reduce(c)
+    colnames(sims_nomd) <- c("t", stageNms)
+    
+    ## repeat but adding some model discrepancy
+    runs_md <- PF(pars[k, ], C = contact, data = data, u = u, ndays = 50, npart = 100, obsScale = 0.8, MD = TRUE, disScale = 0.1, whichSave = 1)
+    
+    ## plot particle estimates of states (unweighted)
+    sims_md <- map(sims, ~map(., ~as.vector(t(.)))) %>%
+        map(~do.call("rbind", .)) %>%
+        map(as_tibble) %>%
+        bind_rows(.id = "t") %>%
+        mutate(t = as.numeric(t))
+    stageNms <- map(c("S", "E", "A", "RA", "P", "Ione", "DI", "Itwo", "RI", "H", "RH", "DH"), ~paste0(., 1:8)) %>%
+        reduce(c)
+    colnames(sims_md) <- c("t", stageNms)
+    
+    ## plot both together
+    p <- mutate(sims_nomd, type = "No MD") %>%
+        rbind(mutate(sims_md, type = "MD")) %>%
+        pivot_longer(!c(t, type), names_to = "var", values_to = "n") %>%
+        group_by(t, var, type) %>%
+        summarise(
+            LCI = quantile(n, probs = 0.025),
+            LQ = quantile(n, probs = 0.25),
+            median = median(n),
+            UQ = quantile(n, probs = 0.75),
+            UCI = quantile(n, probs = 0.975),
+            .groups = "drop"
+        ) %>%
+        mutate(age = gsub("[^0-9]", "", var)) %>%
+        mutate(var = gsub("[^a-zA-Z]", "", var)) %>%
+        mutate(var = gsub("one", "1", var)) %>%
+        mutate(var = gsub("two", "2", var)) %>%
+        ggplot(aes(x = t)) +
+        geom_ribbon(aes(ymin = LCI, ymax = UCI, fill = type), alpha = 0.5) +
+        geom_ribbon(aes(ymin = LQ, ymax = UQ, fill = type), alpha = 0.5) +
+        geom_line(aes(y = median, colour = type)) +
+        geom_line(
+            aes(y = n),
+            data = pivot_longer(select(data, !ends_with("obs")) %>% filter(t <= 50), !t, names_to = "var", values_to = "n") %>%
+                mutate(age = gsub("[^0-9]", "", var)) %>%
+                mutate(var = gsub("[^a-zA-Z]", "", var)) %>%
+                mutate(var = gsub("one", "1", var)) %>%
+                mutate(var = gsub("two", "2", var)),
+            col = "red", linetype = "dashed"
+        ) +
+        geom_line(
+            aes(y = n),
+            data = pivot_longer(select(data, t, ends_with("obs")) %>% filter(t <= 50), !t, names_to = "var", values_to = "n") %>%
+                mutate(var = gsub("obs", "", var)) %>%
+                mutate(age = gsub("[^0-9]", "", var)) %>%
+                mutate(var = gsub("[^a-zA-Z]", "", var)),
+            col = "blue", linetype = "dashed"
+        ) +
+        facet_grid(var ~ age, scales = "free") +
+        xlab("Days") + 
+        ylab("Counts")
+    ggsave(paste0("sims_combined_", k, ".pdf"), p, width = 10, height = 10)
+}
