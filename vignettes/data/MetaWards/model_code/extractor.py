@@ -22,10 +22,10 @@ def create_tables(network: Networks):
 
     def initialise(conn):
         c = conn.cursor()
-        c.execute(f"create table compact(day int not null, ward int not null, {col_str}, "
-                  f"primary key (day, ward))")
-        c.execute(f"create table compact_ini(day int not null, ward int not null, {col_str_ini}, "
-                  f"primary key (day, ward))")
+        c.execute(f"create table compact(day int not null, LAD int not null, {col_str}, "
+                  f"primary key (day, LAD))")
+        c.execute(f"create table compact_ini(day int not null, LAD int not null, {col_str_ini}, "
+                  f"primary key (day, LAD))")
         conn.commit()
 
     return initialise
@@ -73,7 +73,7 @@ def output_db(population: Population, network: Networks,
             day = [population.day] * len(wards)
             
             ## set column names
-            col_names = ["day", "ward", "E", "P", "I1", "I2", "RI", "DI", "A", "RA", "H", "RH", "DH"]
+            col_names = ["day", "LAD", "E", "P", "I1", "I2", "RI", "DI", "A", "RA", "H", "RH", "DH"]
             col_str = ','.join(col_names)
             
             ## write to file
@@ -91,7 +91,7 @@ def output_db(population: Population, network: Networks,
                 ## try to fudge a marker for first infections
                 if any([ v > 0 for v in val[2:] ]) and _zero_crossings[ward] is False and ward != 0:
                     _zero_crossings[ward] = True
-                    Console.print(f"Got first infection in ward {ward}")
+                    Console.print(f"Got first infection in LAD {ward}")
                 
                 ## check for any changes in ward    
                 if _zero_crossings[ward] is True and any([ v > 0 for v in val[2:] ]):
@@ -166,7 +166,7 @@ def output_db(population: Population, network: Networks,
             day = [population.day] * len(wards)
             
             ## set column names
-            col_names = ["day", "ward", "Einc", "Pinc", "I1inc", "I2inc", "RIinc", "DIinc", "Ainc", "RAinc", "Hinc", "RHinc", "DHinc"]
+            col_names = ["day", "LAD", "Einc", "Pinc", "I1inc", "I2inc", "RIinc", "DIinc", "Ainc", "RAinc", "Hinc", "RHinc", "DHinc"]
             col_str = ','.join(col_names)
             
             ## write to file
@@ -179,7 +179,7 @@ def output_db(population: Population, network: Networks,
                 ## try to fudge a marker for first infections
                 if Einc != 0 and _zero_crossings[ward] is False and ward != 0:
                     _zero_crossings[ward] = True
-                    Console.print(f"Got first infection in ward {ward}")
+                    Console.print(f"Got first infection in LAD {ward}")
                     
                 ## set up list of changes
                 val = [day, ward, Einc, Pinc, I1inc, I2inc, RIinc, DIinc, Ainc, RAinc, Hinc, RHinc, DHinc]

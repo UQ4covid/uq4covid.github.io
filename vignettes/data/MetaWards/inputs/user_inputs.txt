@@ -23,7 +23,6 @@
 .nage = 8
 
 # names of input files for seeding
-.ward_seed_filename = "inputs/ward_seeds.csv"
 .age_seed_filename = "inputs/age_seeds.csv"
 .ini_states_filename = "inputs/seeds.csv"
 

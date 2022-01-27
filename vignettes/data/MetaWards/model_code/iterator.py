@@ -15,28 +15,6 @@ import re
 # use caching to store matrix read in from filename
 seed_file_cache = {}
 
-# functions to read seeding probabilities from file and/or return from cache
-def read_seed_file(filename):
-    global seed_file_cache
-    if filename not in seed_file_cache:
-        with open(filename, "r") as FILE:
-            ward_probs = [[num for num in line.split(',')] for line in FILE]
-        Console.debug("Ward-level seeding probabilities:", variables = [ward_probs])
-        
-        # convert to correct format
-        ward_probs = np.array(ward_probs)
-        ward_probs_ind = ward_probs[:, 0].astype(int)
-        ward_probs_LAD = ward_probs[:, 1].astype(int)
-        ward_probs = ward_probs[:, 2].astype(float)
-        
-        # save in cache        
-        seed_file_cache[filename] = "STORED"
-        seed_file_cache["ward_probs_ind"] = ward_probs_ind
-        seed_file_cache["ward_probs_LAD"] = ward_probs_LAD
-        seed_file_cache["ward_probs"] = ward_probs
-        
-    return seed_file_cache["ward_probs_ind"], seed_file_cache["ward_probs_LAD"], seed_file_cache["ward_probs"]
-
 # read in age lookup
 def read_age_file(filename):
     global seed_file_cache
@@ -159,7 +137,6 @@ def advance_initial_seeds(output_dir, network, population, infections, profiler,
     params = network.params
     
     # extract files name for initial seeding probabilities
-    ward_seed_filename = params.user_params["ward_seed_filename"]
     age_seed_filename = params.user_params["age_seed_filename"]
     ini_states_filename = params.user_params["ini_states_filename"]
     
@@ -168,7 +145,6 @@ def advance_initial_seeds(output_dir, network, population, infections, profiler,
     
     # set up lookups or read from cache
     age_probs_ind, age_probs = read_age_file(age_seed_filename)
-    ward_probs_ind, ward_probs_LAD, ward_probs = read_seed_file(ward_seed_filename)
     ini_states_output, ini_states_LAD, ini_states = read_states_file(ini_states_filename)
     
     # get output identifier for this run of MetaWards
@@ -205,13 +181,6 @@ def advance_initial_seeds(output_dir, network, population, infections, profiler,
             
             if nind > 0:
                 
-                # extract wards
-                filter_wards = [i == ini_states_LAD[k] for i in ward_probs_LAD]
-                if sum(filter_wards) == 0:
-                    raise Exception(f"Can't find any wards")
-                tward_probs = ward_probs[filter_wards]
-                tward_probs_ind = ward_probs_ind[filter_wards]
-                
                 # select seeds in age-classes at random according to initial probabilities
                 age_seeds = np.random.multinomial(nind, age_probs)
                 
@@ -233,16 +202,11 @@ def advance_initial_seeds(output_dir, network, population, infections, profiler,
                         # remove selected state from states
                         ini_states_curr[staten] -= 1
                         
-                        # select seeds in wards at random according to initial probabilities
-                        ward = np.random.multinomial(1, tward_probs)
-                        filter_ward = [i == 1 for i in ward]
-                        ward = tward_probs_ind[filter_ward]
-                        
                         # generate move
                         move = MoveGenerator(from_demographic = f'age{demographic + 1}',
                             to_demographic = f'age{demographic + 1}',
-                            from_ward = ward,
-                            to_ward = ward,
+                            from_ward = ini_states_LAD[k],
+                            to_ward = ini_states_LAD[k],
                             from_stage = "S",
                             to_stage = state[0],
                             number = 1)

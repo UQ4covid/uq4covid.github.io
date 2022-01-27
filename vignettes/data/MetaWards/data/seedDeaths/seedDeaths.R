@@ -20,7 +20,7 @@ if(length(args) > 0) {
 # enddate <- "2020-03-11"
 
 ## set path to MetaWardsData
-path <- paste0("../../../../../../MetaWardsData/model_data/2011to2019Data/")
+path <- paste0("../../../../../../MetaWardsData/model_data/2019LADData/")
 
 ## read in data, originally from here: 
 ## https://api.coronavirus.data.gov.uk/v2/data?areaType=ltla&metric=cumDeathsByDeathDate&format=csv
@@ -86,7 +86,7 @@ p <- deaths %>%
 ggsave("deathsProps.pdf", p)
 
 ## now read in ward to LAD lookup
-Ward19Lookup <- read_csv(paste0(path, "Ward19_Lookup.csv"))
+LAD19Lookup <- read_csv(paste0(path, "LAD19_Lookup.csv"))
 
 ## extract cumulative deaths before end date
 seeds <- deaths %>%
@@ -94,7 +94,7 @@ seeds <- deaths %>%
     select(areaCode, date, cumDeaths) %>%
     filter(date <= enddate) %>%
     filter(deaths > 0) %>%
-    complete(date = seq(ymd(startdate), ymd(enddate), by = 1), areaCode = unique(Ward19Lookup$LAD19CD)) %>%
+    complete(date = seq(ymd(startdate), ymd(enddate), by = 1), areaCode = LAD19Lookup$LAD19CD) %>%
     arrange(areaCode, date) %>%
     group_by(areaCode) %>%
     mutate(cumDeaths = ifelse(date == ymd(startdate) & is.na(cumDeaths), 0, cumDeaths)) %>%
@@ -109,12 +109,9 @@ group_by(seeds, areaCode) %>%
 # ggplot(seeds) +
 #     geom_line(aes(x = date, y = cumDeaths, group = areaCode))
     
-## check LTLA names match
-temp <- anti_join(seeds, Ward19Lookup, by = c("areaCode" = "LAD19CD"))
-temp
-
 ## match to wards
-seeds <- mutate(seeds, lad = as.numeric(as.factor(areaCode))) %>%
+seeds <- inner_join(seeds, select(LAD19Lookup, !LAD19NM), by = c("areaCode" = "LAD19CD")) %>%
+    rename(lad = FID) %>%
     group_by(areaCode, lad) %>%
     nest()
 
@@ -126,31 +123,23 @@ popsize <- full_join(workers, players, by = "X1") %>%
     mutate(popsize = X2.x + X2.y) %>%
     select(-X2.x, -X2.y)
 
-## join to Ward19 lookup
-Ward19Lookup <- Ward19Lookup %>%
-    inner_join(popsize, by = c("FID" = "X1")) %>%
-    group_by(LAD19CD) %>%
-    mutate(prop = popsize / sum(popsize)) %>%
-    ungroup()
-
 ## get LAD population sizes for seeding
-seeds <- group_by(Ward19Lookup, LAD19CD) %>%
-    summarise(popsize = sum(popsize)) %>%
-    inner_join(seeds, by = c("LAD19CD" = "areaCode")) %>%
-    mutate(deaths = map_dbl(data, ~max(.$cumDeaths)))
+seeds <- inner_join(seeds, popsize, by = c("lad" = "X1")) %>%
+    mutate(deaths = map_dbl(data, ~max(.$cumDeaths))) %>%
+    select(LAD19CD = areaCode, popsize, lad, data, deaths)
 
 ## write seeding file
 saveRDS(seeds, "../../inputs/seedsInfo.rds")
 
 ## spatial plot of seeds
-lad19 <- st_read("../ward11toWard19Mapping/Local_Authority_Districts_(December_2019)_Boundaries_UK_BFC/Local_Authority_Districts_(December_2019)_Boundaries_UK_BFC.shp")
+lad19 <- st_read("../wardToLADConversion/LAD19_shapefile/LAD19_shapefile.shp")
 
 ## check LTLA names match
 temp <- anti_join(seeds, lad19, by = c("LAD19CD" = "lad19cd"))
 temp
 
 ## join seeds to shapefile
-lad19 <- left_join(lad19, mutate(seeds, deaths = map_dbl(data, ~max(.$cumDeaths))), by = c("lad19cd" = "LAD19CD"))
+lad19 <- left_join(lad19, seeds, by = c("lad19cd" = "LAD19CD"))
 
 ## plot seeds spatially
 p <- mutate(lad19, deaths = ifelse(deaths == 0, NA, deaths)) %>%
@@ -171,19 +160,3 @@ p <- ggplot(seeds) +
     geom_histogram(aes(x = popsize)) +
     facet_wrap(~deaths)
 ggsave("popsize.pdf", p)
-
-## subset by LADs with initial infections
-seeds <- select(seeds, LAD19CD, lad) %>%
-    distinct() %>%
-    inner_join(Ward19Lookup, by = "LAD19CD") %>%
-    select(FID, lad, prop) %>%
-    arrange(lad, FID)
-stopifnot(
-    group_by(seeds, lad) %>%
-    summarise(prop = sum(prop), .groups = "drop") %>%
-    pluck("prop") %>%
-    {all(. == 1)}
-)
-
-## write seeds file
-write_csv(seeds, "../../inputs/ward_seeds.csv", col_names = FALSE)
