@@ -55,8 +55,8 @@ checkCounts <- function(u, cu, N) {
 ## whichSave: a design point from which to save the particles over time (useful just
 ##      to check some runs, but not returned if whichSave = NA)
 
-PF <- function(pars, C, data, u, ndays, npart = 10, MD = TRUE, obsScale = 1, disScale = 1, whichSave = NA) {
-    runs <- mclapply(1:nrow(pars), function(k, pars, C, u, npart, ndays, data, MD, obsScale, disScale, whichSave) {
+PF <- function(pars, C, data, u, ndays, npart = 10, MD = TRUE, a1 = 0.01, a2 = 0.2, b = 0.1, a_dis=0.05, b_dis = 0.5, whichSave = NA) {
+    runs <- mclapply(1:nrow(pars), function(k, pars, C, u, npart, ndays, data, MD, a1, a2, b, a_dis, b_dis, whichSave) {
         
         ## set initial log-likelihood
         ll <- 0
@@ -104,19 +104,19 @@ PF <- function(pars, C, data, u, ndays, npart = 10, MD = TRUE, obsScale = 1, dis
                     if(MD) {
                         ## DH (MD on incidence)
                         DHinc <- disSims[[i]][12, j] - u[[i]][12, j]
-                        DHinc <- DHinc + trSkellam(1 + disScale * DHinc, 1 + disScale * DHinc, -DHinc, u[[i]][10, j] - DHinc)
+                        DHinc <- DHinc + rtskellam(a_dis + b_dis * DHinc, a_dis + b_dis * DHinc, -DHinc, u[[i]][10, j] - DHinc)
                         disSims[[i]][12, j] <- u[[i]][12, j] + DHinc
                         cu[[i]][12, j] <- cu[[i]][12, j] + DHinc
                         
                         ## RH given DH (MD on icidence)
                         RHinc <- disSims[[i]][11, j] - u[[i]][11, j]
-                        RHinc <- RHinc + trSkellam(1 + disScale * RHinc, 1 + disScale * RHinc, -RHinc, u[[i]][10, j] - DHinc - RHinc)
+                        RHinc <- RHinc + rtskellam(a_dis + b_dis * RHinc, a_dis + b_dis * RHinc, -RHinc, u[[i]][10, j] - DHinc - RHinc)
                         disSims[[i]][11, j] <- u[[i]][11, j] + RHinc
                         cu[[i]][11, j] <- cu[[i]][11, j] + RHinc
                         
                         ## H
-                        disSims[[i]][10, j] <- disSims[[i]][10, j] + trSkellam(1 + disScale * disSims[[i]][10, j], 
-                             1 + disScale * disSims[[i]][10, j], 
+                        disSims[[i]][10, j] <- disSims[[i]][10, j] + rtskellam(a_dis + b_dis * disSims[[i]][10, j], 
+                             a_dis + b_dis * disSims[[i]][10, j], 
                              -disSims[[i]][10, j], u[[i]][10, j] + u[[i]][6, j] - DHinc - RHinc - 
                              disSims[[i]][10, j])  
                         Hinc <- disSims[[i]][10, j] - u[[i]][10, j] + DHinc + RHinc
@@ -124,20 +124,20 @@ PF <- function(pars, C, data, u, ndays, npart = 10, MD = TRUE, obsScale = 1, dis
                         
                         ## DI given H (MD on incidence)
                         DIinc <- disSims[[i]][7, j] - u[[i]][7, j]
-                        DIinc <- DIinc + trSkellam(1 + disScale * DIinc, 1 + disScale * DIinc, -DIinc, u[[i]][6, j] - Hinc - DIinc)
+                        DIinc <- DIinc + rtskellam(a_dis + b_dis * DIinc, a_dis + b_dis * DIinc, -DIinc, u[[i]][6, j] - Hinc - DIinc)
                         disSims[[i]][7, j] <- u[[i]][7, j] + DIinc
                         cu[[i]][7, j] <- cu[[i]][7, j] + DIinc            
                         
                         ## RI (MD on incidence)
                         RIinc <- disSims[[i]][9, j] - u[[i]][9, j]
-                        RIinc <- RIinc + trSkellam(1 + disScale * RIinc, 1 + disScale * RIinc, -RIinc, u[[i]][8, j] - RIinc)
+                        RIinc <- RIinc + rtskellam(a_dis + b_dis * RIinc, a_dis + b_dis * RIinc, -RIinc, u[[i]][8, j] - RIinc)
                         disSims[[i]][9, j] <- u[[i]][9, j] + RIinc
                         cu[[i]][9, j] <- cu[[i]][9, j] + RIinc
                         
                         ## I2 given H, RI and DI
                         disSims[[i]][8, j] <- disSims[[i]][8, j] + 
-                            trSkellam(1 + disScale * disSims[[i]][8, j], 
-                            1 + disScale * disSims[[i]][8, j], 
+                            rtskellam(a_dis + b_dis * disSims[[i]][8, j], 
+                            a_dis + b_dis * disSims[[i]][8, j], 
                             -disSims[[i]][8, j], u[[i]][8, j] + u[[i]][6, j] - Hinc - DIinc - RIinc - 
                             disSims[[i]][8, j])
                         I2inc <- disSims[[i]][8, j] - u[[i]][8, j] + RIinc
@@ -145,15 +145,15 @@ PF <- function(pars, C, data, u, ndays, npart = 10, MD = TRUE, obsScale = 1, dis
                         
                         ## I1 given later
                         disSims[[i]][6, j] <- disSims[[i]][6, j] + 
-                            trSkellam(1 + disScale * disSims[[i]][6, j], 
-                            1 + disScale * disSims[[i]][6, j], -disSims[[i]][6, j], 
+                            rtskellam(a_dis + b_dis * disSims[[i]][6, j], 
+                            a_dis + b_dis * disSims[[i]][6, j], -disSims[[i]][6, j], 
                             u[[i]][6, j] + u[[i]][5, j] - I2inc - Hinc - DIinc - disSims[[i]][6, j])
                         I1inc <- disSims[[i]][6, j] - u[[i]][6, j] + DIinc + Hinc + I2inc
                         cu[[i]][6, j] <- cu[[i]][6, j] + I1inc
                         
                         ## P given later
                         disSims[[i]][5, j] <- disSims[[i]][5, j] + 
-                            trSkellam(1 + disScale * disSims[[i]][5, j], 1 + disScale * disSims[[i]][5, j], 
+                            rtskellam(a_dis + b_dis * disSims[[i]][5, j], a_dis + b_dis * disSims[[i]][5, j], 
                             -disSims[[i]][5, j], u[[i]][5, j] + u[[i]][2, j] - I1inc - 
                             disSims[[i]][5, j])
                         Pinc <- disSims[[i]][5, j] - u[[i]][5, j] + I1inc
@@ -161,21 +161,21 @@ PF <- function(pars, C, data, u, ndays, npart = 10, MD = TRUE, obsScale = 1, dis
                         
                         ## RA (MD on incidence)
                         RAinc <- disSims[[i]][4, j] - u[[i]][4, j]
-                        RAinc <- RAinc + trSkellam(1 + disScale * RAinc, 1 + disScale * RAinc, -RAinc, u[[i]][3, j] - RAinc)
+                        RAinc <- RAinc + rtskellam(a_dis + b_dis * RAinc, a_dis + b_dis * RAinc, -RAinc, u[[i]][3, j] - RAinc)
                         disSims[[i]][4, j] <- u[[i]][4, j] + RAinc
                         cu[[i]][4, j] <- cu[[i]][4, j] + RAinc
                         
                         ## A given later
                         disSims[[i]][3, j] <- disSims[[i]][3, j] + 
-                            trSkellam(1 + disScale * disSims[[i]][3, j], 
-                            1 + disScale * disSims[[i]][3, j], -disSims[[i]][3, j], 
+                            rtskellam(a_dis + b_dis * disSims[[i]][3, j], 
+                            a_dis + b_dis * disSims[[i]][3, j], -disSims[[i]][3, j], 
                             u[[i]][3, j] + u[[i]][2, j] - Pinc - RAinc - disSims[[i]][3, j])
                         Ainc <- disSims[[i]][3, j] - u[[i]][3, j] + RAinc
                         cu[[i]][3, j] <- cu[[i]][3, j] + Ainc
                         
                         ## E
                         disSims[[i]][2, j] <- disSims[[i]][2, j] + 
-                            trSkellam(1 + disScale * disSims[[i]][2, j], 1 + disScale * disSims[[i]][2, j], 
+                            rtskellam(a_dis + b_dis * disSims[[i]][2, j], a_dis + b_dis * disSims[[i]][2, j], 
                             -disSims[[i]][2, j], u[[i]][2, j] + u[[i]][1, j] - Ainc - Pinc - 
                             disSims[[i]][2, j])
                         Einc <- disSims[[i]][2, j] - u[[i]][2, j] + Ainc + Pinc
@@ -236,11 +236,13 @@ PF <- function(pars, C, data, u, ndays, npart = 10, MD = TRUE, obsScale = 1, dis
                     # if(!identical(disSims[[i]], u[[i]])) browser()
                     
                     ## calculate log observation error weights
-                    obsDiffs <- c(
-                        DIinc - (pluck(data, paste0("DI", j, "obs"))[t] - ifelse(t > 1, pluck(data, paste0("DI", j, "obs"))[t - 1], 0)),
-                        DHinc - (pluck(data, paste0("DH", j, "obs"))[t] - ifelse(t > 1, pluck(data, paste0("DH", j, "obs"))[t - 1], 0))
+                    obsInc <- c(
+                        (pluck(data, paste0("DI", j, "obs"))[t] - ifelse(t > 1, pluck(data, paste0("DI", j, "obs"))[t - 1], 0)),
+                        (pluck(data, paste0("DH", j, "obs"))[t] - ifelse(t > 1, pluck(data, paste0("DH", j, "obs"))[t - 1], 0))
                     )  
-                    weights[i] <- weights[i] + sum(dpois(obsDiffs, 1 + obsScale * c(DIinc, DHinc), log = TRUE))
+                    obsDiffs <- obsInc - c(DIinc, DHinc)
+                    weights[i] <- weights[i] + 
+                        sum(dtskellam(obsDiffs, a1 + b * c(DIinc, DHinc), a2 + b * c(DIinc, DHinc), LB=-c(DIinc, DHinc), UB = obsInc, log = TRUE))
                 }
                 # ## check counts
                 # checkCounts(disSims[[i]], cu[[i]], N)
@@ -274,7 +276,7 @@ PF <- function(pars, C, data, u, ndays, npart = 10, MD = TRUE, obsScale = 1, dis
             }
         }
         ll
-    }, pars = pars, C = C, u = u, npart = npart, ndays = ndays, data = data, MD = MD, obsScale = obsScale, disScale = disScale, whichSave = whichSave, mc.cores = detectCores())
+    }, pars = pars, C = C, u = u, npart = npart, ndays = ndays, data = data, MD = MD, a1 = a1, a2 = a2, b = b, a_dis=a_dis, b_dis = b_dis, whichSave = whichSave, mc.cores = detectCores())
     runs <- do.call("c", runs)
     runs
 }

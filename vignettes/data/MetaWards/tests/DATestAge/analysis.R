@@ -54,13 +54,13 @@ set.seed(666)
 # runs_nomd <- PF(pars, C = contact, data = data, u = u, ndays = 30, npart = 100, obsScale = 0.8, MD = FALSE)
 # 
 # ## repeat but adding some model discrepancy
-# runs_md <- PF(pars, C = contact, data = data, u = u, ndays = 30, npart = 100, obsScale = 0.8, MD = TRUE, disScale = 0.1)
+# runs_md <- PF(pars, C = contact, data = data, u = u, ndays = 30, npart = 100, obsScale = 0.8, MD = TRUE, a_dis = 0.05, b_dis = 0.05)
 
-for(k in 1:6) {
+for(k in 6) {
     ## run model with no model discrepancy and throw out sims corresponding to true parameters
     ## if you want to save out some runs, you can only run for a single design point at a time
     ## due to parallelisation - I could fix, but not right now
-    runs_nomd <- PF(pars[k, ], C = contact, data = data, u = u, ndays = 50, npart = 100, obsScale = 0.8, MD = FALSE, whichSave = 1)
+    runs_nomd <- PF(pars[k, ], C = contact, data = data, u = u, ndays = 50, npart = 100, MD = FALSE, whichSave = 1)
     
     ## plot particle estimates of states (unweighted)
     sims_nomd <- map(sims, ~map(., ~as.vector(t(.)))) %>%
@@ -73,7 +73,7 @@ for(k in 1:6) {
     colnames(sims_nomd) <- c("t", stageNms)
     
     ## repeat but adding some model discrepancy
-    runs_md <- PF(pars[k, ], C = contact, data = data, u = u, ndays = 50, npart = 100, obsScale = 0.8, MD = TRUE, disScale = 0.1, whichSave = 1)
+    runs_md <- PF(pars[k, ], C = contact, data = data, u = u, ndays = 50, npart = 100, MD = TRUE, a_dis = 0.05, b_dis = 0.05, whichSave = 1)
     
     ## plot particle estimates of states (unweighted)
     sims_md <- map(sims, ~map(., ~as.vector(t(.)))) %>%

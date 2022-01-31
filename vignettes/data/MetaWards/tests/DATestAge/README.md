@@ -4,9 +4,9 @@ approach to calibrate models and perform DA simultaneously.
 The files `disease.dat` and `inputs.rds` contain the design
 we have been using for the MW model. 
 
-Firstly run `stochModel.R` to simulate data using one
-of the MW design points. Outputs are placed in the `outputs`
-folder (which is created if it is not present).
+Firstly run `stochModel.R`/`stochPerfect.R` to simulate data 
+using one of the MW design points. Outputs are placed in the 
+`outputs` folder (which is created if it is not present).
 
 Then the file `analysis.R` gives some commands for reading
 in the data and the current design.
