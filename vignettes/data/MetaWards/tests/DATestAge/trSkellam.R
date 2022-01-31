@@ -6,6 +6,12 @@ dtskellam <- function(x, lambda1, lambda2, LB = -Inf, UB = Inf, log = FALSE) {
     
     ## checks on inputs
     if(missing(x) | missing(lambda1) | missing(lambda2)) stop("'x', 'lambda1' and 'lambda2' must be specified")
+    if(any(!is.numeric(c(x, lambda1, lambda2, LB, UB)))) stop("Inputs must be numeric")
+    if(!is.logical(log)) stop("'log' must be logical")
+    if(length(log) > 1) {
+        cat("Only first element of 'log' used")
+        log <- log[1]
+    }
     if(length(lambda1) != length(x) & length(lambda1) > 1) stop("'lambda1' must be of length 1 or length(x)")
     if(length(lambda2) != length(x) & length(lambda2) > 1) stop("'lambda2' must be of length 1 or length(x)")
     if(length(LB) != length(x) & length(LB) > 1) stop("'LB' must be of length 1 or length(x)")
@@ -49,67 +55,82 @@ dtskellam <- function(x, lambda1, lambda2, LB = -Inf, UB = Inf, log = FALSE) {
 }
 
 ## truncated Skellam sampling
-rtskellam <- function(lambda1, lambda2, LB = -Inf, UB = Inf, ntries = 1000) {
+rtskellam <- function(n, lambda1, lambda2, LB = -Inf, UB = Inf, ntries = 1000) {
     
     ## checks on inputs
-    if(LB > UB) stop("'LB' can't be > 'UB'")
-    if(identical(LB, UB) & !is.finite(LB)) stop("'LB' and 'UB' misspecified")
-    if(any(c(lambda1, lambda2) <= 0)) stop("'lambda1' and 'lambda2' must be > 0")
-    if(length(lambda1) != 1 | length(lambda2) != 1 | length(LB) != 1 | length(UB) != 1) {
-        stop("Inputs must be of length 1 currently")
-    } 
+    if(missing(n) | missing(lambda1) | missing(lambda2)) stop("'n', 'lambda1' and 'lambda2' must be specified")
+    if(any(!is.numeric(c(n, lambda1, lambda2, LB, UB, ntries)))) stop("Inputs must be numeric")
+    if(length(lambda1) != n & length(lambda1) > 1) stop("'lambda1' must be of length 1 or n")
+    if(length(lambda2) != n & length(lambda2) > 1) stop("'lambda2' must be of length 1 or n")
+    if(length(LB) != n & length(LB) > 1) stop("'LB' must be of length 1 or n")
+    if(length(UB) != n & length(UB) > 1) stop("'UB' must be of length 1 or n")
     
-    if(LB == -Inf & UB == Inf) {
-        return(rskellam(1, lambda1, lambda2))
+    ## expand inputs
+    if(length(lambda1) != n) lambda1 <- rep(lambda1, n)
+    if(length(lambda2) != n) lambda2 <- rep(lambda2, n)
+    if(length(LB) != n) LB <- rep(LB, n)
+    if(length(UB) != n) UB <- rep(UB, n)
+    
+    ## more checks
+    if(any(LB > UB)) stop("'LB' can't be > 'UB'")
+    if(any(apply(cbind(LB, UB), 1, function(x) identical(x[1], x[2])) & !is.finite(LB))) stop("'LB' and 'UB' misspecified")
+    if(any(c(lambda1, lambda2) <= 0)) stop("'lambda1' and 'lambda2' must be > 0")
+    
+    if(all(LB == -Inf) & all(UB == Inf)) {
+        return(rskellam(n, lambda1, lambda2))
     }
-    x <- rskellam(1, lambda1, lambda2)
+    x <- rskellam(n, lambda1, lambda2)
+    missind <- which(x < LB | x > UB)
     k <- 1
-    while((x < LB | x > UB) & k < ntries) {
-        x <- rskellam(1, lambda1, lambda2)
+    while(length(missind) > 0 & k < ntries) {
+        x <- rskellam(length(missind), lambda1[missind], lambda2[missind])
+        missind <- which(x < LB | x > UB)
         k <- k + 1
     }
     if(k == ntries) {
         ## if brute force doesn't work, then try inverse transform sampling
-        u <- runif(1, 0, 1)
-        if(is.finite(LB) & !is.finite(UB)) {
+        u <- runif(length(missind), 0, 1)
+        if(any(is.finite(LB) & !is.finite(UB))) {
             stop("Need to check this")
             browser()
-            ## normalising constant
-            norm <- pskellam(LB, lambda1, lambda2, lower.tail = FALSE, log.p = TRUE)
-            UB <- 1000
-            x <- cumsum(exp(dskellam(LB:UB, lambda1, lambda2, log = TRUE) - norm))
-            ind <- which(x >= u)
-            while(length(ind) == 0) {
-                LB <- UB
-                UB <- UB + 1000
-                x <- x[length(x)] + cumsum(exp(dskellam(LB:UB, lambda1, lambda2, log = TRUE) - norm))
-                ind <- which(x >= u)
-            }
-            x <- c(LB:UB)[ind[1]]
+            # ## normalising constant
+            # norm <- pskellam(LB, lambda1, lambda2, lower.tail = FALSE, log.p = TRUE)
+            # UB <- 1000
+            # x <- cumsum(exp(dskellam(LB:UB, lambda1, lambda2, log = TRUE) - norm))
+            # ind <- which(x >= u)
+            # while(length(ind) == 0) {
+            #     LB <- UB
+            #     UB <- UB + 1000
+            #     x <- x[length(x)] + cumsum(exp(dskellam(LB:UB, lambda1, lambda2, log = TRUE) - norm))
+            #     ind <- which(x >= u)
+            # }
+            # x <- c(LB:UB)[ind[1]]
         } else {
-            if(!is.finite(LB) & is.finite(UB)) {
+            if(any(!is.finite(LB) & is.finite(UB))) {
                 stop("Need to check this")
                 browser()
-                ## normalising constant
-                norm <- pskellam(UB, lambda1, lambda2, lower.tail = TRUE, log.p = TRUE)
-                LB <- -1000
-                x <- cumsum(rev(exp(dskellam(LB:UB, lambda1, lambda2, log=  TRUE) - norm)))
-                ind <- which(x >= u)
-                while(length(ind) == 0) {
-                    UB <- LB
-                    LB <- LB - 1000
-                    x <- x[length(x)] + cumsum(rev(exp(dskellam(LB:UB, lambda1, lambda2, log.p = TRUE) - norm)))
-                    ind <- which(x >= u)
-                }
-                x <- rev(LB:UB)[ind[1]]
+                # ## normalising constant
+                # norm <- pskellam(UB, lambda1, lambda2, lower.tail = TRUE, log.p = TRUE)
+                # LB <- -1000
+                # x <- cumsum(rev(exp(dskellam(LB:UB, lambda1, lambda2, log=  TRUE) - norm)))
+                # ind <- which(x >= u)
+                # while(length(ind) == 0) {
+                #     UB <- LB
+                #     LB <- LB - 1000
+                #     x <- x[length(x)] + cumsum(rev(exp(dskellam(LB:UB, lambda1, lambda2, log.p = TRUE) - norm)))
+                #     ind <- which(x >= u)
+                # }
+                # x <- rev(LB:UB)[ind[1]]
             } else {
                 ## normalising constant
-                norm <- dskellam(LB:UB, lambda1, lambda2, log = TRUE)
-                maxn <- max(norm)
-                norm <- maxn + log(sum(exp(norm - maxn)))
-                x <- cumsum(exp(dskellam(LB:UB, lambda1, lambda2, log = TRUE) - norm))
-                ind <- which(x >= u)
-                x <- c(LB:UB)[ind[1]]
+                x <- sapply(missind, function(i, u, UB, LB, lambda1, lambda2) {
+                    x <- dskellam(LB[i]:UB[i], lambda1[i], lambda2[i], log = TRUE)
+                    maxn <- max(x)
+                    norm <- maxn + log(sum(exp(x - maxn)))
+                    x <- cumsum(exp(x - norm))
+                    ind <- which(x >= u[i])
+                    c(LB[i]:UB[i])[ind[1]]
+                }, u = u, LB = LB, UB = UB, lambda1 = lambda1, lambda2 = lambda2)
             }
         }
 #        print(paste("lambda1 =", lambda1, "lambda2 =", lambda2, "LB =", LB, "UB =", UB))
