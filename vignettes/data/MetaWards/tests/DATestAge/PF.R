@@ -51,12 +51,11 @@ checkCounts <- function(u, cu, N) {
 ## npart: the number of particles
 ## MD:    turn model discrepancy process on (TRUE) or off (FALSE)
 ## obsScale: scaling parameter for Poisson observation process (see code)
-## disScale: scaling parameter for model discrepancy variance (see code)
-## whichSave: a design point from which to save the particles over time (useful just
-##      to check some runs, but not returned if whichSave = NA)
+## a1, a2, b: parameters for Skellam observation process
+## saveAll: a logical specifying whether to return all states (if FALSE then returns just observed states))
 
-PF <- function(pars, C, data, u, ndays, npart = 10, MD = TRUE, a1 = 0.01, a2 = 0.2, b = 0.1, a_dis=0.05, b_dis = 0.5, whichSave = NA) {
-    runs <- mclapply(1:nrow(pars), function(k, pars, C, u, npart, ndays, data, MD, a1, a2, b, a_dis, b_dis, whichSave) {
+PF <- function(pars, C, data, u, ndays, npart = 10, MD = TRUE, a1 = 0.01, a2 = 0.2, b = 0.1, a_dis = 0.05, b_dis = 0.5, saveAll = FALSE) {
+    runs <- mclapply(1:nrow(pars), function(k, pars, C, u, npart, ndays, data, MD, a1, a2, b, a_dis, b_dis, saveAll) {
         
         ## set initial log-likelihood
         ll <- 0
@@ -77,8 +76,8 @@ PF <- function(pars, C, data, u, ndays, npart = 10, MD = TRUE, a1 = 0.01, a2 = 0
         ## vector of particle weights
         weights <- numeric(npart)
         
-        ## temporary list to store outputs if !is.na(whichSave)
-        tempOut <- list()
+        ## list to store outputs
+        if(!is.na(saveAll)) out <- list()
         
         ## extract observations
         data <- select(data, t, (starts_with("DI") | starts_with("DH")) & ends_with("obs")) %>%
@@ -99,8 +98,6 @@ PF <- function(pars, C, data, u, ndays, npart = 10, MD = TRUE, a1 = 0.01, a2 = 0
                 
                 ## cols: c("S", "E", "A", "RA", "P", "I1", "DI", "I2", "RI", "H", "RH", "DH")
                 ##          1,   2,   3,   4,    5,   6,    7,    8,    9,    10,  11,   12
-                # print(c(j, t, i))
-                # if(j == 1 & t == 19 & i == 1) browser()
                 
                 ## set weights
                 weights[i] <- 0
@@ -238,7 +235,6 @@ PF <- function(pars, C, data, u, ndays, npart = 10, MD = TRUE, a1 = 0.01, a2 = 0
                     disSims[[i]][1, ] <- u[[i]][1, ] - Einc
                     cu[[i]][1, ] <- cu[[i]][1, ] - Einc
                 }
-                # if(!identical(disSims[[i]], u[[i]])) browser()
                 
                 ## calculate log observation error weights
                 obsInc <- data[t, -1]
@@ -248,19 +244,24 @@ PF <- function(pars, C, data, u, ndays, npart = 10, MD = TRUE, a1 = 0.01, a2 = 0
                 # ## check counts
                 # checkCounts(disSims[[i]], cu[[i]], N)
             }
-            tempOut[[t]] <- disSims
+            if(!is.na(saveAll)) {
+                if(saveAll) {
+                    out[[t]] <- disSims
+                } else {
+                    out[[t]] <- map(disSims, ~.[c(7, 12), ])
+                }
+            }
             
             ## calculate log-likelihood contribution
             ll <- ll + log_sum_exp(weights, mn = TRUE)
             
             ## if zero likelihood then return
             if(!is.finite(ll)) {
-                if(!is.na(whichSave)) {
-                    if(k == whichSave) {
-                        assign("sims", tempOut, pos = 1)
-                    }
+                if(!is.na(saveAll)) {
+                    return(list(ll = ll, particles = out))
+                } else {
+                    return(ll)
                 }
-                return(ll)
             }
             
             ## normalise weights
@@ -271,13 +272,20 @@ PF <- function(pars, C, data, u, ndays, npart = 10, MD = TRUE, a1 = 0.01, a2 = 0
             u <- disSims[inds]
             cu <- cu[inds]
         }
-        if(!is.na(whichSave)) {
-            if(k == whichSave) {
-                assign("sims", tempOut, pos = 1)
-            }
+        if(!is.na(saveAll)) {
+            return(list(ll = ll, particles = out))
+        } else {
+            return(ll)
         }
-        ll
-    }, pars = pars, C = C, u = u, npart = npart, ndays = ndays, data = data, MD = MD, a1 = a1, a2 = a2, b = b, a_dis=a_dis, b_dis = b_dis, whichSave = whichSave, mc.cores = detectCores())
-    runs <- do.call("c", runs)
-    runs
+    }, pars = pars, C = C, u = u, npart = npart, ndays = ndays, data = data, MD = MD, 
+       a1 = a1, a2 = a2, b = b, a_dis = a_dis, b_dis = b_dis, saveAll = saveAll, mc.cores = detectCores())
+    if(!is.na(saveAll)) {
+        ll <- map(runs, "ll")
+        runs <- map(runs, "particles")
+        ll <- do.call("c", ll)
+        return(list(ll = ll, particles = runs))
+    } else {
+        ll <- do.call("c", runs)
+        return(ll)
+    }
 }
