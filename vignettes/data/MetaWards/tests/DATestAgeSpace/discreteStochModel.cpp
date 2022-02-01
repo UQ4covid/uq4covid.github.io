@@ -5,97 +5,28 @@
 using namespace Rcpp;
 
 // [[Rcpp::export]]
-IntegerMatrix discreteStochModel(NumericVector pars, int tstart, int tstop, NumericVector ageProbs,
-                                 arma::imat workMoves, arma::mat C) {
+IntegerMatrix discreteStochModel(NumericVector pars, int tstart, int tstop, 
+                                 arma::imat u1_moves, arma::icube u1, 
+                                 arma::icube u1_day, arma::icube u1_night,
+                                 arma::imat N_day, arma::imat N_night,
+                                 arma::mat C) {
     
-    // workMoves is a matrix with columns: LADfrom, LADto, nmoves, nseeds
+    // u1_moves is a matrix with columns: LADfrom, LADto
+    // u1 is a 3D array with dimensions: nclasses x nages x nmoves
+    //          each row of u1 must match u1_moves
+    // u1_day and u1_night are 3D arrays with dimensions: nclasses x nages x nlads
+    // N_day and N_night are nages x nlad matrices of population counts
     
     // set up auxiliary matrix for counts
-    int nclasses = 12;
-    int nages = ageProbs.size();
-    int nlads = (int) max(workMoves.col(0));
+    int nclasses = u1_day.n_rows;
+    int nages = u1_day.n_cols;
+    int nlads = u1_day.n_slices;
     int k;
     arma::uword i, j, l;
     
-    // create cube object to store nclass x nage x nmove information
-    arma::icube u1(nclasses, nages, workMoves.n_rows);
-    arma::icube u1_day(nclasses, nages, nlads);
-    arma::icube u1_night(nclasses, nages, nlads);
-    u1.zeros();
-    u1_day.zeros();
-    u1_night.zeros();
-    arma::imat N_day(nages, nlads);
-    arma::imat N_night(nages, nlads);
-    N_day.zeros();
-    N_night.zeros();
+    // create objects to store move information
     arma::mat pinf(nages, nlads);
-    arma::imat origE(nages, workMoves.n_rows);
-    
-    // split workers and seed into age-classes probabilistically
-    IntegerVector pathAge(nages);
-    NumericVector seedProbs(nages);
-    double nseeds = 0.0;
-    for(i = 0; i < workMoves.n_rows; i++) {
-        // split population by age
-        rmultinom(workMoves(i, 2), ageProbs.begin(), nages, pathAge.begin());
-        for(j = 0; j < nages; j++) {
-            u1(0, j, i) = pathAge(j);
-            // if(u1(0, j, i) > 1000000) Rprintf("u1 = %d i = %d j = %d\n", u1(0, j, i), i, j);
-        }
-        // set seeds within population (taking care to account for finite population size)
-        for(l = 0; l < workMoves(i, 3); l++) {
-            nseeds = 0.0;
-            for(j = 0; j < nages; j++) {
-                nseeds += u1(0, j, i);
-            }
-            for(j = 0; j < nages; j++) {
-                seedProbs(j) = u1(0, j, i) / nseeds;
-            }
-            rmultinom(1, seedProbs.begin(), nages, pathAge.begin());
-            for(j = 0; j < nages; j++) {
-                u1(0, j, i) -= pathAge(j);
-                u1(1, j, i) += pathAge(j);
-                // if(u1(0, j, i) > 1000000) Rprintf("u1 = %d i = %d j = %d\n", u1(0, j, i), i, j);
-                // if(u1(0, j, i) < 0) Rprintf("neg wk = %d u1 = %d i = %d j = %d\n", workMoves(i, 3), u1(0, j, i), i, j);
-            }
-        }
-        // if(i == 196) {
-        //     for(j = 0; j < nages; j++) {
-        //         Rprintf("u1(0, %d, %d) = %d ", j, i, u1(0, j, i));
-        //         Rprintf("u1(1, %d, %d) = %d\n", j, i, u1(1, j, i));
-        //     }
-        // }
-    }
-    // construct day and night counts
-    for(l = 0; l < workMoves.n_rows; l++) {
-        for(i = 0; i < nclasses; i++) {
-            for(j = 0; j < nages; j++) {
-                u1_day(i, j, (arma::uword) workMoves(l, 1) - 1) += u1(i, j, l);
-                u1_night(i, j, (arma::uword) workMoves(l, 0) - 1) += u1(i, j, l);
-            }
-        }
-        // if(l == 196) {
-        //     for(j = 0; j < nages; j++) {
-        //         Rprintf("u1_night(0, %d, %d) = %d ", j, workMoves(l, 0) - 1, u1_night(0, j, (arma::uword) workMoves(l, 0) - 1));
-        //         Rprintf("u1_night(1, %d, %d) = %d\n", j, workMoves(l, 0) - 1, u1_night(1, j, (arma::uword) workMoves(l, 0) - 1));
-        //         Rprintf("u1_day(0, %d, %d) = %d ", j, workMoves(l, 1) - 1, u1_day(0, j, (arma::uword) workMoves(l, 1) - 1));
-        //         Rprintf("u1_day(1, %d, %d) = %d\n", j, workMoves(l, 1) - 1, u1_day(1, j, (arma::uword) workMoves(l, 1) - 1));
-        //     }
-        // }
-    }
-    for(i = 0; i < nlads; i++) {
-        for(j = 0; j < nages; j++) {
-            for(l = 0; l < nclasses; l++) {
-                N_day(j, i) += u1_day(l, j, i);
-                N_night(j, i) += u1_night(l, j, i);
-            }
-        }
-    }
-    for(j = 0; j < nages; j++) {
-        if(sum(N_day.row(j)) != sum(N_night.row(j))) {
-            Rprintf("Error in counts\n");
-        }
-    }
+    arma::imat origE(nages, u1.n_slices);
     
     // extract parameters
     double nu = pars(0);
@@ -175,7 +106,7 @@ IntegerMatrix discreteStochModel(NumericVector pars, int tstart, int tstop, Nume
         //              0, 1, 2, 3,  4, 5,  6,  7,  8,  9, 10, 11
         
         // save current number of infectives for later transitions
-        for(i = 0; i < workMoves.n_rows; i++) {
+        for(i = 0; i < u1.n_slices; i++) {
             for(j = 0; j < nages; j++) {
                 origE(j, i) = u1(1, j, i);
             }
@@ -200,17 +131,17 @@ IntegerMatrix discreteStochModel(NumericVector pars, int tstart, int tstop, Nume
         for(i = 0; i < u1.n_slices; i++) {
             for(j = 0; j < nages; j++) {
                 // if(u1(0, j, i) > 1000000) Rprintf("t = %d u1 = %d i = %d j = %d\n", tstart, u1(0, j, i), i, j);
-                k = R::rbinom(u1(0, j, i), pinf(j, (arma::uword) workMoves(i, 1) - 1));
-                // if(k > 0 && workMoves(i, 0) != 1 && workMoves(i, 1) != 1) Rprintf("hmmm\n");
+                k = R::rbinom(u1(0, j, i), pinf(j, (arma::uword) u1_moves(i, 1) - 1));
+                // if(k > 0 && u1_moves(i, 0) != 1 && u1_moves(i, 1) != 1) Rprintf("hmmm\n");
                 // if(k > 0) Rprintf("hmmm\n");
                 // if(k > 100) Rprintf("day i = %d j = %d, u = %d k = %d\n", i, j, u1(0, j, i), k);
                 // if(k < 0) Rprintf("kneg day i = %d j = %d, u = %d k = %d\n", i, j, u1(0, j, i), k);
                 u1(0, j, i) -= k;
                 u1(1, j, i) += k;
-                u1_day(0, j, (arma::uword) workMoves(i, 1) - 1) -= k;
-                u1_day(1, j, (arma::uword) workMoves(i, 1) - 1) += k;
-                u1_night(0, j, (arma::uword) workMoves(i, 0) - 1) -= k;
-                u1_night(1, j, (arma::uword) workMoves(i, 0) - 1) += k;
+                u1_day(0, j, (arma::uword) u1_moves(i, 1) - 1) -= k;
+                u1_day(1, j, (arma::uword) u1_moves(i, 1) - 1) += k;
+                u1_night(0, j, (arma::uword) u1_moves(i, 0) - 1) -= k;
+                u1_night(1, j, (arma::uword) u1_moves(i, 0) - 1) += k;
             }
         }
         
@@ -235,17 +166,17 @@ IntegerMatrix discreteStochModel(NumericVector pars, int tstart, int tstop, Nume
         for(i = 0; i < u1.n_slices; i++) {
             for(j = 0; j < nages; j++) {
                 // if(u1(0, j, i) > 1000000) Rprintf("t = %d u1 = %d i = %d j = %d\n", tstart, u1(0, j, i), i, j);
-                k = R::rbinom(u1(0, j, i), pinf(j, (arma::uword) workMoves(i, 0) - 1));
-                // if(k > 0 && workMoves(i, 0) != 1 && workMoves(i, 1) != 1) Rprintf("hmmm\n");
+                k = R::rbinom(u1(0, j, i), pinf(j, (arma::uword) u1_moves(i, 0) - 1));
+                // if(k > 0 && u1_moves(i, 0) != 1 && u1_moves(i, 1) != 1) Rprintf("hmmm\n");
                 // if(k > 0) Rprintf("hmmm\n");
                 // if(k > 100) Rprintf("night i = %d j = %d, u = %d k = %d\n", i, j, u1(0, j, i), k);
                 // if(k < 0) Rprintf("kneg night i = %d j = %d, u = %d k = %d\n", i, j, u1(0, j, i), k);
                 u1(0, j, i) -= k;
                 u1(1, j, i) += k;
-                u1_day(0, j, (arma::uword) workMoves(i, 1) - 1) -= k;
-                u1_day(1, j, (arma::uword) workMoves(i, 1) - 1) += k;
-                u1_night(0, j, (arma::uword) workMoves(i, 0) - 1) -= k;
-                u1_night(1, j, (arma::uword) workMoves(i, 0) - 1) += k;
+                u1_day(0, j, (arma::uword) u1_moves(i, 1) - 1) -= k;
+                u1_day(1, j, (arma::uword) u1_moves(i, 1) - 1) += k;
+                u1_night(0, j, (arma::uword) u1_moves(i, 0) - 1) -= k;
+                u1_night(1, j, (arma::uword) u1_moves(i, 0) - 1) += k;
             }
         }
             
@@ -272,28 +203,28 @@ IntegerMatrix discreteStochModel(NumericVector pars, int tstart, int tstop, Nume
             mprobsE(2) = 1.0 - probE(j);
             
             // loop over network
-            for(i = 0; i < workMoves.n_rows; i++) {
+            for(i = 0; i < u1.n_slices; i++) {
                 
                 // H out
                 rmultinom(u1(9, j, i), mprobsH.begin(), 3, pathH.begin());
                 u1(9, j, i) -= (pathH(0) + pathH(1));
                 u1(10, j, i) += pathH(0);
                 u1(11, j, i) += pathH(1);
-                u1_day(9, j, (arma::uword) workMoves(i, 1) - 1) -= (pathH(0) + pathH(1));
-                u1_day(10, j, (arma::uword) workMoves(i, 1) - 1) += pathH(0);
-                u1_day(11, j, (arma::uword) workMoves(i, 1) - 1) += pathH(1);
-                u1_night(9, j, (arma::uword) workMoves(i, 0) - 1) -= (pathH(0) + pathH(1));
-                u1_night(10, j, (arma::uword) workMoves(i, 0) - 1) += pathH(0);
-                u1_night(11, j, (arma::uword) workMoves(i, 0) - 1) += pathH(1);
+                u1_day(9, j, (arma::uword) u1_moves(i, 1) - 1) -= (pathH(0) + pathH(1));
+                u1_day(10, j, (arma::uword) u1_moves(i, 1) - 1) += pathH(0);
+                u1_day(11, j, (arma::uword) u1_moves(i, 1) - 1) += pathH(1);
+                u1_night(9, j, (arma::uword) u1_moves(i, 0) - 1) -= (pathH(0) + pathH(1));
+                u1_night(10, j, (arma::uword) u1_moves(i, 0) - 1) += pathH(0);
+                u1_night(11, j, (arma::uword) u1_moves(i, 0) - 1) += pathH(1);
                 
                 // I2RI
                 k = R::rbinom(u1(7, j, i), probI2(j));
                 u1(7, j, i) -= k;
                 u1(8, j, i) += k;
-                u1_day(7, j, (arma::uword) workMoves(i, 1) - 1) -= k;
-                u1_day(8, j, (arma::uword) workMoves(i, 1) - 1) += k;
-                u1_night(7, j, (arma::uword) workMoves(i, 0) - 1) -= k;
-                u1_night(8, j, (arma::uword) workMoves(i, 0) - 1) += k;
+                u1_day(7, j, (arma::uword) u1_moves(i, 1) - 1) -= k;
+                u1_day(8, j, (arma::uword) u1_moves(i, 1) - 1) += k;
+                u1_night(7, j, (arma::uword) u1_moves(i, 0) - 1) -= k;
+                u1_night(8, j, (arma::uword) u1_moves(i, 0) - 1) += k;
                 
                 // I1 out
                 rmultinom(u1(5, j, i), mprobsI1.begin(), 4, pathI1.begin());
@@ -301,44 +232,44 @@ IntegerMatrix discreteStochModel(NumericVector pars, int tstart, int tstop, Nume
                 u1(9, j, i) += pathI1(0);
                 u1(7, j, i) += pathI1(1);
                 u1(6, j, i) += pathI1(2);
-                u1_day(5, j, (arma::uword) workMoves(i, 1) - 1) -= (pathI1(0) + pathI1(1) + pathI1(2));
-                u1_day(9, j, (arma::uword) workMoves(i, 1) - 1) += pathI1(0);
-                u1_day(7, j, (arma::uword) workMoves(i, 1) - 1) += pathI1(1);
-                u1_day(6, j, (arma::uword) workMoves(i, 1) - 1) += pathI1(2);
-                u1_night(5, j, (arma::uword) workMoves(i, 0) - 1) -= (pathI1(0) + pathI1(1) + pathI1(2));
-                u1_night(9, j, (arma::uword) workMoves(i, 0) - 1) += pathI1(0);
-                u1_night(7, j, (arma::uword) workMoves(i, 0) - 1) += pathI1(1);
-                u1_night(6, j, (arma::uword) workMoves(i, 0) - 1) += pathI1(2);
+                u1_day(5, j, (arma::uword) u1_moves(i, 1) - 1) -= (pathI1(0) + pathI1(1) + pathI1(2));
+                u1_day(9, j, (arma::uword) u1_moves(i, 1) - 1) += pathI1(0);
+                u1_day(7, j, (arma::uword) u1_moves(i, 1) - 1) += pathI1(1);
+                u1_day(6, j, (arma::uword) u1_moves(i, 1) - 1) += pathI1(2);
+                u1_night(5, j, (arma::uword) u1_moves(i, 0) - 1) -= (pathI1(0) + pathI1(1) + pathI1(2));
+                u1_night(9, j, (arma::uword) u1_moves(i, 0) - 1) += pathI1(0);
+                u1_night(7, j, (arma::uword) u1_moves(i, 0) - 1) += pathI1(1);
+                u1_night(6, j, (arma::uword) u1_moves(i, 0) - 1) += pathI1(2);
                 
                 // PI1
                 k = R::rbinom(u1(4, j, i), probP(j));
                 u1(4, j, i) -= k;
                 u1(5, j, i) += k;
-                u1_day(4, j, (arma::uword) workMoves(i, 1) - 1) -= k;
-                u1_day(5, j, (arma::uword) workMoves(i, 1) - 1) += k;
-                u1_night(4, j, (arma::uword) workMoves(i, 0) - 1) -= k;
-                u1_night(5, j, (arma::uword) workMoves(i, 0) - 1) += k;
+                u1_day(4, j, (arma::uword) u1_moves(i, 1) - 1) -= k;
+                u1_day(5, j, (arma::uword) u1_moves(i, 1) - 1) += k;
+                u1_night(4, j, (arma::uword) u1_moves(i, 0) - 1) -= k;
+                u1_night(5, j, (arma::uword) u1_moves(i, 0) - 1) += k;
                 
                 // ARA
                 k = R::rbinom(u1(2, j, i), probA(j));
                 u1(2, j, i) -= k;
                 u1(3, j, i) += k;
-                u1_day(2, j, (arma::uword) workMoves(i, 1) - 1) -= k;
-                u1_day(3, j, (arma::uword) workMoves(i, 1) - 1) += k;
-                u1_night(2, j, (arma::uword) workMoves(i, 0) - 1) -= k;
-                u1_night(3, j, (arma::uword) workMoves(i, 0) - 1) += k;
+                u1_day(2, j, (arma::uword) u1_moves(i, 1) - 1) -= k;
+                u1_day(3, j, (arma::uword) u1_moves(i, 1) - 1) += k;
+                u1_night(2, j, (arma::uword) u1_moves(i, 0) - 1) -= k;
+                u1_night(3, j, (arma::uword) u1_moves(i, 0) - 1) += k;
                 
                 // E out
                 rmultinom(origE(j, i), mprobsE.begin(), 3, pathE.begin());
                 u1(1, j, i) -= (pathE(0) + pathE(1));
                 u1(2, j, i) += pathE(0);
                 u1(4, j, i) += pathE(1);
-                u1_day(1, j, (arma::uword) workMoves(i, 1) - 1) -= (pathE(0) + pathE(1));
-                u1_day(2, j, (arma::uword) workMoves(i, 1) - 1) += pathE(0);
-                u1_day(4, j, (arma::uword) workMoves(i, 1) - 1) += pathE(1);
-                u1_night(1, j, (arma::uword) workMoves(i, 0) - 1) -= (pathE(0) + pathE(1));
-                u1_night(2, j, (arma::uword) workMoves(i, 0) - 1) += pathE(0);
-                u1_night(4, j, (arma::uword) workMoves(i, 0) - 1) += pathE(1);
+                u1_day(1, j, (arma::uword) u1_moves(i, 1) - 1) -= (pathE(0) + pathE(1));
+                u1_day(2, j, (arma::uword) u1_moves(i, 1) - 1) += pathE(0);
+                u1_day(4, j, (arma::uword) u1_moves(i, 1) - 1) += pathE(1);
+                u1_night(1, j, (arma::uword) u1_moves(i, 0) - 1) -= (pathE(0) + pathE(1));
+                u1_night(2, j, (arma::uword) u1_moves(i, 0) - 1) += pathE(0);
+                u1_night(4, j, (arma::uword) u1_moves(i, 0) - 1) += pathE(1);
             }
         }
         
