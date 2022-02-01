@@ -5,11 +5,11 @@
 using namespace Rcpp;
 
 // [[Rcpp::export]]
-IntegerMatrix discreteStochModel(NumericVector pars, int tstart, int tstop, 
+List discreteStochModel(NumericVector pars, int tstart, int tstop, 
                                  arma::imat u1_moves, arma::icube u1, 
                                  arma::icube u1_day, arma::icube u1_night,
                                  arma::imat N_day, arma::imat N_night,
-                                 arma::mat C) {
+                                 arma::mat C, int return_u1 = 0) {
     
     // u1_moves is a matrix with columns: LADfrom, LADto
     // u1 is a 3D array with dimensions: nclasses x nages x nmoves
@@ -69,16 +69,19 @@ IntegerMatrix discreteStochModel(NumericVector pars, int tstart, int tstop,
     //     Rprintf("u1(0, %d, 282) = %d ", j, u1_day(0, j, 282));
     //     Rprintf("u1(1, %d, 282) = %d\n", j, u1_day(1, j, 282));
     // }
-    
-    IntegerMatrix out(tstop - tstart + 1, nclasses * nages * nlads + 1);
+    // declare small dummy vector if not being returned
+    int outsize = (return_u1 == 0 ? (nclasses * nages * nlads + 1):1);
+    IntegerMatrix out(tstop - tstart + 1, outsize);
     int tcurr = 0;
-    out(0, 0) = tstart;
-    k = 1;
-    for(i = 0; i < nclasses; i++) {
-        for(j = 0; j < nages; j++) {
-            for(l = 0; l < nlads; l++) {
-                out(0, k) = u1_night(i, j, l);
-                k++;
+    if(return_u1 == 0) {
+        out(0, 0) = tstart;
+        k = 1;
+        for(i = 0; i < nclasses; i++) {
+            for(j = 0; j < nages; j++) {
+                for(l = 0; l < nlads; l++) {
+                    out(0, k) = u1_night(i, j, l);
+                    k++;
+                }
             }
         }
     }
@@ -274,13 +277,15 @@ IntegerMatrix discreteStochModel(NumericVector pars, int tstart, int tstop,
         }
         
         // record output
-        out(tcurr, 0) = tstart;
-        k = 1;
-        for(i = 0; i < nclasses; i++) {
-            for(j = 0; j < nages; j++) {
-                for(l = 0; l < nlads; l++) {
-                    out(tcurr, k) = u1_night(i, j, l);
-                    k++;
+        if(return_u1 == 0) {
+            out(tcurr, 0) = tstart;
+            k = 1;
+            for(i = 0; i < nclasses; i++) {
+                for(j = 0; j < nages; j++) {
+                    for(l = 0; l < nlads; l++) {
+                        out(tcurr, k) = u1_night(i, j, l);
+                        k++;
+                    }
                 }
             }
         }
@@ -289,6 +294,11 @@ IntegerMatrix discreteStochModel(NumericVector pars, int tstart, int tstop,
         tcurr++;
         tstart++;
     }
-    return out;
+    if(return_u1 == 0) {
+        return List::create(Named("out") = out);
+    } else {
+        return List::create(Named("u1") = u1);
+    }
 }
+
 

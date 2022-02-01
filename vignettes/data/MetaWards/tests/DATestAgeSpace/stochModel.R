@@ -82,15 +82,11 @@ N_night <- apply(u1_night, c(2, 3), sum)
 ## write inputs out
 saveRDS(u1, "outputs/u1.rds")
 saveRDS(u1_moves, "outputs/u1_moves.rds")
-saveRDS(u1_day, "outputs/u1_day.rds")
-saveRDS(u1_night, "outputs/u1_night.rds")
-saveRDS(N_day, "outputs/N_day.rds")
-saveRDS(N_night, "outputs/N_night.rds")
 
 ## try discrete-time model
 sourceCpp("discreteStochModel.cpp")
 disSims <- mclapply(1:24, function(i) {
-    discreteStochModel(pars, 0, 100, u1_moves, u1, u1_day, u1_night, N_day, N_night, contact)
+    discreteStochModel(pars, 0, 100, u1_moves, u1, u1_day, u1_night, N_day, N_night, contact)$out
 }, mc.cores = 8)
 stageNms <- map(c("S", "E", "A", "RA", "P", "Ione", "DI", "Itwo", "RI", "H", "RH", "DH"), ~paste0(., "_", 1:8)) %>%
     map(~map(., ~paste0(., "_", 1:max(EW19[, 1])))) %>%
