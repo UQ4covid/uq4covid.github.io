@@ -89,7 +89,7 @@ saveRDS(N_night, "outputs/N_night.rds")
 
 ## try discrete-time model
 sourceCpp("discreteStochModel.cpp")
-disSims <- mclapply(1:8, function(i) {
+disSims <- mclapply(1:24, function(i) {
     discreteStochModel(pars, 0, 100, u1_moves, u1, u1_day, u1_night, N_day, N_night, contact)
 }, mc.cores = 8)
 stageNms <- map(c("S", "E", "A", "RA", "P", "Ione", "DI", "Itwo", "RI", "H", "RH", "DH"), ~paste0(., "_", 1:8)) %>%
@@ -189,7 +189,7 @@ p <- pivot_longer(disSims, !c(rep, t), names_to = "var", values_to = "n") %>%
         ylab("Counts")
 ggsave("outputs/simsNational.pdf", p, width = 10, height = 10)
 
-## plot replicates at LAD level for LADs with largest epidemic load
+## plot medRep at LAD level for LADs with largest epidemic load
 p <- select(medRep, !ends_with("obs")) %>%
     pivot_longer(!t, names_to = "var", values_to = "n") %>%
     mutate(age = gsub('^(?:[^_]*_)(.*)', '\\1', var)) %>%
@@ -202,66 +202,47 @@ p <- select(medRep, !ends_with("obs")) %>%
     summarise(n = sum(n), .groups = "drop") %>%
     arrange(desc(n)) %>%
     slice(1:5) %>%
-    select(-n) %>%
-    inner_join(
-        pivot_longer(disSims, !c(rep, t), names_to = "var", values_to = "n") %>%
-        mutate(age = gsub('^(?:[^_]*_)(.*)', '\\1', var)) %>%
-        mutate(LAD = gsub('^(?:[^_]*_)(.*)', '\\1', age)),
+    select(-n)
+pobs <- inner_join(p,
+        select(medRep, t, ends_with("obs")) %>%
+            pivot_longer(!t, names_to = "var", values_to = "n") %>%
+            mutate(var = gsub("obs", "", var)) %>%
+            mutate(age = gsub('^(?:[^_]*_)(.*)', '\\1', var)) %>%
+            mutate(LAD = gsub('^(?:[^_]*_)(.*)', '\\1', age)),
         by = "LAD"
     ) %>%
     mutate(age = gsub('(.*)_[0-9]*', '\\1', age)) %>%
     mutate(var = gsub('^(.*)_[0-9]*_.*', '\\1', var)) %>%
-    group_by(t, var, age, LAD) %>%
-    summarise(
-        LCI = quantile(n, probs = 0.025),
-        LQ = quantile(n, probs = 0.25),
-        median = median(n),
-        UQ = quantile(n, probs = 0.75),
-        UCI = quantile(n, probs = 0.975),
-        .groups = "drop"
+    mutate(var = gsub("one", "1", var)) %>%
+    mutate(var = gsub("two", "2", var)) 
+p <- inner_join(p,
+        select(medRep, !ends_with("obs")) %>%
+            pivot_longer(!t, names_to = "var", values_to = "n") %>%
+            mutate(age = gsub('^(?:[^_]*_)(.*)', '\\1', var)) %>%
+            mutate(LAD = gsub('^(?:[^_]*_)(.*)', '\\1', age)),
+        by = "LAD"
     ) %>%
+    mutate(age = gsub('(.*)_[0-9]*', '\\1', age)) %>%
+    mutate(var = gsub('^(.*)_[0-9]*_.*', '\\1', var)) %>%
     mutate(var = gsub("one", "1", var)) %>%
     mutate(var = gsub("two", "2", var))
 p1 <- list()
-for(i in 1:5) {
-    p1[[i]] <- filter(p, LAD == unique(p$LAD)[i]) %>%
-        select(-LAD) %>%
-        ggplot(aes(x = t)) +
-        geom_ribbon(aes(ymin = LCI, ymax = UCI), alpha = 0.5) +
-        geom_ribbon(aes(ymin = LQ, ymax = UQ), alpha = 0.5) +
-        geom_line(aes(y = median)) +
-        geom_line(
-            aes(y = n), 
-            data = pivot_longer(select(medRep, !ends_with("obs")), !t, names_to = "var", values_to = "n") %>%
-                mutate(age = gsub('^(?:[^_]*_)(.*)', '\\1', var)) %>%
-                mutate(LAD = gsub('^(?:[^_]*_)(.*)', '\\1', age)) %>%
-                mutate(age = gsub('(.*)_[0-9]*', '\\1', age)) %>%
-                mutate(var = gsub('^(.*)_[0-9]*_.*', '\\1', var)) %>%
-                filter(LAD == unique(p$LAD)[i]) %>%
-                mutate(var = gsub("one", "1", var)) %>%
-                mutate(var = gsub("two", "2", var)), 
-            col = "red", linetype = "dashed"
-        ) +
-        geom_line(
-            aes(y = n), 
-            data = pivot_longer(select(medRep, t, ends_with("obs")), !t, names_to = "var", values_to = "n") %>%
-                mutate(var = gsub("obs", "", var)) %>%
-                mutate(age = gsub('^(?:[^_]*_)(.*)', '\\1', var)) %>%
-                mutate(LAD = gsub('^(?:[^_]*_)(.*)', '\\1', age)) %>%
-                mutate(age = gsub('(.*)_[0-9]*', '\\1', age)) %>%
-                mutate(var = gsub('^(.*)_[0-9]*_.*', '\\1', var)) %>%
-                filter(LAD == unique(p$LAD)[i]) %>%
-                mutate(var = gsub("one", "1", var)) %>%
-                mutate(var = gsub("two", "2", var)),
-            col = "blue", linetype = "dotted"
-        ) +
-        facet_grid(var ~ age, scales = "free") +
-        xlab("Days") + 
-        ylab("Counts") +
-        ggtitle(paste0("LAD = ", unique(p$LAD)[i]))
-}
-p1 <- wrap_plots(p1, nrow = 3)
-ggsave("outputs/simsTopLADs.pdf", p1, width = 20, height = 30)
+p1[[1]] <- ggplot(p, aes(x = t, y = n, colour = LAD)) +
+    geom_line() +
+    facet_grid(var ~ age, scales = "free") +
+    xlab("Days") + 
+    ylab("Counts") +
+    ggtitle("Truth")
+p1[[2]] <- ggplot(pobs, aes(x = t, y = n, colour = LAD)) +
+    geom_line() +
+    facet_grid(var ~ age, scales = "free") +
+    xlab("Days") + 
+    ylab("Counts") +
+    ggtitle("Observed")
+p1 <- wrap_plots(p1, nrow = 2, heights = c(0.8, 0.2)) +
+    plot_layout(guides = "collect")
+
+ggsave("outputs/simsTopLADs.pdf", p1, width = 10, height = 10)
 
 ## spatial animation of simulation
 
