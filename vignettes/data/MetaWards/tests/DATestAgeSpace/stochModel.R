@@ -66,18 +66,6 @@ u1 <- apply(EW19, 1, function(x, ageProbs) {
     map(1) %>%
     abind(along = 3)
 u1_moves <- as.matrix(EW19[, 1:2])
-u1_day <- list()
-u1_night <- list()
-for(i in 1:max(u1_moves[, 1])) {
-    temp <- u1[, , u1_moves[, 2] == i]
-    u1_day[[i]] <- apply(temp, c(1, 2), sum)
-    temp <- u1[, , u1_moves[, 1] == i]
-    u1_night[[i]] <- apply(temp, c(1, 2), sum)
-}
-u1_day <- abind(u1_day, along = 3)
-u1_night <- abind(u1_night, along = 3)
-N_day <- apply(u1_day, c(2, 3), sum)
-N_night <- apply(u1_night, c(2, 3), sum)
 
 ## write inputs out
 saveRDS(u1, "outputs/u1.rds")
@@ -85,9 +73,9 @@ saveRDS(u1_moves, "outputs/u1_moves.rds")
 
 ## try discrete-time model
 sourceCpp("discreteStochModel.cpp")
-disSims <- mclapply(1:24, function(i) {
-    discreteStochModel(pars, 0, 100, u1_moves, u1, u1_day, u1_night, N_day, N_night, contact)$out
-}, mc.cores = 8)
+disSims <- mclapply(1:8, function(i, pars, u1_moves, u1, contact) {
+    discreteStochModel(pars, 0, 100, u1_moves, u1, contact)$out
+}, pars = pars, u1_moves = u1_moves, u1 = u1, contact = contact, mc.cores = 8)
 stageNms <- map(c("S", "E", "A", "RA", "P", "Ione", "DI", "Itwo", "RI", "H", "RH", "DH"), ~paste0(., "_", 1:8)) %>%
     map(~map(., ~paste0(., "_", 1:max(EW19[, 1])))) %>%
     reduce(c) %>%
@@ -237,7 +225,6 @@ p1[[2]] <- ggplot(pobs, aes(x = t, y = n, colour = LAD)) +
     ggtitle("Observed")
 p1 <- wrap_plots(p1, nrow = 2, heights = c(0.8, 0.2)) +
     plot_layout(guides = "collect")
-
 ggsave("outputs/simsTopLADs.pdf", p1, width = 10, height = 10)
 
 ## spatial animation of simulation

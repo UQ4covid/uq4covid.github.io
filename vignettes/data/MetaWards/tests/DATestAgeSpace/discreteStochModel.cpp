@@ -5,28 +5,42 @@
 using namespace Rcpp;
 
 // [[Rcpp::export]]
-List discreteStochModel(NumericVector pars, int tstart, int tstop, 
-                                 arma::imat u1_moves, arma::icube u1, 
-                                 arma::icube u1_day, arma::icube u1_night,
-                                 arma::imat N_day, arma::imat N_night,
+List discreteStochModel(arma::vec pars, int tstart, int tstop, 
+                                 arma::imat u1_moves, arma::icube u1,
                                  arma::mat C, int return_u1 = 0) {
     
     // u1_moves is a matrix with columns: LADfrom, LADto
     // u1 is a 3D array with dimensions: nclasses x nages x nmoves
     //          each row of u1 must match u1_moves
-    // u1_day and u1_night are 3D arrays with dimensions: nclasses x nages x nlads
-    // N_day and N_night are nages x nlad matrices of population counts
     
     // set up auxiliary matrix for counts
-    int nclasses = u1_day.n_rows;
-    int nages = u1_day.n_cols;
-    int nlads = u1_day.n_slices;
+    int nclasses = u1.n_rows;
+    int nages = u1.n_cols;
+    int nlads = max(u1_moves.col(0));
     int k;
     arma::uword i, j, l;
     
     // create objects to store move information
     arma::mat pinf(nages, nlads);
     arma::imat origE(nages, u1.n_slices);
+    arma::icube u1_day(nclasses, nages, nlads);
+    arma::icube u1_night(nclasses, nages, nlads);
+    arma::imat N_day(nages, nlads);
+    arma::imat N_night(nages, nlads);
+    u1_day.zeros();
+    u1_night.zeros();
+    N_day.zeros();
+    N_night.zeros();
+    for(i = 0; i < u1_moves.n_rows; i++) {
+        for(j = 0; j < nages; j++) {
+            for(l = 0; l < nclasses; l++) {
+                u1_day(l, j, (arma::uword) u1_moves(i, 1) - 1) += u1(l, j, i);
+                u1_night(l, j, (arma::uword) u1_moves(i, 0) - 1) += u1(l, j, i);
+                N_day(j, (arma::uword) u1_moves(i, 1) - 1) += u1(l, j, i);
+                N_night(j, (arma::uword) u1_moves(i, 0) - 1) += u1(l, j, i);
+            }
+        }
+    }
     
     // extract parameters
     double nu = pars(0);
@@ -71,7 +85,7 @@ List discreteStochModel(NumericVector pars, int tstart, int tstop,
     // }
     // declare small dummy vector if not being returned
     int outsize = (return_u1 == 0 ? (nclasses * nages * nlads + 1):1);
-    IntegerMatrix out(tstop - tstart + 1, outsize);
+    arma::imat out(tstop - tstart + 1, outsize);
     int tcurr = 0;
     if(return_u1 == 0) {
         out(0, 0) = tstart;
