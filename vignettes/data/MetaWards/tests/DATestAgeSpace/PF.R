@@ -61,18 +61,13 @@ PF <- function(pars, C, data, u1_moves, u1, ndays, npart = 10, MD = TRUE, a1 = 0
         ## set initial log-likelihood
         ll <- 0
         
-        ## create count matrices
-        u1_day <- list()
+        ## create count matrices for checks if used
         u1_night <- list()
         for(j in 1:max(u1_moves[, 1])) {
-            temp <- u1[, , u1_moves[, 2] == j]
-            u1_day[[j]] <- apply(temp, c(1, 2), sum)
             temp <- u1[, , u1_moves[, 1] == j]
             u1_night[[j]] <- apply(temp, c(1, 2), sum)
         }
-        u1_day <- abind(u1_day, along = 3)
         u1_night <- abind(u1_night, along = 3)
-        N_day <- apply(u1_day, c(2, 3), sum)
         N_night <- apply(u1_night, c(2, 3), sum)
         N <- apply(u1, c(2, 3), sum)
         
@@ -104,21 +99,8 @@ PF <- function(pars, C, data, u1_moves, u1, ndays, npart = 10, MD = TRUE, a1 = 0
             ## loop over particles
             for(i in 1:npart) {
                 
-                ## create count matrices
-                u1_day <- list()
-                u1_night <- list()
-                for(j in 1:max(u1_moves[, 1])) {
-                    temp <- u1[[i]][, , u1_moves[, 2] == j]
-                    u1_day[[j]] <- apply(temp, c(1, 2), sum)
-                    temp <- u1[[i]][, , u1_moves[, 1] == j]
-                    u1_night[[j]] <- apply(temp, c(1, 2), sum)
-                }
-                u1_day <- abind(u1_day, along = 3)
-                u1_night <- abind(u1_night, along = 3)
-                
                 ## run model and return u1
-                disSims[[i]] <- discreteStochModel(unlist(pars[k, ]), t - 1, t, u1_moves, u1[[i]], u1_day, 
-                                           u1_night, N_day, N_night, C, 1)$u1
+                disSims[[i]] <- discreteStochModel(unlist(pars[k, ]), t - 1, t, u1_moves, u1[[i]], C, 1)$u1
                 
                 ## cols: c("S", "E", "A", "RA", "P", "I1", "DI", "I2", "RI", "H", "RH", "DH")
                 ##          1,   2,   3,   4,    5,   6,    7,    8,    9,    10,  11,   12

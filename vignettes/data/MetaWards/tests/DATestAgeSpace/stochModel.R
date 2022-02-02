@@ -73,7 +73,7 @@ saveRDS(u1_moves, "outputs/u1_moves.rds")
 
 ## try discrete-time model
 sourceCpp("discreteStochModel.cpp")
-disSims <- mclapply(1:8, function(i, pars, u1_moves, u1, contact) {
+disSims <- mclapply(1:24, function(i, pars, u1_moves, u1, contact) {
     discreteStochModel(pars, 0, 100, u1_moves, u1, contact)$out
 }, pars = pars, u1_moves = u1_moves, u1 = u1, contact = contact, mc.cores = 8)
 stageNms <- map(c("S", "E", "A", "RA", "P", "Ione", "DI", "Itwo", "RI", "H", "RH", "DH"), ~paste0(., "_", 1:8)) %>%
