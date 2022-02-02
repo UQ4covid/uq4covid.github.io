@@ -1,11 +1,3 @@
-## log-sum-exp function
-log_sum_exp <- function(x, mn = FALSE) {
-    maxx <- max(x)
-    y <- maxx + log(sum(exp(x - maxx)))
-    if(mn) y <- y - log(length(x))
-    y
-}
-
 ## function to check counts (mainly useful for error checking)
 ## u: matrix of counts in order:
 ##       S, E, A, RA, P, I1, DI, I2, RI, H, RH, DH
@@ -55,36 +47,32 @@ checkCounts <- function(u, cu, N) {
 ## a1, a2, b: parameters for Skellam observation process
 ## saveAll: a logical specifying whether to return all states (if FALSE then returns just observed states))
 
-PF <- function(pars, C, data, u1_moves, u1, ndays, npart = 10, MD = TRUE, a1 = 0.01, a2 = 0.2, b = 0.1, a_dis = 0.05, b_dis = 0.5, saveAll = FALSE) {
+PF <- function(pars, C, data, u1_moves, u1, ndays, npart = 10, MD = TRUE, a1 = 0.01, a2 = 0.2, b = 0.1, 
+               a_dis = 0.05, b_dis = 0.5, saveAll = NA) {
+    
+    ## convert indicators
+    if(is.na(saveAll)) {
+        saveAllint <- 0
+    } else {
+        saveAllint <- ifelse(saveAll, 2, 1)
+    }
+    MDint <- ifelse(MD, 1, 0)
+    
+    ## run particl filter for each set of inputs
     runs <- mclapply(1:nrow(pars), function(k, pars, C, u1_moves, u1, npart, ndays, data, MD, a1, a2, b, a_dis, b_dis, saveAll) {
         
-        ## set initial log-likelihood
-        ll <- 0
+        # ## create count matrices for checks if used
+        # u1_night <- list()
+        # for(j in 1:max(u1_moves[, 1])) {
+        #     temp <- u1[, , u1_moves[, 1] == j]
+        #     u1_night[[j]] <- apply(temp, c(1, 2), sum)
+        # }
+        # u1_night <- abind(u1_night, along = 3)
+        # N_night <- apply(u1_night, c(2, 3), sum)
+        # N <- apply(u1, c(2, 3), sum)
         
-        ## create count matrices for checks if used
-        u1_night <- list()
-        for(j in 1:max(u1_moves[, 1])) {
-            temp <- u1[, , u1_moves[, 1] == j]
-            u1_night[[j]] <- apply(temp, c(1, 2), sum)
-        }
-        u1_night <- abind(u1_night, along = 3)
-        N_night <- apply(u1_night, c(2, 3), sum)
-        N <- apply(u1, c(2, 3), sum)
-        
-        ## set up particles
-        u1 <- rep(list(u1), npart)
-        
-        ## set up proposed particles
-        disSims <- u1
-        
-        ## capture cumulative counts (used in MD process)
-        cu <- u1
-        
-        ## vector of particle weights
-        weights <- numeric(npart)
-        
-        ## list to store outputs
-        if(!is.na(saveAll)) out <- list()
+        # ## list to store outputs
+        # if(!is.na(saveAll)) out <- list()
         
         ## extract observations
         data <- select(data, t, (starts_with("DI") | starts_with("DH")) & ends_with("obs")) %>%
@@ -93,239 +81,28 @@ PF <- function(pars, C, data, u1_moves, u1, ndays, npart = 10, MD = TRUE, a1 = 0
             slice(-1) %>%
             as.matrix()
         
-        ## loop over time
-        for(t in 1:ndays) {
-            
-            ## loop over particles
-            for(i in 1:npart) {
-                
-                ## run model and return u1
-                disSims[[i]] <- discreteStochModel(unlist(pars[k, ]), t - 1, t, u1_moves, u1[[i]], C, 1)$u1
-                
-                ## cols: c("S", "E", "A", "RA", "P", "I1", "DI", "I2", "RI", "H", "RH", "DH")
-                ##          1,   2,   3,   4,    5,   6,    7,    8,    9,    10,  11,   12
-                
-                ## set weights
-                weights[i] <- 0
-                
-                ## adjust states according to model discrepancy
-                if(MD) {
-                    ## DH (MD on incidence)
-                    DHinc <- as.vector(disSims[[i]][12, , ] - u1[[i]][12, , ])
-                    DHinc <- DHinc + rtskellam(length(DHinc), a_dis + b_dis * DHinc, a_dis + b_dis * DHinc, 
-                                               -DHinc, as.vector(u1[[i]][10, , ]) - DHinc)
-                    DHinc <- matrix(DHinc, dim(disSims[[i]])[2], dim(disSims[[i]])[3])
-                    disSims[[i]][12, , ] <- u1[[i]][12, , ] + DHinc
-                    cu[[i]][12, , ] <- cu[[i]][12, , ] + DHinc
-                    
-                    ## RH given DH (MD on incidence)
-                    RHinc <- as.vector(disSims[[i]][11, , ] - u1[[i]][11, , ])
-                    RHinc <- RHinc + rtskellam(length(RHinc), a_dis + b_dis * RHinc, a_dis + b_dis * RHinc, 
-                                               -RHinc, as.vector(u1[[i]][10, , ] - DHinc) - RHinc)
-                    RHinc <- matrix(RHinc, dim(disSims[[i]])[2], dim(disSims[[i]])[3])
-                    disSims[[i]][11, , ] <- u1[[i]][11, , ] + RHinc
-                    cu[[i]][11, , ] <- cu[[i]][11, , ] + RHinc
-                    
-                    ## H
-                    temp <- as.vector(disSims[[i]][10, , ])
-                    temp <- temp + rtskellam(length(temp), a_dis + b_dis * temp, a_dis + b_dis * temp, 
-                                             -temp, as.vector(u1[[i]][10, , ] + u1[[i]][6, , ] - DHinc - RHinc) - temp)
-                    disSims[[i]][10, , ] <- matrix(temp, dim(disSims[[i]])[2], dim(disSims[[i]])[3])
-                    Hinc <- disSims[[i]][10, , ] - u1[[i]][10, , ] + DHinc + RHinc
-                    cu[[i]][10, , ] <- cu[[i]][10, , ] + Hinc
-                    
-                    ## DI given H (MD on incidence)
-                    DIinc <- as.vector(disSims[[i]][7, , ] - u1[[i]][7, , ])
-                    DIinc <- DIinc + rtskellam(length(DIinc), a_dis + b_dis * DIinc, a_dis + b_dis * DIinc, 
-                                               -DIinc, as.vector(u1[[i]][6, , ] - Hinc) - DIinc)
-                    DIinc <- matrix(DIinc, dim(disSims[[i]])[2], dim(disSims[[i]])[3])
-                    disSims[[i]][7, , ] <- u1[[i]][7, , ] + DIinc
-                    cu[[i]][7, , ] <- cu[[i]][7, , ] + DIinc            
-                    
-                    ## RI (MD on incidence)
-                    RIinc <- as.vector(disSims[[i]][9, , ] - u1[[i]][9, , ])
-                    RIinc <- RIinc + rtskellam(length(RIinc), a_dis + b_dis * RIinc, a_dis + b_dis * RIinc, 
-                                               -RIinc, as.vector(u1[[i]][8, , ]) - RIinc)
-                    RIinc <- matrix(RIinc, dim(disSims[[i]])[2], dim(disSims[[i]])[3])
-                    disSims[[i]][9, , ] <- u1[[i]][9, , ] + RIinc
-                    cu[[i]][9, , ] <- cu[[i]][9, , ] + RIinc
-                    
-                    ## I2 given H, RI and DI
-                    temp <- as.vector(disSims[[i]][8, , ])
-                    temp <- rtskellam(length(temp), a_dis + b_dis * temp, a_dis + b_dis * temp, 
-                                      -temp, as.vector(u1[[i]][8, , ] + u1[[i]][6, , ] - Hinc - DIinc - RIinc) - temp)
-                    temp <- matrix(temp, dim(disSims[[i]])[2], dim(disSims[[i]])[3])
-                    disSims[[i]][8, , ] <- disSims[[i]][8, , ] + temp
-                    
-                    I2inc <- disSims[[i]][8, , ] - u1[[i]][8, , ] + RIinc
-                    cu[[i]][8, , ] <- cu[[i]][8, , ] + I2inc
-                    
-                    ## I1 given later
-                    temp <- as.vector(disSims[[i]][6, , ])
-                    temp <- rtskellam(length(temp), a_dis + b_dis * temp, a_dis + b_dis * temp, 
-                                      -temp, as.vector(u1[[i]][6, , ] + u1[[i]][5, , ] - I2inc - Hinc - DIinc) - temp)
-                    temp <- matrix(temp, dim(disSims[[i]])[2], dim(disSims[[i]])[3])
-                    disSims[[i]][6, , ] <- disSims[[i]][6, , ] + temp
-                        
-                    I1inc <- disSims[[i]][6, , ] - u1[[i]][6, , ] + DIinc + Hinc + I2inc
-                    cu[[i]][6, , ] <- cu[[i]][6, , ] + I1inc
-                    
-                    ## P given later
-                    temp <- as.vector(disSims[[i]][5, , ])
-                    temp <- rtskellam(length(temp), a_dis + b_dis * temp, a_dis + b_dis * temp, 
-                                      -temp, as.vector(u1[[i]][5, , ] + u1[[i]][2, , ] - I1inc) - temp)
-                    temp <- matrix(temp, dim(disSims[[i]])[2], dim(disSims[[i]])[3])
-                    disSims[[i]][5, , ] <- disSims[[i]][5, , ] + temp
-                        
-                    Pinc <- disSims[[i]][5, , ] - u1[[i]][5, , ] + I1inc
-                    cu[[i]][5, , ] <- cu[[i]][5, , ] + Pinc
-                    
-                    ## RA (MD on incidence)
-                    RAinc <- as.vector(disSims[[i]][4, , ] - u1[[i]][4, , ])
-                    RAinc <- RAinc + rtskellam(length(RAinc), a_dis + b_dis * RAinc, a_dis + b_dis * RAinc, 
-                                               -RAinc, as.vector(u1[[i]][3, , ]) - RAinc)
-                    RAinc <- matrix(RAinc, dim(disSims[[i]])[2], dim(disSims[[i]])[3])
-                    disSims[[i]][4, , ] <- u1[[i]][4, , ] + RAinc
-                    cu[[i]][4, , ] <- cu[[i]][4, , ] + RAinc
-                    
-                    ## A given later
-                    temp <- as.vector(disSims[[i]][3, , ])
-                    temp <- rtskellam(length(temp), a_dis + b_dis * temp, a_dis + b_dis * temp, 
-                                      -temp, as.vector(u1[[i]][3, , ] + u1[[i]][2, , ] - Pinc - RAinc) - temp)
-                    temp <- matrix(temp, dim(disSims[[i]])[2], dim(disSims[[i]])[3])
-                    disSims[[i]][3, , ] <- disSims[[i]][3, , ] + temp
-                        
-                    Ainc <- disSims[[i]][3, , ] - u1[[i]][3, , ] + RAinc
-                    cu[[i]][3, , ] <- cu[[i]][3, , ] + Ainc
-                    
-                    ## E
-                    temp <- as.vector(disSims[[i]][2, , ])
-                    temp <- rtskellam(length(temp), a_dis + b_dis * temp, a_dis + b_dis * temp, 
-                                      -temp, as.vector(u1[[i]][2, , ] + u1[[i]][1, , ] - Ainc - Pinc) - temp)
-                    temp <- matrix(temp, dim(disSims[[i]])[2], dim(disSims[[i]])[3])
-                    disSims[[i]][2, , ] <- disSims[[i]][2, , ] + temp
-                        
-                    Einc <- disSims[[i]][2, , ] - u1[[i]][2, , ] + Ainc + Pinc
-                    cu[[i]][2, , ] <- cu[[i]][2, , ] + Einc
-                    
-                    ## S
-                    disSims[[i]][1, , ] <- u1[[i]][1, , ] - Einc
-                    cu[[i]][1, , ] <- cu[[i]][1, , ] - Einc
-                } else {
-                    ## DH
-                    DHinc <- disSims[[i]][12, , ] - u1[[i]][12, , ]
-                    cu[[i]][12, , ] <- cu[[i]][12, , ] + DHinc
-                    
-                    ## RH 
-                    RHinc <- disSims[[i]][11, , ] - u1[[i]][11, , ]
-                    cu[[i]][11, , ] <- cu[[i]][11, , ] + RHinc
-                    
-                    ## H
-                    Hinc <- disSims[[i]][10, , ] - u1[[i]][10, , ] + DHinc + RHinc
-                    cu[[i]][10, , ] <- cu[[i]][10, , ] + Hinc
-                    
-                    ## DI 
-                    DIinc <- disSims[[i]][7, , ] - u1[[i]][7, , ]
-                    cu[[i]][7, , ] <- cu[[i]][7, , ] + DIinc
-                    
-                    ## RI
-                    RIinc <- disSims[[i]][9, , ] - u1[[i]][9, , ]
-                    cu[[i]][9, , ] <- cu[[i]][9, , ] + RIinc
-                    
-                    ## I2 
-                    I2inc <- disSims[[i]][8, , ] - u1[[i]][8, , ] + RIinc
-                    cu[[i]][8, , ] <- cu[[i]][8, , ] + I2inc
-                    
-                    ## I1 
-                    I1inc <- disSims[[i]][6, , ] - u1[[i]][6, , ] + DIinc + Hinc + I2inc
-                    cu[[i]][6, , ] <- cu[[i]][6, , ] + I1inc
-                    
-                    ## P given later
-                    Pinc <- disSims[[i]][5, , ] - u1[[i]][5, , ] + I1inc
-                    cu[[i]][5, , ] <- cu[[i]][5, , ] + Pinc
-                    
-                    ## RA
-                    RAinc <- disSims[[i]][4, , ] - u1[[i]][4, , ]
-                    cu[[i]][4, , ] <- cu[[i]][4, , ] + RAinc
-                    
-                    ## A 
-                    Ainc <- disSims[[i]][3, , ] - u1[[i]][3, , ] + RAinc
-                    cu[[i]][3, , ] <- cu[[i]][3, , ] + Ainc
-                    
-                    ## E
-                    Einc <- disSims[[i]][2, , ] - u1[[i]][2, , ] + Ainc + Pinc
-                    cu[[i]][2, , ] <- cu[[i]][2, , ] + Einc
-                    
-                    ## S
-                    disSims[[i]][1, , ] <- u1[[i]][1, , ] - Einc
-                    cu[[i]][1, , ] <- cu[[i]][1, , ] - Einc
-                }
-                
-                ## calculate log observation error weights
-                obsInc <- data[t, -1]
-                DIinc <- as.vector(apply(DIinc, 1, function(DI, lad) {
-                    tapply(DI, lad, sum)
-                }, lad = u1_moves[, 1]))
-                DHinc <- as.vector(apply(DHinc, 1, function(DH, lad) {
-                    tapply(DH, lad, sum)
-                }, lad = u1_moves[, 1]))
-                obsDiffs <- obsInc - c(DIinc, DHinc)
-                weights[i] <- weights[i] + 
-                    sum(dtskellam(obsDiffs, a1 + b * c(DIinc, DHinc), a2 + b * c(DIinc, DHinc), 
-                                  LB = -c(DIinc, DHinc), UB = obsInc, log = TRUE))
-                # ## check counts
-                # for(j in 1:dim(u1[[i]])[3]) {
-                #     checkCounts(disSims[[i]][, , j], cu[[i]][, , j], N[, j])
-                # }
-            }
-            if(!is.na(saveAll)) {
-                ## create count matrices
-                temp <- lapply(u1, function(u1, u1_moves) {
-                    u1_night <- list()
-                    for(j in 1:max(u1_moves)) {
-                        temp <- u1[, , u1_moves == j]
-                        u1_night[[j]] <- apply(temp, c(1, 2), sum)
-                    }
-                    abind(u1_night, along = 3)
-                }, u1_moves = u1_moves[, 1])
-                if(saveAll) {
-                    out[[t]] <- temp
-                } else {
-                    out[[t]] <- map(temp, ~.[c(7, 12), , ])
-                }
-            }
-            cat(paste0("t = ", t, "/", ndays, "\n"))
-            
-            ## calculate log-likelihood contribution
-            ll <- ll + log_sum_exp(weights, mn = TRUE)
-            
-            ## if zero likelihood then return
-            if(!is.finite(ll)) {
-                if(!is.na(saveAll)) {
-                    return(list(ll = ll, particles = out))
-                } else {
-                    return(ll)
-                }
-            }
-            
-            ## normalise weights
-            weights <- exp(weights - log_sum_exp(weights))
-            
-            ## resample
-            inds <- apply(rmultinom(npart, 1, weights), 2, function(x) which(x == 1))
-            u <- disSims[inds]
-            cu <- cu[inds]
-        }
-        if(!is.na(saveAll)) {
-            return(list(ll = ll, particles = out))
-        } else {
-            return(ll)
-        }
-    }, pars = pars, C = C, u1_moves = u1_moves, u1 = u1, npart = npart, ndays = ndays, data = data, MD = MD, 
-       a1 = a1, a2 = a2, b = b, a_dis = a_dis, b_dis = b_dis, saveAll = saveAll, mc.cores = detectCores())
+        ## remove time since not used in code
+        data <- data[, -1]
+        
+        ## set pars
+        pars <- unlist(pars[k, ])
+        
+        ## run particle filter
+        ll <- PF_cpp(pars, C, data, 12L, 8L, 339L, u1_moves, u1, ndays,
+            npart, MD, a1, a2, b, a_dis, b_dis, saveAll)
+        ll
+    }, pars = pars, C = C, u1_moves = u1_moves, u1 = u1, npart = npart, ndays = ndays, data = data, MD = MDint, 
+       a1 = a1, a2 = a2, b = b, a_dis = a_dis, b_dis = b_dis, saveAll = saveAllint, mc.cores = detectCores())
     if(!is.na(saveAll)) {
         ll <- map(runs, "ll")
-        runs <- map(runs, "particles")
+        runs <- map(runs, "particles") %>%
+            map(~{
+                x <- list()
+                for(i in 1:npart) {
+                    x[[i]] <- .[(i - 1) * ndays + 1:(ndays + 1)]
+                }
+                x
+            })
         ll <- do.call("c", ll)
         return(list(ll = ll, particles = runs))
     } else {

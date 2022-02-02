@@ -3,12 +3,13 @@ library(tidyverse)
 library(Rcpp)
 library(RcppArmadillo)
 library(parallel)
-
-## source simulation model
-sourceCpp("discreteStochModel.cpp")
+library(abind)
 
 ## read in truncated Skellam sampler
 source("trSkellam.R")
+
+## source simulation model
+sourceCpp("PF.cpp")
 
 ## source function to run PF and return log-likelihood
 source("PF.R")
@@ -20,75 +21,82 @@ data <- readRDS("outputs/disSims.rds")
 pars <- read_delim("disease.dat", delim = " ") %>%
     rename(nu = `beta[1]`, nuA = `beta[6]`) %>%
     select(!c(starts_with("beta"), repeats, starts_with(".lock"), .p_home_weekend)) %>%
-    select(nu, nuA, !output)
+    select(nu, nuA, !output) %>%
+    as.data.frame()
 
 ## read in contact matrix
 contact <- read_csv("POLYMOD_matrix.csv", col_names = FALSE) %>%
     as.matrix()
 
-## solution to round numbers preserving sum
-## adapted from:
-## https://stackoverflow.com/questions/32544646/round-vector-of-numerics-to-integer-while-preserving-their-sum
-smart_round <- function(x) {
-    y <- floor(x)
-    indices <- tail(order(x - y), round(sum(x)) - sum(y))
-    y[indices] <- y[indices] + 1
-    y
-}
-
-## set up number of initial individuals in each age-class
-N <- 10000
-N <- smart_round(read_csv("age_seeds.csv", col_names = FALSE)$X2 * N)
-I0 <- smart_round(read_csv("age_seeds.csv", col_names = FALSE)$X2 * 1)
-S0 <- N - I0
-
-## set initial counts
-u <- matrix(0, 12, 8)
-u[1, ] <- S0
-u[2, ] <- I0
+## read in initial conditions
+u1 <- readRDS("outputs/u1.rds")
+u1_moves <- readRDS("outputs/u1_moves.rds")
 
 ## set seed for reproducibility
 set.seed(666)
 
 # ## run model with no model discrepancy
-# runs_nomd <- PF(pars, C = contact, data = data, u = u, ndays = 30, npart = 100, obsScale = 0.8, MD = FALSE)
-# 
-# ## repeat but adding some model discrepancy
-# runs_md <- PF(pars, C = contact, data = data, u = u, ndays = 30, npart = 100, obsScale = 0.8, MD = TRUE, disScale = 0.1)
+# runs_nomd <- PF(pars[1:10, ], C = contact, data = data, u = u, ndays = 30, npart = 100, MD = FALSE, saveAll = NA)
 
-for(k in 1:6) {
+# ## repeat but adding some model discrepancy
+# runs_md <- PF(pars, C = contact, data = data, u = u, ndays = 30, npart = 100, MD = TRUE, a_dis = 0.05, b_dis = 0.05, saveAll = NA)
+
+## set up plot data
+plot_data <- pivot_longer(filter(data, t <= 50), !t, names_to = "var", values_to = "n") %>%
+    mutate(age = gsub('^(?:[^_]*_)(.*)', '\\1', var)) %>%
+    mutate(LAD = gsub('^(?:[^_]*_)(.*)', '\\1', age)) %>%
+    mutate(age = gsub('(.*)_[0-9]*', '\\1', age)) %>%
+    mutate(obs = grepl("obs", var)) %>%
+    mutate(var = gsub('^(.*)_[0-9]*_.*', '\\1', var)) %>%
+    group_by(t, var, age, obs) %>%
+    summarise(n = sum(n), .groups = "drop") %>%
+    mutate(var = gsub("one", "1", var)) %>%
+    mutate(var = gsub("two", "2", var))
+
+for(k in 6) {
     ## run model with no model discrepancy and throw out sims corresponding to true parameters
     ## if you want to save out some runs, you can only run for a single design point at a time
     ## due to parallelisation - I could fix, but not right now
-    runs_nomd <- PF(pars[k, ], C = contact, data = data, u = u, ndays = 50, npart = 100, obsScale = 0.8, MD = FALSE, whichSave = 1)
+    runs_nomd <- PF(pars[k, ], C = contact, data = data, u1_moves = u1_moves, 
+                    u1 = u1, ndays = 50, npart = 10, MD = FALSE, saveAll = TRUE)
     
     ## plot particle estimates of states (unweighted)
-    sims_nomd <- map(sims, ~map(., ~as.vector(t(.)))) %>%
-        map(~do.call("rbind", .)) %>%
-        map(as_tibble) %>%
-        bind_rows(.id = "t") %>%
-        mutate(t = as.numeric(t))
-    stageNms <- map(c("S", "E", "A", "RA", "P", "Ione", "DI", "Itwo", "RI", "H", "RH", "DH"), ~paste0(., 1:8)) %>%
-        reduce(c)
-    colnames(sims_nomd) <- c("t", stageNms)
+    sims_nomd <- map(runs_nomd$particles[[1]], ~{
+            map(., ~{
+                x <- apply(., c(1, 2), sum)
+                colnames(x) <- paste0("age", 1:ncol(x))
+                as_tibble(x) %>%
+                    mutate(var = c("S", "E", "A", "RA", "P", "Ione", "DI", "Itwo", "RI", "H", "RH", "DH"))
+            }) %>%
+            bind_rows(.id = "t")
+        }) %>%
+        bind_rows(.id = "particle") %>%
+        pivot_longer(!c(particle, t, var), names_to = "age", values_to = "n") %>%
+        mutate(age = as.numeric(gsub("age", "", age))) %>%
+        mutate(t = as.numeric(t) - 1)
     
     ## repeat but adding some model discrepancy
-    runs_md <- PF(pars[k, ], C = contact, data = data, u = u, ndays = 50, npart = 100, obsScale = 0.8, MD = TRUE, disScale = 0.1, whichSave = 1)
+    runs_md <- PF(pars[k, ], C = contact, data = data, u1_moves = u1_moves, 
+                  u1 = u1, ndays = 50, npart = 10, MD = TRUE, a_dis = 0.05, b_dis = 0.05, saveAll = TRUE)
     
     ## plot particle estimates of states (unweighted)
-    sims_md <- map(sims, ~map(., ~as.vector(t(.)))) %>%
-        map(~do.call("rbind", .)) %>%
-        map(as_tibble) %>%
-        bind_rows(.id = "t") %>%
-        mutate(t = as.numeric(t))
-    stageNms <- map(c("S", "E", "A", "RA", "P", "Ione", "DI", "Itwo", "RI", "H", "RH", "DH"), ~paste0(., 1:8)) %>%
-        reduce(c)
-    colnames(sims_md) <- c("t", stageNms)
+    sims_md <- map(runs_md$particles[[1]], ~{
+            map(., ~{
+                x <- apply(., c(1, 2), sum)
+                colnames(x) <- paste0("age", 1:ncol(x))
+                as_tibble(x) %>%
+                    mutate(var = c("S", "E", "A", "RA", "P", "Ione", "DI", "Itwo", "RI", "H", "RH", "DH"))
+            }) %>%
+                bind_rows(.id = "t")
+        }) %>%
+        bind_rows(.id = "particle") %>%
+        pivot_longer(!c(particle, t, var), names_to = "age", values_to = "n") %>%
+        mutate(age = as.numeric(gsub("age", "", age))) %>%
+        mutate(t = as.numeric(t) - 1)
     
-    ## plot both together
+    ## plot both together nationally
     p <- mutate(sims_nomd, type = "No MD") %>%
         rbind(mutate(sims_md, type = "MD")) %>%
-        pivot_longer(!c(t, type), names_to = "var", values_to = "n") %>%
         group_by(t, var, type) %>%
         summarise(
             LCI = quantile(n, probs = 0.025),
@@ -98,31 +106,14 @@ for(k in 1:6) {
             UCI = quantile(n, probs = 0.975),
             .groups = "drop"
         ) %>%
-        mutate(age = gsub("[^0-9]", "", var)) %>%
-        mutate(var = gsub("[^a-zA-Z]", "", var)) %>%
         mutate(var = gsub("one", "1", var)) %>%
         mutate(var = gsub("two", "2", var)) %>%
         ggplot(aes(x = t)) +
         geom_ribbon(aes(ymin = LCI, ymax = UCI, fill = type), alpha = 0.5) +
         geom_ribbon(aes(ymin = LQ, ymax = UQ, fill = type), alpha = 0.5) +
         geom_line(aes(y = median, colour = type)) +
-        geom_line(
-            aes(y = n),
-            data = pivot_longer(select(data, !ends_with("obs")) %>% filter(t <= 50), !t, names_to = "var", values_to = "n") %>%
-                mutate(age = gsub("[^0-9]", "", var)) %>%
-                mutate(var = gsub("[^a-zA-Z]", "", var)) %>%
-                mutate(var = gsub("one", "1", var)) %>%
-                mutate(var = gsub("two", "2", var)),
-            col = "red", linetype = "dashed"
-        ) +
-        geom_line(
-            aes(y = n),
-            data = pivot_longer(select(data, t, ends_with("obs")) %>% filter(t <= 50), !t, names_to = "var", values_to = "n") %>%
-                mutate(var = gsub("obs", "", var)) %>%
-                mutate(age = gsub("[^0-9]", "", var)) %>%
-                mutate(var = gsub("[^a-zA-Z]", "", var)),
-            col = "blue", linetype = "dashed"
-        ) +
+        geom_line(aes(y = n), data = filter(plot_data, !obs), col = "red", linetype = "dashed") +
+        geom_line(aes(y = n), data = filter(plot_data, obs), col = "blue", linetype = "dashed") +
         facet_grid(var ~ age, scales = "free") +
         xlab("Days") + 
         ylab("Counts")
