@@ -334,7 +334,7 @@ List PF_cpp (arma::vec pars, arma::mat C, arma::imat data, int nclasses, int nag
     // split u1 up into different LADs
     std::vector<arma::icube> u1(npart);
     std::vector<arma::icube> u1_new(npart);
-    std::vector<arma::icube> cu(npart);
+    // std::vector<arma::icube> cu(npart);
     std::vector<arma::icube> u1_night(npart);
     std::vector<arma::icube> u1_day(npart);
     std::vector<arma::icube> u1_night_new(npart);
@@ -360,7 +360,7 @@ List PF_cpp (arma::vec pars, arma::mat C, arma::imat data, int nclasses, int nag
     for(i = 0; i < npart; i++) {
         u1[i] = u1_comb;
         u1_new[i] = u1_comb;
-        cu[i] = u1_comb;
+        // cu[i] = u1_comb;
         u1_day[i] = tu1_day;
         u1_night[i] = tu1_night;
         u1_day_new[i] = tu1_day;
@@ -453,7 +453,7 @@ List PF_cpp (arma::vec pars, arma::mat C, arma::imat data, int nclasses, int nag
                 for(j = 0; j < nages; j++) {
                     for(l = 0; l < incsize; l++) {
                         u1_new[i](11, j, l) = u1[i](11, j, l) + DHinc(j, l);
-                        cu[i](11, j, l) += DHinc(j, l);
+                        // cu[i](11, j, l) += DHinc(j, l);
                     }
                 }
                 
@@ -474,7 +474,7 @@ List PF_cpp (arma::vec pars, arma::mat C, arma::imat data, int nclasses, int nag
                 for(j = 0; j < nages; j++) {
                     for(l = 0; l < incsize; l++) {
                         u1_new[i](10, j, l) = u1[i](10, j, l) + RHinc(j, l);
-                        cu[i](10, j, l) += RHinc(j, l);
+                        // cu[i](10, j, l) += RHinc(j, l);
                     }
                 }
                     
@@ -493,12 +493,12 @@ List PF_cpp (arma::vec pars, arma::mat C, arma::imat data, int nclasses, int nag
                         if(Hinc(j, l) < 0) Rprintf("H = %d j = %d l = %d\n", Hinc(j, l), j, l);
                     }
                 }
-                // update counts
-                for(j = 0; j < nages; j++) {
-                    for(l = 0; l < incsize; l++) {
-                        cu[i](9, j, l) += Hinc(j, l);
-                    }
-                }
+                // // update counts
+                // for(j = 0; j < nages; j++) {
+                //     for(l = 0; l < incsize; l++) {
+                //         cu[i](9, j, l) += Hinc(j, l);
+                //     }
+                // }
                     
                 // DI given H (MD on incidence)
                 for(j = 0; j < nages; j++) {
@@ -517,7 +517,7 @@ List PF_cpp (arma::vec pars, arma::mat C, arma::imat data, int nclasses, int nag
                 for(j = 0; j < nages; j++) {
                     for(l = 0; l < incsize; l++) {
                         u1_new[i](6, j, l) = u1[i](6, j, l) + DIinc(j, l);
-                        cu[i](6, j, l) += DIinc(j, l);
+                        // cu[i](6, j, l) += DIinc(j, l);
                     }
                 }
                     
@@ -538,7 +538,7 @@ List PF_cpp (arma::vec pars, arma::mat C, arma::imat data, int nclasses, int nag
                 for(j = 0; j < nages; j++) {
                     for(l = 0; l < incsize; l++) {
                         u1_new[i](8, j, l) = u1[i](8, j, l) + RIinc(j, l);
-                        cu[i](8, j, l) += RIinc(j, l);
+                        // cu[i](8, j, l) += RIinc(j, l);
                     }
                 }
                     
@@ -558,11 +558,11 @@ List PF_cpp (arma::vec pars, arma::mat C, arma::imat data, int nclasses, int nag
                     }
                 }
                 // update counts
-                for(j = 0; j < nages; j++) {
-                    for(l = 0; l < incsize; l++) {
-                        cu[i](7, j, l) += I2inc(j, l);
-                    }
-                } 
+                // for(j = 0; j < nages; j++) {
+                //     for(l = 0; l < incsize; l++) {
+                //         cu[i](7, j, l) += I2inc(j, l);
+                //     }
+                // } 
                 
                 // I1 given later
                 for(j = 0; j < nages; j++) {
@@ -580,11 +580,11 @@ List PF_cpp (arma::vec pars, arma::mat C, arma::imat data, int nclasses, int nag
                     }
                 }
                 // update counts
-                for(j = 0; j < nages; j++) {
-                    for(l = 0; l < incsize; l++) {
-                        cu[i](5, j, l) += I1inc(j, l);
-                    }
-                }
+                // for(j = 0; j < nages; j++) {
+                //     for(l = 0; l < incsize; l++) {
+                //         cu[i](5, j, l) += I1inc(j, l);
+                //     }
+                // }
                 
                 // P given later
                 for(j = 0; j < nages; j++) {
@@ -602,11 +602,11 @@ List PF_cpp (arma::vec pars, arma::mat C, arma::imat data, int nclasses, int nag
                     }
                 }
                 // update counts
-                for(j = 0; j < nages; j++) {
-                    for(l = 0; l < incsize; l++) {
-                        cu[i](4, j, l) += Pinc(j, l);
-                    }
-                } 
+                // for(j = 0; j < nages; j++) {
+                //     for(l = 0; l < incsize; l++) {
+                //         cu[i](4, j, l) += Pinc(j, l);
+                //     }
+                // } 
                 
                 // RA (MD on incidence)
                 for(j = 0; j < nages; j++) {
@@ -625,7 +625,7 @@ List PF_cpp (arma::vec pars, arma::mat C, arma::imat data, int nclasses, int nag
                 for(j = 0; j < nages; j++) {
                     for(l = 0; l < incsize; l++) {
                         u1_new[i](3, j, l) = u1[i](3, j, l) + RAinc(j, l);
-                        cu[i](3, j, l) += RAinc(j, l);
+                        // cu[i](3, j, l) += RAinc(j, l);
                     }
                 }
                 
@@ -645,11 +645,11 @@ List PF_cpp (arma::vec pars, arma::mat C, arma::imat data, int nclasses, int nag
                     }
                 }
                 // update counts
-                for(j = 0; j < nages; j++) {
-                    for(l = 0; l < incsize; l++) {
-                        cu[i](2, j, l) += Ainc(j, l);
-                    }
-                } 
+                // for(j = 0; j < nages; j++) {
+                //     for(l = 0; l < incsize; l++) {
+                //         cu[i](2, j, l) += Ainc(j, l);
+                //     }
+                // } 
                 
                 // E given later
                 for(j = 0; j < nages; j++) {
@@ -667,17 +667,17 @@ List PF_cpp (arma::vec pars, arma::mat C, arma::imat data, int nclasses, int nag
                     }
                 }
                 // update counts
-                for(j = 0; j < nages; j++) {
-                    for(l = 0; l < incsize; l++) {
-                        cu[i](1, j, l) += Einc(j, l);
-                    }
-                }
+                // for(j = 0; j < nages; j++) {
+                //     for(l = 0; l < incsize; l++) {
+                //         cu[i](1, j, l) += Einc(j, l);
+                //     }
+                // }
                 
                 // S given later
                 for(j = 0; j < nages; j++) {
                     for(l = 0; l < incsize; l++) {
                         u1_new[i](0, j, l) = u1[i](0, j, l) - Einc(j, l);
-                        cu[i](0, j, l) -= Einc(j, l);
+                        // cu[i](0, j, l) -= Einc(j, l);
                     }
                 }
                 
