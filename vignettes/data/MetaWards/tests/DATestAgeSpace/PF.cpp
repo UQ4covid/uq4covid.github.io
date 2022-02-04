@@ -24,6 +24,9 @@ double ldtskellam_cpp(int x, double lambda1, double lambda2, int LB = 0, int UB 
     
     // if truncated then adjust log-density
     if(UB >= LB) {
+        if(x < LB || x > UB) {
+            stop("'x' must be in bounds in dtskellam_cpp\n");
+        }
         // declare variables
         int normsize = UB - LB + 1;
         if(normsize > 1) {
@@ -104,7 +107,19 @@ void discreteStochModel(arma::vec pars, int tstart, int tstop,
     int nages = (*u1).n_cols;
     int nlads = max((*u1_moves).col(0));
     int k;
-    arma::uword i, j;
+    arma::uword i, j, l;
+    
+    // reconstruct day/night counts
+    (*u1_day).zeros();
+    (*u1_night).zeros();
+    for(i = 0; i < (*u1_moves).n_rows; i++) {
+        for(j = 0; j < nages; j++) {
+            for(l = 0; l < nclasses; l++) {
+                (*u1_day)(l, j, (arma::uword) (*u1_moves)(i, 1) - 1) += (*u1)(l, j, i);
+                (*u1_night)(l, j, (arma::uword) (*u1_moves)(i, 0) - 1) += (*u1)(l, j, i);
+            }
+        }
+    }
     
     // extract parameters
     double nu = pars(0);
@@ -332,42 +347,26 @@ List PF_cpp (arma::vec pars, arma::mat C, arma::imat data, int nclasses, int nag
          double b_dis, int saveAll) {
     
     // set counters
-    arma::uword i, j, l;
+    arma::uword i, j, l, k;
     int tempLB = 0;
     int t = 0;
     
     // split u1 up into different LADs
     std::vector<arma::icube> u1(npart);
     std::vector<arma::icube> u1_new(npart);
-    
-    // for(i = 0; i < 2; i++) {
-    //     u1[i] = u1_comb;
-    //     Rprintf("u1[%d](0, 0, 0) = %d\n", i, u1[i](0, 0, 0));
-    // }
-    // test(&u1[1]);
-    // for(i = 0; i < 2; i++) {
-    //     Rprintf("u1[%d](0, 0, 0) = %d\n", i, u1[i](0, 0, 0));
-    // }
-    // stop("STOP RIGHT NOW\n");
-    
-    // std::vector<arma::icube> cu(npart);
-    std::vector<arma::icube> u1_night(npart);
-    std::vector<arma::icube> u1_day(npart);
-    std::vector<arma::icube> u1_night_new(npart);
-    std::vector<arma::icube> u1_day_new(npart);
+    arma::icube u1_day(nclasses, nages, nlads);
+    arma::icube u1_night(nclasses, nages, nlads);
+    arma::icube u1_night_reduced(2, nages, nlads);
     arma::imat N_day(nages, nlads);
     arma::imat N_night(nages, nlads);
-    arma::icube tu1_day(nclasses, nages, nlads);
-    arma::icube tu1_night(nclasses, nages, nlads);
-    tu1_day.zeros();
-    tu1_night.zeros();
+    u1_day.zeros();
+    u1_night.zeros();
+    u1_night_reduced.zeros();
     N_day.zeros();
     N_night.zeros();
     for(i = 0; i < u1_moves.n_rows; i++) {
         for(j = 0; j < nages; j++) {
             for(l = 0; l < nclasses; l++) {
-                tu1_day(l, j, (arma::uword) u1_moves(i, 1) - 1) += u1_comb(l, j, i);
-                tu1_night(l, j, (arma::uword) u1_moves(i, 0) - 1) += u1_comb(l, j, i);
                 N_day(j, (arma::uword) u1_moves(i, 1) - 1) += u1_comb(l, j, i);
                 N_night(j, (arma::uword) u1_moves(i, 0) - 1) += u1_comb(l, j, i);
             }
@@ -376,11 +375,6 @@ List PF_cpp (arma::vec pars, arma::mat C, arma::imat data, int nclasses, int nag
     for(i = 0; i < npart; i++) {
         u1[i] = u1_comb;
         u1_new[i] = u1_comb;
-        // cu[i] = u1_comb;
-        u1_day[i] = tu1_day;
-        u1_night[i] = tu1_night;
-        u1_day_new[i] = tu1_day;
-        u1_night_new[i] = tu1_night;
     }
     // auxiliary objects
     arma::mat pinf(nages, nlads);
@@ -392,11 +386,13 @@ List PF_cpp (arma::vec pars, arma::mat C, arma::imat data, int nclasses, int nag
     double wnorm = 0.0;
     
     // set up temporary objects
-    int incsize = (MD == 1 ? u1_moves.n_rows:nlads);
-    arma::imat DHinc (nages, incsize); DHinc.zeros();
+    int incsize = (MD == 1 ? u1_moves.n_rows:1);
+    // 'incsize' just used to save memory when declaring these vectors if
+    // not used in MD
+    arma::imat DHinc (nages, u1_moves.n_rows); DHinc.zeros();
     arma::imat RHinc (nages, incsize); RHinc.zeros();
     arma::imat Hinc (nages, incsize); Hinc.zeros();
-    arma::imat DIinc (nages, incsize); DIinc.zeros();
+    arma::imat DIinc (nages, u1_moves.n_rows); DIinc.zeros();
     arma::imat RIinc (nages, incsize); RIinc.zeros();
     arma::imat I2inc (nages, incsize); I2inc.zeros();
     arma::imat I1inc (nages, incsize); I1inc.zeros();
@@ -404,6 +400,8 @@ List PF_cpp (arma::vec pars, arma::mat C, arma::imat data, int nclasses, int nag
     arma::imat RAinc (nages, incsize); RAinc.zeros();
     arma::imat Ainc (nages, incsize); Ainc.zeros();
     arma::imat Einc (nages, incsize); Einc.zeros();
+    // reset incsize
+    incsize = u1_moves.n_rows;
     
     arma::ivec obsInc (data.n_cols); obsInc.zeros();
     arma::ivec Dtempinc (data.n_cols); Dtempinc.zeros();
@@ -411,17 +409,30 @@ List PF_cpp (arma::vec pars, arma::mat C, arma::imat data, int nclasses, int nag
     
     // check which output required
     List out (npart * (ndays + 1));
-    arma::icube u1_night_t(2, nages, nlads);
     if(saveAll != 0) {
         if(saveAll == 1) {
             for(i = 0; i < npart; i++) {
-                u1_night_t.row(0) = u1_night[i].row(6);
-                u1_night_t.row(1) = u1_night[i].row(11);
-                out[i] = u1_night_t;
+                // extract just counts for DI and DH
+                u1_night_reduced.zeros();
+                for(l = 0; l < incsize; l++) {
+                    for(j = 0; j < nages; j++) {
+                        u1_night_reduced(0, j, (arma::uword) u1_moves(l, 0) - 1) += u1[i](6, j, l);
+                        u1_night_reduced(1, j, (arma::uword) u1_moves(l, 0) - 1) += u1[i](11, j, l);
+                    }
+                }
+                out[i] = u1_night_reduced;
             }
         } else {
             for(i = 0; i < npart; i++) {
-                out[i] = u1_night[i];
+                u1_night.zeros();
+                for(l = 0; l < incsize; l++) {
+                    for(j = 0; j < nages; j++) {
+                        for(k = 0; k < nclasses; k++) {
+                            u1_night(k, j, (arma::uword) u1_moves(l, 0) - 1) += u1[i](k, j, l);
+                        }
+                    }
+                }
+                out[i] = u1_night;
             }
         }
     }
@@ -442,7 +453,7 @@ List PF_cpp (arma::vec pars, arma::mat C, arma::imat data, int nclasses, int nag
             R_CheckUserInterrupt();
             
             // run model and return u1
-            discreteStochModel(pars, t - 1, t, &u1_moves, &u1_new[i], &u1_day_new[i], &u1_night_new[i], &N_day, &N_night, &pinf, &origE,  C);
+            discreteStochModel(pars, t - 1, t, &u1_moves, &u1_new[i], &u1_day, &u1_night, &N_day, &N_night, &pinf, &origE,  C);
             
             // cols: c("S", "E", "A", "RA", "P", "I1", "DI", "I2", "RI", "H", "RH", "DH")
             //          0,   1,   2,   3,    4,   5,    6,    7,    8,    9,   10,   11
@@ -469,10 +480,7 @@ List PF_cpp (arma::vec pars, arma::mat C, arma::imat data, int nclasses, int nag
                 for(j = 0; j < nages; j++) {
                     for(l = 0; l < incsize; l++) {
                         u1_new[i](11, j, l) = u1[i](11, j, l) + DHinc(j, l);
-                        u1_day_new[i](11, j, (arma::uword) u1_moves(l, 1) - 1) = u1_day[i](11, j, (arma::uword) u1_moves(l, 1) - 1) + DHinc(j, l);
-                        u1_night_new[i](11, j, (arma::uword) u1_moves(l, 0) - 1) = u1_night[i](11, j, (arma::uword) u1_moves(l, 0) - 1) + DHinc(j, l);
                         if(u1_new[i](11, j, l) < 0) Rprintf("DH = %d j = %d l = %d\n", u1_new[i](11, j, l), j, l);
-                        // cu[i](11, j, l) += DHinc(j, l);
                     }
                 }
                 
@@ -493,10 +501,7 @@ List PF_cpp (arma::vec pars, arma::mat C, arma::imat data, int nclasses, int nag
                 for(j = 0; j < nages; j++) {
                     for(l = 0; l < incsize; l++) {
                         u1_new[i](10, j, l) = u1[i](10, j, l) + RHinc(j, l);
-                        u1_day_new[i](10, j, (arma::uword) u1_moves(l, 1) - 1) = u1_day[i](10, j, (arma::uword) u1_moves(l, 1) - 1) + RHinc(j, l);
-                        u1_night_new[i](10, j, (arma::uword) u1_moves(l, 0) - 1) = u1_night[i](10, j, (arma::uword) u1_moves(l, 0) - 1) + RHinc(j, l);
                         if(u1_new[i](10, j, l) < 0) Rprintf("RH = %d j = %d l = %d\n", u1_new[i](10, j, l), j, l);
-                        // cu[i](10, j, l) += RHinc(j, l);
                     }
                 }
                     
@@ -514,16 +519,8 @@ List PF_cpp (arma::vec pars, arma::mat C, arma::imat data, int nclasses, int nag
                         Hinc(j, l) = u1_new[i](9, j, l) - u1[i](9, j, l) + DHinc(j, l) + RHinc(j, l);
                         if(Hinc(j, l) < 0) Rprintf("Hinc = %d j = %d l = %d\n", Hinc(j, l), j, l);
                         if(u1_new[i](9, j, l) < 0) Rprintf("H = %d j = %d l = %d\n", u1_new[i](9, j, l), j, l);
-                        u1_day_new[i](9, j, (arma::uword) u1_moves(l, 1) - 1) = u1_day[i](9, j, (arma::uword) u1_moves(l, 1) - 1) + Hinc(j, l) - RHinc(j, l) - DHinc(j, l);
-                        u1_night_new[i](9, j, (arma::uword) u1_moves(l, 0) - 1) = u1_night[i](9, j, (arma::uword) u1_moves(l, 0) - 1) + Hinc(j, l) - RHinc(j, l) - DHinc(j, l);
                     }
                 }
-                // // update counts
-                // for(j = 0; j < nages; j++) {
-                //     for(l = 0; l < incsize; l++) {
-                //         cu[i](9, j, l) += Hinc(j, l);
-                //     }
-                // }
                     
                 // DI given H (MD on incidence)
                 for(j = 0; j < nages; j++) {
@@ -542,10 +539,7 @@ List PF_cpp (arma::vec pars, arma::mat C, arma::imat data, int nclasses, int nag
                 for(j = 0; j < nages; j++) {
                     for(l = 0; l < incsize; l++) {
                         u1_new[i](6, j, l) = u1[i](6, j, l) + DIinc(j, l);
-                        u1_day_new[i](6, j, (arma::uword) u1_moves(l, 1) - 1) = u1_day[i](6, j, (arma::uword) u1_moves(l, 1) - 1) + DIinc(j, l);
-                        u1_night_new[i](6, j, (arma::uword) u1_moves(l, 0) - 1) = u1_night[i](6, j, (arma::uword) u1_moves(l, 0) - 1) + DIinc(j, l);
                         if(u1_new[i](6, j, l) < 0) Rprintf("DI = %d j = %d l = %d\n", u1_new[i](6, j, l), j, l);
-                        // cu[i](6, j, l) += DIinc(j, l);
                     }
                 }
                     
@@ -566,10 +560,7 @@ List PF_cpp (arma::vec pars, arma::mat C, arma::imat data, int nclasses, int nag
                 for(j = 0; j < nages; j++) {
                     for(l = 0; l < incsize; l++) {
                         u1_new[i](8, j, l) = u1[i](8, j, l) + RIinc(j, l);
-                        u1_day_new[i](8, j, (arma::uword) u1_moves(l, 1) - 1) = u1_day[i](8, j, (arma::uword) u1_moves(l, 1) - 1) + RIinc(j, l);
-                        u1_night_new[i](8, j, (arma::uword) u1_moves(l, 0) - 1) = u1_night[i](8, j, (arma::uword) u1_moves(l, 0) - 1) + RIinc(j, l);
                         if(u1_new[i](8, j, l) < 0) Rprintf("RI = %d j = %d l = %d\n", u1_new[i](8, j, l), j, l);
-                        // cu[i](8, j, l) += RIinc(j, l);
                     }
                 }
                     
@@ -587,16 +578,8 @@ List PF_cpp (arma::vec pars, arma::mat C, arma::imat data, int nclasses, int nag
                         I2inc(j, l) = u1_new[i](7, j, l) - u1[i](7, j, l) + RIinc(j, l);
                         if(I2inc(j, l) < 0) Rprintf("I2inc = %d j = %d l = %d\n", I2inc(j, l), j, l);
                         if(u1_new[i](7, j, l) < 0) Rprintf("I2 = %d j = %d l = %d\n", u1_new[i](7, j, l), j, l);
-                        u1_day_new[i](7, j, (arma::uword) u1_moves(l, 1) - 1) = u1_day[i](7, j, (arma::uword) u1_moves(l, 1) - 1) + I2inc(j, l) - RIinc(j, l);
-                        u1_night_new[i](7, j, (arma::uword) u1_moves(l, 0) - 1) = u1_night[i](7, j, (arma::uword) u1_moves(l, 0) - 1) + I2inc(j, l) - RIinc(j, l);
                     }
                 }
-                // update counts
-                // for(j = 0; j < nages; j++) {
-                //     for(l = 0; l < incsize; l++) {
-                //         cu[i](7, j, l) += I2inc(j, l);
-                //     }
-                // } 
                 
                 // I1 given later
                 for(j = 0; j < nages; j++) {
@@ -612,16 +595,8 @@ List PF_cpp (arma::vec pars, arma::mat C, arma::imat data, int nclasses, int nag
                         I1inc(j, l) = u1_new[i](5, j, l) - u1[i](5, j, l) + I2inc(j, l) + Hinc(j, l) + DIinc(j, l);
                         if(I1inc(j, l) < 0) Rprintf("I1inc = %d j = %d l = %d\n", I1inc(j, l), j, l);
                         if(u1_new[i](5, j, l) < 0) Rprintf("I1 = %d j = %d l = %d\n", u1_new[i](5, j, l), j, l);
-                        u1_day_new[i](5, j, (arma::uword) u1_moves(l, 1) - 1) = u1_day[i](5, j, (arma::uword) u1_moves(l, 1) - 1) + I1inc(j, l) - I2inc(j, l) - DIinc(j, l) - Hinc(j, l);
-                        u1_night_new[i](5, j, (arma::uword) u1_moves(l, 0) - 1) = u1_night[i](5, j, (arma::uword) u1_moves(l, 0) - 1) + I1inc(j, l) - I2inc(j, l) - DIinc(j, l) - Hinc(j, l);
                     }
                 }
-                // update counts
-                // for(j = 0; j < nages; j++) {
-                //     for(l = 0; l < incsize; l++) {
-                //         cu[i](5, j, l) += I1inc(j, l);
-                //     }
-                // }
                 
                 // P given later
                 for(j = 0; j < nages; j++) {
@@ -637,16 +612,8 @@ List PF_cpp (arma::vec pars, arma::mat C, arma::imat data, int nclasses, int nag
                         Pinc(j, l) = u1_new[i](4, j, l) - u1[i](4, j, l) + I1inc(j, l);
                         if(Pinc(j, l) < 0) Rprintf("Pinc = %d j = %d l = %d\n", Pinc(j, l), j, l);
                         if(u1_new[i](4, j, l) < 0) Rprintf("P = %d j = %d l = %d\n", u1_new[i](4, j, l), j, l);
-                        u1_day_new[i](4, j, (arma::uword) u1_moves(l, 1) - 1) = u1_day[i](4, j, (arma::uword) u1_moves(l, 1) - 1) + Pinc(j, l) - I1inc(j, l);
-                        u1_night_new[i](4, j, (arma::uword) u1_moves(l, 0) - 1) = u1_night[i](4, j, (arma::uword) u1_moves(l, 0) - 1) + Pinc(j, l) - I1inc(j, l);
                     }
                 }
-                // update counts
-                // for(j = 0; j < nages; j++) {
-                //     for(l = 0; l < incsize; l++) {
-                //         cu[i](4, j, l) += Pinc(j, l);
-                //     }
-                // } 
                 
                 // RA (MD on incidence)
                 for(j = 0; j < nages; j++) {
@@ -665,10 +632,7 @@ List PF_cpp (arma::vec pars, arma::mat C, arma::imat data, int nclasses, int nag
                 for(j = 0; j < nages; j++) {
                     for(l = 0; l < incsize; l++) {
                         u1_new[i](3, j, l) = u1[i](3, j, l) + RAinc(j, l);
-                        u1_day_new[i](3, j, (arma::uword) u1_moves(l, 1) - 1) = u1_day[i](3, j, (arma::uword) u1_moves(l, 1) - 1) + RAinc(j, l);
-                        u1_night_new[i](3, j, (arma::uword) u1_moves(l, 0) - 1) = u1_night[i](3, j, (arma::uword) u1_moves(l, 0) - 1) + RAinc(j, l);
                         if(u1_new[i](3, j, l) < 0) Rprintf("RH = %d j = %d l = %d\n", u1_new[i](3, j, l), j, l);
-                        // cu[i](3, j, l) += RAinc(j, l);
                     }
                 }
                 
@@ -686,16 +650,8 @@ List PF_cpp (arma::vec pars, arma::mat C, arma::imat data, int nclasses, int nag
                         Ainc(j, l) = u1_new[i](2, j, l) - u1[i](2, j, l) + RAinc(j, l);
                         if(Ainc(j, l) < 0) Rprintf("Ainc = %d j = %d l = %d\n", Ainc(j, l), j, l);
                         if(u1_new[i](2, j, l) < 0) Rprintf("A = %d j = %d l = %d\n", u1_new[i](2, j, l), j, l);
-                        u1_day_new[i](2, j, (arma::uword) u1_moves(l, 1) - 1) = u1_day[i](2, j, (arma::uword) u1_moves(l, 1) - 1) + Ainc(j, l) - RAinc(j, l);
-                        u1_night_new[i](2, j, (arma::uword) u1_moves(l, 0) - 1) = u1_night[i](2, j, (arma::uword) u1_moves(l, 0) - 1) + Ainc(j, l) - RAinc(j, l);
                     }
                 }
-                // update counts
-                // for(j = 0; j < nages; j++) {
-                //     for(l = 0; l < incsize; l++) {
-                //         cu[i](2, j, l) += Ainc(j, l);
-                //     }
-                // } 
                 
                 // E given later
                 for(j = 0; j < nages; j++) {
@@ -711,101 +667,40 @@ List PF_cpp (arma::vec pars, arma::mat C, arma::imat data, int nclasses, int nag
                         Einc(j, l) = u1_new[i](1, j, l) - u1[i](1, j, l) + Ainc(j, l) + Pinc(j, l);
                         if(Einc(j, l) < 0) Rprintf("Einc = %d j = %d l = %d\n", Einc(j, l), j, l);
                         if(u1_new[i](1, j, l) < 0) Rprintf("E = %d j = %d l = %d\n", u1_new[i](1, j, l), j, l);
-                        u1_day_new[i](1, j, (arma::uword) u1_moves(l, 1) - 1) = u1_day[i](1, j, (arma::uword) u1_moves(l, 1) - 1) + Einc(j, l) - Pinc(j, l) - Ainc(j, l);
-                        u1_night_new[i](1, j, (arma::uword) u1_moves(l, 0) - 1) = u1_night[i](1, j, (arma::uword) u1_moves(l, 0) - 1) + Einc(j, l) - Pinc(j, l) - Ainc(j, l);
                     }
                 }
-                // update counts
-                // for(j = 0; j < nages; j++) {
-                //     for(l = 0; l < incsize; l++) {
-                //         cu[i](1, j, l) += Einc(j, l);
-                //     }
-                // }
                 
                 // S given later
                 for(j = 0; j < nages; j++) {
                     for(l = 0; l < incsize; l++) {
                         u1_new[i](0, j, l) = u1[i](0, j, l) - Einc(j, l);
-                        u1_day_new[i](0, j, (arma::uword) u1_moves(l, 1) - 1) = u1_day[i](0, j, (arma::uword) u1_moves(l, 1) - 1) - Einc(j, l);
-                        u1_night_new[i](0, j, (arma::uword) u1_moves(l, 0) - 1) = u1_night[i](0, j, (arma::uword) u1_moves(l, 0) - 1) - Einc(j, l);
                         if(u1_new[i](0, j, l) < 0) Rprintf("S = %d j = %d l = %d\n", u1_new[i](0, j, l), j, l);
-                        // cu[i](0, j, l) -= Einc(j, l);
-                    }
-                }
-                
-                // generate data in correct format for observation error weights
-                Dtempinc.zeros();
-                for(l = 0; l < incsize; l++) {
-                    for(j = 0; j < nages; j++) {
-                        Dtempinc((arma::uword) j * nlads + u1_moves(l, 0) - 1) += DIinc(j, l);
-                        Dtempinc((arma::uword) nlads * nages + j * nlads + u1_moves(l, 0) - 1) += DHinc(j, l);
                     }
                 }
             } else {
-                // cols: c("S", "E", "A", "RA", "P", "I1", "DI", "I2", "RI", "H", "RH", "DH")
-                //          0,   1,   2,   3,    4,   5,    6,    7,    8,    9,   10,   11
-                
-                // DH
-                DHinc = u1_night_new[i].row(11) - u1_night[i].row(11);
-                // for(j = 0; j < nages; j++) for(l = 0; l < u1_moves.n_rows; l++) cu[i](11, j, l) += DHinc(j, l);
-                // 
-                // // RH 
-                // RHinc = u1_new[i].row(10) - u1[i].row(10);
-                // for(j = 0; j < nages; j++) for(l = 0; l < u1_moves.n_rows; l++) cu[i](10, j, l) += RHinc(j, l);
-                // 
-                // // H
-                // Hinc = u1_new[i].row(9) - u1[i].row(9);
-                // Hinc = Hinc + DHinc + RHinc;
-                // for(j = 0; j < nages; j++) for(l = 0; l < u1_moves.n_rows; l++) cu[i](9, j, l) += Hinc(j, l);
-                // 
-                // DI
-                DIinc = u1_night_new[i].row(6) - u1_night[i].row(6);
-                // for(j = 0; j < nages; j++) for(l = 0; l < u1_moves.n_rows; l++) cu[i](6, j, l) += DIinc(j, l);
-                // 
-                // // RI
-                // RIinc = u1_new[i].row(8) - u1[i].row(8);
-                // for(j = 0; j < nages; j++) for(l = 0; l < u1_moves.n_rows; l++) cu[i](8, j, l) += RIinc(j, l);
-                // 
-                // // I2 
-                // I2inc = u1_new[i].row(7) - u1[i].row(7);
-                // I2inc = I2inc + RIinc;
-                // for(j = 0; j < nages; j++) for(l = 0; l < u1_moves.n_rows; l++) cu[i](7, j, l) += I2inc(j, l);
-                // 
-                // // I1 
-                // I1inc = u1_new[i].row(5) - u1[i].row(5);
-                // I1inc = I1inc + DIinc + Hinc + I2inc;
-                // for(j = 0; j < nages; j++) for(l = 0; l < u1_moves.n_rows; l++) cu[i](5, j, l) += I1inc(j, l);
-                // 
-                // // P given later
-                // Pinc = u1_new[i].row(4) - u1[i].row(4);
-                // Pinc = Pinc + I1inc;
-                // for(j = 0; j < nages; j++) for(l = 0; l < u1_moves.n_rows; l++) cu[i](4, j, l) += Pinc(j, l);
-                // 
-                // // RA
-                // RAinc = u1_new[i].row(3) - u1[i].row(3);
-                // for(j = 0; j < nages; j++) for(l = 0; l < u1_moves.n_rows; l++) cu[i](3, j, l) += Ainc(j, l);
-                // 
-                // // A 
-                // Ainc = u1_new[i].row(2) - u1[i].row(2);
-                // Ainc = Ainc + RAinc;
-                // for(j = 0; j < nages; j++) for(l = 0; l < u1_moves.n_rows; l++) cu[i](2, j, l) += RAinc(j, l);
-                // 
-                // // E
-                // Einc = u1_new[i].row(1) - u1[i].row(1);
-                // Einc = Einc + Ainc + Pinc;
-                // for(j = 0; j < nages; j++) for(l = 0; l < u1_moves.n_rows; l++) cu[i](1, j, l) += Einc(j, l);
-                // 
-                // // S
-                // for(j = 0; j < nages; j++) for(l = 0; l < u1_moves.n_rows; l++) u1_new[i](0, j, l) = u1[i](0, j, l) - Einc(j, l);
-                // for(j = 0; j < nages; j++) for(l = 0; l < u1_moves.n_rows; l++) cu[i](0, j, l) -= Einc(j, l);
-                
-                // generate data in correct format for observation error weights
-                Dtempinc.zeros();
-                for(l = 0; l < nlads; l++) {
-                    for(j = 0; j < nages; j++) {
-                        Dtempinc((arma::uword) j * nlads + l) += DIinc(j, l);
-                        Dtempinc((arma::uword) nlads * nages + j * nlads + l) += DHinc(j, l);
+                // DH incidence
+                for(j = 0; j < nages; j++) {
+                    for(l = 0; l < incsize; l++) {
+                        DHinc(j, l) = u1_new[i](11, j, l) - u1[i](11, j, l);
+                        if(DHinc(j, l) < 0) Rprintf("DHinc = %d j = %d l = %d\n", DHinc(j, l), j, l);
                     }
+                }
+                
+                // DI incidence
+                for(j = 0; j < nages; j++) {
+                    for(l = 0; l < incsize; l++) {
+                        DIinc(j, l) = u1_new[i](6, j, l) - u1[i](6, j, l);
+                        if(DIinc(j, l) < 0) Rprintf("DIinc = %d j = %d l = %d\n", DIinc(j, l), j, l);
+                    }
+                }
+            }
+            
+            // generate data in correct format for observation error weights
+            Dtempinc.zeros();
+            for(l = 0; l < incsize; l++) {
+                for(j = 0; j < nages; j++) {
+                    Dtempinc((arma::uword) j * nlads + u1_moves(l, 0) - 1) += DIinc(j, l);
+                    Dtempinc((arma::uword) nlads * nages + j * nlads + u1_moves(l, 0) - 1) += DHinc(j, l);
                 }
             }
             
@@ -825,7 +720,6 @@ List PF_cpp (arma::vec pars, arma::mat C, arma::imat data, int nclasses, int nag
         
         // calculate log-likelihood contribution
         ll += log_sum_exp(weights, 1);
-        
         // // if zero likelihood then return
         // if(!is.finite(ll)) {
         //     if(saveAll == 0) {
@@ -846,8 +740,6 @@ List PF_cpp (arma::vec pars, arma::mat C, arma::imat data, int nclasses, int nag
             j = 0;
             while(j < inds(i)) {
                 u1[l] = u1_new[i];
-                u1_day[l] = u1_day_new[i];
-                u1_night[l] = u1_night_new[i];
                 l++;
                 j++;
             }
@@ -857,21 +749,33 @@ List PF_cpp (arma::vec pars, arma::mat C, arma::imat data, int nclasses, int nag
         // copy in order to pass by reference
         for(i = 0; i < npart; i++) {
             u1_new[i] = u1[i];
-            u1_day_new[i] = u1_day[i];
-            u1_night_new[i] = u1_night[i];
         }
         
         // save particles if necessary
         if(saveAll != 0) {
             if(saveAll == 1) {
                 for(i = 0; i < npart; i++) {
-                    u1_night_t.row(0) = u1_night[i].row(6);
-                    u1_night_t.row(1) = u1_night[i].row(11);
-                    out[i + npart * (t + 1)] = u1_night_t;
+                    // extract just counts for DI and DH
+                    u1_night_reduced.zeros();
+                    for(l = 0; l < incsize; l++) {
+                        for(j = 0; j < nages; j++) {
+                            u1_night_reduced(0, j, (arma::uword) u1_moves(l, 0) - 1) += u1[i](6, j, l);
+                            u1_night_reduced(1, j, (arma::uword) u1_moves(l, 0) - 1) += u1[i](11, j, l);
+                        }
+                    }
+                    out[i + npart * (t + 1)] = u1_night_reduced;
                 }
             } else {
                 for(i = 0; i < npart; i++) {
-                    out[i + npart * (t + 1)] = u1_night[i];
+                    u1_night.zeros();
+                    for(l = 0; l < incsize; l++) {
+                        for(j = 0; j < nages; j++) {
+                            for(k = 0; k < nclasses; k++) {
+                                u1_night(k, j, (arma::uword) u1_moves(l, 0) - 1) += u1[i](k, j, l);
+                            }
+                        }
+                    }
+                    out[i + npart * (t + 1)] = u1_night;
                 }
             }
         }
