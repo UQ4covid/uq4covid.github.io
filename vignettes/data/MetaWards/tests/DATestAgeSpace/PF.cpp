@@ -104,7 +104,7 @@ void discreteStochModel(arma::vec pars, int tstart, int tstop,
     int nages = (*u1).n_cols;
     int nlads = max((*u1_moves).col(0));
     int k;
-    arma::uword i, j, l;
+    arma::uword i, j;
     
     // extract parameters
     double nu = pars(0);
@@ -381,7 +381,8 @@ List PF_cpp (arma::vec pars, arma::mat C, arma::imat data, int nclasses, int nag
          double b_dis, int saveAll) {
     
     // set counters
-    arma::uword i, j, l, k;
+    arma::uword i, j, l;
+    int tempLB = 0;
     int t = 0;
     
     // split u1 up into different LADs
@@ -499,6 +500,7 @@ List PF_cpp (arma::vec pars, arma::mat C, arma::imat data, int nclasses, int nag
                             -DHinc(j, l),
                             u1[i](9, j, l) - DHinc(j, l)
                         );
+                        if(DHinc(j, l) < 0) Rprintf("DH = %d j = %d l = %d\n", DHinc(j, l), j, l);
                     }
                 }
                 // update counts
@@ -519,6 +521,7 @@ List PF_cpp (arma::vec pars, arma::mat C, arma::imat data, int nclasses, int nag
                             -RHinc(j, l),
                             u1[i](9, j, l) - DHinc(j, l) - RHinc(j, l)
                         );
+                        if(RHinc(j, l) < 0) Rprintf("RH = %d j = %d l = %d\n", RHinc(j, l), j, l);
                     }
                 }
                 // update counts
@@ -532,13 +535,16 @@ List PF_cpp (arma::vec pars, arma::mat C, arma::imat data, int nclasses, int nag
                 // H given later
                 for(j = 0; j < nages; j++) {
                     for(l = 0; l < incsize; l++) {
+                        tempLB = -u1_new[i](9, j, l) + u1[i](9, j, l) - DHinc(j, l) - RHinc(j, l);
+                        tempLB = (tempLB > -u1_new[i](9, j, l) ? tempLB:(-u1_new[i](9, j, l)));
                         u1_new[i](9, j, l) += rtskellam_cpp(
                             a_dis + b_dis * u1_new[i](9, j, l),
                             a_dis + b_dis * u1_new[i](9, j, l),
-                            -u1_new[i](9, j, l),
-                            u1[i](9, j, l) + u1[i](5, j, l)- DHinc(j, l) - RHinc(j, l) - u1_new[i](9, j, l)
+                            tempLB,
+                            u1[i](5, j, l) - u1_new[i](9, j, l) + u1[i](9, j, l) - DHinc(j, l) - RHinc(j, l)
                         );
                         Hinc(j, l) = u1_new[i](9, j, l) - u1[i](9, j, l) + DHinc(j, l) + RHinc(j, l);
+                        if(Hinc(j, l) < 0) Rprintf("H = %d j = %d l = %d\n", Hinc(j, l), j, l);
                     }
                 }
                 // update counts
@@ -558,6 +564,7 @@ List PF_cpp (arma::vec pars, arma::mat C, arma::imat data, int nclasses, int nag
                             -DIinc(j, l),
                             u1[i](5, j, l) - Hinc(j, l) - DIinc(j, l)
                         );
+                        if(DIinc(j, l) < 0) Rprintf("DI = %d j = %d l = %d\n", DIinc(j, l), j, l);
                     }
                 }
                 // update counts
@@ -578,6 +585,7 @@ List PF_cpp (arma::vec pars, arma::mat C, arma::imat data, int nclasses, int nag
                             -RIinc(j, l),
                             u1[i](7, j, l) - RIinc(j, l)
                         );
+                        if(RIinc(j, l) < 0) Rprintf("RI = %d j = %d l = %d\n", RIinc(j, l), j, l);
                     }
                 }
                 // update counts
@@ -591,13 +599,16 @@ List PF_cpp (arma::vec pars, arma::mat C, arma::imat data, int nclasses, int nag
                 // I2 given later
                 for(j = 0; j < nages; j++) {
                     for(l = 0; l < incsize; l++) {
+                        tempLB = -u1_new[i](7, j, l) + u1[i](7, j, l) - RIinc(j, l);
+                        tempLB = (tempLB > -u1_new[i](7, j, l) ? tempLB:(-u1_new[i](7, j, l)));
                         u1_new[i](7, j, l) += rtskellam_cpp(
                             a_dis + b_dis * u1_new[i](7, j, l),
                             a_dis + b_dis * u1_new[i](7, j, l),
-                            -u1_new[i](7, j, l),
-                            u1[i](7, j, l) + u1[i](5, j, l)- Hinc(j, l) - DIinc(j, l) - RIinc(j, l) - u1_new[i](7, j, l)
+                            tempLB,
+                            u1[i](5, j, l) - Hinc(j, l) - DIinc(j, l) - u1_new[i](7, j, l) + u1[i](7, j, l) - RIinc(j, l)
                         );
                         I2inc(j, l) = u1_new[i](7, j, l) - u1[i](7, j, l) + RIinc(j, l);
+                        if(I2inc(j, l) < 0) Rprintf("I2 = %d j = %d l = %d\n", I2inc(j, l), j, l);
                     }
                 }
                 // update counts
@@ -610,13 +621,16 @@ List PF_cpp (arma::vec pars, arma::mat C, arma::imat data, int nclasses, int nag
                 // I1 given later
                 for(j = 0; j < nages; j++) {
                     for(l = 0; l < incsize; l++) {
+                        tempLB = -u1_new[i](5, j, l) + u1[i](5, j, l) - I2inc(j, l) - Hinc(j, l) - DIinc(j, l);
+                        tempLB = (tempLB > -u1_new[i](5, j, l) ? tempLB:(-u1_new[i](5, j, l)));
                         u1_new[i](5, j, l) += rtskellam_cpp(
                             a_dis + b_dis * u1_new[i](5, j, l),
                             a_dis + b_dis * u1_new[i](5, j, l),
-                            -u1_new[i](5, j, l),
-                            u1[i](5, j, l) + u1[i](4, j, l) - I2inc(j, l) - Hinc(j, l) - DIinc(j, l) - u1_new[i](5, j, l)
+                            tempLB,
+                            u1[i](4, j, l) - u1_new[i](5, j, l) + u1[i](5, j, l) - I2inc(j, l) - Hinc(j, l) - DIinc(j, l)
                         );
-                        I1inc(j, l) = u1_new[i](5, j, l) - u1[i](5, j, l) + DIinc(j, l) + Hinc(j, l) + I2inc(j, l);
+                        I1inc(j, l) = u1_new[i](5, j, l) - u1[i](5, j, l) + I2inc(j, l) + Hinc(j, l) + DIinc(j, l);
+                        if(I1inc(j, l) < 0) Rprintf("I1 = %d j = %d l = %d\n", I1inc(j, l), j, l);
                     }
                 }
                 // update counts
@@ -624,18 +638,21 @@ List PF_cpp (arma::vec pars, arma::mat C, arma::imat data, int nclasses, int nag
                     for(l = 0; l < incsize; l++) {
                         cu[i](5, j, l) += I1inc(j, l);
                     }
-                } 
+                }
                 
                 // P given later
                 for(j = 0; j < nages; j++) {
                     for(l = 0; l < incsize; l++) {
+                        tempLB = -u1_new[i](4, j, l) + u1[i](4, j, l) - I1inc(j, l);
+                        tempLB = (tempLB > -u1_new[i](4, j, l) ? tempLB:(-u1_new[i](4, j, l)));
                         u1_new[i](4, j, l) += rtskellam_cpp(
                             a_dis + b_dis * u1_new[i](4, j, l),
                             a_dis + b_dis * u1_new[i](4, j, l),
-                            -u1_new[i](4, j, l),
-                            u1[i](4, j, l) + u1[i](1, j, l) - I1inc(j, l) - u1_new[i](4, j, l)
+                            tempLB,
+                            u1[i](1, j, l) - u1_new[i](4, j, l) + u1[i](4, j, l) - I1inc(j, l) 
                         );
                         Pinc(j, l) = u1_new[i](4, j, l) - u1[i](4, j, l) + I1inc(j, l);
+                        if(Pinc(j, l) < 0) Rprintf("P = %d j = %d l = %d\n", Pinc(j, l), j, l);
                     }
                 }
                 // update counts
@@ -655,6 +672,7 @@ List PF_cpp (arma::vec pars, arma::mat C, arma::imat data, int nclasses, int nag
                             -RAinc(j, l),
                             u1[i](2, j, l) - RAinc(j, l)
                         );
+                        if(RAinc(j, l) < 0) Rprintf("RA = %d j = %d l = %d\n", RAinc(j, l), j, l);
                     }
                 }
                 // update counts
@@ -668,13 +686,16 @@ List PF_cpp (arma::vec pars, arma::mat C, arma::imat data, int nclasses, int nag
                 // A given later
                 for(j = 0; j < nages; j++) {
                     for(l = 0; l < incsize; l++) {
+                        tempLB = -u1_new[i](2, j, l) + u1[i](2, j, l) - RAinc(j, l);
+                        tempLB = (tempLB > -u1_new[i](2, j, l) ? tempLB:(-u1_new[i](2, j, l)));
                         u1_new[i](2, j, l) += rtskellam_cpp(
                             a_dis + b_dis * u1_new[i](2, j, l),
                             a_dis + b_dis * u1_new[i](2, j, l),
-                            -u1_new[i](2, j, l),
-                            u1[i](2, j, l) + u1[i](1, j, l) - Pinc(j, l) - RAinc(j, l) - u1_new[i](2, j, l)
+                            tempLB,
+                            u1[i](1, j, l) - Pinc(j, l) - u1_new[i](2, j, l) + u1[i](2, j, l) - RAinc(j, l)
                         );
                         Ainc(j, l) = u1_new[i](2, j, l) - u1[i](2, j, l) + RAinc(j, l);
+                        if(Ainc(j, l) < 0) Rprintf("A = %d j = %d l = %d\n", Ainc(j, l), j, l);
                     }
                 }
                 // update counts
@@ -687,13 +708,16 @@ List PF_cpp (arma::vec pars, arma::mat C, arma::imat data, int nclasses, int nag
                 // E given later
                 for(j = 0; j < nages; j++) {
                     for(l = 0; l < incsize; l++) {
+                        tempLB = -u1_new[i](1, j, l) + u1[i](1, j, l) - Ainc(j, l) - Pinc(j, l);
+                        tempLB = (tempLB > -u1_new[i](1, j, l) ? tempLB:(-u1_new[i](1, j, l)));
                         u1_new[i](1, j, l) += rtskellam_cpp(
                             a_dis + b_dis * u1_new[i](1, j, l),
                             a_dis + b_dis * u1_new[i](1, j, l),
-                            -u1_new[i](1, j, l),
-                            u1[i](1, j, l) + u1[i](0, j, l) - Ainc(j, l) - Pinc(j, l) - u1_new[i](1, j, l)
+                            tempLB,
+                            u1[i](0, j, l) - u1_new[i](1, j, l) + u1[i](1, j, l) - Ainc(j, l) - Pinc(j, l)
                         );
                         Einc(j, l) = u1_new[i](1, j, l) - u1[i](1, j, l) + Ainc(j, l) + Pinc(j, l);
+                        if(Einc(j, l) < 0) Rprintf("E = %d j = %d l = %d\n", Einc(j, l), j, l);
                     }
                 }
                 // update counts
