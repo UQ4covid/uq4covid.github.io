@@ -59,8 +59,8 @@ int rtskellam_cpp(double lambda1, double lambda2, int LB = 0, int UB = -1) {
         
         // rejection sample if necessary
         if(UB > LB) {
-            arma::uword k = 0;
-            arma::uword ntries = 1000;
+            int k = 0;
+            int ntries = 1000;
             while((x < LB || x > UB) && k < ntries) {
                 x = R::rpois(lambda1) - R::rpois(lambda2);
                 k++;
@@ -68,13 +68,17 @@ int rtskellam_cpp(double lambda1, double lambda2, int LB = 0, int UB = -1) {
             // if rejection sampling doesn't work
             // then try long-hand way
             if(k == ntries) {
-                arma::vec x1(UB - LB + 1);
-                for(k = 0; k < (UB - LB + 1); k++) {
-                    x1(k) = ldtskellam_cpp(LB + k, lambda1, lambda2, LB, UB);
-                }
+                // Rprintf("LB = %d UB = %d\n", LB, UB);
                 double u = R::runif(0.0, 1.0);
                 k = 0;
-                while(x1(k) > u) k++;
+                double xdens = exp(ldtskellam_cpp(LB + k, lambda1, lambda2, LB, UB));
+                while(u > xdens && k < (UB - LB + 1)) {
+                    k++;
+                    xdens += exp(ldtskellam_cpp(LB + k, lambda1, lambda2, LB, UB));
+                }
+                if(k == (UB - LB + 1) && u > xdens) {
+                    stop("Something wrong in truncated Skellam sampling\n");
+                }
                 x = LB + k;
             }
         }
