@@ -136,33 +136,7 @@ void discreteStochModel(arma::vec pars, int tstart, int tstop,
     // classes are: S, E, A, RA, P, I1, DI, I2, RI, H, RH, DH
     //              0, 1, 2, 3,  4, 5,  6,  7,  8,  9, 10, 11
     
-    // // set up output
-    // Rprintf("new\n");
-    // for(j = 0; j < nages; j++) {
-    //     Rprintf("u1(0, %d, 0) = %d ", j, (*u1_night)(0, j, 0));
-    //     Rprintf("u1(1, %d, 0) = %d\n", j, (*u1_night)(1, j, 0));
-    // }
-    // Rprintf("new\n");
-    // for(j = 0; j < nages; j++) {
-    //     Rprintf("u1(0, %d, 282) = %d ", j, (*u1_day)(0, j, 282));
-    //     Rprintf("u1(1, %d, 282) = %d\n", j, (*u1_day)(1, j, 282));
-    // }
-    // declare small dummy vector if not being returned
-    // int outsize = (return_u1 == 0 ? (nclasses * nages * nlads + 1):1);
-    // arma::imat out(tstop - tstart + 1, outsize);
     int tcurr = 0;
-    // if(return_u1 == 0) {
-    //     out(0, 0) = tstart;
-    //     k = 1;
-    //     for(i = 0; i < nclasses; i++) {
-    //         for(j = 0; j < nages; j++) {
-    //             for(l = 0; l < nlads; l++) {
-    //                 out(0, k) = (*u1_night)(i, j, l);
-    //                 k++;
-    //             }
-    //         }
-    //     }
-    // }
     
     // set up vector of number of infectives
     arma::vec uinf(nages);
@@ -204,19 +178,13 @@ void discreteStochModel(arma::vec pars, int tstart, int tstop,
             // SE
             beta = 0.7 * C * (uinf / (*N_day).col(i));
             for(j = 0; j < nages; j++) {
-                // if(beta(j, 0) > 0.0) Rprintf("t = %d beta[%d] = %.25f\n", tstart, j, beta(j, 0));
                 (*pinf)(j, i) = 1.0 - exp(-beta(j, 0));
             }
         }
         // transmission events (day), loop over network
         for(i = 0; i < (*u1).n_slices; i++) {
             for(j = 0; j < nages; j++) {
-                // if((*u1)(0, j, i) > 1000000) Rprintf("t = %d u1 = %d i = %d j = %d\n", tstart, (*u1)(0, j, i), i, j);
                 k = R::rbinom((*u1)(0, j, i), (*pinf)(j, (arma::uword) (*u1_moves)(i, 1) - 1));
-                // if(k > 0 && (*u1_moves)(i, 0) != 1 && (*u1_moves)(i, 1) != 1) Rprintf("hmmm\n");
-                // if(k > 0) Rprintf("hmmm\n");
-                // if(k > 100) Rprintf("day i = %d j = %d, u = %d k = %d\n", i, j, (*u1)(0, j, i), k);
-                // if(k < 0) Rprintf("kneg day i = %d j = %d, u = %d k = %d\n", i, j, (*u1)(0, j, i), k);
                 (*u1)(0, j, i) -= k;
                 (*u1)(1, j, i) += k;
                 (*u1_day)(0, j, (arma::uword) (*u1_moves)(i, 1) - 1) -= k;
@@ -228,30 +196,22 @@ void discreteStochModel(arma::vec pars, int tstart, int tstop,
         
         // transmission probabilities (night), loop over LADs
         for(i = 0; i < (*u1_night).n_slices; i++) {
-            // Rprintf("N_Night(%d) = %d\n", i, N_night(i));
             
             // update infective counts for rate
             for(j = 0; j < nages; j++) {
                 uinf(j) = (double) nuA * (*u1_night)(2, j, i) + nu * ((*u1_night)(4, j, i) + (*u1_night)(5, j, i) + (*u1_night)(7, j, i));
-                // if(uinf(j) > 0) Rprintf("uinf(j) = %d\n", uinf(j));
             }
             
             // SE
             beta = 0.3 * C * (uinf / (*N_night).col(i));
             for(j = 0; j < nages; j++) {
-                // if(beta(j, 0) > 0.0) Rprintf("night t = %d beta[%d] = %.25f\n", tstart, j, beta(j, 0));
                 (*pinf)(j, i) = 1.0 - exp(-beta(j, 0));
             }
         }
         // transmission events (night), loop over network
         for(i = 0; i < (*u1).n_slices; i++) {
             for(j = 0; j < nages; j++) {
-                // if((*u1)(0, j, i) > 1000000) Rprintf("t = %d u1 = %d i = %d j = %d\n", tstart, (*u1)(0, j, i), i, j);
                 k = R::rbinom((*u1)(0, j, i), (*pinf)(j, (arma::uword) (*u1_moves)(i, 0) - 1));
-                // if(k > 0 && (*u1_moves)(i, 0) != 1 && (*u1_moves)(i, 1) != 1) Rprintf("hmmm\n");
-                // if(k > 0) Rprintf("hmmm\n");
-                // if(k > 100) Rprintf("night i = %d j = %d, u = %d k = %d\n", i, j, (*u1)(0, j, i), k);
-                // if(k < 0) Rprintf("kneg night i = %d j = %d, u = %d k = %d\n", i, j, (*u1)(0, j, i), k);
                 (*u1)(0, j, i) -= k;
                 (*u1)(1, j, i) += k;
                 (*u1_day)(0, j, (arma::uword) (*u1_moves)(i, 1) - 1) -= k;
@@ -353,20 +313,6 @@ void discreteStochModel(arma::vec pars, int tstart, int tstop,
                 (*u1_night)(4, j, (arma::uword) (*u1_moves)(i, 0) - 1) += pathE(1);
             }
         }
-        
-        // // record output
-        // if(return_u1 == 0) {
-        //     out(tcurr, 0) = tstart;
-        //     k = 1;
-        //     for(i = 0; i < nclasses; i++) {
-        //         for(j = 0; j < nages; j++) {
-        //             for(l = 0; l < nlads; l++) {
-        //                 out(tcurr, k) = (*u1_night)(i, j, l);
-        //                 k++;
-        //             }
-        //         }
-        //     }
-        // }
         
         // update time 
         tcurr++;
@@ -830,10 +776,10 @@ List PF_cpp (arma::vec pars, arma::mat C, arma::imat data, int nclasses, int nag
         
         // // if zero likelihood then return
         // if(!is.finite(ll)) {
-        //     if(!is.na(saveAll)) {
-        //         return(list(ll = ll, particles = out))
+        //     if(saveAll == 0) {
+        //         return List::create(Named("ll") = ll);
         //     } else {
-        //         return(ll)
+        //         return List::create(Named("ll") = ll, _["particles"] = out);
         //     }
         // }
         
@@ -854,7 +800,7 @@ List PF_cpp (arma::vec pars, arma::mat C, arma::imat data, int nclasses, int nag
                 j++;
             }
         }
-        if(l != npart) Rprintf("Something wrong\n");
+        if(l != npart) Rprintf("Something wrong with re-sampling step\n");
         
         // copy in order to pass by reference
         for(i = 0; i < npart; i++) {
