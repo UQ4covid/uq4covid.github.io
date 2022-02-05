@@ -13,14 +13,30 @@ double log_sum_exp(arma::vec x, int mn = 0) {
     return y;
 }
 
+// log Skellam CDF (note, no checks on inputs)
+double lpskellam_cpp(int x, double lambda1, double lambda2) {
+    // different formulas for negative & nonnegative x (zero lambda is OK)
+    // from "pskellam" source code by Patrick Brown
+    double ldens = 0.0;
+    if(x < 0) {
+        ldens = R::pnchisq(2.0 * lambda2, -2.0 * x, 2.0 * lambda1, 1, 1);
+    } else {
+        ldens = R::pnchisq(2.0 * lambda1, 2.0 * (x + 1), 2.0 * lambda2, 0, 1);
+    }
+    return ldens;
+    // ret[neg] <- stats::pchisq(2*lambda2[neg],-2*x[neg],2*lambda1[neg],log.p=log.p)
+    //     ret[pos] <- stats::pchisq(2*lambda1[pos],2*(x[pos]+1),2*lambda2[pos],lower.tail=FALSE,log.p=log.p)
+}
+
 // log truncated Skellam density (note, no checks on inputs)
+// adapted from "dskellam" source code by Patrick Brown
 double ldtskellam_cpp(int x, double lambda1, double lambda2, int LB = 0, int UB = -1) {
     
     // if UB < LB then returns untruncated density
     
     // from "skellam" source code: log(besselI(y, nu)) == y + log(besselI(y, nu, TRUE))
     double ldens = -(lambda1 + lambda2) + (x / 2.0) * (log(lambda1) - log(lambda2)) +
-        log(R::bessel_i(2.0 * sqrt(lambda1 * lambda2), abs(x), true)) + 2.0 * sqrt(lambda1 * lambda2);
+        log(R::bessel_i(2.0 * sqrt(lambda1 * lambda2), abs(x), 2)) + 2.0 * sqrt(lambda1 * lambda2);
     
     // if truncated then adjust log-density
     if(UB >= LB) {
@@ -30,15 +46,11 @@ double ldtskellam_cpp(int x, double lambda1, double lambda2, int LB = 0, int UB 
         // declare variables
         int normsize = UB - LB + 1;
         if(normsize > 1) {
-            // declare variables
-            arma::vec norm (normsize);
-            norm.zeros();
-            double mnorm = 0.0, snorm = 0.0;
-            for(arma::uword j = LB; j <= UB; j++) {
-                norm(j - LB) = -(lambda1 + lambda2) + (j / 2.0) * (log(lambda1) - log(lambda2)) +
-                    log(R::bessel_i(2.0 * sqrt(lambda1 * lambda2), abs(j), true)) + 2.0 * sqrt(lambda1 * lambda2);
-            }
-            ldens -= log_sum_exp(norm);
+            arma::vec norm (2);
+            norm(0) = lpskellam_cpp(LB - 1, lambda1, lambda2);
+            norm(1) = lpskellam_cpp(UB, lambda1, lambda2);
+            double lnorm = norm(1) + log(1.0 - exp(norm(0) - norm(1)));
+            ldens -= lnorm;
         } else {
             ldens = 0.0;
         }
