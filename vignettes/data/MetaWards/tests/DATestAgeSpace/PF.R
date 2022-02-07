@@ -58,7 +58,7 @@ PF <- function(pars, C, data, u1_moves, u1, ndays, npart = 10, MD = TRUE, a1 = 0
     }
     MDint <- ifelse(MD, 1, 0)
     
-    ## run particl filter for each set of inputs
+    ## run particle filter for each set of inputs
     runs <- mclapply(1:nrow(pars), function(k, pars, C, u1_moves, u1, npart, ndays, data, MD, a1, a2, b, a_dis, b_dis, saveAll) {
         
         # ## create count matrices for checks if used
@@ -99,7 +99,7 @@ PF <- function(pars, C, data, u1_moves, u1, ndays, npart = 10, MD = TRUE, a1 = 0
             map(~{
                 x <- list()
                 for(i in 1:npart) {
-                    x[[i]] <- .[(i - 1) * ndays + 1:(ndays + 1)]
+                    x[[i]] <- .[(i - 1) * (ndays + 1) + 1:(ndays + 1)]
                 }
                 x
             })
