@@ -173,12 +173,12 @@ void discreteStochModel(arma::vec &pars, int tstart, int tstop,
     
     // set up auxiliary variables
     double prob = 0.0;
-    IntegerVector pathE(3);
-    NumericVector mprobsE(3);
-    IntegerVector pathI1(4);
-    NumericVector mprobsI1(4);
-    IntegerVector pathH(3);
-    NumericVector mprobsH(3);
+    arma::ivec pathE(3);
+    arma::vec mprobsE(3);
+    arma::ivec pathI1(4);
+    arma::vec mprobsI1(4);
+    arma::ivec pathH(3);
+    arma::vec mprobsH(3);
     tcurr++;
     tstart++;
     
@@ -388,8 +388,8 @@ List PF_cpp (arma::vec pars, arma::mat C, arma::imat data, int nclasses, int nag
     arma::imat origE(nages, u1_comb.n_slices);
     
     // set up weight vector
-    NumericVector weights (npart);
-    IntegerVector inds(npart);
+    arma::vec weights (npart);
+    arma::ivec inds(npart);
     double wnorm = 0.0;
     
     // set up temporary objects
