@@ -102,9 +102,9 @@ int rtskellam_cpp(double lambda1, double lambda2, int LB = 0, int UB = -1) {
 }
 
 // simulation model
-void discreteStochModel(arma::vec pars, int tstart, int tstop, 
-                        arma::imat *u1_moves, arma::icube *u1, arma::icube *u1_day, arma::icube *u1_night,
-                        arma::imat *N_day, arma::imat *N_night, arma::mat *pinf, arma::imat *origE, arma::mat C) {
+void discreteStochModel(arma::vec &pars, int tstart, int tstop, 
+                        arma::imat &u1_moves, arma::icube &u1, arma::icube &u1_day, arma::icube &u1_night,
+                        arma::imat &N_day, arma::imat &N_night, arma::mat &pinf, arma::imat &origE, arma::mat &C) {
     
     // u1_moves is a matrix with columns: LADfrom, LADto
     // u1 is a 3D array with dimensions: nclasses x nages x nmoves
@@ -115,20 +115,20 @@ void discreteStochModel(arma::vec pars, int tstart, int tstop,
     // origE is nages x nmoves auxiliary matrix
     
     // set up auxiliary matrix for counts
-    int nclasses = (*u1).n_rows;
-    int nages = (*u1).n_cols;
-    int nlads = max((*u1_moves).col(0));
+    int nclasses = u1.n_rows;
+    int nages = u1.n_cols;
+    int nlads = max(u1_moves.col(0));
     int k;
     arma::uword i, j, l;
     
     // reconstruct day/night counts
-    (*u1_day).zeros();
-    (*u1_night).zeros();
-    for(i = 0; i < (*u1_moves).n_rows; i++) {
+    u1_day.zeros();
+    u1_night.zeros();
+    for(i = 0; i < u1_moves.n_rows; i++) {
         for(j = 0; j < nages; j++) {
             for(l = 0; l < nclasses; l++) {
-                (*u1_day)(l, j, (arma::uword) (*u1_moves)(i, 1) - 1) += (*u1)(l, j, i);
-                (*u1_night)(l, j, (arma::uword) (*u1_moves)(i, 0) - 1) += (*u1)(l, j, i);
+                u1_day(l, j, (arma::uword) u1_moves(i, 1) - 1) += u1(l, j, i);
+                u1_night(l, j, (arma::uword) u1_moves(i, 0) - 1) += u1(l, j, i);
             }
         }
     }
@@ -188,63 +188,63 @@ void discreteStochModel(arma::vec pars, int tstart, int tstop,
         //              0, 1, 2, 3,  4, 5,  6,  7,  8,  9, 10, 11
         
         // save current number of infectives for later transitions
-        for(i = 0; i < (*u1).n_slices; i++) {
+        for(i = 0; i < u1.n_slices; i++) {
             for(j = 0; j < nages; j++) {
-                (*origE)(j, i) = (*u1)(1, j, i);
+                origE(j, i) = u1(1, j, i);
             }
         }
         
         // transmission probabilities (day), loop over LADs
-        for(i = 0; i < (*u1_day).n_slices; i++) {
+        for(i = 0; i < u1_day.n_slices; i++) {
             
             // update infective counts for rate
             for(j = 0; j < nages; j++) {
-                uinf(j) = (double) nuA * (*u1_day)(2, j, i) + nu * ((*u1_day)(4, j, i) + (*u1_day)(5, j, i) + (*u1_day)(7, j, i));
+                uinf(j) = (double) nuA * u1_day(2, j, i) + nu * (u1_day(4, j, i) + u1_day(5, j, i) + u1_day(7, j, i));
             }
             
             // SE
-            beta = 0.7 * C * (uinf / (*N_day).col(i));
+            beta = 0.7 * C * (uinf / N_day.col(i));
             for(j = 0; j < nages; j++) {
-                (*pinf)(j, i) = 1.0 - exp(-beta(j, 0));
+                pinf(j, i) = 1.0 - exp(-beta(j, 0));
             }
         }
         // transmission events (day), loop over network
-        for(i = 0; i < (*u1).n_slices; i++) {
+        for(i = 0; i < u1.n_slices; i++) {
             for(j = 0; j < nages; j++) {
-                k = R::rbinom((*u1)(0, j, i), (*pinf)(j, (arma::uword) (*u1_moves)(i, 1) - 1));
-                (*u1)(0, j, i) -= k;
-                (*u1)(1, j, i) += k;
-                (*u1_day)(0, j, (arma::uword) (*u1_moves)(i, 1) - 1) -= k;
-                (*u1_day)(1, j, (arma::uword) (*u1_moves)(i, 1) - 1) += k;
-                (*u1_night)(0, j, (arma::uword) (*u1_moves)(i, 0) - 1) -= k;
-                (*u1_night)(1, j, (arma::uword) (*u1_moves)(i, 0) - 1) += k;
+                k = R::rbinom(u1(0, j, i), pinf(j, (arma::uword) u1_moves(i, 1) - 1));
+                u1(0, j, i) -= k;
+                u1(1, j, i) += k;
+                u1_day(0, j, (arma::uword) u1_moves(i, 1) - 1) -= k;
+                u1_day(1, j, (arma::uword) u1_moves(i, 1) - 1) += k;
+                u1_night(0, j, (arma::uword) u1_moves(i, 0) - 1) -= k;
+                u1_night(1, j, (arma::uword) u1_moves(i, 0) - 1) += k;
             }
         }
         
         // transmission probabilities (night), loop over LADs
-        for(i = 0; i < (*u1_night).n_slices; i++) {
+        for(i = 0; i < u1_night.n_slices; i++) {
             
             // update infective counts for rate
             for(j = 0; j < nages; j++) {
-                uinf(j) = (double) nuA * (*u1_night)(2, j, i) + nu * ((*u1_night)(4, j, i) + (*u1_night)(5, j, i) + (*u1_night)(7, j, i));
+                uinf(j) = (double) nuA * u1_night(2, j, i) + nu * (u1_night(4, j, i) + u1_night(5, j, i) + u1_night(7, j, i));
             }
             
             // SE
-            beta = 0.3 * C * (uinf / (*N_night).col(i));
+            beta = 0.3 * C * (uinf / N_night.col(i));
             for(j = 0; j < nages; j++) {
-                (*pinf)(j, i) = 1.0 - exp(-beta(j, 0));
+                pinf(j, i) = 1.0 - exp(-beta(j, 0));
             }
         }
         // transmission events (night), loop over network
-        for(i = 0; i < (*u1).n_slices; i++) {
+        for(i = 0; i < u1.n_slices; i++) {
             for(j = 0; j < nages; j++) {
-                k = R::rbinom((*u1)(0, j, i), (*pinf)(j, (arma::uword) (*u1_moves)(i, 0) - 1));
-                (*u1)(0, j, i) -= k;
-                (*u1)(1, j, i) += k;
-                (*u1_day)(0, j, (arma::uword) (*u1_moves)(i, 1) - 1) -= k;
-                (*u1_day)(1, j, (arma::uword) (*u1_moves)(i, 1) - 1) += k;
-                (*u1_night)(0, j, (arma::uword) (*u1_moves)(i, 0) - 1) -= k;
-                (*u1_night)(1, j, (arma::uword) (*u1_moves)(i, 0) - 1) += k;
+                k = R::rbinom(u1(0, j, i), pinf(j, (arma::uword) u1_moves(i, 0) - 1));
+                u1(0, j, i) -= k;
+                u1(1, j, i) += k;
+                u1_day(0, j, (arma::uword) u1_moves(i, 1) - 1) -= k;
+                u1_day(1, j, (arma::uword) u1_moves(i, 1) - 1) += k;
+                u1_night(0, j, (arma::uword) u1_moves(i, 0) - 1) -= k;
+                u1_night(1, j, (arma::uword) u1_moves(i, 0) - 1) += k;
             }
         }
         
@@ -271,73 +271,73 @@ void discreteStochModel(arma::vec pars, int tstart, int tstop,
             mprobsE(2) = 1.0 - probE(j);
             
             // loop over network
-            for(i = 0; i < (*u1).n_slices; i++) {
+            for(i = 0; i < u1.n_slices; i++) {
                 
                 // H out
-                rmultinom((*u1)(9, j, i), mprobsH.begin(), 3, pathH.begin());
-                (*u1)(9, j, i) -= (pathH(0) + pathH(1));
-                (*u1)(10, j, i) += pathH(0);
-                (*u1)(11, j, i) += pathH(1);
-                (*u1_day)(9, j, (arma::uword) (*u1_moves)(i, 1) - 1) -= (pathH(0) + pathH(1));
-                (*u1_day)(10, j, (arma::uword) (*u1_moves)(i, 1) - 1) += pathH(0);
-                (*u1_day)(11, j, (arma::uword) (*u1_moves)(i, 1) - 1) += pathH(1);
-                (*u1_night)(9, j, (arma::uword) (*u1_moves)(i, 0) - 1) -= (pathH(0) + pathH(1));
-                (*u1_night)(10, j, (arma::uword) (*u1_moves)(i, 0) - 1) += pathH(0);
-                (*u1_night)(11, j, (arma::uword) (*u1_moves)(i, 0) - 1) += pathH(1);
+                rmultinom(u1(9, j, i), mprobsH.begin(), 3, pathH.begin());
+                u1(9, j, i) -= (pathH(0) + pathH(1));
+                u1(10, j, i) += pathH(0);
+                u1(11, j, i) += pathH(1);
+                u1_day(9, j, (arma::uword) u1_moves(i, 1) - 1) -= (pathH(0) + pathH(1));
+                u1_day(10, j, (arma::uword) u1_moves(i, 1) - 1) += pathH(0);
+                u1_day(11, j, (arma::uword) u1_moves(i, 1) - 1) += pathH(1);
+                u1_night(9, j, (arma::uword) u1_moves(i, 0) - 1) -= (pathH(0) + pathH(1));
+                u1_night(10, j, (arma::uword) u1_moves(i, 0) - 1) += pathH(0);
+                u1_night(11, j, (arma::uword) u1_moves(i, 0) - 1) += pathH(1);
                 
                 // I2RI
-                k = R::rbinom((*u1)(7, j, i), probI2(j));
-                (*u1)(7, j, i) -= k;
-                (*u1)(8, j, i) += k;
-                (*u1_day)(7, j, (arma::uword) (*u1_moves)(i, 1) - 1) -= k;
-                (*u1_day)(8, j, (arma::uword) (*u1_moves)(i, 1) - 1) += k;
-                (*u1_night)(7, j, (arma::uword) (*u1_moves)(i, 0) - 1) -= k;
-                (*u1_night)(8, j, (arma::uword) (*u1_moves)(i, 0) - 1) += k;
+                k = R::rbinom(u1(7, j, i), probI2(j));
+                u1(7, j, i) -= k;
+                u1(8, j, i) += k;
+                u1_day(7, j, (arma::uword) u1_moves(i, 1) - 1) -= k;
+                u1_day(8, j, (arma::uword) u1_moves(i, 1) - 1) += k;
+                u1_night(7, j, (arma::uword) u1_moves(i, 0) - 1) -= k;
+                u1_night(8, j, (arma::uword) u1_moves(i, 0) - 1) += k;
                 
                 // I1 out
-                rmultinom((*u1)(5, j, i), mprobsI1.begin(), 4, pathI1.begin());
-                (*u1)(5, j, i) -= (pathI1(0) + pathI1(1) + pathI1(2));
-                (*u1)(9, j, i) += pathI1(0);
-                (*u1)(7, j, i) += pathI1(1);
-                (*u1)(6, j, i) += pathI1(2);
-                (*u1_day)(5, j, (arma::uword) (*u1_moves)(i, 1) - 1) -= (pathI1(0) + pathI1(1) + pathI1(2));
-                (*u1_day)(9, j, (arma::uword) (*u1_moves)(i, 1) - 1) += pathI1(0);
-                (*u1_day)(7, j, (arma::uword) (*u1_moves)(i, 1) - 1) += pathI1(1);
-                (*u1_day)(6, j, (arma::uword) (*u1_moves)(i, 1) - 1) += pathI1(2);
-                (*u1_night)(5, j, (arma::uword) (*u1_moves)(i, 0) - 1) -= (pathI1(0) + pathI1(1) + pathI1(2));
-                (*u1_night)(9, j, (arma::uword) (*u1_moves)(i, 0) - 1) += pathI1(0);
-                (*u1_night)(7, j, (arma::uword) (*u1_moves)(i, 0) - 1) += pathI1(1);
-                (*u1_night)(6, j, (arma::uword) (*u1_moves)(i, 0) - 1) += pathI1(2);
+                rmultinom(u1(5, j, i), mprobsI1.begin(), 4, pathI1.begin());
+                u1(5, j, i) -= (pathI1(0) + pathI1(1) + pathI1(2));
+                u1(9, j, i) += pathI1(0);
+                u1(7, j, i) += pathI1(1);
+                u1(6, j, i) += pathI1(2);
+                u1_day(5, j, (arma::uword) u1_moves(i, 1) - 1) -= (pathI1(0) + pathI1(1) + pathI1(2));
+                u1_day(9, j, (arma::uword) u1_moves(i, 1) - 1) += pathI1(0);
+                u1_day(7, j, (arma::uword) u1_moves(i, 1) - 1) += pathI1(1);
+                u1_day(6, j, (arma::uword) u1_moves(i, 1) - 1) += pathI1(2);
+                u1_night(5, j, (arma::uword) u1_moves(i, 0) - 1) -= (pathI1(0) + pathI1(1) + pathI1(2));
+                u1_night(9, j, (arma::uword) u1_moves(i, 0) - 1) += pathI1(0);
+                u1_night(7, j, (arma::uword) u1_moves(i, 0) - 1) += pathI1(1);
+                u1_night(6, j, (arma::uword) u1_moves(i, 0) - 1) += pathI1(2);
                 
                 // PI1
-                k = R::rbinom((*u1)(4, j, i), probP(j));
-                (*u1)(4, j, i) -= k;
-                (*u1)(5, j, i) += k;
-                (*u1_day)(4, j, (arma::uword) (*u1_moves)(i, 1) - 1) -= k;
-                (*u1_day)(5, j, (arma::uword) (*u1_moves)(i, 1) - 1) += k;
-                (*u1_night)(4, j, (arma::uword) (*u1_moves)(i, 0) - 1) -= k;
-                (*u1_night)(5, j, (arma::uword) (*u1_moves)(i, 0) - 1) += k;
+                k = R::rbinom(u1(4, j, i), probP(j));
+                u1(4, j, i) -= k;
+                u1(5, j, i) += k;
+                u1_day(4, j, (arma::uword) u1_moves(i, 1) - 1) -= k;
+                u1_day(5, j, (arma::uword) u1_moves(i, 1) - 1) += k;
+                u1_night(4, j, (arma::uword) u1_moves(i, 0) - 1) -= k;
+                u1_night(5, j, (arma::uword) u1_moves(i, 0) - 1) += k;
                 
                 // ARA
-                k = R::rbinom((*u1)(2, j, i), probA(j));
-                (*u1)(2, j, i) -= k;
-                (*u1)(3, j, i) += k;
-                (*u1_day)(2, j, (arma::uword) (*u1_moves)(i, 1) - 1) -= k;
-                (*u1_day)(3, j, (arma::uword) (*u1_moves)(i, 1) - 1) += k;
-                (*u1_night)(2, j, (arma::uword) (*u1_moves)(i, 0) - 1) -= k;
-                (*u1_night)(3, j, (arma::uword) (*u1_moves)(i, 0) - 1) += k;
+                k = R::rbinom(u1(2, j, i), probA(j));
+                u1(2, j, i) -= k;
+                u1(3, j, i) += k;
+                u1_day(2, j, (arma::uword) u1_moves(i, 1) - 1) -= k;
+                u1_day(3, j, (arma::uword) u1_moves(i, 1) - 1) += k;
+                u1_night(2, j, (arma::uword) u1_moves(i, 0) - 1) -= k;
+                u1_night(3, j, (arma::uword) u1_moves(i, 0) - 1) += k;
                 
                 // E out
-                rmultinom((*origE)(j, i), mprobsE.begin(), 3, pathE.begin());
-                (*u1)(1, j, i) -= (pathE(0) + pathE(1));
-                (*u1)(2, j, i) += pathE(0);
-                (*u1)(4, j, i) += pathE(1);
-                (*u1_day)(1, j, (arma::uword) (*u1_moves)(i, 1) - 1) -= (pathE(0) + pathE(1));
-                (*u1_day)(2, j, (arma::uword) (*u1_moves)(i, 1) - 1) += pathE(0);
-                (*u1_day)(4, j, (arma::uword) (*u1_moves)(i, 1) - 1) += pathE(1);
-                (*u1_night)(1, j, (arma::uword) (*u1_moves)(i, 0) - 1) -= (pathE(0) + pathE(1));
-                (*u1_night)(2, j, (arma::uword) (*u1_moves)(i, 0) - 1) += pathE(0);
-                (*u1_night)(4, j, (arma::uword) (*u1_moves)(i, 0) - 1) += pathE(1);
+                rmultinom(origE(j, i), mprobsE.begin(), 3, pathE.begin());
+                u1(1, j, i) -= (pathE(0) + pathE(1));
+                u1(2, j, i) += pathE(0);
+                u1(4, j, i) += pathE(1);
+                u1_day(1, j, (arma::uword) u1_moves(i, 1) - 1) -= (pathE(0) + pathE(1));
+                u1_day(2, j, (arma::uword) u1_moves(i, 1) - 1) += pathE(0);
+                u1_day(4, j, (arma::uword) u1_moves(i, 1) - 1) += pathE(1);
+                u1_night(1, j, (arma::uword) u1_moves(i, 0) - 1) -= (pathE(0) + pathE(1));
+                u1_night(2, j, (arma::uword) u1_moves(i, 0) - 1) += pathE(0);
+                u1_night(4, j, (arma::uword) u1_moves(i, 0) - 1) += pathE(1);
             }
         }
         
@@ -460,7 +460,7 @@ List PF_cpp (arma::vec pars, arma::mat C, arma::imat data, int nclasses, int nag
             R_CheckUserInterrupt();
             
             // run model and return u1
-            discreteStochModel(pars, t - 1, t, &u1_moves, &u1_new[i], &u1_day, &u1_night, &N_day, &N_night, &pinf, &origE,  C);
+            discreteStochModel(pars, t - 1, t, u1_moves, u1_new[i], u1_day, u1_night, N_day, N_night, pinf, origE,  C);
             
             // cols: c("S", "E", "A", "RA", "P", "I1", "DI", "I2", "RI", "H", "RH", "DH")
             //          0,   1,   2,   3,    4,   5,    6,    7,    8,    9,   10,   11
