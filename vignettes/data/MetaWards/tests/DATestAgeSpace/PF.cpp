@@ -348,11 +348,6 @@ void discreteStochModel(arma::vec pars, int tstart, int tstop,
     return;
 }
 
-// void test(arma::icube *u1) {
-//     (*u1)(0, 0, 0) = 222;
-//     return;
-// }
-
 // [[Rcpp::export]]
 List PF_cpp (arma::vec pars, arma::mat C, arma::imat data, int nclasses, int nages, int nlads, arma::imat u1_moves, 
          arma::icube u1_comb, int ndays, int npart, int MD, double a1, double a2, double b, double a_dis, 
