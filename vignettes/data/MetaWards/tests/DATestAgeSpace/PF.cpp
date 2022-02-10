@@ -722,7 +722,7 @@ List PF_cpp (arma::vec pars, arma::mat C, arma::imat data, int nclasses, int nag
                     obsInc(l)
                 );
             }
-            weights(i) += log_sum_exp(tempdens, 1);
+            weights(i) += log_sum_exp(tempdens, 0);
         }
         
         // calculate log-likelihood contribution
