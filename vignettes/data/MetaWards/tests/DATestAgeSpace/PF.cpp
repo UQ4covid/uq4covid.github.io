@@ -478,6 +478,23 @@ void discreteStochModel(int ipart, arma::vec &pars, int tstart, int tstop,
     return;
 }
 
+//// [[Rcpp::export]]
+//List testRNGs () {
+//    // check RNGs
+//    uint32_t coreseed = static_cast<uint32_t>(R::rnorm(0.0, 100.0));
+//    sitmo::prng eng(coreseed);
+//    arma::ivec resBin (10000);
+//    arma::ivec resPois (10000);
+//    arma::ivec resMulti (10000);
+//    arma::vec probs = {0.1, 0.2, 0.05, 0.35, 0.05, 0.05, 0.1, 0.1};
+//    for(arma::uword i = 0; i < 10000; i++) {
+//        resBin(i) = rbinom_cpp(30, 0.89, eng);
+//        resPois(i) = rpois_cpp(0.8, eng);
+//        resMulti(i) = rmultinom_cpp(probs, eng);
+//    }
+//    return List::create(Named("bin") = resBin, _["pois"] = resPois, _["multi"] = resMulti);
+//}
+
 // [[Rcpp::export]]
 List PF_cpp (arma::vec pars, arma::mat C, arma::imat data, arma::uword nclasses, arma::uword nages, arma::uword nlads, arma::imat u1_moves, 
          arma::icube u1_comb, arma::uword ndays, arma::uword npart, int MD, double a1, double a2, double b, double a_dis, 
