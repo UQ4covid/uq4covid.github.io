@@ -479,6 +479,37 @@ void discreteStochModel(int ipart, arma::vec &pars, int tstart, int tstop,
 }
 
 //// [[Rcpp::export]]
+//void testsitmo () {
+//    // check RNGs
+//    int ncores = 2;
+//    arma::vec seeds(ncores);
+//    for(int i = 0; i < ncores; i++) {
+//        seeds(i) = R::rnorm(0.0, 100.0);
+//    }
+//    double mx = sitmo::prng::max();
+//    Rprintf("Without adjusting seed state:\n");
+//    for(int j = 0; j < 2; j++) {
+//#pragma omp parallel for default(none) shared(j, ncores, seeds, mx)
+//        for(int i = 0; i < ncores; i++) {
+//            uint32_t coreseed = static_cast<uint32_t>(seeds((arma::uword) i));
+//            sitmo::prng eng(coreseed);
+//            Rprintf("j = %d i = %d runif = %f\n", j, i, eng() / mx);
+//        }
+//    }
+//    Rprintf("With adjusting seed state:\n");
+//    for(int j = 0; j < 2; j++) {
+//#pragma omp parallel for default(none) shared(j, ncores, seeds, mx)
+//        for(int i = 0; i < ncores; i++) {
+//            uint32_t coreseed = static_cast<uint32_t>(seeds((arma::uword) i));
+//            sitmo::prng eng(coreseed);
+//            Rprintf("j = %d i = %d runif = %f\n", j, i, eng() / mx);
+//            seeds((arma::uword) i) = eng();
+//        }
+//    }
+//    return;
+//}
+
+//// [[Rcpp::export]]
 //List testRNGs () {
 //    // check RNGs
 //    uint32_t coreseed = static_cast<uint32_t>(R::rnorm(0.0, 100.0));
