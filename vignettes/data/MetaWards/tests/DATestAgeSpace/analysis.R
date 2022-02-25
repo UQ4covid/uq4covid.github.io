@@ -5,6 +5,42 @@ library(RcppArmadillo)
 library(parallel)
 library(abind)
 library(sitmo)
+#library(furrr)
+
+## function to check counts (mainly useful for error checking)
+## u: matrix of counts with columns:
+##       t, S, E, A, RA, P, I1, DI, I2, RI, H, RH, DH
+## cu: matrix of cumulative counts
+## N: population size
+checkCounts <- function(u, cu, N) {
+    
+    ## remove time column
+    u <- u[, -1]
+    cu <- cu[, -1]
+    
+    ## check states match population size in each age-class
+    stopifnot(all((rowSums(u) - N) == 0))
+    
+    ## check states are positive
+    stopifnot(all(u >= 0) & all(cu >= 0))
+    
+    ## check cumulative counts match up
+    if(!all((cu[, 1] + cu[, 2] - N) == 0)) {
+        browser()
+    }
+    stopifnot(all((cu[, 2] - rowSums(cu[, c(3, 5)])) >= 0))
+    stopifnot(all((cu[, 3] - cu[, 4]) >= 0))
+    stopifnot(all((cu[, 5] - cu[, 6]) >= 0))
+    stopifnot(all((cu[, 6] - rowSums(cu[, c(7, 8, 10)])) >= 0))
+    stopifnot(all((cu[, 8] - cu[, 9]) >= 0))
+    stopifnot(all((cu[, 10] - rowSums(cu[, c(11, 12)])) >= 0))
+    
+    # ## check infective states and new incidence are valid
+    ## KEEPING FOR POSTERITY BUT DON'T NEED DUE TO IMPORTS
+    # Einc <- cu[, 2] - cuprev[, 2]
+    # print(which(Einc > 0))
+    # stopifnot(all(rowSums(uprev[Einc > 0, c(3, 5, 6, 8)]) > 0))
+}
 
 ## read in truncated Skellam sampler
 source("trSkellam.R")
@@ -82,6 +118,54 @@ set.seed(666)
          mutate(var = gsub("one", "1", var)) %>%
          mutate(var = gsub("two", "2", var))
 
+    ## checks
+#    plan(multisession, workers = 8)
+#    map(runs_nomd$particles[[1]], ~{
+#        out <- future_map(., ~{
+#            out <- list()
+#            for(i in 1:dim(.)[3]) {
+#                temp <- t(.[, , i]) %>%
+#                    as_tibble()
+#                colnames(temp) <- c("S", "E", "A", "RA", "P", "I1", "DI", "I2", "RI", "H", "RH", "DH")
+#                temp <- mutate(temp, age = 1:nrow(temp))
+#                out[[i]] <- temp
+#            }
+#            out
+#        })
+#        out <- transpose(out) %>%
+#            future_map(~bind_rows(., .id = "t"))
+#        ## now generate incidence counts
+#        outcum <- future_map(out, ~{
+#            group_by(., age) %>%
+#                mutate(across(c(DI, RI, DH, RH, RA), ~. - lag(., default = 0))) %>%
+#                mutate(H = H - lag(H, default = 0) + DH + RH) %>%
+#                mutate(I2 = I2 - lag(I2, default = 0) + RI) %>%
+#                mutate(I1 = I1 - lag(I1, default = 0) + I2 + DI + H) %>%
+#                mutate(P = P - lag(P, default = 0) + I1) %>%
+#                mutate(A = A - lag(A, default = 0) + RA) %>%
+#                mutate(E = E - lag(E, default = 0) + A + P) %>%
+#                mutate(across(E:DH, cumsum)) %>%
+#                ungroup()
+#        })
+#        out <- future_map(out, ~{
+#            group_by(., age) %>%
+#                nest() %>%
+#                pluck("data")
+#        })
+#        outcum <- future_map(outcum, ~{
+#            group_by(., age) %>%
+#                nest() %>%
+#                pluck("data")
+#        })
+#        ## check counts
+#        future_map2(out, outcum, function(u, cu) {
+#            map2(u, cu, function(u, cu) {
+#                checkCounts(u, cu, sum(u[1, -1]))
+#            })
+#        })
+#    })
+#    plan(multisession, workers = 1)
+ 
      ## repeat but adding some model discrepancy
      runs_md <- PF(pars[k, ], C = contact, data = data, u1_moves = u1_moves,
                    u1 = u1, ndays = 50, npart = 10, MD = TRUE, a_dis = 5e-10, b_dis = 0, saveAll = TRUE)
@@ -103,6 +187,54 @@ set.seed(666)
          mutate(var = gsub("one", "1", var)) %>%
          mutate(var = gsub("two", "2", var))
          
+    ## checks
+#    plan(multisession, workers = 8)
+#    map(runs_md$particles[[1]], ~{
+#        out <- future_map(., ~{
+#            out <- list()
+#            for(i in 1:dim(.)[3]) {
+#                temp <- t(.[, , i]) %>%
+#                    as_tibble()
+#                colnames(temp) <- c("S", "E", "A", "RA", "P", "I1", "DI", "I2", "RI", "H", "RH", "DH")
+#                temp <- mutate(temp, age = 1:nrow(temp))
+#                out[[i]] <- temp
+#            }
+#            out
+#        })
+#        out <- transpose(out) %>%
+#            future_map(~bind_rows(., .id = "t"))
+#        ## now generate incidence counts
+#        outcum <- future_map(out, ~{
+#            group_by(., age) %>%
+#                mutate(across(c(DI, RI, DH, RH, RA), ~. - lag(., default = 0))) %>%
+#                mutate(H = H - lag(H, default = 0) + DH + RH) %>%
+#                mutate(I2 = I2 - lag(I2, default = 0) + RI) %>%
+#                mutate(I1 = I1 - lag(I1, default = 0) + I2 + DI + H) %>%
+#                mutate(P = P - lag(P, default = 0) + I1) %>%
+#                mutate(A = A - lag(A, default = 0) + RA) %>%
+#                mutate(E = E - lag(E, default = 0) + A + P) %>%
+#                mutate(across(E:DH, cumsum)) %>%
+#                ungroup()
+#        })
+#        out <- future_map(out, ~{
+#            group_by(., age) %>%
+#                nest() %>%
+#                pluck("data")
+#        })
+#        outcum <- future_map(outcum, ~{
+#            group_by(., age) %>%
+#                nest() %>%
+#                pluck("data")
+#        })
+#        ## check counts
+#        future_map2(out, outcum, function(u, cu) {
+#            map2(u, cu, function(u, cu) {
+#                checkCounts(u, cu, sum(u[1, -1]))
+#            })
+#        })
+#    })
+#    plan(multisession, workers = 1)
+ 
      ## plot both together nationally
      p <- mutate(sims_nomd, type = "No MD") %>%
          rbind(mutate(sims_md, type = "MD")) %>%
