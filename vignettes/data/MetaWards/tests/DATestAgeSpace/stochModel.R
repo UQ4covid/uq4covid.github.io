@@ -25,7 +25,7 @@ contact <- read_csv("POLYMOD_matrix.csv", col_names = FALSE) %>%
     as.matrix()
 
 ## extract parameters for simulation   
-pars <- select(slice(pars, 6), !output) %>%
+pars <- select(slice(pars, 246), !output) %>%
     unlist()
 
 ## solution to round numbers preserving sum
@@ -75,7 +75,7 @@ saveRDS(u1_moves, "outputs/u1_moves.rds")
 sourceCpp("discreteStochModel.cpp")
 disSims <- mclapply(1:24, function(i, pars, u1_moves, u1, contact) {
     discreteStochModel(pars, 0, 100, u1_moves, u1, contact)$out
-}, pars = pars, u1_moves = u1_moves, u1 = u1, contact = contact, mc.cores = 8)
+}, pars = pars, u1_moves = u1_moves, u1 = u1, contact = contact, mc.cores = detectCores())
 stageNms <- map(c("S", "E", "A", "RA", "P", "Ione", "DI", "Itwo", "RI", "H", "RH", "DH"), ~paste0(., "_", 1:8)) %>%
     map(~map(., ~paste0(., "_", 1:max(EW19[, 1])))) %>%
     reduce(c) %>%
