@@ -6,8 +6,11 @@
 
 #include <RcppArmadillo.h>
 #include <Rcpp/Benchmark/Timer.h>
-#include <omp.h>
 #include <sitmo.h>
+
+#ifdef _OPENMP
+#include <omp.h>
+#endif
 
 using namespace Rcpp;
 
@@ -599,15 +602,17 @@ List PF_cpp (arma::vec pars, arma::mat C, arma::imat data, arma::uword nclasses,
     double prev_time = 0.0;
     
     // sample seeds to set up thread-safe PRNGs
-    int ncores = omp_get_max_threads();
+    int ncores = 1;
+#ifdef _OPENMP
+    ncores = omp_get_max_threads();
     omp_set_num_threads(ncores);
+#endif
     arma::vec seeds(ncores);
     for(i = 0; i < ncores; i++) {
         seeds(i) = R::rnorm(0.0, 100.0);
     }
-    uint32_t coreseed = static_cast<uint32_t>(R::rnorm(0.0, 100.0));
-    sitmo::prng engSerial(coreseed);
-    double mx = sitmo::prng::max();
+    uint32_t coreseedSerial = static_cast<uint32_t>(R::rnorm(0.0, 100.0));
+    sitmo::prng engSerial(coreseedSerial);
     
     // loop over time
     double ll = 0.0;
@@ -620,14 +625,19 @@ List PF_cpp (arma::vec pars, arma::mat C, arma::imat data, arma::uword nclasses,
         obsInc = data.row(t).t();
         
         // loop over particles
+#ifdef _OPENMP
 #pragma omp parallel for default(none) private(j, l, tempLB) shared(seeds, npart, u1_moves, nages, nclasses, nlads, data, C, N_night, N_day, u1, u1_new, t, pars, weights, MD, a_dis, b_dis, a1, a2, b, obsInc)
+#endif
         for(i = 0; i < npart; i++) {
     
             // set up print string for debugging
             char str1[80];
                         
             // set up thread-safe RNG
-            uint32_t coreseed = static_cast<uint32_t>(seeds(omp_get_thread_num()));
+            uint32_t coreseed = static_cast<uint32_t>(seeds(0));
+#ifdef _OPENMP
+            coreseed = static_cast<uint32_t>(seeds((arma::uword) omp_get_thread_num()));
+#endif
             sitmo::prng eng(coreseed);
         
             // set up auxiliary objects
