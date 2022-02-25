@@ -1,7 +1,13 @@
 // [[Rcpp::depends(RcppArmadillo)]]
 
+// [[Rcpp::plugins(openmp)]]
+
+// [[Rcpp::depends(sitmo)]]
+
 #include <RcppArmadillo.h>
 #include <Rcpp/Benchmark/Timer.h>
+#include <omp.h>
+#include <sitmo.h>
 
 using namespace Rcpp;
 
@@ -13,83 +19,194 @@ double log_sum_exp(arma::vec x, int mn = 0) {
     return y;
 }
 
+// Poisson RNG using inverse transform method
+// (to try to circumvent non thread-safe RNG in R)
+int rpois_cpp (double lambda, sitmo::prng &eng) {
+    if(lambda < 0.0) {
+        stop("'lambda' must be > 0 in rpois\n");
+    }
+    double mx = sitmo::prng::max();
+    double u = log(eng()) - log(mx);
+    double temp = -lambda;
+    double temp1 = 0.0;
+    double maxt = 0.0;
+    double lk = 0.0;
+    int k = 0;
+    while(temp < u) {
+        k++;
+        temp1 = k * log(lambda) - lambda;
+        lk += log(k);
+        temp1 -= lk;
+        maxt = (temp > temp1 ? temp:temp1);
+        temp = maxt + log(exp(temp - maxt) + exp(temp1 - maxt));
+    }
+    return k;
+}
+
+// Binomial RNG using inverse transform method
+// (to try to circumvent non thread-safe RNG in R)
+int rbinom_cpp (int n, double p, sitmo::prng &eng) {
+    if(n < 0) {
+        Rprintf("n = %d\n", n);
+        stop("'n' must be >= 0 in rbinom\n");
+    }
+    if(p < 0.0 || p > 1.0) {
+        Rprintf("p = %f\n", p);
+        stop("Must have 0 <= p <= 1 in rbinom\n");
+    }
+    if(n == 0) return 0;
+    double mx = sitmo::prng::max();
+    double u = log(eng()) - log(mx);
+    int k;
+    double ln = 0.0, lx = 0.0, lnmx = 0.0;
+    for(k = 1; k <= n; k++) {
+        ln += log(k);
+    }
+    lnmx = ln;
+    double temp = ln - lx - lnmx + n * log(1.0 - p);
+    double temp1 = 0.0, maxt = 0.0;
+    k = 0;
+    while(temp < u) {
+        k++;
+        lx += log(k);
+        lnmx -= log(n - (k - 1));
+        temp1 = ln - lx - lnmx + k * log(p) + (n - k) * log(1.0 - p);
+        maxt = (temp > temp1 ? temp:temp1);
+        temp = maxt + log(exp(temp - maxt) + exp(temp1 - maxt));
+    }
+    return k;
+}
+
+// Multinomial RNG for n = 1 using inverse transform method
+// (to try to circumvent non thread-safe RNG in R)
+int rmultinom_cpp (arma::vec p, sitmo::prng &eng) {
+    if(abs(sum(p) - 1.0) > 1e-15) {
+        Rprintf("sum(p) = %e\n", sum(p));
+        stop("Must have sum(p) == 1 in rmultinom\n");
+    }
+    if(any(p) > 1.0 || any(p) < 0.0) {
+        stop("Must have all 0 <= p <= 1 in rmultinom\n");
+    }
+    double mx = sitmo::prng::max();
+    double u = eng() / mx;
+    double temp = p(0);
+    int k = 0;
+    while(temp < u) {
+        k++;
+        temp += p(k);
+    }
+    return k;
+}  
+
 // log Skellam CDF (note, no checks on inputs)
+// adapted from "pskellam" source code by Patrick Brown (mistakes are mine)
 double lpskellam_cpp(int x, double lambda1, double lambda2) {
     // different formulas for negative & nonnegative x (zero lambda is OK)
-    // from "pskellam" source code by Patrick Brown
     double ldens = 0.0;
     if(x < 0) {
         ldens = R::pnchisq(2.0 * lambda2, -2.0 * x, 2.0 * lambda1, 1, 1);
     } else {
         ldens = R::pnchisq(2.0 * lambda1, 2.0 * (x + 1), 2.0 * lambda2, 0, 1);
     }
+    if(!arma::is_finite(ldens)) {
+        Rprintf("Non-finite pdensity in lpskellam = %f x = %d lambda1 = %f lambda2 = %f\n", ldens, x, lambda1, lambda2);
+    }
     return ldens;
-    // ret[neg] <- stats::pchisq(2*lambda2[neg],-2*x[neg],2*lambda1[neg],log.p=log.p)
-    //     ret[pos] <- stats::pchisq(2*lambda1[pos],2*(x[pos]+1),2*lambda2[pos],lower.tail=FALSE,log.p=log.p)
 }
 
 // log truncated Skellam density (note, no checks on inputs)
-// adapted from "dskellam" source code by Patrick Brown
-double ldtskellam_cpp(int x, double lambda1, double lambda2, int LB = 0, int UB = -1) {
+// adapted from "dskellam" source code by Patrick Brown (mistakes are mine)
+double ldtskellam_cpp(int x, double lambda1, double lambda2, char *str, int LB = 0, int UB = -1, int print = 0) {
     
     // if UB < LB then returns untruncated density
+    
+    // check for this instance only
+    if(LB > UB) {
+        stop("ldt LB > UB\n");
+    }
+    
+    if(print == 1) Rprintf("State: %s\n", str);
     
     // from "skellam" source code: log(besselI(y, nu)) == y + log(besselI(y, nu, TRUE))
     double ldens = -(lambda1 + lambda2) + (x / 2.0) * (log(lambda1) - log(lambda2)) +
         log(R::bessel_i(2.0 * sqrt(lambda1 * lambda2), abs(x), 2)) + 2.0 * sqrt(lambda1 * lambda2);
     
+    // if non-finite density, then try difference of CDFs
+    if(!arma::is_finite(ldens)) {
+        Rprintf("Trying difference of CDFs in ldtskellam\n");
+        arma::vec norm(2); norm.zeros();
+        norm(0) = lpskellam_cpp(x - 1, lambda1, lambda2);
+        norm(1) = lpskellam_cpp(x, lambda1, lambda2);                
+        ldens = norm(1) + log(1.0 - exp(norm(0) - norm(1)));
+    }
+        
     // if truncated then adjust log-density
     if(UB >= LB) {
         if(x < LB || x > UB) {
-            stop("'x' must be in bounds in dtskellam_cpp\n");
+            Rprintf("'x' must be in bounds in dtskellam_cpp: x = %d LB = %d UB = %d\n", x, LB, UB);
+            stop("");
         }
-        // declare variables
-        int normsize = UB - LB + 1;
-        if(normsize > 1) {
-            arma::vec norm (2);
-            norm(0) = lpskellam_cpp(LB - 1, lambda1, lambda2);
-            norm(1) = lpskellam_cpp(UB, lambda1, lambda2);
-            double lnorm = norm(1) + log(1.0 - exp(norm(0) - norm(1)));
-            ldens -= lnorm;
-        } else {
-            ldens = 0.0;
+        if(arma::is_finite(ldens)) {
+            // declare variables
+            int normsize = UB - LB + 1;
+            if(normsize > 1) {
+                arma::vec norm(2); norm.zeros();
+                norm(0) = lpskellam_cpp(LB - 1, lambda1, lambda2);
+                norm(1) = lpskellam_cpp(UB, lambda1, lambda2);
+                //Rprintf("norm(0) = %f norm(1) = %f\n", norm(0), norm(1));               
+                double lnorm = norm(1) + log(1.0 - exp(norm(0) - norm(1)));
+                ldens -= lnorm;
+            } else {
+                ldens = 0.0;
+            }
         }
+    }
+    if(!arma::is_finite(ldens)) {
+        Rprintf("Non-finite density in ldtskellam = %f x = %d l1 = %f l2 = %f LB = %d UB = %d\n", ldens, x, lambda1, lambda2, LB, UB);
     }
     return ldens;
 }
 
 // truncated Skellam sampler
-int rtskellam_cpp(double lambda1, double lambda2, int LB = 0, int UB = -1) {
+int rtskellam_cpp(double lambda1, double lambda2, char *str, sitmo::prng &eng, int LB = 0, int UB = -1) {
     
     // if UB < LB then returns untruncated density
     
+    // check in this setting:
+    if(LB > UB) {
+        stop("rdt LB > UB\n");
+    }
+    
+    // declare variables
     int x = 0;
+    double mx = sitmo::prng::max();
+    
     // if bounds are the same, then return the
     // only viable value
     if(LB == UB) {
         x = LB;
     } else {
         // draw untruncated sample
-        x = R::rpois(lambda1) - R::rpois(lambda2);
+        x = rpois_cpp(lambda1, eng) - rpois_cpp(lambda2, eng);
         
         // rejection sample if necessary
         if(UB > LB) {
             int k = 0;
             int ntries = 1000;
             while((x < LB || x > UB) && k < ntries) {
-                x = R::rpois(lambda1) - R::rpois(lambda2);
+                x = rpois_cpp(lambda1, eng) - rpois_cpp(lambda2, eng);
                 k++;
             }
             // if rejection sampling doesn't work
-            // then try long-hand way
+            // then try inverse transform sampling
             if(k == ntries) {
                 // Rprintf("LB = %d UB = %d\n", LB, UB);
-                double u = R::runif(0.0, 1.0);
+                double u = eng() / mx;
                 k = 0;
-                double xdens = exp(ldtskellam_cpp(LB + k, lambda1, lambda2, LB, UB));
-                while(u > xdens && k < (UB - LB + 1)) {
+                double xdens = exp(ldtskellam_cpp(LB + k, lambda1, lambda2, str, LB, UB, 1));
+                while(u > xdens && k < (UB - LB)) {
                     k++;
-                    xdens += exp(ldtskellam_cpp(LB + k, lambda1, lambda2, LB, UB));
+                    xdens += exp(ldtskellam_cpp(LB + k, lambda1, lambda2, str, LB, UB, 1));
                 }
                 if(k == (UB - LB + 1) && u > xdens) {
                     stop("Something wrong in truncated Skellam sampling\n");
@@ -104,7 +221,7 @@ int rtskellam_cpp(double lambda1, double lambda2, int LB = 0, int UB = -1) {
 // simulation model
 void discreteStochModel(int ipart, arma::vec &pars, int tstart, int tstop, 
                         arma::imat &u1_moves, std::vector<arma::icube> &u1, arma::icube &u1_day, arma::icube &u1_night,
-                        arma::imat &N_day, arma::imat &N_night, arma::mat &pinf, arma::imat &origE, arma::mat &C) {
+                        arma::imat &N_day, arma::imat &N_night, arma::mat &pinf, arma::imat &origE, arma::mat &C, sitmo::prng &eng) {
     
     // u1_moves is a matrix with columns: LADfrom, LADto
     // u1 is a 3D array with dimensions: nclasses x nages x nmoves
@@ -115,10 +232,9 @@ void discreteStochModel(int ipart, arma::vec &pars, int tstart, int tstop,
     // origE is nages x nmoves auxiliary matrix
     
     // set up auxiliary matrix for counts
-    int nclasses = u1[ipart].n_rows;
-    int nages = u1[ipart].n_cols;
-    int nlads = max(u1_moves.col(0));
-    int k;
+    arma::uword nclasses = (arma::uword) u1[ipart].n_rows;
+    arma::uword nages = (arma::uword) u1[ipart].n_cols;
+    int k, n;
     arma::uword i, j, l;
     
     // reconstruct day/night counts
@@ -172,12 +288,8 @@ void discreteStochModel(int ipart, arma::vec &pars, int tstart, int tstop,
     arma::mat beta(nages, 1);
     
     // set up auxiliary variables
-    double prob = 0.0;
-    arma::ivec pathE(3);
     arma::vec mprobsE(3);
-    arma::ivec pathI1(4);
     arma::vec mprobsI1(4);
-    arma::ivec pathH(3);
     arma::vec mprobsH(3);
     tcurr++;
     tstart++;
@@ -206,12 +318,14 @@ void discreteStochModel(int ipart, arma::vec &pars, int tstart, int tstop,
             beta = 0.7 * C * (uinf / N_day.col(i));
             for(j = 0; j < nages; j++) {
                 pinf(j, i) = 1.0 - exp(-beta(j, 0));
+                pinf(j, i) = (pinf(j, i) < 0.0 ? 0.0:pinf(j, i));
+                pinf(j, i) = (pinf(j, i) > 1.0 ? 1.0:pinf(j, i));
             }
         }
         // transmission events (day), loop over network
         for(i = 0; i < u1_moves.n_rows; i++) {
             for(j = 0; j < nages; j++) {
-                k = R::rbinom(u1[ipart](0, j, i), pinf(j, (arma::uword) u1_moves(i, 1) - 1));
+                k = rbinom_cpp(u1[ipart](0, j, i), pinf(j, (arma::uword) u1_moves(i, 1) - 1), eng);
                 u1[ipart](0, j, i) -= k;
                 u1[ipart](1, j, i) += k;
                 u1_day(0, j, (arma::uword) u1_moves(i, 1) - 1) -= k;
@@ -233,12 +347,14 @@ void discreteStochModel(int ipart, arma::vec &pars, int tstart, int tstop,
             beta = 0.3 * C * (uinf / N_night.col(i));
             for(j = 0; j < nages; j++) {
                 pinf(j, i) = 1.0 - exp(-beta(j, 0));
+                pinf(j, i) = (pinf(j, i) < 0.0 ? 0.0:pinf(j, i));
+                pinf(j, i) = (pinf(j, i) > 1.0 ? 1.0:pinf(j, i));
             }
         }
         // transmission events (night), loop over network
         for(i = 0; i < u1_moves.n_rows; i++) {
             for(j = 0; j < nages; j++) {
-                k = R::rbinom(u1[ipart](0, j, i), pinf(j, (arma::uword) u1_moves(i, 0) - 1));
+                k = rbinom_cpp(u1[ipart](0, j, i), pinf(j, (arma::uword) u1_moves(i, 0) - 1), eng);
                 u1[ipart](0, j, i) -= k;
                 u1[ipart](1, j, i) += k;
                 u1_day(0, j, (arma::uword) u1_moves(i, 1) - 1) -= k;
@@ -274,19 +390,24 @@ void discreteStochModel(int ipart, arma::vec &pars, int tstart, int tstop,
             for(i = 0; i < u1_moves.n_rows; i++) {
                 
                 // H out
-                rmultinom(u1[ipart](9, j, i), mprobsH.begin(), 3, pathH.begin());
-                u1[ipart](9, j, i) -= (pathH(0) + pathH(1));
-                u1[ipart](10, j, i) += pathH(0);
-                u1[ipart](11, j, i) += pathH(1);
-                u1_day(9, j, (arma::uword) u1_moves(i, 1) - 1) -= (pathH(0) + pathH(1));
-                u1_day(10, j, (arma::uword) u1_moves(i, 1) - 1) += pathH(0);
-                u1_day(11, j, (arma::uword) u1_moves(i, 1) - 1) += pathH(1);
-                u1_night(9, j, (arma::uword) u1_moves(i, 0) - 1) -= (pathH(0) + pathH(1));
-                u1_night(10, j, (arma::uword) u1_moves(i, 0) - 1) += pathH(0);
-                u1_night(11, j, (arma::uword) u1_moves(i, 0) - 1) += pathH(1);
+                n = u1[ipart](9, j, i);
+                if(n > 0) {
+                    for(l = 0; l < n; l++) {
+                        k = rmultinom_cpp(mprobsH, eng);
+                        u1[ipart](9, j, i) -= (k < 2 ? 1:0);
+                        u1[ipart](10, j, i) += (k == 0 ? 1:0);
+                        u1[ipart](11, j, i) += (k == 1 ? 1:0);
+                        u1_day(9, j, (arma::uword) u1_moves(i, 1) - 1) -= (k < 2 ? 1:0);
+                        u1_day(10, j, (arma::uword) u1_moves(i, 1) - 1) += (k == 0 ? 1:0);
+                        u1_day(11, j, (arma::uword) u1_moves(i, 1) - 1) += (k == 1 ? 1:0);
+                        u1_night(9, j, (arma::uword) u1_moves(i, 0) - 1) -= (k < 2 ? 1:0);
+                        u1_night(10, j, (arma::uword) u1_moves(i, 0) - 1) += (k == 0 ? 1:0);
+                        u1_night(11, j, (arma::uword) u1_moves(i, 0) - 1) += (k == 1 ? 1:0);
+                    }
+                }
                 
                 // I2RI
-                k = R::rbinom(u1[ipart](7, j, i), probI2(j));
+                k = rbinom_cpp(u1[ipart](7, j, i), probI2(j), eng);
                 u1[ipart](7, j, i) -= k;
                 u1[ipart](8, j, i) += k;
                 u1_day(7, j, (arma::uword) u1_moves(i, 1) - 1) -= k;
@@ -295,22 +416,27 @@ void discreteStochModel(int ipart, arma::vec &pars, int tstart, int tstop,
                 u1_night(8, j, (arma::uword) u1_moves(i, 0) - 1) += k;
                 
                 // I1 out
-                rmultinom(u1[ipart](5, j, i), mprobsI1.begin(), 4, pathI1.begin());
-                u1[ipart](5, j, i) -= (pathI1(0) + pathI1(1) + pathI1(2));
-                u1[ipart](9, j, i) += pathI1(0);
-                u1[ipart](7, j, i) += pathI1(1);
-                u1[ipart](6, j, i) += pathI1(2);
-                u1_day(5, j, (arma::uword) u1_moves(i, 1) - 1) -= (pathI1(0) + pathI1(1) + pathI1(2));
-                u1_day(9, j, (arma::uword) u1_moves(i, 1) - 1) += pathI1(0);
-                u1_day(7, j, (arma::uword) u1_moves(i, 1) - 1) += pathI1(1);
-                u1_day(6, j, (arma::uword) u1_moves(i, 1) - 1) += pathI1(2);
-                u1_night(5, j, (arma::uword) u1_moves(i, 0) - 1) -= (pathI1(0) + pathI1(1) + pathI1(2));
-                u1_night(9, j, (arma::uword) u1_moves(i, 0) - 1) += pathI1(0);
-                u1_night(7, j, (arma::uword) u1_moves(i, 0) - 1) += pathI1(1);
-                u1_night(6, j, (arma::uword) u1_moves(i, 0) - 1) += pathI1(2);
+                n = u1[ipart](5, j, i);
+                if(n > 0) {
+                    for(l = 0; l < n; l++) {
+                        k = rmultinom_cpp(mprobsI1, eng);
+                        u1[ipart](5, j, i) -= (k < 3 ? 1:0);
+                        u1[ipart](9, j, i) += (k == 0 ? 1:0);
+                        u1[ipart](7, j, i) += (k == 1 ? 1:0);
+                        u1[ipart](6, j, i) += (k == 2 ? 1:0);
+                        u1_day(5, j, (arma::uword) u1_moves(i, 1) - 1) -= (k < 3 ? 1:0);
+                        u1_day(9, j, (arma::uword) u1_moves(i, 1) - 1) += (k == 0 ? 1:0);
+                        u1_day(7, j, (arma::uword) u1_moves(i, 1) - 1) += (k == 1 ? 1:0);
+                        u1_day(6, j, (arma::uword) u1_moves(i, 1) - 1) += (k == 2 ? 1:0);
+                        u1_night(5, j, (arma::uword) u1_moves(i, 0) - 1) -= (k < 3 ? 1:0);
+                        u1_night(9, j, (arma::uword) u1_moves(i, 0) - 1) += (k == 0 ? 1:0);
+                        u1_night(7, j, (arma::uword) u1_moves(i, 0) - 1) += (k == 1 ? 1:0);
+                        u1_night(6, j, (arma::uword) u1_moves(i, 0) - 1) += (k == 2 ? 1:0);
+                    }
+                }
                 
                 // PI1
-                k = R::rbinom(u1[ipart](4, j, i), probP(j));
+                k = rbinom_cpp(u1[ipart](4, j, i), probP(j), eng);
                 u1[ipart](4, j, i) -= k;
                 u1[ipart](5, j, i) += k;
                 u1_day(4, j, (arma::uword) u1_moves(i, 1) - 1) -= k;
@@ -319,7 +445,7 @@ void discreteStochModel(int ipart, arma::vec &pars, int tstart, int tstop,
                 u1_night(5, j, (arma::uword) u1_moves(i, 0) - 1) += k;
                 
                 // ARA
-                k = R::rbinom(u1[ipart](2, j, i), probA(j));
+                k = rbinom_cpp(u1[ipart](2, j, i), probA(j), eng);
                 u1[ipart](2, j, i) -= k;
                 u1[ipart](3, j, i) += k;
                 u1_day(2, j, (arma::uword) u1_moves(i, 1) - 1) -= k;
@@ -328,16 +454,20 @@ void discreteStochModel(int ipart, arma::vec &pars, int tstart, int tstop,
                 u1_night(3, j, (arma::uword) u1_moves(i, 0) - 1) += k;
                 
                 // E out
-                rmultinom(origE(j, i), mprobsE.begin(), 3, pathE.begin());
-                u1[ipart](1, j, i) -= (pathE(0) + pathE(1));
-                u1[ipart](2, j, i) += pathE(0);
-                u1[ipart](4, j, i) += pathE(1);
-                u1_day(1, j, (arma::uword) u1_moves(i, 1) - 1) -= (pathE(0) + pathE(1));
-                u1_day(2, j, (arma::uword) u1_moves(i, 1) - 1) += pathE(0);
-                u1_day(4, j, (arma::uword) u1_moves(i, 1) - 1) += pathE(1);
-                u1_night(1, j, (arma::uword) u1_moves(i, 0) - 1) -= (pathE(0) + pathE(1));
-                u1_night(2, j, (arma::uword) u1_moves(i, 0) - 1) += pathE(0);
-                u1_night(4, j, (arma::uword) u1_moves(i, 0) - 1) += pathE(1);
+                if(origE(j, i) > 0) {
+                    for(l = 0; l < origE(j, i); l++) {
+                        k = rmultinom_cpp(mprobsE, eng);
+                        u1[ipart](1, j, i) -= (k < 2 ? 1:0);
+                        u1[ipart](2, j, i) += (k == 0 ? 1:0);
+                        u1[ipart](4, j, i) += (k == 1 ? 1:0);
+                        u1_day(1, j, (arma::uword) u1_moves(i, 1) - 1) -= (k < 2 ? 1:0);
+                        u1_day(2, j, (arma::uword) u1_moves(i, 1) - 1) += (k == 0 ? 1:0);
+                        u1_day(4, j, (arma::uword) u1_moves(i, 1) - 1) += (k == 1 ? 1:0);
+                        u1_night(1, j, (arma::uword) u1_moves(i, 0) - 1) -= (k < 2 ? 1:0);
+                        u1_night(2, j, (arma::uword) u1_moves(i, 0) - 1) += (k == 0 ? 1:0);
+                        u1_night(4, j, (arma::uword) u1_moves(i, 0) - 1) += (k == 1 ? 1:0);
+                    }
+                }
             }
         }
         
@@ -349,28 +479,21 @@ void discreteStochModel(int ipart, arma::vec &pars, int tstart, int tstop,
 }
 
 // [[Rcpp::export]]
-List PF_cpp (arma::vec pars, arma::mat C, arma::imat data, int nclasses, int nages, int nlads, arma::imat u1_moves, 
-         arma::icube u1_comb, int ndays, int npart, int MD, double a1, double a2, double b, double a_dis, 
+List PF_cpp (arma::vec pars, arma::mat C, arma::imat data, arma::uword nclasses, arma::uword nages, arma::uword nlads, arma::imat u1_moves, 
+         arma::icube u1_comb, arma::uword ndays, arma::uword npart, int MD, double a1, double a2, double b, double a_dis, 
          double b_dis, int saveAll) {
     
     // set counters
-    arma::uword i, j, l, k;
+    arma::uword i, j, l, k, t;
     int tempLB = 0;
-    int t = 0;
     
     // split u1 up into different LADs
     std::vector<arma::icube> u1(npart);
     std::vector<arma::icube> u1_new(npart);
-    arma::icube u1_day(nclasses, nages, nlads);
-    arma::icube u1_night(nclasses, nages, nlads);
-    arma::icube u1_night_reduced(2, nages, nlads);
-    arma::imat N_day(nages, nlads);
-    arma::imat N_night(nages, nlads);
-    u1_day.zeros();
-    u1_night.zeros();
-    u1_night_reduced.zeros();
-    N_day.zeros();
-    N_night.zeros();
+    arma::icube u1_night_full(nclasses, nages, nlads); u1_night_full.zeros();
+    arma::icube u1_night_reduced(2, nages, nlads); u1_night_reduced.zeros();
+    arma::imat N_day(nages, nlads); N_day.zeros();
+    arma::imat N_night(nages, nlads); N_night.zeros();
     for(i = 0; i < u1_moves.n_rows; i++) {
         for(j = 0; j < nages; j++) {
             for(l = 0; l < nclasses; l++) {
@@ -383,36 +506,14 @@ List PF_cpp (arma::vec pars, arma::mat C, arma::imat data, int nclasses, int nag
         u1[i] = u1_comb;
         u1_new[i] = u1_comb;
     }
-    // auxiliary objects
-    arma::mat pinf(nages, nlads);
-    arma::imat origE(nages, u1_comb.n_slices);
     
     // set up weight vector
     arma::vec weights (npart);
     arma::ivec inds(npart);
     double wnorm = 0.0;
     
-    // set up temporary objects
-    int incsize = (MD == 1 ? u1_moves.n_rows:1);
-    // 'incsize' just used to save memory when declaring these vectors if
-    // not used in MD
-    arma::imat DHinc (nages, u1_moves.n_rows); DHinc.zeros();
-    arma::imat RHinc (nages, incsize); RHinc.zeros();
-    arma::imat Hinc (nages, incsize); Hinc.zeros();
-    arma::imat DIinc (nages, u1_moves.n_rows); DIinc.zeros();
-    arma::imat RIinc (nages, incsize); RIinc.zeros();
-    arma::imat I2inc (nages, incsize); I2inc.zeros();
-    arma::imat I1inc (nages, incsize); I1inc.zeros();
-    arma::imat Pinc (nages, incsize); Pinc.zeros();
-    arma::imat RAinc (nages, incsize); RAinc.zeros();
-    arma::imat Ainc (nages, incsize); Ainc.zeros();
-    arma::imat Einc (nages, incsize); Einc.zeros();
-    // reset incsize
-    incsize = u1_moves.n_rows;
-    
+    // set up auxiliary objects    
     arma::ivec obsInc (data.n_cols); obsInc.zeros();
-    arma::ivec Dtempinc (data.n_cols); Dtempinc.zeros();
-    arma::vec tempdens (data.n_cols); tempdens.zeros();
     
     // check which output required
     List out (npart * (ndays + 1));
@@ -421,7 +522,7 @@ List PF_cpp (arma::vec pars, arma::mat C, arma::imat data, int nclasses, int nag
             for(i = 0; i < npart; i++) {
                 // extract just counts for DI and DH
                 u1_night_reduced.zeros();
-                for(l = 0; l < incsize; l++) {
+                for(l = 0; l < u1_moves.n_rows; l++) {
                     for(j = 0; j < nages; j++) {
                         u1_night_reduced(0, j, (arma::uword) u1_moves(l, 0) - 1) += u1[i](6, j, l);
                         u1_night_reduced(1, j, (arma::uword) u1_moves(l, 0) - 1) += u1[i](11, j, l);
@@ -431,15 +532,15 @@ List PF_cpp (arma::vec pars, arma::mat C, arma::imat data, int nclasses, int nag
             }
         } else {
             for(i = 0; i < npart; i++) {
-                u1_night.zeros();
-                for(l = 0; l < incsize; l++) {
+                u1_night_full.zeros();
+                for(l = 0; l < u1_moves.n_rows; l++) {
                     for(j = 0; j < nages; j++) {
                         for(k = 0; k < nclasses; k++) {
-                            u1_night(k, j, (arma::uword) u1_moves(l, 0) - 1) += u1[i](k, j, l);
+                            u1_night_full(k, j, (arma::uword) u1_moves(l, 0) - 1) += u1[i](k, j, l);
                         }
                     }
                 }
-                out[i] = u1_night;
+                out[i] = u1_night_full;
             }
         }
     }
@@ -449,18 +550,52 @@ List PF_cpp (arma::vec pars, arma::mat C, arma::imat data, int nclasses, int nag
     int timer_cnt = 0;
     double prev_time = 0.0;
     
+    // sample seeds to set up thread-safe PRNGs
+    int ncores = omp_get_max_threads();
+    omp_set_num_threads(ncores);
+    arma::vec seeds(ncores);
+    for(i = 0; i < ncores; i++) {
+        seeds(i) = R::rnorm(0.0, 100.0);
+    }
+    uint32_t coreseed = static_cast<uint32_t>(R::rnorm(0.0, 100.0));
+    sitmo::prng engSerial(coreseed);
+    double mx = sitmo::prng::max();
+    
     // loop over time
     double ll = 0.0;
     for(t = 0; t < ndays; t++) {
+            
+        // check for interrupt
+        R_CheckUserInterrupt();
+        
+        // extract data
+        obsInc = data.row(t).t();
         
         // loop over particles
+#pragma omp parallel for default(none) private(j, l, tempLB) shared(seeds, npart, u1_moves, nages, nclasses, nlads, data, C, N_night, N_day, u1, u1_new, t, pars, weights, MD, a_dis, b_dis, a1, a2, b, obsInc)
         for(i = 0; i < npart; i++) {
+    
+            // set up print string for debugging
+            char str1[80];
+                        
+            // set up thread-safe RNG
+            uint32_t coreseed = static_cast<uint32_t>(seeds(omp_get_thread_num()));
+            sitmo::prng eng(coreseed);
+        
+            // set up auxiliary objects
+            arma::imat DHinc (nages, u1_moves.n_rows); DHinc.zeros();
+            arma::imat DIinc (nages, u1_moves.n_rows); DIinc.zeros();
             
-            // check for interrupt
-            R_CheckUserInterrupt();
+            arma::ivec Dtempinc (data.n_cols); Dtempinc.zeros();
+            arma::vec tempdens (data.n_cols); tempdens.zeros();
+            
+            arma::mat pinf(nages, nlads); pinf.zeros();
+            arma::imat origE(nages, u1_moves.n_rows); origE.zeros();
+            arma::icube u1_day(nclasses, nages, nlads); u1_day.zeros();
+            arma::icube u1_night(nclasses, nages, nlads); u1_night.zeros();
             
             // run model and return u1
-            discreteStochModel((int) i, pars, t - 1, t, u1_moves, u1_new, u1_day, u1_night, N_day, N_night, pinf, origE,  C);
+            discreteStochModel((int) i, pars, t - 1, t, u1_moves, u1_new, u1_day, u1_night, N_day, N_night, pinf, origE, C, eng);
             
             // cols: c("S", "E", "A", "RA", "P", "I1", "DI", "I2", "RI", "H", "RH", "DH")
             //          0,   1,   2,   3,    4,   5,    6,    7,    8,    9,   10,   11
@@ -470,13 +605,27 @@ List PF_cpp (arma::vec pars, arma::mat C, arma::imat data, int nclasses, int nag
             
             // adjust states according to model discrepancy
             if(MD == 1) {
+                // create auxiliary objects
+                arma::imat RHinc (nages, u1_moves.n_rows); RHinc.zeros();
+                arma::imat Hinc (nages, u1_moves.n_rows); Hinc.zeros();
+                arma::imat RIinc (nages, u1_moves.n_rows); RIinc.zeros();
+                arma::imat I2inc (nages, u1_moves.n_rows); I2inc.zeros();
+                arma::imat I1inc (nages, u1_moves.n_rows); I1inc.zeros();
+                arma::imat Pinc (nages, u1_moves.n_rows); Pinc.zeros();
+                arma::imat RAinc (nages, u1_moves.n_rows); RAinc.zeros();
+                arma::imat Ainc (nages, u1_moves.n_rows); Ainc.zeros();
+                arma::imat Einc (nages, u1_moves.n_rows); Einc.zeros();
+                
                 // DH (MD on incidence)
+                std::strcpy(str1, "DHinc");
                 for(j = 0; j < nages; j++) {
-                    for(l = 0; l < incsize; l++) {
+                    for(l = 0; l < u1_moves.n_rows; l++) {
                         DHinc(j, l) = u1_new[i](11, j, l) - u1[i](11, j, l);
                         DHinc(j, l) += rtskellam_cpp(
                             a_dis + b_dis * DHinc(j, l),
                             a_dis + b_dis * DHinc(j, l),
+                            str1,
+                            eng,
                             -DHinc(j, l),
                             u1[i](9, j, l) - DHinc(j, l)
                         );
@@ -485,19 +634,22 @@ List PF_cpp (arma::vec pars, arma::mat C, arma::imat data, int nclasses, int nag
                 }
                 // update counts
                 for(j = 0; j < nages; j++) {
-                    for(l = 0; l < incsize; l++) {
+                    for(l = 0; l < u1_moves.n_rows; l++) {
                         u1_new[i](11, j, l) = u1[i](11, j, l) + DHinc(j, l);
                         if(u1_new[i](11, j, l) < 0) Rprintf("DH = %d j = %d l = %d\n", u1_new[i](11, j, l), j, l);
                     }
                 }
                 
                 // RH given DH (MD on incidence)
+                std::strcpy(str1, "RHinc");
                 for(j = 0; j < nages; j++) {
-                    for(l = 0; l < incsize; l++) {
+                    for(l = 0; l < u1_moves.n_rows; l++) {
                         RHinc(j, l) = u1_new[i](10, j, l) - u1[i](10, j, l);
                         RHinc(j, l) += rtskellam_cpp(
                             a_dis + b_dis * RHinc(j, l),
                             a_dis + b_dis * RHinc(j, l),
+                            str1,
+                            eng,
                             -RHinc(j, l),
                             u1[i](9, j, l) - DHinc(j, l) - RHinc(j, l)
                         );
@@ -506,20 +658,23 @@ List PF_cpp (arma::vec pars, arma::mat C, arma::imat data, int nclasses, int nag
                 }
                 // update counts
                 for(j = 0; j < nages; j++) {
-                    for(l = 0; l < incsize; l++) {
+                    for(l = 0; l < u1_moves.n_rows; l++) {
                         u1_new[i](10, j, l) = u1[i](10, j, l) + RHinc(j, l);
                         if(u1_new[i](10, j, l) < 0) Rprintf("RH = %d j = %d l = %d\n", u1_new[i](10, j, l), j, l);
                     }
                 }
                     
                 // H given later
+                std::strcpy(str1, "Hinc");
                 for(j = 0; j < nages; j++) {
-                    for(l = 0; l < incsize; l++) {
+                    for(l = 0; l < u1_moves.n_rows; l++) {
                         tempLB = -u1_new[i](9, j, l) + u1[i](9, j, l) - DHinc(j, l) - RHinc(j, l);
                         tempLB = (tempLB > -u1_new[i](9, j, l) ? tempLB:(-u1_new[i](9, j, l)));
                         u1_new[i](9, j, l) += rtskellam_cpp(
                             a_dis + b_dis * u1_new[i](9, j, l),
                             a_dis + b_dis * u1_new[i](9, j, l),
+                            str1,
+                            eng,
                             tempLB,
                             u1[i](5, j, l) - u1_new[i](9, j, l) + u1[i](9, j, l) - DHinc(j, l) - RHinc(j, l)
                         );
@@ -530,12 +685,15 @@ List PF_cpp (arma::vec pars, arma::mat C, arma::imat data, int nclasses, int nag
                 }
                     
                 // DI given H (MD on incidence)
+                std::strcpy(str1, "DIinc");
                 for(j = 0; j < nages; j++) {
-                    for(l = 0; l < incsize; l++) {
+                    for(l = 0; l < u1_moves.n_rows; l++) {
                         DIinc(j, l) = u1_new[i](6, j, l) - u1[i](6, j, l);
                         DIinc(j, l) += rtskellam_cpp(
                             a_dis + b_dis * DIinc(j, l),
                             a_dis + b_dis * DIinc(j, l),
+                            str1,
+                            eng,
                             -DIinc(j, l),
                             u1[i](5, j, l) - Hinc(j, l) - DIinc(j, l)
                         );
@@ -544,19 +702,22 @@ List PF_cpp (arma::vec pars, arma::mat C, arma::imat data, int nclasses, int nag
                 }
                 // update counts
                 for(j = 0; j < nages; j++) {
-                    for(l = 0; l < incsize; l++) {
+                    for(l = 0; l < u1_moves.n_rows; l++) {
                         u1_new[i](6, j, l) = u1[i](6, j, l) + DIinc(j, l);
                         if(u1_new[i](6, j, l) < 0) Rprintf("DI = %d j = %d l = %d\n", u1_new[i](6, j, l), j, l);
                     }
                 }
                     
                 // RI (MD on incidence)
+                std::strcpy(str1, "RIinc");
                 for(j = 0; j < nages; j++) {
-                    for(l = 0; l < incsize; l++) {
+                    for(l = 0; l < u1_moves.n_rows; l++) {
                         RIinc(j, l) = u1_new[i](8, j, l) - u1[i](8, j, l);
                         RIinc(j, l) += rtskellam_cpp(
                             a_dis + b_dis * RIinc(j, l),
                             a_dis + b_dis * RIinc(j, l),
+                            str1,
+                            eng,
                             -RIinc(j, l),
                             u1[i](7, j, l) - RIinc(j, l)
                         );
@@ -565,20 +726,23 @@ List PF_cpp (arma::vec pars, arma::mat C, arma::imat data, int nclasses, int nag
                 }
                 // update counts
                 for(j = 0; j < nages; j++) {
-                    for(l = 0; l < incsize; l++) {
+                    for(l = 0; l < u1_moves.n_rows; l++) {
                         u1_new[i](8, j, l) = u1[i](8, j, l) + RIinc(j, l);
                         if(u1_new[i](8, j, l) < 0) Rprintf("RI = %d j = %d l = %d\n", u1_new[i](8, j, l), j, l);
                     }
                 }
                     
                 // I2 given later
+                std::strcpy(str1, "I2inc");
                 for(j = 0; j < nages; j++) {
-                    for(l = 0; l < incsize; l++) {
+                    for(l = 0; l < u1_moves.n_rows; l++) {
                         tempLB = -u1_new[i](7, j, l) + u1[i](7, j, l) - RIinc(j, l);
                         tempLB = (tempLB > -u1_new[i](7, j, l) ? tempLB:(-u1_new[i](7, j, l)));
                         u1_new[i](7, j, l) += rtskellam_cpp(
                             a_dis + b_dis * u1_new[i](7, j, l),
                             a_dis + b_dis * u1_new[i](7, j, l),
+                            str1,
+                            eng,
                             tempLB,
                             u1[i](5, j, l) - Hinc(j, l) - DIinc(j, l) - u1_new[i](7, j, l) + u1[i](7, j, l) - RIinc(j, l)
                         );
@@ -589,13 +753,16 @@ List PF_cpp (arma::vec pars, arma::mat C, arma::imat data, int nclasses, int nag
                 }
                 
                 // I1 given later
+                std::strcpy(str1, "I1inc");
                 for(j = 0; j < nages; j++) {
-                    for(l = 0; l < incsize; l++) {
+                    for(l = 0; l < u1_moves.n_rows; l++) {
                         tempLB = -u1_new[i](5, j, l) + u1[i](5, j, l) - I2inc(j, l) - Hinc(j, l) - DIinc(j, l);
                         tempLB = (tempLB > -u1_new[i](5, j, l) ? tempLB:(-u1_new[i](5, j, l)));
                         u1_new[i](5, j, l) += rtskellam_cpp(
                             a_dis + b_dis * u1_new[i](5, j, l),
                             a_dis + b_dis * u1_new[i](5, j, l),
+                            str1,
+                            eng,
                             tempLB,
                             u1[i](4, j, l) - u1_new[i](5, j, l) + u1[i](5, j, l) - I2inc(j, l) - Hinc(j, l) - DIinc(j, l)
                         );
@@ -606,15 +773,18 @@ List PF_cpp (arma::vec pars, arma::mat C, arma::imat data, int nclasses, int nag
                 }
                 
                 // P given later
+                std::strcpy(str1, "Pinc");
                 for(j = 0; j < nages; j++) {
-                    for(l = 0; l < incsize; l++) {
+                    for(l = 0; l < u1_moves.n_rows; l++) {
                         tempLB = -u1_new[i](4, j, l) + u1[i](4, j, l) - I1inc(j, l);
                         tempLB = (tempLB > -u1_new[i](4, j, l) ? tempLB:(-u1_new[i](4, j, l)));
                         u1_new[i](4, j, l) += rtskellam_cpp(
                             a_dis + b_dis * u1_new[i](4, j, l),
                             a_dis + b_dis * u1_new[i](4, j, l),
+                            str1,
+                            eng,
                             tempLB,
-                            u1[i](1, j, l) - u1_new[i](4, j, l) + u1[i](4, j, l) - I1inc(j, l) 
+                            u1[i](1, j, l) - u1_new[i](4, j, l) + u1[i](4, j, l) - I1inc(j, l)
                         );
                         Pinc(j, l) = u1_new[i](4, j, l) - u1[i](4, j, l) + I1inc(j, l);
                         if(Pinc(j, l) < 0) Rprintf("Pinc = %d j = %d l = %d\n", Pinc(j, l), j, l);
@@ -623,12 +793,15 @@ List PF_cpp (arma::vec pars, arma::mat C, arma::imat data, int nclasses, int nag
                 }
                 
                 // RA (MD on incidence)
+                std::strcpy(str1, "RAinc");
                 for(j = 0; j < nages; j++) {
-                    for(l = 0; l < incsize; l++) {
+                    for(l = 0; l < u1_moves.n_rows; l++) {
                         RAinc(j, l) = u1_new[i](3, j, l) - u1[i](3, j, l);
                         RAinc(j, l) += rtskellam_cpp(
                             a_dis + b_dis * RAinc(j, l),
                             a_dis + b_dis * RAinc(j, l),
+                            str1,
+                            eng,
                             -RAinc(j, l),
                             u1[i](2, j, l) - RAinc(j, l)
                         );
@@ -637,20 +810,23 @@ List PF_cpp (arma::vec pars, arma::mat C, arma::imat data, int nclasses, int nag
                 }
                 // update counts
                 for(j = 0; j < nages; j++) {
-                    for(l = 0; l < incsize; l++) {
+                    for(l = 0; l < u1_moves.n_rows; l++) {
                         u1_new[i](3, j, l) = u1[i](3, j, l) + RAinc(j, l);
                         if(u1_new[i](3, j, l) < 0) Rprintf("RH = %d j = %d l = %d\n", u1_new[i](3, j, l), j, l);
                     }
                 }
                 
                 // A given later
+                std::strcpy(str1, "Ainc");
                 for(j = 0; j < nages; j++) {
-                    for(l = 0; l < incsize; l++) {
+                    for(l = 0; l < u1_moves.n_rows; l++) {
                         tempLB = -u1_new[i](2, j, l) + u1[i](2, j, l) - RAinc(j, l);
                         tempLB = (tempLB > -u1_new[i](2, j, l) ? tempLB:(-u1_new[i](2, j, l)));
                         u1_new[i](2, j, l) += rtskellam_cpp(
                             a_dis + b_dis * u1_new[i](2, j, l),
                             a_dis + b_dis * u1_new[i](2, j, l),
+                            str1,
+                            eng,
                             tempLB,
                             u1[i](1, j, l) - Pinc(j, l) - u1_new[i](2, j, l) + u1[i](2, j, l) - RAinc(j, l)
                         );
@@ -661,13 +837,16 @@ List PF_cpp (arma::vec pars, arma::mat C, arma::imat data, int nclasses, int nag
                 }
                 
                 // E given later
+                std::strcpy(str1, "Einc");
                 for(j = 0; j < nages; j++) {
-                    for(l = 0; l < incsize; l++) {
+                    for(l = 0; l < u1_moves.n_rows; l++) {
                         tempLB = -u1_new[i](1, j, l) + u1[i](1, j, l) - Ainc(j, l) - Pinc(j, l);
                         tempLB = (tempLB > -u1_new[i](1, j, l) ? tempLB:(-u1_new[i](1, j, l)));
                         u1_new[i](1, j, l) += rtskellam_cpp(
                             a_dis + b_dis * u1_new[i](1, j, l),
                             a_dis + b_dis * u1_new[i](1, j, l),
+                            str1,
+                            eng,
                             tempLB,
                             u1[i](0, j, l) - u1_new[i](1, j, l) + u1[i](1, j, l) - Ainc(j, l) - Pinc(j, l)
                         );
@@ -679,7 +858,7 @@ List PF_cpp (arma::vec pars, arma::mat C, arma::imat data, int nclasses, int nag
                 
                 // S given later
                 for(j = 0; j < nages; j++) {
-                    for(l = 0; l < incsize; l++) {
+                    for(l = 0; l < u1_moves.n_rows; l++) {
                         u1_new[i](0, j, l) = u1[i](0, j, l) - Einc(j, l);
                         if(u1_new[i](0, j, l) < 0) Rprintf("S = %d j = %d l = %d\n", u1_new[i](0, j, l), j, l);
                     }
@@ -687,7 +866,7 @@ List PF_cpp (arma::vec pars, arma::mat C, arma::imat data, int nclasses, int nag
             } else {
                 // DH incidence
                 for(j = 0; j < nages; j++) {
-                    for(l = 0; l < incsize; l++) {
+                    for(l = 0; l < u1_moves.n_rows; l++) {
                         DHinc(j, l) = u1_new[i](11, j, l) - u1[i](11, j, l);
                         if(DHinc(j, l) < 0) Rprintf("DHinc = %d j = %d l = %d\n", DHinc(j, l), j, l);
                     }
@@ -695,7 +874,7 @@ List PF_cpp (arma::vec pars, arma::mat C, arma::imat data, int nclasses, int nag
                 
                 // DI incidence
                 for(j = 0; j < nages; j++) {
-                    for(l = 0; l < incsize; l++) {
+                    for(l = 0; l < u1_moves.n_rows; l++) {
                         DIinc(j, l) = u1_new[i](6, j, l) - u1[i](6, j, l);
                         if(DIinc(j, l) < 0) Rprintf("DIinc = %d j = %d l = %d\n", DIinc(j, l), j, l);
                     }
@@ -704,7 +883,7 @@ List PF_cpp (arma::vec pars, arma::mat C, arma::imat data, int nclasses, int nag
             
             // generate data in correct format for observation error weights
             Dtempinc.zeros();
-            for(l = 0; l < incsize; l++) {
+            for(l = 0; l < u1_moves.n_rows; l++) {
                 for(j = 0; j < nages; j++) {
                     Dtempinc((arma::uword) j * nlads + u1_moves(l, 0) - 1) += DIinc(j, l);
                     Dtempinc((arma::uword) nlads * nages + j * nlads + u1_moves(l, 0) - 1) += DHinc(j, l);
@@ -712,46 +891,45 @@ List PF_cpp (arma::vec pars, arma::mat C, arma::imat data, int nclasses, int nag
             }
             
             // calculate log observation error weights
-            obsInc = data.row(t).t();
             for(l = 0; l < Dtempinc.n_elem; l++) {
                 tempdens(l) = ldtskellam_cpp(
                     obsInc(l) - Dtempinc(l),
                     a1 + b * Dtempinc(l),
                     a2 + b * Dtempinc(l),
+                    str1,
                     -Dtempinc(l),
-                    obsInc(l)
+                    obsInc(l),
+                    0
                 );
             }
             weights(i) += log_sum_exp(tempdens, 0);
+            
+            // advance seed
+            seeds((arma::uword) omp_get_thread_num()) = eng();
         }
         
         // calculate log-likelihood contribution
         ll += log_sum_exp(weights, 1);
-        // // if zero likelihood then return
-        // if(!is.finite(ll)) {
-        //     if(saveAll == 0) {
-        //         return List::create(Named("ll") = ll);
-        //     } else {
-        //         return List::create(Named("ll") = ll, _["particles"] = out);
-        //     }
-        // }
+        
+        // if zero likelihood then return
+        if(!arma::is_finite(ll)) {
+            if(saveAll == 0) {
+                return List::create(Named("ll") = ll);
+            } else {
+                return List::create(Named("ll") = ll, _["particles"] = out);
+            }
+        }
         
         // normalise weights
         wnorm = log_sum_exp(weights, 0);
         weights = exp(weights - wnorm);
+        weights = weights / sum(weights);
         
         // resample
-        rmultinom(npart, weights.begin(), npart, inds.begin());
-        l = 0;
         for(i = 0; i < npart; i++) {
-            j = 0;
-            while(j < inds(i)) {
-                u1[l] = u1_new[i];
-                l++;
-                j++;
-            }
+            l = (arma::uword) rmultinom_cpp(weights, engSerial);
+            u1[i] = u1_new[l];
         }
-        if(l != npart) Rprintf("Something wrong with re-sampling step\n");
         
         // copy in order to pass by reference
         for(i = 0; i < npart; i++) {
@@ -764,7 +942,7 @@ List PF_cpp (arma::vec pars, arma::mat C, arma::imat data, int nclasses, int nag
                 for(i = 0; i < npart; i++) {
                     // extract just counts for DI and DH
                     u1_night_reduced.zeros();
-                    for(l = 0; l < incsize; l++) {
+                    for(l = 0; l < u1_moves.n_rows; l++) {
                         for(j = 0; j < nages; j++) {
                             u1_night_reduced(0, j, (arma::uword) u1_moves(l, 0) - 1) += u1[i](6, j, l);
                             u1_night_reduced(1, j, (arma::uword) u1_moves(l, 0) - 1) += u1[i](11, j, l);
@@ -774,15 +952,15 @@ List PF_cpp (arma::vec pars, arma::mat C, arma::imat data, int nclasses, int nag
                 }
             } else {
                 for(i = 0; i < npart; i++) {
-                    u1_night.zeros();
-                    for(l = 0; l < incsize; l++) {
+                    u1_night_full.zeros();
+                    for(l = 0; l < u1_moves.n_rows; l++) {
                         for(j = 0; j < nages; j++) {
                             for(k = 0; k < nclasses; k++) {
-                                u1_night(k, j, (arma::uword) u1_moves(l, 0) - 1) += u1[i](k, j, l);
+                                u1_night_full(k, j, (arma::uword) u1_moves(l, 0) - 1) += u1[i](k, j, l);
                             }
                         }
                     }
-                    out[i + npart * (t + 1)] = u1_night;
+                    out[i + npart * (t + 1)] = u1_night_full;
                 }
             }
         }
@@ -791,7 +969,7 @@ List PF_cpp (arma::vec pars, arma::mat C, arma::imat data, int nclasses, int nag
         timer.step("");
         NumericVector res(timer);
         
-        Rprintf("t = %d / %d time = %.2f secs \n", t, ndays, (res[timer_cnt] / 1e9) - prev_time);
+        Rprintf("t = %d / %d time = %.2f secs \n", t + 1, ndays, (res[timer_cnt] / 1e9) - prev_time);
         
         //reset timer and acceptance rate counter
         prev_time = res[timer_cnt] / 1e9;

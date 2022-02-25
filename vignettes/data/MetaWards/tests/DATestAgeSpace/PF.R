@@ -1,33 +1,3 @@
-## function to check counts (mainly useful for error checking)
-## u: matrix of counts in order:
-##       S, E, A, RA, P, I1, DI, I2, RI, H, RH, DH
-## cu: matrix of cumulative counts
-## N: population size
-checkCounts <- function(u, cu, N) {
-    
-    ## check states match population size in each age-class
-    stopifnot(all((colSums(u) - N) == 0))
-    
-    ## check states are positive
-    stopifnot(all(u >= 0) & all(cu >= 0))
-    
-    ## check cumulative counts match up
-    cu <- t(cu)
-    stopifnot(all((cu[, 1] + cu[, 2] - N) == 0))
-    stopifnot(all((cu[, 2] - rowSums(cu[, c(3, 5)])) >= 0))
-    stopifnot(all((cu[, 3] - cu[, 4]) >= 0))
-    stopifnot(all((cu[, 5] - cu[, 6]) >= 0))
-    stopifnot(all((cu[, 6] - rowSums(cu[, c(7, 8, 10)])) >= 0))
-    stopifnot(all((cu[, 8] - cu[, 9]) >= 0))
-    stopifnot(all((cu[, 10] - rowSums(cu[, c(11, 12)])) >= 0))
-    
-    # ## check infective states and new incidence are valid
-    ## KEEPING FOR POSTERITY BUT DON'T NEED DUE TO IMPORTS
-    # Einc <- cu[, 2] - cuprev[, 2]
-    # print(which(Einc > 0))
-    # stopifnot(all(rowSums(uprev[Einc > 0, c(3, 5, 6, 8)]) > 0))
-}
-
 ## run model for each set of design points in pars
 ## pars: matrix / data frame of parameters in order: 
 ##       nu, nuA, pE, pEP, pA, pP, pI1, pI1H, pI1D, pI2, pH, pHD
@@ -59,7 +29,7 @@ PF <- function(pars, C, data, u1_moves, u1, ndays, npart = 10, MD = TRUE, a1 = 0
     MDint <- ifelse(MD, 1, 0)
     
     ## run particle filter for each set of inputs
-    runs <- mclapply(1:nrow(pars), function(k, pars, C, u1_moves, u1, npart, ndays, data, MD, a1, a2, b, a_dis, b_dis, saveAll) {
+    runs <- lapply(1:nrow(pars), function(k, pars, C, u1_moves, u1, npart, ndays, data, MD, a1, a2, b, a_dis, b_dis, saveAll) {
         
         # ## create count matrices for checks if used
         # u1_night <- list()
@@ -92,7 +62,7 @@ PF <- function(pars, C, data, u1_moves, u1, ndays, npart = 10, MD = TRUE, a1 = 0
             npart, MD, a1, a2, b, a_dis, b_dis, saveAll)
         ll
     }, pars = pars, C = C, u1_moves = u1_moves, u1 = u1, npart = npart, ndays = ndays, data = data, MD = MDint, 
-       a1 = a1, a2 = a2, b = b, a_dis = a_dis, b_dis = b_dis, saveAll = saveAllint, mc.cores = detectCores())
+       a1 = a1, a2 = a2, b = b, a_dis = a_dis, b_dis = b_dis, saveAll = saveAllint)
     if(!is.na(saveAll)) {
         ll <- map(runs, "ll")
         runs <- map(runs, "particles") %>%
