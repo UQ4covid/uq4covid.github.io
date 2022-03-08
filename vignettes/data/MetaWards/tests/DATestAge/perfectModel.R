@@ -102,18 +102,18 @@ perfectModel <- function(pars, C, u, ndays, npart = 10, MD = TRUE, a_dis, b_dis)
           if(MD) {
             ## DH (MD on incidence)
             DHinc <- disSims[[i]][12, j] - u[[i]][12, j]
-            DHinc <- DHinc + rtskellam(a_dis + b_dis * DHinc, a_dis + b_dis * DHinc, -DHinc, u[[i]][10, j] - DHinc)
+            DHinc <- DHinc + rtskellam(1, a_dis + b_dis * DHinc, a_dis + b_dis * DHinc, -DHinc, u[[i]][10, j] - DHinc)
             disSims[[i]][12, j] <- u[[i]][12, j] + DHinc
             cu[[i]][12, j] <- cu[[i]][12, j] + DHinc
             
             ## RH given DH (MD on icidence)
             RHinc <- disSims[[i]][11, j] - u[[i]][11, j]
-            RHinc <- RHinc + rtskellam(a_dis + b_dis * RHinc, a_dis + b_dis * RHinc, -RHinc, u[[i]][10, j] - DHinc - RHinc)
+            RHinc <- RHinc + rtskellam(1, a_dis + b_dis * RHinc, a_dis + b_dis * RHinc, -RHinc, u[[i]][10, j] - DHinc - RHinc)
             disSims[[i]][11, j] <- u[[i]][11, j] + RHinc
             cu[[i]][11, j] <- cu[[i]][11, j] + RHinc
             
             ## H
-            disSims[[i]][10, j] <- disSims[[i]][10, j] + rtskellam(a_dis + b_dis * disSims[[i]][10, j], 
+            disSims[[i]][10, j] <- disSims[[i]][10, j] + rtskellam(1, a_dis + b_dis * disSims[[i]][10, j], 
                                                                    a_dis + b_dis * disSims[[i]][10, j], 
                                                                    -disSims[[i]][10, j], u[[i]][10, j] + u[[i]][6, j] - DHinc - RHinc - 
                                                                      disSims[[i]][10, j])  
@@ -122,19 +122,19 @@ perfectModel <- function(pars, C, u, ndays, npart = 10, MD = TRUE, a_dis, b_dis)
             
             ## DI given H (MD on incidence)
             DIinc <- disSims[[i]][7, j] - u[[i]][7, j]
-            DIinc <- DIinc + rtskellam(a_dis + b_dis * DIinc, a_dis + b_dis * DIinc, -DIinc, u[[i]][6, j] - Hinc - DIinc)
+            DIinc <- DIinc + rtskellam(1, a_dis + b_dis * DIinc, a_dis + b_dis * DIinc, -DIinc, u[[i]][6, j] - Hinc - DIinc)
             disSims[[i]][7, j] <- u[[i]][7, j] + DIinc
             cu[[i]][7, j] <- cu[[i]][7, j] + DIinc            
             
             ## RI (MD on incidence)
             RIinc <- disSims[[i]][9, j] - u[[i]][9, j]
-            RIinc <- RIinc + rtskellam(a_dis + b_dis * RIinc, a_dis + b_dis * RIinc, -RIinc, u[[i]][8, j] - RIinc)
+            RIinc <- RIinc + rtskellam(1, a_dis + b_dis * RIinc, a_dis + b_dis * RIinc, -RIinc, u[[i]][8, j] - RIinc)
             disSims[[i]][9, j] <- u[[i]][9, j] + RIinc
             cu[[i]][9, j] <- cu[[i]][9, j] + RIinc
             
             ## I2 given H, RI and DI
             disSims[[i]][8, j] <- disSims[[i]][8, j] + 
-              rtskellam(a_dis + b_dis * disSims[[i]][8, j], 
+              rtskellam(1, a_dis + b_dis * disSims[[i]][8, j], 
                         a_dis + b_dis * disSims[[i]][8, j], 
                         -disSims[[i]][8, j], u[[i]][8, j] + u[[i]][6, j] - Hinc - DIinc - RIinc - 
                           disSims[[i]][8, j])
@@ -143,7 +143,7 @@ perfectModel <- function(pars, C, u, ndays, npart = 10, MD = TRUE, a_dis, b_dis)
             
             ## I1 given later
             disSims[[i]][6, j] <- disSims[[i]][6, j] + 
-              rtskellam(a_dis + b_dis * disSims[[i]][6, j], 
+              rtskellam(1, a_dis + b_dis * disSims[[i]][6, j], 
                         a_dis + b_dis * disSims[[i]][6, j], -disSims[[i]][6, j], 
                         u[[i]][6, j] + u[[i]][5, j] - I2inc - Hinc - DIinc - disSims[[i]][6, j])
             I1inc <- disSims[[i]][6, j] - u[[i]][6, j] + DIinc + Hinc + I2inc
@@ -151,7 +151,7 @@ perfectModel <- function(pars, C, u, ndays, npart = 10, MD = TRUE, a_dis, b_dis)
             
             ## P given later
             disSims[[i]][5, j] <- disSims[[i]][5, j] + 
-              rtskellam(a_dis + b_dis * disSims[[i]][5, j], a_dis + b_dis * disSims[[i]][5, j], 
+              rtskellam(1, a_dis + b_dis * disSims[[i]][5, j], a_dis + b_dis * disSims[[i]][5, j], 
                         -disSims[[i]][5, j], u[[i]][5, j] + u[[i]][2, j] - I1inc - 
                           disSims[[i]][5, j])
             Pinc <- disSims[[i]][5, j] - u[[i]][5, j] + I1inc
@@ -159,13 +159,13 @@ perfectModel <- function(pars, C, u, ndays, npart = 10, MD = TRUE, a_dis, b_dis)
             
             ## RA (MD on incidence)
             RAinc <- disSims[[i]][4, j] - u[[i]][4, j]
-            RAinc <- RAinc + rtskellam(a_dis + b_dis * RAinc, a_dis + b_dis * RAinc, -RAinc, u[[i]][3, j] - RAinc)
+            RAinc <- RAinc + rtskellam(1, a_dis + b_dis * RAinc, a_dis + b_dis * RAinc, -RAinc, u[[i]][3, j] - RAinc)
             disSims[[i]][4, j] <- u[[i]][4, j] + RAinc
             cu[[i]][4, j] <- cu[[i]][4, j] + RAinc
             
             ## A given later
             disSims[[i]][3, j] <- disSims[[i]][3, j] + 
-              rtskellam(a_dis + b_dis * disSims[[i]][3, j], 
+              rtskellam(1, a_dis + b_dis * disSims[[i]][3, j], 
                         a_dis + b_dis * disSims[[i]][3, j], -disSims[[i]][3, j], 
                         u[[i]][3, j] + u[[i]][2, j] - Pinc - RAinc - disSims[[i]][3, j])
             Ainc <- disSims[[i]][3, j] - u[[i]][3, j] + RAinc
@@ -173,7 +173,7 @@ perfectModel <- function(pars, C, u, ndays, npart = 10, MD = TRUE, a_dis, b_dis)
             
             ## E
             disSims[[i]][2, j] <- disSims[[i]][2, j] + 
-              rtskellam(a_dis + b_dis * disSims[[i]][2, j], a_dis + b_dis * disSims[[i]][2, j], 
+              rtskellam(1, a_dis + b_dis * disSims[[i]][2, j], a_dis + b_dis * disSims[[i]][2, j], 
                         -disSims[[i]][2, j], u[[i]][2, j] + u[[i]][1, j] - Ainc - Pinc - 
                           disSims[[i]][2, j])
             Einc <- disSims[[i]][2, j] - u[[i]][2, j] + Ainc + Pinc

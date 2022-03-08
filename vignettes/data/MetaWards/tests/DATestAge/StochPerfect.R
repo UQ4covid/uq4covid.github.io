@@ -111,7 +111,7 @@ skelNoise <- function(count, a1, a2, b1, b2){
   #Amend U to have first upper bound of 0 (e.g. H[t-1] to offset deaths come from hospitals at previous time)
   #U <- c(0, U)
   for(i in 1:length(inc)){
-    inc[i] <- inc[i] + rtskellam(a1+b1*inc[i], a2+b2*inc[i], -inc[i])#, U[i]-inc[i])
+    inc[i] <- inc[i] + rtskellam(1, a1+b1*inc[i], a2+b2*inc[i], -inc[i])#, U[i]-inc[i])
   }
   cumsum(inc)
 }
