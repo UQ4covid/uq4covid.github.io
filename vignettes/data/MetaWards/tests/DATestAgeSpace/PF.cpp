@@ -632,7 +632,8 @@ List PF_cpp (arma::vec pars, arma::mat C, arma::imat data, arma::uword nclasses,
     
             // set up print string for debugging
             char str1[80];
-                        
+	        std::strcpy(str1, "setup");
+ 
             // set up thread-safe RNG
             uint32_t coreseed = static_cast<uint32_t>(seeds(0));
 #ifdef _OPENMP
