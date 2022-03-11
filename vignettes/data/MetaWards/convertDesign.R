@@ -46,6 +46,8 @@ hospStaysInput <- FMMmaximin(
 
 ## this function checks validity of inputs
 pathwaysLimitFn <- function(x, ages) {
+    ## check all parameters give valid probabilities
+    ## in (0, 1)
     singleProbs <- apply(x, 1, function(x, ages) {
         eta <- x[5]
         alphas <- x[-5]
@@ -55,6 +57,7 @@ pathwaysLimitFn <- function(x, ages) {
         }, eta = eta, ages = ages)
         all(y)
     }, ages = ages)
+    ## check multinomial probabilities sum to one
     multiProbs <- apply(x[, -c(1, 3)], 1, function(x, ages) {
         alphaI1D <- x[1]
         alphaI1H <- x[2]
