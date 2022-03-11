@@ -11,3 +11,6 @@ The estimates of the infection fatality risk and the probability of hospitalisat
 To run the analysis, set the working directory to this folder, and then run the `cleanData.R` script file to clean and combine data for the subsequent analyses.
 
 Running the `sims.R` script file reruns our plausible range code, and produces a file called `pathways.rds` that contains a finite mixture model that can be used to generate design points for these parameters. By default this is copied to the `../../inputs/` folder.
+
+Then running the `deriveLimits.R` file produces thresholds for the mixture densities that can be used to reject
+points in later waves. The object `pathThresh.rds` is added to the `../../inputs/` folder.
