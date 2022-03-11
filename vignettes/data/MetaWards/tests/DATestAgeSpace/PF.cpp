@@ -130,9 +130,20 @@ double ldtskellam_cpp(int x, double lambda1, double lambda2, char *str, int LB =
     
     if(print == 1) Rprintf("State: %s\n", str);
     
+    // create array for Bessel (trying to deal with recursive
+    // gc error message that may be coming from memory allocation
+    // in bessel_i - hence swapping to bessel_i_ex and controlling
+    // vector allocation directly here through calloc and free -
+    // OK to use std::calloc here because object not going
+    // back to R I think)
+    double *bi = (double *) calloc (floor(abs(x)) + 1, sizeof(double));
+    
     // from "skellam" source code: log(besselI(y, nu)) == y + log(besselI(y, nu, TRUE))
     double ldens = -(lambda1 + lambda2) + (x / 2.0) * (log(lambda1) - log(lambda2)) +
-        log(R::bessel_i(2.0 * sqrt(lambda1 * lambda2), abs(x), 2)) + 2.0 * sqrt(lambda1 * lambda2);
+        log(R::bessel_i_ex(2.0 * sqrt(lambda1 * lambda2), abs(x), 2, bi)) + 2.0 * sqrt(lambda1 * lambda2);
+    
+    // free memory from the heap
+    free(bi);
     
     // if non-finite density, then try difference of CDFs
     if(!arma::is_finite(ldens)) {
