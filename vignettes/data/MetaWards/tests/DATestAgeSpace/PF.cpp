@@ -15,10 +15,10 @@
 using namespace Rcpp;
 
 // log-sum-exp function to prevent numerical overflow
-double log_sum_exp(arma::vec x, int mn = 0) {
+double log_sum_exp(arma::vec &x, int mn = 0) {
     double maxx = max(x);
     double y = maxx + log(sum(exp(x - maxx)));
-    if(mn == 1) y = y - log(x.n_elem);
+    if(mn == 1) y -= log(x.n_elem);
     return y;
 }
 
@@ -71,6 +71,7 @@ int rbinom_cpp (int n, double p, sitmo::prng &eng) {
     k = 0;
     while(temp < u) {
         k++;
+        if(k > n) stop("Error in binomial sampling\n");
         lx += log(k);
         lnmx -= log(n - (k - 1));
         temp1 = ln - lx - lnmx + k * log(p) + (n - k) * log(1.0 - p);
@@ -82,7 +83,7 @@ int rbinom_cpp (int n, double p, sitmo::prng &eng) {
 
 // Multinomial RNG for n = 1 using inverse transform method
 // (to try to circumvent non thread-safe RNG in R)
-int rmultinom_cpp (arma::vec p, sitmo::prng &eng) {
+int rmultinom_cpp (arma::vec &p, sitmo::prng &eng) {
     if(abs(sum(p) - 1.0) > 1e-15) {
         Rprintf("sum(p) = %e\n", sum(p));
         stop("Must have sum(p) == 1 in rmultinom\n");
@@ -96,6 +97,7 @@ int rmultinom_cpp (arma::vec p, sitmo::prng &eng) {
     int k = 0;
     while(temp < u) {
         k++;
+        if(k >= p.n_elem) stop("Error in multinomial sampling\n");
         temp += p(k);
     }
     return k;
@@ -148,10 +150,10 @@ double ldtskellam_cpp(int x, double lambda1, double lambda2, char *str, int LB =
     // if non-finite density, then try difference of CDFs
     if(!arma::is_finite(ldens)) {
         Rprintf("Trying difference of CDFs in ldtskellam\n");
-        arma::vec norm(2); norm.zeros();
-        norm(0) = lpskellam_cpp(x - 1, lambda1, lambda2);
-        norm(1) = lpskellam_cpp(x, lambda1, lambda2);                
-        ldens = norm(1) + log(1.0 - exp(norm(0) - norm(1)));
+        double norm0 = 0.0, norm1 = 0.0;
+        norm0 = lpskellam_cpp(x - 1, lambda1, lambda2);
+        norm1 = lpskellam_cpp(x, lambda1, lambda2);                
+        ldens = norm1 + log(1.0 - exp(norm0 - norm1));
     }
         
     // if truncated then adjust log-density
@@ -164,11 +166,10 @@ double ldtskellam_cpp(int x, double lambda1, double lambda2, char *str, int LB =
             // declare variables
             int normsize = UB - LB + 1;
             if(normsize > 1) {
-                arma::vec norm(2); norm.zeros();
-                norm(0) = lpskellam_cpp(LB - 1, lambda1, lambda2);
-                norm(1) = lpskellam_cpp(UB, lambda1, lambda2);
-                //Rprintf("norm(0) = %f norm(1) = %f\n", norm(0), norm(1));               
-                double lnorm = norm(1) + log(1.0 - exp(norm(0) - norm(1)));
+                double norm0 = 0.0, norm1 = 0.0;
+                norm0 = lpskellam_cpp(LB - 1, lambda1, lambda2);
+                norm1 = lpskellam_cpp(UB, lambda1, lambda2);              
+                double lnorm = norm1 + log(1.0 - exp(norm0 - norm1));
                 ldens -= lnorm;
             } else {
                 ldens = 0.0;
