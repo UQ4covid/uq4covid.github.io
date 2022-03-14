@@ -1,5 +1,5 @@
 \documentclass[a4paper]{article}
-\usepackage{amsmath, bm, xcolor, tikz, algpseudocode, algorithm, natbib}
+\usepackage{amsmath, bm, xcolor, tikz, algpseudocode, algorithm, natbib, mathtools}
 \usetikzlibrary{arrows, positioning, backgrounds, fit}
 
 % formatting
@@ -108,129 +108,244 @@ Some justification and detail of the model discrepancy process below.
 
 For \textbf{absorbing states} ($D_H$, $R_H$, $D_I$, $R_I$ and $R_A$) we place the model discrepancy on the \textit{incidence} (i.e. new cases) rather than the state counts. For all other states, we place the model discrepancy on the numbers of individuals in each state directly. A key aspect is that we must ensure that any model discrepancy added results in states that are \textit{epidemiologically} valid. Hence we can't have more deaths than infections and such like. This means we add constraints onto the model discrepancy process based on the structure of the model.
 
-Because we're focusing on individual states, we will use the notation e.g. $D_{Ht}$ to denote the state counts from the \textit{simulator} at time $t$ (relating to $X_t$ above), $D^Y_{Ht}$ is the \textit{adjusted} state after model discrepancy is added, and $D^\prime_{Ht}$ is the \textit{incidence}.
+Because we're focusing on individual states, we will use the notation e.g. $D^X_{Ht}$ to denote the state counts from the \textit{simulator} at time $t$ (relating to $X_t$ above), $D^Y_{Ht}$ is the \textit{adjusted} state after model discrepancy is added, and e.g. $D^{X^\prime}_{Ht}$ is the \textit{incidence}.
 
-\subsection{Absorbing states}
-
-Thinking first about $D^Y_{Ht}$ we have that:
-\begin{eqnarray*}
-    D^Y_{Ht} &=& D^Y_{H(t - 1)} + D^{Y\prime}_{Ht}\\
-    \Rightarrow D^Y_{Ht} &\leq& D^Y_{H(t - 1)} + H^Y_{t-1} \qquad \mbox{since $D^{Y\prime}_{Ht} \leq H^Y_{t - 1}$}.
-\end{eqnarray*}
-We let the adjusted incidence $D^{Y\prime}_{Ht} = D^\prime_{Ht} + M^\prime_{D_Ht}$, and then place a truncated Skellam distribution on $M^\prime_{D_Ht}$, with constraints:
+Thinking first about $D^Y_{Ht}$ we have that $D^Y_{Ht} = D^Y_{H(t - 1)} + D^{Y^\prime}_{Ht}$, and hence we can derive bounds:
 \begin{equation*}
-    -D^\prime_{Ht} \leq M^\prime_{D_Ht} \leq H^Y_{t - 1} - D^\prime_{Ht}.
+    0 \leq D^{Y^\prime}_{Ht} \leq H^Y_{t-1} \qquad \mbox{since $D^{Y^\prime}_{Ht} \leq H^Y_{t - 1}$}.
+\end{equation*}
+We let the adjusted incidence $D^{Y^\prime}_{Ht} = D^{X^\prime}_{Ht} + M^\prime_{D_Ht}$, and then place a truncated Skellam distribution on $M^\prime_{D_Ht}$, with constraints:
+\begin{equation*}
+    -D^{X^\prime}_{Ht} \leq M^\prime_{D_Ht} \leq H^Y_{t - 1} - D^{X^\prime}_{Ht}.
 \end{equation*}
 Then the adjusted count is given by
 \begin{equation*}
-    D^Y_{Ht} = D_{Ht} + M^\prime_{D_Ht}.
+    D^Y_{Ht} = D^X_{Ht} + M^\prime_{D_Ht}.
 \end{equation*}
-This holds since $D_{Ht} = D_{H(t - 1)} + D^\prime_{Ht}$ and thus 
+This holds since
 \begin{eqnarray*}
-    D^Y_{Ht} &=& D_{H(t - 1)} + D^{Y\prime}_{Ht}\\
-    &=& D_{H(t - 1)} + D^\prime_{Ht} + M^\prime_{D_Ht}\\
-    &=& D_{Ht} + M^\prime_{D_Ht}.
+    D^Y_{Ht} &=& D^Y_{H(t - 1)} + D^{Y^\prime}_{Ht}\\
+    &=& D^Y_{H(t - 1)} + D^{X^\prime}_{Ht} + M^\prime_{D_Ht}\\
+    &=& D^X_{Ht} + M^\prime_{D_Ht} \qquad \mbox{since}~D^X_{Ht} = D^Y_{H(t - 1)} + D^{X^\prime}_{Ht}.
 \end{eqnarray*}
+To summarise:
+\begin{align*}
+\Aboxed{M^\prime_{D_Ht} &\sim \mbox{Skellam}\left(\lambda_1, \lambda_2\right)I\left(-D^{X^\prime}_{Ht}, H^Y_{t - 1} - D^{X^\prime}_{Ht}\right)}\\
+    \Aboxed{D^{Y^\prime}_{Ht} &= D^{X^\prime}_{Ht} + M^\prime_{D_Ht}}\\
+    \Aboxed{D^Y_{Ht} &= D^X_{Ht} + M^\prime_{D_Ht}}
+\end{align*}
+
 We also know that
+\begin{align*}
+    &D^{Y^\prime}_{Ht} + R^{Y^\prime}_{Ht} \leq H^Y_{t - 1}\\
+    \Rightarrow 0 &\leq R^{Y^\prime}_{Ht} \leq H^Y_{t - 1} - D^{Y^\prime}_{Ht},
+\end{align*}
+and hence we can derive a constraint for $M^\prime_{R_Ht}$ conditional on the adjusted $D^{Y^\prime}_{Ht}$, such that
 \begin{equation*}
-    D^{Y\prime}_{Ht} + R^{Y\prime}_{Ht} \leq H^Y_{t - 1},
+    -R^{X^\prime}_{Ht} \leq M^\prime_{R_Ht} \leq H^Y_{t - 1} - D^{Y^\prime}_{Ht} - R^{X^\prime}_{Ht}.
 \end{equation*}
-and hence we can derive a constraint for $M^\prime_{R_Ht}$ conditional on the adjusted $D^{Y\prime}_{Ht}$, such that
-\begin{equation*}
-    -R^\prime_{Ht} \leq M^\prime_{R_Ht} \leq H^Y_{t - 1} - D^{Y\prime}_{Ht} - R^\prime_{Ht}.
-\end{equation*}
-The state $R^Y_{Ht}$ is then updated as before.
-
-We can use similar logic to derive bounds for $M^\prime_{D_It}$ as:
-\begin{equation*}
-    -D^\prime_{It} \leq M^\prime_{D_It} \leq I^Y_{1(t - 1)} - D^\prime_{It};
-\end{equation*}
-$M^\prime_{R_It}$ as:
-\begin{equation*}
-    -R^\prime_{It} \leq M^\prime_{R_It} \leq I^Y_{2(t - 1)} - R^\prime_{It};
-\end{equation*}
-and $M^\prime_{D_At}$ as:
-\begin{equation*}
-    -D^\prime_{At} \leq M^\prime_{D_At} \leq A^Y_{t - 1} - D^\prime_{At}.
-\end{equation*}
-
-\subsection{Non-absorbing states}
+Hence we have:
+\begin{align*}
+\Aboxed{M^\prime_{R_Ht} &\sim \mbox{Skellam}\left(\lambda_1, \lambda_2\right)I\left(-R^{X^\prime}_{Ht}, H^Y_{t - 1} - D^{Y^\prime}_{Ht} - R^{X^\prime}_{Ht}\right)}\\
+    \Aboxed{R^{Y^\prime}_{Ht} &= R^{X^\prime}_{Ht} + M^\prime_{R_Ht}}\\
+    \Aboxed{R^Y_{Ht} &= R^X_{Ht} + M^\prime_{R_Ht}}
+\end{align*}
 
 Starting initially with $H^Y_t$, we then know that
 \begin{equation*}
-    H^Y_t = H^Y_{t - 1} + H^{Y\prime}_t - D^{Y\prime}_{Ht} - R^{Y\prime}_{Ht},
+    H^Y_t = H^Y_{t - 1} + H^{Y^\prime}_t - D^{Y^\prime}_{Ht} - R^{Y^\prime}_{Ht},
 \end{equation*}
-and we now place the model discrepancy on the state $H_t$ and not the incidence ($H^\prime_t$) since $H_t$ is not an absorbing state. Therefore, 
+and we now place the model discrepancy on the state and \textit{not} the incidence, since $H^Y_t$ is not an absorbing state. Therefore, 
 \begin{equation*}
-    H^Y_t = H_t + M_{Ht}
+    H^Y_t = H^X_t + M_{Ht}.
 \end{equation*}
-and also
+Hence
+\begin{align*}
+    H^Y_t &= H^Y_{t - 1} + H^{Y^\prime}_t - D^{Y^\prime}_{Ht} - R^{Y^\prime}_{Ht}\\
+    \Rightarrow H^{Y^\prime}_t &= H^Y_t - H^Y_{t - 1} + D^{Y^\prime}_{Ht} + R^{Y^\prime}_{Ht}\\
+    \Rightarrow H^{Y^\prime}_t &= H^X_t + M_{Ht} - H^Y_{t - 1} + D^{Y^\prime}_{Ht} + R^{Y^\prime}_{Ht}.
+\end{align*}
+Since $0 \leq H^{Y^\prime}_t \leq I^Y_{1(t - 1)}$ we can thus derive bounds:
+\begin{align*}
+    0 &\leq H^X_t + M_{Ht} - H^Y_{t - 1} + D^{Y^\prime}_{Ht} + R^{Y^\prime}_{Ht} \leq I^Y_{1(t - 1)}\\
+    \Rightarrow -H^X_t + H^Y_{t - 1} - D^{Y^\prime}_{Ht} - R^{Y^\prime}_{Ht} &\leq M_{Ht} \leq I^Y_{1(t - 1)} -H^X_t + H^Y_{t - 1} - D^{Y^\prime}_{Ht} - R^{Y^\prime}_{Ht}.
+\end{align*}
+Hence
+\begin{align*}
+\Aboxed{M_{Ht} &\sim \mbox{Skellam}\left(\lambda_1, \lambda_2\right)I\left(-H^X_t + H^Y_{t - 1} - D^{Y^\prime}_{Ht} - R^{Y^\prime}_{Ht}, I^Y_{1(t - 1)} -H^X_t + H^Y_{t - 1} - D^{Y^\prime}_{Ht} - R^{Y^\prime}_{Ht}\right)}\\
+    \Aboxed{H^Y_{t} &= H^X_{t} + M_{Ht}}\\
+    \Aboxed{H^{Y^\prime}_{t} &= H^X_t + M_{Ht} - H^Y_{t - 1} + D^{Y^\prime}_{Ht} + R^{Y^\prime}_{Ht}}
+\end{align*}
+
+Now consider $D^Y_{It}$. Since this is an absorbing state, we place MD on the \textit{incidence} $D^{Y^\prime}_{It}$. We have that
 \begin{equation*}
-    H^Y_t = H^Y_{t - 1} + H^{Y\prime}_t - D^{Y\prime}_{Ht} - R^{Y\prime}_{Ht}.
+    D^{Y^\prime}_{It} + H^{Y^\prime}_t \leq I^Y_{1(t - 1)}
 \end{equation*}
-Since $H^{Y\prime}_t \leq I^Y_{1(t - 1)}$, we can derive constraints for the model discrepancy as:
-\begin{equation*}
-    -H_t \leq M_{Ht} \leq H^Y_{t - 1} + I^Y_{1(t - 1)} - D^{Y\prime}_{Ht} - R^{Y\prime}_{Ht} - H_t.
-\end{equation*}
-From this we can derive $H^{Y\prime}_t = H^Y_t - H^Y_{t - 1}$.
+and $D^{Y^\prime}_{It} \geq 0$, and hence we can derive bounds for the MD as:
+\begin{align*}
+    0 &\leq D^{Y^\prime}_{It} \leq I^Y_{1(t - 1)} - H^{Y^\prime}_t\\
+    0 &\leq D^{X^\prime}_{It} + M^\prime_{D_It} \leq I^Y_{1(t - 1)} - H^{Y^\prime}_t\\ 
+    -D^{X^\prime}_{It} &\leq M^\prime_{D_It} \leq I^Y_{1(t - 1)} - H^{Y^\prime}_t - D^{X^\prime}_{It}.
+\end{align*}
+Hence
+\begin{align*}
+\Aboxed{M^\prime_{D_It} &\sim \mbox{Skellam}\left(\lambda_1, \lambda_2\right)I\left(-D^{X^\prime}_{It}, I^Y_{1(t - 1)} - H^{Y^\prime}_{t} - D^{X^\prime}_{It}\right)}\\
+    \Aboxed{D^{Y^\prime}_{It} &= D^{X^\prime}_{It} + M^\prime_{D_It}}\\
+    \Aboxed{D^Y_{It} &= D^X_{It} + M^\prime_{D_It}}
+\end{align*}
+
+We also have that $0 \leq R^{Y^\prime}_{It} \leq I^{Y^\prime}_{2(t - 1)}$, leading to:
+\begin{align*}
+\Aboxed{M^\prime_{R_It} &\sim \mbox{Skellam}\left(\lambda_1, \lambda_2\right)I\left(-R^{X^\prime}_{It}, I^Y_{2(t - 1)} - R^{X^\prime}_{It}\right)}\\
+    \Aboxed{R^{Y^\prime}_{It} &= R^{X^\prime}_{It} + M^\prime_{R_It}}\\
+    \Aboxed{R^Y_{It} &= R^X_{It} + M^\prime_{R_It}}
+\end{align*}
 
 Next, we know that
 \begin{equation*}
-    I^Y_{2t} = I^Y_{2(t - 1)} + I^{Y\prime}_{2t} - R^{Y\prime}_{It},
+    I^Y_{2t} = I^Y_{2(t - 1)} + I^{Y^\prime}_{2t} - R^{Y^\prime}_{It},
 \end{equation*}
-and also that
+and we place MD on the \textit{counts}, such that:
 \begin{equation*}
-    H^{Y\prime}_t + I^{Y\prime}_{2t} + D^{Y\prime}_{It} \leq I^Y_{1(t - 1)}.
+    I^Y_{2t} = I^X_{2t} + M_{I_2t}
 \end{equation*}
-Hence we can derive bounds for $M_{I_2t}$ as:
-\begin{equation*}
-    -I_{2t} \leq M_{I_2t} \leq I^Y_{2(t - 1)} + I^Y_{1(t - 1)} - H^{Y\prime}_{t} - D^{Y\prime}_{It} - R^{Y\prime}_{It} - I_{2t},
-\end{equation*}
-and then derive $I^Y_{2t}$ and $I^{Y\prime}_{2t}$.
+We know that:
+\begin{align*}
+    I^Y_{2t} &= I^Y_{2(t - 1)} + I^{Y^\prime}_{2t} - R^{Y^\prime}_{It}\\
+    \Rightarrow I^{Y^\prime}_{2t} &= I^Y_{2t} - I^Y_{2(t - 1)} + R^{Y^\prime}_{It}\\
+    \Rightarrow I^{Y^\prime}_{2t} &= I^X_{2t} + M_{I_2t} - I^Y_{2(t - 1)} + R^{Y^\prime}_{It}
+\end{align*}
+Since $0 \leq I^{Y^\prime}_{2t} \leq I^Y_{1(t - 1)} - D^{Y^\prime}_{It} - H^{Y^\prime}_t$, we can derive bounds:
+\begin{align*}
+    0 &\leq I^{Y^\prime}_{2t} \leq I^Y_{1(t - 1)} - D^{Y^\prime}_{It} - H^{Y^\prime}_t\\
+    \Rightarrow 0 &\leq I^X_{2t} + M_{I_2t} - I^Y_{2(t - 1)} + R^{Y^\prime}_{It} \leq I^Y_{1(t - 1)} - D^{Y^\prime}_{It} - H^{Y^\prime}_t\\
+    \Rightarrow -I^X_{2t} + I^Y_{2(t - 1)} - R^{Y^\prime}_{It} &\leq M_{I_2t} \leq I^Y_{1(t - 1)} - D^{Y^\prime}_{It} - H^{Y^\prime}_t - I^X_{2t} + I^Y_{2(t - 1)} - R^{Y^\prime}_{It}.
+\end{align*}
+Hence
+\begin{align*}
+\Aboxed{M_{I_2t} &\sim \mbox{Skellam}\left(\lambda_1, \lambda_2\right)I\left(-I^X_{2t} + I^Y_{2(t - 1)} - R^{Y^\prime}_{It}, I^Y_{1(t - 1)} - D^{Y^\prime}_{It} - H^{Y^\prime}_t - I^X_{2t} + I^Y_{2(t - 1)} - R^{Y^\prime}_{It}\right)}\\
+    \Aboxed{I^Y_{2t} &= I^X_{2t} + M_{I_2t}}\\
+    \Aboxed{I^{Y^\prime}_{2t} &= I^X_{2t} + M_{I_2t} - I^Y_{2(t - 1)} + R^{Y^\prime}_{It}}
+\end{align*}
 
-Similarly, we know that
+Then we can construct $I^Y_{1t}$ by considering
 \begin{equation*}
-    I^Y_{1t} = I^Y_{1(t - 1)} + I^{Y\prime}_{1t} - H^{Y\prime}_{It} - I^{Y\prime}_{2t} - D^{Y\prime}_{It},
+    I^Y_{1t} = I^Y_{1(t - 1)} + I^{Y^\prime}_{1t} - I^{Y^\prime}_{2t} - D^{Y^\prime}_{It} - H^{Y^\prime}_t,
 \end{equation*}
-and also that
+and we place MD on the \textit{counts}, such that:
 \begin{equation*}
-    I^{Y\prime}_{1t} \leq P^Y_{t - 1}.
+    I^Y_{1t} = I^X_{1t} + M_{I_1t}
 \end{equation*}
-Hence we can derive bounds for $M_{I_1t}$ as:
-\begin{equation*}
-    -I_{1t} \leq M_{I_1t} \leq I^Y_{1(t - 1)} + P^Y_{t - 1} - H^{Y\prime}_{It} - I^{Y\prime}_{2t} - D^{Y\prime}_{It} - I_{1t},
-\end{equation*}
-and then derive $I^Y_{1t}$ and $I^{Y\prime}_{1t}$.
+Hence we have:
+\begin{align*}
+    I^Y_{1t} &= I^Y_{1(t - 1)} + I^{Y^\prime}_{1t} - I^{Y^\prime}_{2t} - D^{Y^\prime}_{It} - H^{Y^\prime}_t\\
+    I^{Y^\prime}_{1t} &= I^Y_{1t} - I^Y_{1(t - 1)} + I^{Y^\prime}_{2t} + D^{Y^\prime}_{It} + H^{Y^\prime}_t
+\end{align*}
+and since $0 \leq I^{Y^\prime}_{1t} \leq P^Y_{t - 1}$ we can derive bounds:
+\begin{align*}
+    0 &\leq I^{Y^\prime}_{1t} \leq P^Y_{t - 1}\\
+    0 &\leq I^Y_{1t} - I^Y_{1(t - 1)} + I^{Y^\prime}_{2t} + D^{Y^\prime}_{It} + H^{Y^\prime}_t \leq P^Y_{t - 1}\\
+    0 &\leq I^X_{1t} + M_{I_1t} - I^Y_{1(t - 1)} + I^{Y^\prime}_{2t} + D^{Y^\prime}_{It} + H^{Y^\prime}_t \leq P^Y_{t - 1}\\
+    -I^X_{1t} + I^Y_{1(t - 1)} - I^{Y^\prime}_{2t} - D^{Y^\prime}_{It} - H^{Y^\prime}_t &\leq M_{I_1t} \leq P^Y_{t - 1} - I^X_{1t} + I^Y_{1(t - 1)} - I^{Y^\prime}_{2t} - D^{Y^\prime}_{It} - H^{Y^\prime}_t
+\end{align*}
+Hence
+\begin{align*}
+\Aboxed{M_{I_1t} &\sim \mbox{Skellam}\left(\lambda_1, \lambda_2\right)I\left(-I^X_{1t} + I^Y_{1(t - 1)} - I^{Y^\prime}_{2t} - D^{Y^\prime}_{It} - H^{Y^\prime}_t, P^Y_{t - 1} - I^X_{1t} + I^Y_{1(t - 1)} - I^{Y^\prime}_{2t} - D^{Y^\prime}_{It} - H^{Y^\prime}_t\right)}\\
+    \Aboxed{I^Y_{1t} &= I^X_{1t} + M_{I_1t}}\\
+    \Aboxed{I^{Y^\prime}_{1t} &= I^X_{1t} + M_{I_1t} - I^Y_{1(t - 1)} + I^{Y^\prime}_{2t} + D^{Y^\prime}_{It} + H^{Y^\prime}_t}
+\end{align*}
 
-Bounds for $M_{Pt}$ are:
+For $P^Y_t$ we can consider that
 \begin{equation*}
-    -P_t \leq M_{Pt} \leq P^Y_{t - 1} + E^Y_{t - 1} - I^{Y\prime}_{1t} - P_t,
+    P^Y_t = P^Y_{t - 1} + P^{Y^\prime}_t - I^{Y^\prime}_{1t}
 \end{equation*}
-which follow from 
+with MD placed on the \textit{counts} as
 \begin{equation*}
-    P^Y_t = P^Y_{t - 1} + P^{Y\prime}_t - I^{Y\prime}_{1t},
+    P^Y_t = P^X_T + M_{Pt}.
 \end{equation*}
-and the fact that $P^{Y\prime}_t \leq E^Y_{t - 1}$.
+Since $0 \leq P^{Y^\prime}_t \leq E^Y_{t - 1}$, we can derive bounds
+\begin{align*}
+    0 &\leq P^{Y^\prime}_t \leq E^Y_{t - 1}\\
+    0 &\leq P^Y_t - P^Y_{t - 1} + I^{Y^\prime}_{1t} \leq E^Y_{t - 1}\\
+    0 &\leq P^X_t + M_{Pt} - P^Y_{t - 1} + I^{Y^\prime}_{1t} \leq E^Y_{t - 1}\\
+    -P^X_t + P^Y_{t - 1} - I^{Y^\prime}_{1t} &\leq M_{Pt} \leq E^Y_{t - 1} - P^X_t + P^Y_{t - 1} - I^{Y^\prime}_{1t}.
+\end{align*}
+Hence
+\begin{align*}
+\Aboxed{M_{Pt} &\sim \mbox{Skellam}\left(\lambda_1, \lambda_2\right)I\left(-P^X_t + P^Y_{t - 1} - I^{Y^\prime}_{1t}, E^Y_{t - 1} - P^X_t + P^Y_{t - 1} - I^{Y^\prime}_{1t}\right)}\\
+    \Aboxed{P^Y_t &= P^X_t + M_{Pt}}\\
+    \Aboxed{P^{Y^\prime}_t &= P^X_t + M_{Pt} - P^Y_{t - 1} + I^{Y^\prime}_{1t}}
+\end{align*}
 
-Similarly, bounds for $M_{At}$ are:
+For $R^Y_{At}$ we can consider:
 \begin{equation*}
-    -A_t \leq M_{At} \leq A^Y_{t - 1} + E^Y_{t - 1} - P^{Y\prime}_{t} - R^{Y\prime}_{At} - A_t,
+    R^Y_{At} = R^Y_{A(t - 1)} + R^{Y^\prime}_{At}
 \end{equation*}
-which follow from 
+and we place MD on the \textit{incidence} as
 \begin{equation*}
-    A^Y_t = A^Y_{t - 1} + A^{Y\prime}_t - R^{Y\prime}_{At},
+    R^{Y^\prime}_{At} = R^{X^\prime}_{At} + M^\prime_{R_At}.
 \end{equation*}
-and the fact that $P^{Y\prime}_t + A^{Y\prime}_t \leq E^Y_{t - 1}$.
+We can derive bounds as:
+\begin{align*}
+    0 &\leq R^{Y^\prime}_{At} \leq A^Y_{t - 1}\\
+    0 &\leq R^{X^\prime}_{At} + M^\prime_{At} \leq A^Y_{t - 1}\\
+    -R^{X^\prime}_{At} &\leq  M^\prime_{At} \leq A^Y_{t - 1} - R^{X^\prime}_{At}
+\end{align*}
+and thus:
+\begin{align*}
+\Aboxed{M_{R_At} &\sim \mbox{Skellam}\left(\lambda_1, \lambda_2\right)I\left(-R^{X^\prime}_{At}, A^Y_{t - 1} - R^{X^\prime}_{At}\right)}\\
+    \Aboxed{R^{Y^\prime}_{At} &= R^{X^\prime}_{At} + M^\prime_{R_At}}\\
+    \Aboxed{R^Y_{At} &= R^X_{At} + M^\prime_{R_At}}
+\end{align*}
 
-Finally, bounds for $M_{Et}$ are:
+For $A^Y_t$ we can consider that
 \begin{equation*}
-    -E_t \leq M_{Et} \leq E^Y_{t - 1} + S^Y_{t - 1} - P^{Y\prime}_{t} - A^{Y\prime}_t - E_t,
+    A^Y_t = A^Y_{t - 1} + A^{Y^\prime}_t - R^{Y^\prime}_{At}
 \end{equation*}
-which follow from 
+and place MD on the \textit{counts}, such that
 \begin{equation*}
-    E^Y_t = E^Y_{t - 1} + E^{Y\prime}_t - P^{Y\prime}_t - A^{Y\prime}_t,
+    A^Y_t = A^X_t + M_{At}
 \end{equation*}
-and the fact that $E^{Y\prime}_t \leq S^Y_{t - 1}$.
+Since $0 \leq A^{Y^\prime}_t \leq E^Y_{t - 1} - P^{Y^\prime}_t$, we can derive bounds:
+\begin{align*}
+    0 &\leq A^{Y^\prime}_t \leq E^Y_{t - 1} - P^{Y^\prime}_t\\
+    0 &\leq A^Y_t - A^Y_{t - 1} + R^{Y^\prime}_{At} \leq E^Y_{t - 1} - P^{Y^\prime}_t\\
+    0 &\leq A^X_t + M_{At} - A^Y_{t - 1} + R^{Y^\prime}_{At} \leq E^Y_{t - 1} - P^{Y^\prime}_t\\
+    -A^X_t + A^Y_{t - 1} - R^{Y^\prime}_{At} &\leq M_{At} \leq E^Y_{t - 1} - P^{Y^\prime}_t - A^X_t + A^Y_{t - 1} - R^{Y^\prime}_{At}
+\end{align*}
+Hence
+\begin{align*}
+\Aboxed{M_{At} &\sim \mbox{Skellam}\left(\lambda_1, \lambda_2\right)I\left(-A^X_t + A^Y_{t - 1} - R^{Y^\prime}_{At}, E^Y_{t - 1} - P^{Y^\prime}_t - A^X_t + A^Y_{t - 1} - R^{Y^\prime}_{At}\right)}\\
+    \Aboxed{A^Y_t &= A^X_t + M_{At}}\\
+    \Aboxed{A^{Y^\prime}_t &= A^X_t + M_{At} - A^Y_{t - 1} + R^{Y^\prime}_{At}}
+\end{align*}
+
+Then, we have that
+\begin{equation*}
+    E^Y_t = E^Y_{t - 1} + E^{Y^\prime}_t - P^{Y^\prime}_t - A^{Y^\prime}_t
+\end{equation*}
+and we place MD on the \textit{count}, such that
+\begin{equation*}
+    E^Y_t = E^X_t + M_{Et}
+\end{equation*}
+Since $0 \leq E^{Y^\prime}_t \leq S^Y_{t - 1}$ we can derive bounds:
+\begin{align*}
+    0 &\leq E^{Y^\prime}_t \leq S^Y_{t - 1}\\
+    0 &\leq E^Y_t - E^Y_{t - 1} + P^{Y^\prime}_t + A^{Y^\prime}_t \leq S^Y_{t - 1}\\
+    0 &\leq E^X_t + M_{Et} - E^Y_{t - 1} + P^{Y^\prime}_t + A^{Y^\prime}_t \leq S^Y_{t - 1}\\
+    -E^X_t + E^Y_{t - 1} - P^{Y^\prime}_t - A^{Y^\prime}_t &\leq M_{Et} \leq S^Y_{t - 1} - E^X_t + E^Y_{t - 1} - P^{Y^\prime}_t - A^{Y^\prime}_t 
+\end{align*}
+and hence
+\begin{align*}
+\Aboxed{M_{Et} &\sim \mbox{Skellam}\left(\lambda_1, \lambda_2\right)I\left(-E^X_t + E^Y_{t - 1} - P^{Y^\prime}_t - A^{Y^\prime}_t, S^Y_{t - 1} - E^X_t + E^Y_{t - 1} - P^{Y^\prime}_t - A^{Y^\prime}_t\right)}\\
+    \Aboxed{E^Y_t &= E^X_t + M_{Et}}\\
+    \Aboxed{E^{Y^\prime}_t &= E^X_t + M_{Et} - E^Y_{t - 1} + P^{Y^\prime}_t + A^{Y^\prime}_t}
+\end{align*}
+
+Finally we have
+\begin{align*}
+    \Aboxed{S^Y_t &= S^Y_{t - 1} - E^{Y^\prime}_t}
+\end{align*}
 
 \section*{Some maths on DA in older notation}
 
