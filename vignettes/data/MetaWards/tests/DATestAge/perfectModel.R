@@ -100,88 +100,93 @@ perfectModel <- function(pars, C, u, ndays, npart = 10, MD = TRUE, a_dis, b_dis)
         for(j in 1:nages) {
           ## adjust states according to model discrepancy
           if(MD) {
-            ## DH (MD on incidence)
-            DHinc <- disSims[[i]][12, j] - u[[i]][12, j]
-            DHinc <- DHinc + rtskellam(1, a_dis + b_dis * DHinc, a_dis + b_dis * DHinc, -DHinc, u[[i]][10, j] - DHinc)
-            disSims[[i]][12, j] <- u[[i]][12, j] + DHinc
-            cu[[i]][12, j] <- cu[[i]][12, j] + DHinc
-            
-            ## RH given DH (MD on icidence)
-            RHinc <- disSims[[i]][11, j] - u[[i]][11, j]
-            RHinc <- RHinc + rtskellam(1, a_dis + b_dis * RHinc, a_dis + b_dis * RHinc, -RHinc, u[[i]][10, j] - DHinc - RHinc)
-            disSims[[i]][11, j] <- u[[i]][11, j] + RHinc
-            cu[[i]][11, j] <- cu[[i]][11, j] + RHinc
-            
-            ## H
-            disSims[[i]][10, j] <- disSims[[i]][10, j] + rtskellam(1, a_dis + b_dis * disSims[[i]][10, j], 
-                                                                   a_dis + b_dis * disSims[[i]][10, j], 
-                                                                   -disSims[[i]][10, j], u[[i]][10, j] + u[[i]][6, j] - DHinc - RHinc - 
-                                                                     disSims[[i]][10, j])  
-            Hinc <- disSims[[i]][10, j] - u[[i]][10, j] + DHinc + RHinc
-            cu[[i]][10, j] <- cu[[i]][10, j] + Hinc
-            
-            ## DI given H (MD on incidence)
-            DIinc <- disSims[[i]][7, j] - u[[i]][7, j]
-            DIinc <- DIinc + rtskellam(1, a_dis + b_dis * DIinc, a_dis + b_dis * DIinc, -DIinc, u[[i]][6, j] - Hinc - DIinc)
-            disSims[[i]][7, j] <- u[[i]][7, j] + DIinc
-            cu[[i]][7, j] <- cu[[i]][7, j] + DIinc            
-            
-            ## RI (MD on incidence)
-            RIinc <- disSims[[i]][9, j] - u[[i]][9, j]
-            RIinc <- RIinc + rtskellam(1, a_dis + b_dis * RIinc, a_dis + b_dis * RIinc, -RIinc, u[[i]][8, j] - RIinc)
-            disSims[[i]][9, j] <- u[[i]][9, j] + RIinc
-            cu[[i]][9, j] <- cu[[i]][9, j] + RIinc
-            
-            ## I2 given H, RI and DI
-            disSims[[i]][8, j] <- disSims[[i]][8, j] + 
-              rtskellam(1, a_dis + b_dis * disSims[[i]][8, j], 
-                        a_dis + b_dis * disSims[[i]][8, j], 
-                        -disSims[[i]][8, j], u[[i]][8, j] + u[[i]][6, j] - Hinc - DIinc - RIinc - 
-                          disSims[[i]][8, j])
-            I2inc <- disSims[[i]][8, j] - u[[i]][8, j] + RIinc
-            cu[[i]][8, j] <- cu[[i]][8, j] + I2inc
-            
-            ## I1 given later
-            disSims[[i]][6, j] <- disSims[[i]][6, j] + 
-              rtskellam(1, a_dis + b_dis * disSims[[i]][6, j], 
-                        a_dis + b_dis * disSims[[i]][6, j], -disSims[[i]][6, j], 
-                        u[[i]][6, j] + u[[i]][5, j] - I2inc - Hinc - DIinc - disSims[[i]][6, j])
-            I1inc <- disSims[[i]][6, j] - u[[i]][6, j] + DIinc + Hinc + I2inc
-            cu[[i]][6, j] <- cu[[i]][6, j] + I1inc
-            
-            ## P given later
-            disSims[[i]][5, j] <- disSims[[i]][5, j] + 
-              rtskellam(1, a_dis + b_dis * disSims[[i]][5, j], a_dis + b_dis * disSims[[i]][5, j], 
-                        -disSims[[i]][5, j], u[[i]][5, j] + u[[i]][2, j] - I1inc - 
-                          disSims[[i]][5, j])
-            Pinc <- disSims[[i]][5, j] - u[[i]][5, j] + I1inc
-            cu[[i]][5, j] <- cu[[i]][5, j] + Pinc
-            
-            ## RA (MD on incidence)
-            RAinc <- disSims[[i]][4, j] - u[[i]][4, j]
-            RAinc <- RAinc + rtskellam(1, a_dis + b_dis * RAinc, a_dis + b_dis * RAinc, -RAinc, u[[i]][3, j] - RAinc)
-            disSims[[i]][4, j] <- u[[i]][4, j] + RAinc
-            cu[[i]][4, j] <- cu[[i]][4, j] + RAinc
-            
-            ## A given later
-            disSims[[i]][3, j] <- disSims[[i]][3, j] + 
-              rtskellam(1, a_dis + b_dis * disSims[[i]][3, j], 
-                        a_dis + b_dis * disSims[[i]][3, j], -disSims[[i]][3, j], 
-                        u[[i]][3, j] + u[[i]][2, j] - Pinc - RAinc - disSims[[i]][3, j])
-            Ainc <- disSims[[i]][3, j] - u[[i]][3, j] + RAinc
-            cu[[i]][3, j] <- cu[[i]][3, j] + Ainc
-            
-            ## E
-            disSims[[i]][2, j] <- disSims[[i]][2, j] + 
-              rtskellam(1, a_dis + b_dis * disSims[[i]][2, j], a_dis + b_dis * disSims[[i]][2, j], 
-                        -disSims[[i]][2, j], u[[i]][2, j] + u[[i]][1, j] - Ainc - Pinc - 
-                          disSims[[i]][2, j])
-            Einc <- disSims[[i]][2, j] - u[[i]][2, j] + Ainc + Pinc
-            cu[[i]][2, j] <- cu[[i]][2, j] + Einc
-            
-            ## S
-            disSims[[i]][1, j] <- u[[i]][1, j] - Einc
-            cu[[i]][1, j] <- cu[[i]][1, j] - Einc
+              
+              ## DH (MD on incidence)
+              DHinc <- disSims[[i]][12, ] - u[[i]][12, ]
+              DHinc <- DHinc + rtskellam(ncol(disSims[[i]]), a_dis + b_dis * DHinc, a_dis + b_dis * DHinc, -DHinc, u[[i]][10, ] - DHinc)
+              disSims[[i]][12, ] <- u[[i]][12, ] + DHinc
+              cu[[i]][12, ] <- cu[[i]][12, ] + DHinc
+              
+              ## RH given DH (MD on incidence)
+              RHinc <- disSims[[i]][11, ] - u[[i]][11, ]
+              RHinc <- RHinc + rtskellam(ncol(disSims[[i]]), a_dis + b_dis * RHinc, a_dis + b_dis * RHinc, -RHinc, u[[i]][10, ] - DHinc - RHinc)
+              disSims[[i]][11, ] <- u[[i]][11, ] + RHinc
+              cu[[i]][11, ] <- cu[[i]][11, ] + RHinc
+              
+              ## H
+              disSims[[i]][10, ] <- disSims[[i]][10, ] + rtskellam(ncol(disSims[[i]]), 
+                                                                   a_dis + b_dis * disSims[[i]][10, ], 
+                                                                   a_dis + b_dis * disSims[[i]][10, ],
+                                                                   -disSims[[i]][10, ] + u[[i]][10, ] - DHinc - RHinc,
+                                                                   u[[i]][6, ] - disSims[[i]][10, ] + u[[i]][10, ] - DHinc - RHinc)
+              Hinc <- disSims[[i]][10, ] - u[[i]][10, ] + DHinc + RHinc
+              cu[[i]][10, ] <- cu[[i]][10, ] + Hinc
+              
+              ## DI given H (MD on incidence)
+              DIinc <- disSims[[i]][7, ] - u[[i]][7, ]
+              DIinc <- DIinc + rtskellam(ncol(disSims[[i]]), a_dis + b_dis * DIinc, a_dis + b_dis * DIinc, -DIinc, u[[i]][6, ] - Hinc - DIinc)
+              disSims[[i]][7, ] <- u[[i]][7, ] + DIinc
+              cu[[i]][7, ] <- cu[[i]][7, ] + DIinc            
+              
+              ## RI (MD on incidence)
+              RIinc <- disSims[[i]][9, ] - u[[i]][9, ]
+              RIinc <- RIinc + rtskellam(ncol(disSims[[i]]), a_dis + b_dis * RIinc, a_dis + b_dis * RIinc, -RIinc, u[[i]][8, ] - RIinc)
+              disSims[[i]][9, ] <- u[[i]][9, ] + RIinc
+              cu[[i]][9, ] <- cu[[i]][9, ] + RIinc
+              
+              ## I2 given H, RI and DI
+              disSims[[i]][8, ] <- disSims[[i]][8, ] + 
+                  rtskellam(ncol(disSims[[i]]), a_dis + b_dis * disSims[[i]][8, ], 
+                            a_dis + b_dis * disSims[[i]][8, ], 
+                            -disSims[[i]][8, ] + u[[i]][8, ] - RIinc,
+                            u[[i]][6, ] - DIinc - Hinc - disSims[[i]][8, ] + u[[i]][8, ] - RIinc)
+              I2inc <- disSims[[i]][8, ] - u[[i]][8, ] + RIinc
+              cu[[i]][8, ] <- cu[[i]][8, ] + I2inc
+              
+              ## I1 given later
+              disSims[[i]][6, ] <- disSims[[i]][6, ] + 
+                  rtskellam(ncol(disSims[[i]]), a_dis + b_dis * disSims[[i]][6, ], 
+                            a_dis + b_dis * disSims[[i]][6, ], 
+                            -disSims[[i]][6, ] + u[[i]][6, ] - I2inc - Hinc - DIinc,
+                            u[[i]][5, ] - disSims[[i]][6, ] + u[[i]][6, ] - I2inc - Hinc - DIinc)
+              I1inc <- disSims[[i]][6, ] - u[[i]][6, ] + DIinc + Hinc + I2inc
+              cu[[i]][6, ] <- cu[[i]][6, ] + I1inc
+              
+              ## P given later
+              disSims[[i]][5, ] <- disSims[[i]][5, ] + 
+                  rtskellam(ncol(disSims[[i]]), a_dis + b_dis * disSims[[i]][5, ], 
+                            a_dis + b_dis * disSims[[i]][5, ], 
+                            -disSims[[i]][5, ] + u[[i]][5, ] - I1inc,
+                            u[[i]][2, ] - disSims[[i]][5, ] + u[[i]][5, ] - I1inc)
+              Pinc <- disSims[[i]][5, ] - u[[i]][5, ] + I1inc
+              cu[[i]][5, ] <- cu[[i]][5, ] + Pinc
+              
+              ## RA (MD on incidence)
+              RAinc <- disSims[[i]][4, ] - u[[i]][4, ]
+              RAinc <- RAinc + rtskellam(ncol(disSims[[i]]), a_dis + b_dis * RAinc, a_dis + b_dis * RAinc, -RAinc, u[[i]][3, ] - RAinc)
+              disSims[[i]][4, ] <- u[[i]][4, ] + RAinc
+              cu[[i]][4, ] <- cu[[i]][4, ] + RAinc
+              
+              ## A given later
+              disSims[[i]][3, ] <- disSims[[i]][3, ] + 
+                  rtskellam(ncol(disSims[[i]]), a_dis + b_dis * disSims[[i]][3, ], 
+                            a_dis + b_dis * disSims[[i]][3, ], 
+                            -disSims[[i]][3, ] + u[[i]][3, ] - RAinc,
+                            u[[i]][2, ] - Pinc - disSims[[i]][3, ] + u[[i]][3, ] - RAinc)
+              Ainc <- disSims[[i]][3, ] - u[[i]][3, ] + RAinc
+              cu[[i]][3, ] <- cu[[i]][3, ] + Ainc
+              
+              ## E
+              disSims[[i]][2, ] <- disSims[[i]][2, ] + 
+                  rtskellam(ncol(disSims[[i]]), a_dis + b_dis * disSims[[i]][2, ], a_dis + b_dis * disSims[[i]][2, ], 
+                            -disSims[[i]][2, ] + u[[i]][2, ] - Ainc - Pinc,
+                            u[[i]][1, ] - disSims[[i]][2, ] + u[[i]][2, ] - Ainc - Pinc)
+              Einc <- disSims[[i]][2, ] - u[[i]][2, ] + Ainc + Pinc
+              cu[[i]][2, ] <- cu[[i]][2, ] + Einc
+              
+              ## S
+              disSims[[i]][1, ] <- u[[i]][1, ] - Einc
+              cu[[i]][1, ] <- cu[[i]][1, ] - Einc
           } else {
             ## DH
             DHinc <- disSims[[i]][12, j] - u[[i]][12, j]

@@ -54,7 +54,7 @@ checkCounts <- function(u, cu, N) {
 ## a1, a2, b: parameters for Skellam observation process
 ## saveAll: a logical specifying whether to return all states (if FALSE then returns just observed states))
 
-PF <- function(pars, C, data, u, ndays, npart = 10, MD = TRUE, a1 = 0.01, a2 = 0.2, b = 0.1, a_dis = 0.05, b_dis = 0.5, saveAll = FALSE) {
+PF <- function(pars, C, data, u, ndays, npart = 10, MD = TRUE, a1 = 0.01, a2 = 0.2, b = 0.1, a_dis = 0.05, b_dis = 0.05, saveAll = FALSE) {
     runs <- mclapply(1:nrow(pars), function(k, pars, C, u, npart, ndays, data, MD, a1, a2, b, a_dis, b_dis, saveAll) {
         
         ## set initial log-likelihood
@@ -117,10 +117,11 @@ PF <- function(pars, C, data, u, ndays, npart = 10, MD = TRUE, a1 = 0.01, a2 = 0
                     cu[[i]][11, ] <- cu[[i]][11, ] + RHinc
                     
                     ## H
-                    disSims[[i]][10, ] <- disSims[[i]][10, ] + rtskellam(ncol(disSims[[i]]), a_dis + b_dis * disSims[[i]][10, ], 
+                    disSims[[i]][10, ] <- disSims[[i]][10, ] + rtskellam(ncol(disSims[[i]]), 
                          a_dis + b_dis * disSims[[i]][10, ], 
-                         -disSims[[i]][10, ], u[[i]][10, ] + u[[i]][6, ] - DHinc - RHinc - 
-                         disSims[[i]][10, ])  
+                         a_dis + b_dis * disSims[[i]][10, ],
+                         -disSims[[i]][10, ] + u[[i]][10, ] - DHinc - RHinc,
+                         u[[i]][6, ] - disSims[[i]][10, ] + u[[i]][10, ] - DHinc - RHinc)
                     Hinc <- disSims[[i]][10, ] - u[[i]][10, ] + DHinc + RHinc
                     cu[[i]][10, ] <- cu[[i]][10, ] + Hinc
                     
@@ -140,24 +141,26 @@ PF <- function(pars, C, data, u, ndays, npart = 10, MD = TRUE, a1 = 0.01, a2 = 0
                     disSims[[i]][8, ] <- disSims[[i]][8, ] + 
                         rtskellam(ncol(disSims[[i]]), a_dis + b_dis * disSims[[i]][8, ], 
                         a_dis + b_dis * disSims[[i]][8, ], 
-                        -disSims[[i]][8, ], u[[i]][8, ] + u[[i]][6, ] - Hinc - DIinc - RIinc - 
-                        disSims[[i]][8, ])
+                        -disSims[[i]][8, ] + u[[i]][8, ] - RIinc,
+                        u[[i]][6, ] - DIinc - Hinc - disSims[[i]][8, ] + u[[i]][8, ] - RIinc)
                     I2inc <- disSims[[i]][8, ] - u[[i]][8, ] + RIinc
                     cu[[i]][8, ] <- cu[[i]][8, ] + I2inc
                     
                     ## I1 given later
                     disSims[[i]][6, ] <- disSims[[i]][6, ] + 
                         rtskellam(ncol(disSims[[i]]), a_dis + b_dis * disSims[[i]][6, ], 
-                        a_dis + b_dis * disSims[[i]][6, ], -disSims[[i]][6, ], 
-                        u[[i]][6, ] + u[[i]][5, ] - I2inc - Hinc - DIinc - disSims[[i]][6, ])
+                        a_dis + b_dis * disSims[[i]][6, ], 
+                        -disSims[[i]][6, ] + u[[i]][6, ] - I2inc - Hinc - DIinc,
+                        u[[i]][5, ] - disSims[[i]][6, ] + u[[i]][6, ] - I2inc - Hinc - DIinc)
                     I1inc <- disSims[[i]][6, ] - u[[i]][6, ] + DIinc + Hinc + I2inc
                     cu[[i]][6, ] <- cu[[i]][6, ] + I1inc
                     
                     ## P given later
                     disSims[[i]][5, ] <- disSims[[i]][5, ] + 
-                        rtskellam(ncol(disSims[[i]]), a_dis + b_dis * disSims[[i]][5, ], a_dis + b_dis * disSims[[i]][5, ], 
-                        -disSims[[i]][5, ], u[[i]][5, ] + u[[i]][2, ] - I1inc - 
-                        disSims[[i]][5, ])
+                        rtskellam(ncol(disSims[[i]]), a_dis + b_dis * disSims[[i]][5, ], 
+                        a_dis + b_dis * disSims[[i]][5, ], 
+                        -disSims[[i]][5, ] + u[[i]][5, ] - I1inc,
+                        u[[i]][2, ] - disSims[[i]][5, ] + u[[i]][5, ] - I1inc)
                     Pinc <- disSims[[i]][5, ] - u[[i]][5, ] + I1inc
                     cu[[i]][5, ] <- cu[[i]][5, ] + Pinc
                     
@@ -170,16 +173,17 @@ PF <- function(pars, C, data, u, ndays, npart = 10, MD = TRUE, a1 = 0.01, a2 = 0
                     ## A given later
                     disSims[[i]][3, ] <- disSims[[i]][3, ] + 
                         rtskellam(ncol(disSims[[i]]), a_dis + b_dis * disSims[[i]][3, ], 
-                        a_dis + b_dis * disSims[[i]][3, ], -disSims[[i]][3, ], 
-                        u[[i]][3, ] + u[[i]][2, ] - Pinc - RAinc - disSims[[i]][3, ])
+                        a_dis + b_dis * disSims[[i]][3, ], 
+                        -disSims[[i]][3, ] + u[[i]][3, ] - RAinc,
+                        u[[i]][2, ] - Pinc - disSims[[i]][3, ] + u[[i]][3, ] - RAinc)
                     Ainc <- disSims[[i]][3, ] - u[[i]][3, ] + RAinc
                     cu[[i]][3, ] <- cu[[i]][3, ] + Ainc
                     
                     ## E
                     disSims[[i]][2, ] <- disSims[[i]][2, ] + 
                         rtskellam(ncol(disSims[[i]]), a_dis + b_dis * disSims[[i]][2, ], a_dis + b_dis * disSims[[i]][2, ], 
-                        -disSims[[i]][2, ], u[[i]][2, ] + u[[i]][1, ] - Ainc - Pinc - 
-                        disSims[[i]][2, ])
+                        -disSims[[i]][2, ] + u[[i]][2, ] - Ainc - Pinc,
+                        u[[i]][1, ] - disSims[[i]][2, ] + u[[i]][2, ] - Ainc - Pinc)
                     Einc <- disSims[[i]][2, ] - u[[i]][2, ] + Ainc + Pinc
                     cu[[i]][2, ] <- cu[[i]][2, ] + Einc
                     

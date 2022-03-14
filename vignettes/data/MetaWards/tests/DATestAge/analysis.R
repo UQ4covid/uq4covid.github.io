@@ -73,7 +73,7 @@ for(k in 6) {
     colnames(sims_nomd) <- c("t", stageNms)
     
     ## repeat but adding some model discrepancy
-    runs_md <- PF(pars[k, ], C = contact, data = data, u = u, ndays = 50, npart = 100, MD = TRUE, a_dis = 0.05, b_dis = 0.05, saveAll = TRUE)
+    runs_md <- PF(pars[k, ], C = contact, data = data, u = u, ndays = 50, npart = 100, MD = TRUE, a_dis = 0.5, b_dis = 0.5, saveAll = TRUE)
     
     ## plot particle estimates of states (unweighted)
     sims_md <- map(runs_md$particles[[1]], ~map(., ~as.vector(t(.)))) %>%
