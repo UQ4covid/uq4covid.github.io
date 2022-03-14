@@ -6,13 +6,13 @@ library(Rcpp)
 dir.create("outputs")
 
 ## read in parameters, remove guff and reorder
-pars <- read_delim("disease.dat", delim = " ") %>%
+pars <- readRDS("wave1/disease.rds") %>%
     rename(nu = `beta[1]`, nuA = `beta[6]`) %>%
-    select(!c(starts_with("beta"), repeats, starts_with(".lock"), .p_home_weekend)) %>%
+    select(!c(starts_with("beta"), repeats)) %>%
     select(nu, nuA, !output, output)
 
 ## read in contact matrix
-contact <- read_csv("POLYMOD_matrix.csv", col_names = FALSE) %>%
+contact <- read_csv("inputs/POLYMOD_matrix.csv", col_names = FALSE) %>%
     as.matrix()
 
 ## extract parameters for simulation   
@@ -31,8 +31,8 @@ smart_round <- function(x) {
 
 ## set up number of initial individuals in each age-class
 N <- 10000
-N <- smart_round(read_csv("age_seeds.csv", col_names = FALSE)$X2 * N)
-I0 <- smart_round(read_csv("age_seeds.csv", col_names = FALSE)$X2 * 1)
+N <- smart_round(read_csv("inputs/age_seeds.csv", col_names = FALSE)$X2 * N)
+I0 <- smart_round(read_csv("inputs/age_seeds.csv", col_names = FALSE)$X2 * 1)
 S0 <- N - I0
 
 ## set initial counts

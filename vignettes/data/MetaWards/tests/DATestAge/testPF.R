@@ -17,13 +17,13 @@ source("PF.R")
 data <- readRDS("outputs/disSims.rds")
 
 ## read in parameters, remove guff and reorder
-pars <- read_delim("disease.dat", delim = " ") %>%
+pars <- readRDS("wave1/disease.rds") %>%
     rename(nu = `beta[1]`, nuA = `beta[6]`) %>%
-    select(!c(starts_with("beta"), repeats, starts_with(".lock"), .p_home_weekend)) %>%
+    select(!c(starts_with("beta"), repeats)) %>%
     select(nu, nuA, !output)
 
 ## read in contact matrix
-contact <- read_csv("POLYMOD_matrix.csv", col_names = FALSE) %>%
+contact <- read_csv("inputs/POLYMOD_matrix.csv", col_names = FALSE) %>%
     as.matrix()
 
 ## solution to round numbers preserving sum
@@ -38,8 +38,8 @@ smart_round <- function(x) {
 
 ## set up number of initial individuals in each age-class
 N <- 10000
-N <- smart_round(read_csv("age_seeds.csv", col_names = FALSE)$X2 * N)
-I0 <- smart_round(read_csv("age_seeds.csv", col_names = FALSE)$X2 * 1)
+N <- smart_round(read_csv("inputs/age_seeds.csv", col_names = FALSE)$X2 * N)
+I0 <- smart_round(read_csv("inputs/age_seeds.csv", col_names = FALSE)$X2 * 1)
 S0 <- N - I0
 
 ## set initial counts
@@ -49,12 +49,6 @@ u[2, ] <- I0
 
 ## set seed for reproducibility
 set.seed(666)
-
-# ## run model with no model discrepancy
-# runs_nomd <- PF(pars[1:10, ], C = contact, data = data, u = u, ndays = 30, npart = 100, MD = FALSE, saveAll = NA)
-
-# ## repeat but adding some model discrepancy
-# runs_md <- PF(pars, C = contact, data = data, u = u, ndays = 30, npart = 100, MD = TRUE, a_dis = 0.05, b_dis = 0.05, saveAll = NA)
 
 for(k in 6) {
     ## run model with no model discrepancy and throw out sims corresponding to true parameters
