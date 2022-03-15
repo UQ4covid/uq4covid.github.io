@@ -222,10 +222,10 @@ int rtskellam_cpp(double lambda1, double lambda2, char *str, sitmo::prng &eng, i
                 // Rprintf("LB = %d UB = %d\n", LB, UB);
                 double u = eng() / mx;
                 k = 0;
-                double xdens = exp(ldtskellam_cpp(LB + k, lambda1, lambda2, str, LB, UB, 1));
+                double xdens = exp(ldtskellam_cpp(LB + k, lambda1, lambda2, str, LB, UB, 0));
                 while(u > xdens && k < (UB - LB)) {
                     k++;
-                    xdens += exp(ldtskellam_cpp(LB + k, lambda1, lambda2, str, LB, UB, 1));
+                    xdens += exp(ldtskellam_cpp(LB + k, lambda1, lambda2, str, LB, UB, 0));
                 }
                 if(k == (UB - LB + 1) && u > xdens) {
                     stop("Something wrong in truncated Skellam sampling\n");
