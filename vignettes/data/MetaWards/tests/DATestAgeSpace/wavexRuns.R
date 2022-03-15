@@ -4,14 +4,30 @@ library(Rcpp)
 library(RcppArmadillo)
 library(sitmo)
 
+## check if being run in batch mode
+args <- commandArgs()
+args <- args[grep("--interactive", args)]
+
+if(length(args) == 0) {
+    ## extract command line arguments
+    args <- commandArgs(TRUE)
+    if(length(args) > 0) {
+        stopifnot(length(args) == 2)
+        wave <- as.numeric(args[1])
+        hash <- as.numeric(args[2])
+    } else {
+        stop("No arguments")
+    }
+} else {
+    ## set wave number
+    wave <- 2
+}
+
 ## source Rcpp PF code
 sourceCpp("PF.cpp")
 
 ## source function to run PF and return log-likelihood
 source("PF.R")
-
-## set wave
-wave <- 1
 
 ## read in simulated data and generate incidence curves
 data <- readRDS("outputs/disSims.rds")
@@ -31,8 +47,17 @@ u1 <- readRDS("outputs/u1.rds")
 u1_moves <- readRDS("outputs/u1_moves.rds")
 
 ## run PF with some model discrepancy
-runs_md <- runs_md <- PF(pars[1:8, ], C = contact, data = data, u1_moves = u1_moves,
-    u1 = u1, ndays = 50, npart = 10, MD = TRUE, a_dis = 0.05, b_dis = 0.05, saveAll = NA)
+if(exists(hash)) {
+    runs_md <- PF(pars[hash, ], C = contact, data = data, u1_moves = u1_moves,
+        u1 = u1, ndays = 50, npart = 10, MD = TRUE, a_dis = 0.05, b_dis = 0.05, 
+        saveAll = NA, ncores = 1)
+    ## save outputs
+    saveRDS(runs_md, paste0("wave", wave, "/runs_md_", hash, ".rds"))
+} else {
+    runs_md <- PF(pars, C = contact, data = data, u1_moves = u1_moves,
+        u1 = u1, ndays = 50, npart = 10, MD = TRUE, a_dis = 0.05, b_dis = 0.05, 
+        saveAll = NA)
+    ## save outputs
+    saveRDS(runs_md, paste0("wave", wave, "/runs_md.rds"))
+}
 
-## save outputs
-saveRDS(runs_md, paste0("wave", wave, "/runs_md.rds"))
