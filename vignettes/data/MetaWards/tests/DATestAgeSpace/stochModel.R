@@ -15,17 +15,17 @@ set.seed(4578)
 dir.create("outputs")
 
 ## read in parameters, remove guff and reorder
-pars <- read_delim("disease.dat", delim = " ") %>%
+pars <- readRDS("wave1/disease.rds") %>%
     rename(nu = `beta[1]`, nuA = `beta[6]`) %>%
-    select(!c(starts_with("beta"), repeats, starts_with(".lock"), .p_home_weekend)) %>%
+    select(!c(starts_with("beta"), repeats)) %>%
     select(nu, nuA, !output, output)
 
 ## read in contact matrix
-contact <- read_csv("POLYMOD_matrix.csv", col_names = FALSE) %>%
+contact <- read_csv("inputs/POLYMOD_matrix.csv", col_names = FALSE) %>%
     as.matrix()
 
 ## extract parameters for simulation   
-pars <- select(slice(pars, 246), !output) %>%
+pars <- select(slice(pars, 150), !output) %>%
     unlist()
 
 ## solution to round numbers preserving sum
@@ -39,10 +39,10 @@ smart_round <- function(x) {
 }
 
 ## add age probabilities
-ageProbs <- read_csv("age_seeds.csv", col_names = FALSE)$X2
+ageProbs <- read_csv("inputs/age_seeds.csv", col_names = FALSE)$X2
 
 ## read in commuter data
-EW19 <- read_delim("EW19.dat", delim = " ", col_names = FALSE)
+EW19 <- read_delim("inputs/EW19.dat", delim = " ", col_names = FALSE)
 
 ## add seeding information
 EW19 <- mutate(EW19, X4 = 0)
@@ -230,10 +230,10 @@ ggsave("outputs/simsTopLADs.pdf", p1, width = 10, height = 10)
 ## spatial animation of simulation
 
 ## read in shapefile
-lad19 <- st_read("LAD19_shapefile/LAD19_shapefile.shp")
+lad19 <- st_read("inputs/LAD19_shapefile/LAD19_shapefile.shp")
 
 ## extract cases over time in each age-group
-p <- select(medRep, t, starts_with("DI_")) %>%
+p <- select(medRep, t, starts_with("DH_")) %>%
     select(!ends_with("obs")) %>%
     filter(t <= 50) %>%
     pivot_longer(!t, values_to = "counts", names_to = "var") %>%
@@ -262,8 +262,8 @@ p <- inner_join(lad19, p, by = c("objectid" = "lad")) %>%
 
 ## add transitions
 p <- p + transition_time(t) + ggtitle("Day = {frame_time}")
-spatial_gif <- animate(p, nframes = 50, fps = 1)
-anim_save("outputs/simsSpatialDI.gif", spatial_gif)
+spatial_gif <- animate(p, nframes = 50, fps = 1, renderer = gifski_renderer())
+anim_save("outputs/simsSpatialDH.gif", spatial_gif)
 
 ## extract cases over time in each age-group
 p <- select(medRep, t, starts_with("E")) %>%
@@ -294,7 +294,7 @@ p <- inner_join(lad19, p, by = c("objectid" = "lad")) %>%
 
 ## add transitions
 p <- p + transition_time(t) + ggtitle("Day = {frame_time}")
-spatial_gif <- animate(p, nframes = 50, fps = 1)
+spatial_gif <- animate(p, nframes = 50, fps = 1, renderer = gifski_renderer())
 anim_save("outputs/simsSpatialE.gif", spatial_gif)
 
 saveRDS(medRep, "outputs/disSims.rds")
