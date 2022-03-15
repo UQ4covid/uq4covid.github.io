@@ -22,7 +22,7 @@ data <- readRDS("outputs/disSims.rds")
 ## read in parameters, remove guff and reorder
 pars <- readRDS(paste0("wave", wave, "/disease.rds")) %>%
     rename(nu = `beta[1]`, nuA = `beta[6]`) %>%
-    select(!c(starts_with("beta"), repeats, starts_with(".lock"), .p_home_weekend)) %>%
+    select(!c(starts_with("beta"), repeats)) %>%
     select(nu, nuA, !output)
 
 ## read in contact matrix
