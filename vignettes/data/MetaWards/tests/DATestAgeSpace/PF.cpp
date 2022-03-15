@@ -71,7 +71,11 @@ int rbinom_cpp (int n, double p, sitmo::prng &eng) {
     k = 0;
     while(temp < u) {
         k++;
-        if(k > n) stop("Error in binomial sampling\n");
+        if(k > n) {
+            // check for rounding errors
+            if(fabs(temp) < 1e-15 && fabs(u) < 1e-15) return(n);
+            stop("Error in binomial sampling: lcum = %e lu = %e k = %d n = %d\n", temp, u, k, n);
+        }
         lx += log(k);
         lnmx -= log(n - (k - 1));
         temp1 = ln - lx - lnmx + k * log(p) + (n - k) * log(1.0 - p);
@@ -84,7 +88,7 @@ int rbinom_cpp (int n, double p, sitmo::prng &eng) {
 // Multinomial RNG for n = 1 using inverse transform method
 // (to try to circumvent non thread-safe RNG in R)
 int rmultinom_cpp (arma::vec &p, sitmo::prng &eng) {
-    if(abs(sum(p) - 1.0) > 1e-15) {
+    if(fabs(sum(p) - 1.0) > 1e-15) {
         Rprintf("sum(p) = %e\n", sum(p));
         stop("Must have sum(p) == 1 in rmultinom\n");
     }
