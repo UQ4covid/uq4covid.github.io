@@ -16,9 +16,10 @@
 ## obsScale: scaling parameter for Poisson observation process (see code)
 ## a1, a2, b: parameters for Skellam observation process
 ## saveAll: a logical specifying whether to return all states (if FALSE then returns just observed states))
+## ncores:  the number of cores for OpenMP parallelisation (if NA then defaults to all available cores)
 
 PF <- function(pars, C, data, u1_moves, u1, ndays, npart = 10, MD = TRUE, a1 = 0.01, a2 = 0.2, b = 0.1, 
-               a_dis = 0.05, b_dis = 0.5, saveAll = NA) {
+               a_dis = 0.05, b_dis = 0.5, saveAll = NA, ncores = NA) {
     
     ## convert indicators
     if(is.na(saveAll)) {
@@ -28,21 +29,13 @@ PF <- function(pars, C, data, u1_moves, u1, ndays, npart = 10, MD = TRUE, a1 = 0
     }
     MDint <- ifelse(MD, 1, 0)
     
+    ## check number of requested cores
+    if(is.na(ncores)) {
+        ncores <- parallel::detectCores()
+    }
+    
     ## run particle filter for each set of inputs
-    runs <- lapply(1:nrow(pars), function(k, pars, C, u1_moves, u1, npart, ndays, data, MD, a1, a2, b, a_dis, b_dis, saveAll) {
-        
-        # ## create count matrices for checks if used
-        # u1_night <- list()
-        # for(j in 1:max(u1_moves[, 1])) {
-        #     temp <- u1[, , u1_moves[, 1] == j]
-        #     u1_night[[j]] <- apply(temp, c(1, 2), sum)
-        # }
-        # u1_night <- abind(u1_night, along = 3)
-        # N_night <- apply(u1_night, c(2, 3), sum)
-        # N <- apply(u1, c(2, 3), sum)
-        
-        # ## list to store outputs
-        # if(!is.na(saveAll)) out <- list()
+    runs <- lapply(1:nrow(pars), function(k, pars, C, u1_moves, u1, npart, ndays, data, MD, a1, a2, b, a_dis, b_dis, saveAll, ncores) {
         
         ## extract observations
         data <- select(data, t, (starts_with("DI") | starts_with("DH")) & ends_with("obs")) %>%
@@ -59,10 +52,10 @@ PF <- function(pars, C, data, u1_moves, u1, ndays, npart = 10, MD = TRUE, a1 = 0
         
         ## run particle filter
         ll <- PF_cpp(pars, C, data, 12L, 8L, 339L, u1_moves, u1, ndays,
-            npart, MD, a1, a2, b, a_dis, b_dis, saveAll)
+            npart, MD, a1, a2, b, a_dis, b_dis, saveAll, ncores)
         ll
     }, pars = pars, C = C, u1_moves = u1_moves, u1 = u1, npart = npart, ndays = ndays, data = data, MD = MDint, 
-       a1 = a1, a2 = a2, b = b, a_dis = a_dis, b_dis = b_dis, saveAll = saveAllint)
+       a1 = a1, a2 = a2, b = b, a_dis = a_dis, b_dis = b_dis, saveAll = saveAllint, ncores = ncores)
     if(!is.na(saveAll)) {
         ll <- map(runs, "ll")
         runs <- map(runs, "particles") %>%

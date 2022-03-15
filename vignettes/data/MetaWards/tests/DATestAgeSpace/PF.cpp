@@ -548,7 +548,7 @@ void discreteStochModel(int ipart, arma::vec &pars, int tstart, int tstop,
 // [[Rcpp::export]]
 List PF_cpp (arma::vec pars, arma::mat C, arma::imat data, arma::uword nclasses, arma::uword nages, arma::uword nlads, arma::imat u1_moves, 
          arma::icube u1_comb, arma::uword ndays, arma::uword npart, int MD, double a1, double a2, double b, double a_dis, 
-         double b_dis, int saveAll) {
+         double b_dis, int saveAll, int ncores) {
     
     // set counters
     arma::uword i, j, l, k, t;
@@ -618,9 +618,7 @@ List PF_cpp (arma::vec pars, arma::mat C, arma::imat data, arma::uword nclasses,
     double prev_time = 0.0;
     
     // sample seeds to set up thread-safe PRNGs
-    int ncores = 1;
 #ifdef _OPENMP
-    ncores = omp_get_max_threads();
     omp_set_num_threads(ncores);
 #endif
     arma::vec seeds(ncores);
