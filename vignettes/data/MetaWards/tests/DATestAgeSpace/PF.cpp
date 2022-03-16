@@ -156,8 +156,12 @@ double ldtskellam_cpp(int x, double lambda1, double lambda2, char *str, int LB =
         Rprintf("Trying difference of CDFs in ldtskellam\n");
         double norm0 = 0.0, norm1 = 0.0;
         norm0 = lpskellam_cpp(x - 1, lambda1, lambda2);
-        norm1 = lpskellam_cpp(x, lambda1, lambda2);                
-        ldens = norm1 + log(1.0 - exp(norm0 - norm1));
+        norm1 = lpskellam_cpp(x, lambda1, lambda2);
+        if(!arma::is_finite(norm0) && !arma::is_finite(norm1)) {
+            ldens = norm0;
+        } else {
+            ldens = norm1 + log(1.0 - exp(norm0 - norm1));
+        }
     }
         
     // if truncated then adjust log-density
@@ -172,7 +176,10 @@ double ldtskellam_cpp(int x, double lambda1, double lambda2, char *str, int LB =
             if(normsize > 1) {
                 double norm0 = 0.0, norm1 = 0.0;
                 norm0 = lpskellam_cpp(LB - 1, lambda1, lambda2);
-                norm1 = lpskellam_cpp(UB, lambda1, lambda2);              
+                norm1 = lpskellam_cpp(UB, lambda1, lambda2); 
+                if(!arma::is_finite(norm0) && !arma::is_finite(norm1)) {
+                    stop("Issue with truncation bounds in Skellam\n");
+                }
                 double lnorm = norm1 + log(1.0 - exp(norm0 - norm1));
                 ldens -= lnorm;
             } else {
