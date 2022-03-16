@@ -47,10 +47,10 @@ u1 <- readRDS("outputs/u1.rds")
 u1_moves <- readRDS("outputs/u1_moves.rds")
 
 ## run PF with some model discrepancy
-if(exists(hash)) {
+if(exists("hash")) {
     runs_md <- PF(pars[hash, ], C = contact, data = data, u1_moves = u1_moves,
         u1 = u1, ndays = 50, npart = 10, MD = TRUE, a_dis = 0.05, b_dis = 0.05, 
-        saveAll = NA, ncores = 1)
+        saveAll = 1, ncores = 1)
     ## save outputs
     saveRDS(runs_md, paste0("wave", wave, "/runs_md_", hash, ".rds"))
 } else {

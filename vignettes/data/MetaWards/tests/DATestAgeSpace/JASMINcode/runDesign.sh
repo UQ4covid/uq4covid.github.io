@@ -15,3 +15,6 @@ cd ..
 cmd="R CMD BATCH --no-restore --no-save --slave '--args $2 ${jobname}' wavexRuns.R wave$2Runs_${jobname}.Rout"
 eval $cmd
 
+cmd="mv wave$2Runs_${jobname}.Rout wave$2"
+eval $cmd
+
