@@ -20,7 +20,7 @@ if(length(args) == 0) {
     }
 } else {
     ## set wave number
-    wave <- 2
+    wave <- 1
 }
 
 ## source Rcpp PF code
