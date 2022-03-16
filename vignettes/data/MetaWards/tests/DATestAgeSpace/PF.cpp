@@ -982,7 +982,7 @@ List PF_cpp (arma::vec pars, arma::mat C, arma::imat data, arma::uword nclasses,
                     0
                 );
             }
-            weights(i) += log_sum_exp(tempdens, 0);
+            weights(i) += sum(tempdens);
             
             // advance seed
             seeds((arma::uword) omp_get_thread_num()) = eng();
