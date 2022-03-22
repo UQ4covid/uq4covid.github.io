@@ -31,6 +31,7 @@ dtskellam <- function(x, lambda1, lambda2, LB = -Inf, UB = Inf, log = FALSE) {
     
     ## generate non-truncated densities
     ldens <- dskellam(x, lambda1, lambda2, log = TRUE)
+    ldens[ldens > 0] <- -Inf
     
     ## adjust components for truncation as required
     UBind <- which(!is.finite(LB) & is.finite(UB))
@@ -47,6 +48,7 @@ dtskellam <- function(x, lambda1, lambda2, LB = -Inf, UB = Inf, log = FALSE) {
     if(length(bothind) > 0) {
         LBnorm <- pskellam(LB[bothind] - 1, lambda1[bothind], lambda2[bothind], lower.tail = TRUE, log.p = TRUE)
         UBnorm <- pskellam(UB[bothind], lambda1[bothind], lambda2[bothind], lower.tail = TRUE, log.p = TRUE)
+        if(any(LBnorm > 0 | UBnorm > 0)) browser()
         norm <- UBnorm + log(1 - exp(LBnorm - UBnorm))
         ldens[bothind] <- ldens[bothind] - norm
         ldens[bothind] <- ifelse(x[bothind] < LB[bothind] | x[bothind] > UB[bothind], -Inf, ldens[bothind])
