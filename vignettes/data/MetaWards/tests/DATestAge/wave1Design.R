@@ -3,6 +3,9 @@ library(lhs)
 library(mclust)
 library(tidyverse)
 
+## set seed (comment out for new design)
+set.seed(666)
+
 ## source dataTools
 source("inputs/dataTools.R")
 
