@@ -75,16 +75,19 @@ npart <- 10
 runs <- list()
 for(j in 1:length(npart)) {
     ## repeat but adding some model discrepancy
-    runs_md <- PF(select(pars, -id), C = contact, data = data, u = u, ndays = 20, npart = npart[j],
-        MD = TRUE, a_dis = 0.5, b_dis = 0.5, saveAll = NA)
+    runs_md <- PF(select(pars, -id), C = contact, data = data, u = u, ndays = 20, 
+        npart = npart[j], MD = TRUE, a1 = 0.01, a2 = 0.2, b = 0.1,
+        a_dis = 0.05, b_dis = 0.05, saveAll = NA)
 
     ## repeat but adding some model discrepancy
-    runs_mdt100 <- PF(select(pars, -id), C = contact, data = data, u = u, ndays = 20, npart = npart[j] * 100,
-        MD = TRUE, a_dis = 0.5, b_dis = 0.5, saveAll = NA)
+    runs_mdt100 <- PF(select(pars, -id), C = contact, data = data, u = u, ndays = 20, 
+        npart = npart[j] * 100, MD = TRUE, a1 = 0.01, a2 = 0.2, b = 0.1,
+        a_dis = 0.05, b_dis = 0.05, saveAll = NA)
     
     ## repeat but adding some model discrepancy using new updating scheme
-    runs_md1 <- PF1(select(pars, -id), C = contact, data = data, u = u, ndays = 20, npart = npart[j], 
-        MD = TRUE, a_dis = 0.5, b_dis = 0.5, saveAll = NA)
+    runs_md1 <- PF1(select(pars, -id), C = contact, data = data, u = u, ndays = 20, 
+        npart = npart[j], MD = TRUE, a1 = 0.01, a2 = 0.2, b = 0.1,
+        a_dis = 0.05, b_dis = 0.05, saveAll = NA)
     
     ## collapse to data frame and plot
     runs[[j]] <- tibble(MD = runs_md, MDt100 = runs_mdt100, newMD = runs_md1) %>%
