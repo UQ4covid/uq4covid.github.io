@@ -13,7 +13,7 @@ dir.create("outputs")
 source("trSkellam.R")
 
 ## source simulation code
-source("PF.R")
+source("PF1.R")
 
 ## read in parameters, remove guff and reorder
 pars <- readRDS("wave1/disease.rds") %>%
@@ -51,7 +51,7 @@ u[2, ] <- I0
 
 ## try discrete-time model
 sourceCpp("discreteStochModel.cpp")
-disSims <- PF(pars, C = contact, u = u, ndays = 150, npart = 50, MD = TRUE, a_dis = 0.05, b_dis = 0.05, PF = FALSE)
+disSims <- PF1(pars, C = contact, u = u, ndays = 150, npart = 50, MD = TRUE, a_dis = 0.05, b_dis = 0.05, PF = FALSE)
 
 ## set stage names
 stageNms <- map(c("S", "E", "A", "RA", "P", "Ione", "DI", "Itwo", "RI", "H", "RH", "DH"), ~paste0(., 1:8)) %>%
