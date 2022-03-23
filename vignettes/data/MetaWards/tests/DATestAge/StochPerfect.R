@@ -2,6 +2,9 @@
 library(tidyverse)
 library(Rcpp)
 
+## set seed 
+set.seed(4578)
+
 ## create output directory
 dir.create("outputs")
 
@@ -42,9 +45,6 @@ N <- N - I0
 u <- matrix(0, 12, 8)
 u[1, ] <- N
 u[2, ] <- I0
-
-## set seed
-set.seed(4578)
 
 ## try discrete-time model
 sourceCpp("discreteStochModel.cpp")
