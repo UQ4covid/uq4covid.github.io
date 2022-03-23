@@ -52,9 +52,13 @@ checkCounts <- function(u, cu, N) {
 ## MD:    turn model discrepancy process on (TRUE) or off (FALSE)
 ## obsScale: scaling parameter for Poisson observation process (see code)
 ## a1, a2, b: parameters for Skellam observation process
-## saveAll: a logical specifying whether to return all states (if FALSE then returns just observed states))
+## saveAll: a logical specifying whether to return all states (if NA then returns just
+##          log-likelihood estimate, if TRUE then returns all states, if FALSE then 
+##          returns just observed states))
+## pF:      a logical, if TRUE then does particle filtering, else just simulates
+##          from model
 
-PF <- function(pars, C, data, u, ndays, npart = 10, MD = TRUE, a1 = 0.01, a2 = 0.2, b = 0.1, a_dis = 0.05, b_dis = 0.05, saveAll = FALSE) {
+PF <- function(pars, C, data, u, ndays, npart = 10, MD = TRUE, a1 = 0.01, a2 = 0.2, b = 0.1, a_dis = 0.05, b_dis = 0.05, saveAll = NA, PF = TRUE) {
     runs <- mclapply(1:nrow(pars), function(k, pars, C, u, npart, ndays, data, MD, a1, a2, b, a_dis, b_dis, saveAll) {
         
         ## set initial log-likelihood
@@ -76,15 +80,20 @@ PF <- function(pars, C, data, u, ndays, npart = 10, MD = TRUE, a1 = 0.01, a2 = 0
         ## vector of particle weights
         weights <- numeric(npart)
         
+        ## set default for saveAll if PF = FALSE
+        if(!PF & is.na(saveAll)) saveAll <- TRUE
+        
         ## list to store outputs
         if(!is.na(saveAll)) out <- list()
         
         ## extract observations
-        data <- select(data, t, (starts_with("DI") | starts_with("DH")) & ends_with("obs")) %>%
-            {rbind(rep(0, ncol(.)), .)} %>%
-            mutate(across(!t, ~. - lag(.))) %>%
-            slice(-1) %>%
-            as.matrix()
+        if(PF) {
+            data <- select(data, t, (starts_with("DI") | starts_with("DH")) & ends_with("obs")) %>%
+                {rbind(rep(0, ncol(.)), .)} %>%
+                mutate(across(!t, ~. - lag(.))) %>%
+                slice(-1) %>%
+                as.matrix()
+        }
         
         ## loop over time
         for(t in 1:ndays) {
@@ -240,11 +249,13 @@ PF <- function(pars, C, data, u, ndays, npart = 10, MD = TRUE, a1 = 0.01, a2 = 0
                     cu[[i]][1, ] <- cu[[i]][1, ] - Einc
                 }
                 
-                ## calculate log observation error weights
-                obsInc <- data[t, -1]
-                obsDiffs <- obsInc - c(DIinc, DHinc)
-                weights[i] <- weights[i] + 
-                    sum(dtskellam(obsDiffs, a1 + b * c(DIinc, DHinc), a2 + b * c(DIinc, DHinc), LB = -c(DIinc, DHinc), UB = obsInc, log = TRUE))
+                if(PF) {
+                    ## calculate log observation error weights
+                    obsInc <- data[t, -1]
+                    obsDiffs <- obsInc - c(DIinc, DHinc)
+                    weights[i] <- weights[i] + 
+                        sum(dtskellam(obsDiffs, a1 + b * c(DIinc, DHinc), a2 + b * c(DIinc, DHinc), LB = -c(DIinc, DHinc), UB = obsInc, log = TRUE))
+                }
                 # ## check counts
                 # checkCounts(disSims[[i]], cu[[i]], N)
             }
@@ -256,38 +267,51 @@ PF <- function(pars, C, data, u, ndays, npart = 10, MD = TRUE, a1 = 0.01, a2 = 0
                 }
             }
             
-            ## calculate log-likelihood contribution
-            ll <- ll + log_sum_exp(weights, mn = TRUE)
-            
-            ## if zero likelihood then return
-            if(!is.finite(ll)) {
-                if(!is.na(saveAll)) {
-                    return(list(ll = ll, particles = out))
-                } else {
-                    return(ll)
+            if(PF) {
+                ## calculate log-likelihood contribution
+                ll <- ll + log_sum_exp(weights, mn = TRUE)
+                
+                ## if zero likelihood then return
+                if(!is.finite(ll)) {
+                    if(!is.na(saveAll)) {
+                        return(list(ll = ll, particles = out))
+                    } else {
+                        return(ll)
+                    }
                 }
+                
+                ## normalise weights
+                weights <- exp(weights - log_sum_exp(weights))
+                
+                ## resample
+                inds <- apply(rmultinom(npart, 1, weights), 2, function(x) which(x == 1))
+            } else {
+                inds <- 1:npart
             }
-            
-            ## normalise weights
-            weights <- exp(weights - log_sum_exp(weights))
-            
-            ## resample
-            inds <- apply(rmultinom(npart, 1, weights), 2, function(x) which(x == 1))
             u <- disSims[inds]
             cu <- cu[inds]
         }
         if(!is.na(saveAll)) {
-            return(list(ll = ll, particles = out))
+            if(PF) {
+                return(list(ll = ll, particles = out))
+            } else {   
+                return(list(particles = out))
+            }
         } else {
             return(ll)
         }
     }, pars = pars, C = C, u = u, npart = npart, ndays = ndays, data = data, MD = MD, 
        a1 = a1, a2 = a2, b = b, a_dis = a_dis, b_dis = b_dis, saveAll = saveAll, mc.cores = detectCores())
     if(!is.na(saveAll)) {
-        ll <- map(runs, "ll")
-        runs <- map(runs, "particles")
-        ll <- do.call("c", ll)
-        return(list(ll = ll, particles = runs))
+        if(PF) {
+            ll <- map(runs, "ll")
+            runs <- map(runs, "particles")
+            ll <- do.call("c", ll)
+            return(list(ll = ll, particles = runs))
+        } else {   
+            runs <- map(runs, "particles")
+            return(list(particles = runs))
+        }
     } else {
         ll <- do.call("c", runs)
         return(ll)

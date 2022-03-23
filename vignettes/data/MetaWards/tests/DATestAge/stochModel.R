@@ -1,23 +1,32 @@
 ## load libraries
 library(tidyverse)
 library(Rcpp)
+library(parallel)
+
+## set seed 
+set.seed(4578)
 
 ## create output directory
 dir.create("outputs")
 
+## source Skellam code
+source("trSkellam.R")
+
+## source simulation code
+source("PF.R")
+
 ## read in parameters, remove guff and reorder
 pars <- readRDS("wave1/disease.rds") %>%
     rename(nu = `beta[1]`, nuA = `beta[6]`) %>%
-    select(!c(starts_with("beta"), repeats)) %>%
-    select(nu, nuA, !output, output)
+    dplyr::select(!c(starts_with("beta"), repeats)) %>%
+    dplyr::select(nu, nuA, !output, output)
 
 ## read in contact matrix
 contact <- read_csv("inputs/POLYMOD_matrix.csv", col_names = FALSE) %>%
     as.matrix()
 
-## extract parameters for simulation   
-pars <- select(slice(pars, 6), !output) %>%
-    unlist()
+## extract parameters for simulation
+pars <- dplyr::select(slice(pars, 6), !output)
 
 ## solution to round numbers preserving sum
 ## adapted from:
@@ -33,28 +42,36 @@ smart_round <- function(x) {
 N <- 10000
 N <- smart_round(read_csv("inputs/age_seeds.csv", col_names = FALSE)$X2 * N)
 I0 <- smart_round(read_csv("inputs/age_seeds.csv", col_names = FALSE)$X2 * 1)
-S0 <- N - I0
+N <- N - I0
 
 ## set initial counts
 u <- matrix(0, 12, 8)
-u[1, ] <- S0
+u[1, ] <- N
 u[2, ] <- I0
-
-## set seed
-set.seed(4578)
 
 ## try discrete-time model
 sourceCpp("discreteStochModel.cpp")
-disSims <- list()
-for(i in 1:50) {
-    disSims[[i]] <- discreteStochModel(pars, 0, 150, u, contact)
-}
+disSims <- PF(pars, C = contact, u = u, ndays = 150, npart = 50, MD = TRUE, a_dis = 0.05, b_dis = 0.05, PF = FALSE)
+
+## set stage names
 stageNms <- map(c("S", "E", "A", "RA", "P", "Ione", "DI", "Itwo", "RI", "H", "RH", "DH"), ~paste0(., 1:8)) %>%
     reduce(c)
-disSims <- map(disSims, ~as_tibble(.)) %>%
-    bind_rows(.id = "rep") %>%
-    set_names(c("rep", "t", stageNms)) %>%
-    mutate(t = t + 1)
+
+## collapse to data frame
+disSims <- map(disSims[[1]], function(x, nms) {
+        map(1:length(x), function(i, x, nms) {
+            t(x[[i]]) %>%
+            as.vector() %>%
+            c(i)
+        }, x = x, nms = nms) %>%
+        {do.call("rbind", .)}
+    })
+disSims <- map(1:length(disSims), function(i, x) {
+        cbind(x[[i]], i)
+    }, x = disSims) %>%
+    {do.call("rbind", .)}
+colnames(disSims) <- c(stageNms, "rep", "t")
+disSims <- as_tibble(disSims)
 
 ## extract simulation closest to median
 medRep <- pivot_longer(disSims, !c(rep, t), names_to = "var", values_to = "n") %>%
@@ -73,24 +90,25 @@ medRep <- pivot_longer(disSims, !c(rep, t), names_to = "var", values_to = "n") %
     arrange(diff) %>%
     slice(2) %>%
     inner_join(disSims, by = "rep") %>%
-    select(!c(diff, rep))
+    dplyr::select(!c(diff, rep))
 
-## apply underdispersion model to counts
-obsScale <- 0.8
-scaleFn <- function(count, obsScale) {
+## Skellam noise model for observations
+a1 <- 0.01
+a2 <- 0.2
+b <- 0.1
+skelNoise <- function(count, a1, a2, b1, b2) {
     ## create incidence over time
     inc <- diff(c(0, count))
-    inc <- rep(1:length(count), times = inc)
-    if(length(inc) > 1) {
-        inc <- sample(inc, round(length(inc) * obsScale))
+    ## add observation noise
+    for(i in 1:length(inc)) {
+        inc[i] <- inc[i] + rtskellam(1, a1 + b1 * inc[i], a2 + b2 * inc[i], -inc[i])
     }
-    inc <- table(inc)
-    count <- numeric(length(count))
-    count[as.numeric(names(inc))] <- inc
-    cumsum(count)
+    ## return cumulative counts
+    cumsum(inc)
 }
-medRep <- mutate(medRep, across(starts_with("DI"), scaleFn, obsScale = obsScale, .names = "{.col}obs")) %>%
-    mutate(across(starts_with("DH"), scaleFn, obsScale = obsScale, .names = "{.col}obs"))
+medRep <- mutate(medRep, across(starts_with("DI"), skelNoise, a1 = a1, a2 = a2, b1 = b, b2 = b, .names = "{.col}obs")) %>%
+  mutate(across(starts_with("DH"), skelNoise, a1 = a1, a2 = a2, b1 = b, b2 = b, .names = "{.col}obs"))
+###########################################################
 
 ## plot replicates
 p <- pivot_longer(disSims, !c(rep, t), names_to = "var", values_to = "n") %>%
@@ -113,21 +131,21 @@ p <- pivot_longer(disSims, !c(rep, t), names_to = "var", values_to = "n") %>%
         geom_line(aes(y = median)) +
         geom_line(
             aes(y = n), 
-            data = pivot_longer(select(medRep, !ends_with("obs")), !t, names_to = "var", values_to = "n") %>%
-                mutate(age = gsub("[^0-9]", "", var)) %>%
-                mutate(var = gsub("[^a-zA-Z]", "", var)) %>%
-                mutate(var = gsub("one", "1", var)) %>%
-                mutate(var = gsub("two", "2", var)),
+            data = pivot_longer(dplyr::select(medRep, !ends_with("obs")), !t, names_to = "var", values_to = "n") %>%
+            mutate(age = gsub("[^0-9]", "", var)) %>%
+            mutate(var = gsub("[^a-zA-Z]", "", var)) %>%
+            mutate(var = gsub("one", "1", var)) %>%
+            mutate(var = gsub("two", "2", var)),
             col = "red", linetype = "dashed"
         ) +
         geom_line(
             aes(y = n), 
-            data = pivot_longer(select(medRep, t, ends_with("obs")), !t, names_to = "var", values_to = "n") %>%
-                mutate(var = gsub("obs", "", var)) %>%
-                mutate(age = gsub("[^0-9]", "", var)) %>%
-                mutate(var = gsub("[^a-zA-Z]", "", var)) %>%
-                mutate(var = gsub("one", "1", var)) %>%
-                mutate(var = gsub("two", "2", var)),
+            data = pivot_longer(dplyr::select(medRep, t, ends_with("obs")), !t, names_to = "var", values_to = "n") %>%
+            mutate(var = gsub("obs", "", var)) %>%
+            mutate(age = gsub("[^0-9]", "", var)) %>%
+            mutate(var = gsub("[^a-zA-Z]", "", var)) %>%
+            mutate(var = gsub("one", "1", var)) %>%
+            mutate(var = gsub("two", "2", var)),
             col = "blue", linetype = "dashed"
         ) +
         facet_grid(var ~ age, scales = "free") +
@@ -137,3 +155,4 @@ ggsave("outputs/sims.pdf", p, width = 10, height = 10)
 
 saveRDS(medRep, "outputs/disSims.rds")
 saveRDS(pars, "outputs/pars.rds")
+
