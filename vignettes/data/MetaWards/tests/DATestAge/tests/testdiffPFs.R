@@ -6,26 +6,26 @@ library(parallel)
 library(patchwork)
 
 ## source simulation model
-sourceCpp("discreteStochModel.cpp")
+sourceCpp("../discreteStochModel.cpp")
 
 ## read in truncated Skellam sampler
-source("trSkellam.R")
+source("../trSkellam.R")
 
 ## source function to run PF and return log-likelihood
-source("PF.R")
-source("PF1.R")
+source("../PF.R")
+source("../PF1.R")
 
 ## read in simulated data and generate incidence curves
-data <- readRDS("outputs/disSims.rds")
+data <- readRDS("../outputs/disSims.rds")
 
 ## read in parameters, remove guff and reorder
-pars <- readRDS("wave1/disease.rds") %>%
+pars <- readRDS("../wave1/disease.rds") %>%
     rename(nu = `beta[1]`, nuA = `beta[6]`) %>%
     select(!c(starts_with("beta"), repeats)) %>%
     select(nu, nuA, !output)
 
 ## read in contact matrix
-contact <- read_csv("inputs/POLYMOD_matrix.csv", col_names = FALSE) %>%
+contact <- read_csv("../inputs/POLYMOD_matrix.csv", col_names = FALSE) %>%
     as.matrix()
 
 ## solution to round numbers preserving sum
@@ -40,8 +40,8 @@ smart_round <- function(x) {
 
 ## set up number of initial individuals in each age-class
 N <- 10000
-N <- smart_round(read_csv("inputs/age_seeds.csv", col_names = FALSE)$X2 * N)
-I0 <- smart_round(read_csv("inputs/age_seeds.csv", col_names = FALSE)$X2 * 1)
+N <- smart_round(read_csv("../inputs/age_seeds.csv", col_names = FALSE)$X2 * N)
+I0 <- smart_round(read_csv("../inputs/age_seeds.csv", col_names = FALSE)$X2 * 1)
 S0 <- N - I0
 
 ## set initial counts
@@ -89,8 +89,13 @@ for(j in 1:length(npart)) {
         npart = npart[j], MD = TRUE, a1 = 0.01, a2 = 0.2, b = 0.1,
         a_dis = 0.05, b_dis = 0.05, saveAll = NA)
     
+    ## repeat but adding some model discrepancy using new updating scheme
+    runs_md1t100 <- PF1(select(pars, -id), C = contact, data = data, u = u, ndays = 20, 
+        npart = npart[j] * 100, MD = TRUE, a1 = 0.01, a2 = 0.2, b = 0.1,
+        a_dis = 0.05, b_dis = 0.05, saveAll = NA)
+    
     ## collapse to data frame and plot
-    runs[[j]] <- tibble(MD = runs_md, MDt100 = runs_mdt100, newMD = runs_md1) %>%
+    runs[[j]] <- tibble(MD = runs_md, MDt100 = runs_mdt100, newMD = runs_md1, newMDt100 = runs_md1t100) %>%
         cbind(select(pars, id)) %>%
         pivot_longer(!id, names_to = "Type")
 }
@@ -103,6 +108,6 @@ runs <- bind_rows(runs, .id = "npart1") %>%
 p <- ggplot(runs) +
     geom_density(aes(x = value, fill = Type), alpha = 0.5) +
     facet_wrap(~id) +
-    ggtitle(paste0("Num. of replicates = ", nreps, " Num. particles = ", npart)) +
+    ggtitle(paste0("Num. of replicates = ", nreps, " Num. of particles = ", npart)) +
     ylab("Density")
 ggsave("PF_dens_ll.pdf", p, width = 7, height = 7)

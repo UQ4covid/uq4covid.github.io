@@ -5,25 +5,25 @@ library(RcppArmadillo)
 library(parallel)
 
 ## source simulation model
-sourceCpp("discreteStochModel.cpp")
+sourceCpp("../discreteStochModel.cpp")
 
 ## read in truncated Skellam sampler
-source("trSkellam.R")
+source("../trSkellam.R")
 
 ## source function to run PF and return log-likelihood
-source("PF.R")
+source("../PF1.R")
 
 ## read in simulated data and generate incidence curves
-data <- readRDS("outputs/disSims.rds")
+data <- readRDS("../outputs/disSims.rds")
 
 ## read in parameters, remove guff and reorder
-pars <- readRDS("wave1/disease.rds") %>%
+pars <- readRDS("../wave1/disease.rds") %>%
     rename(nu = `beta[1]`, nuA = `beta[6]`) %>%
     select(!c(starts_with("beta"), repeats)) %>%
     select(nu, nuA, !output)
 
 ## read in contact matrix
-contact <- read_csv("inputs/POLYMOD_matrix.csv", col_names = FALSE) %>%
+contact <- read_csv("../inputs/POLYMOD_matrix.csv", col_names = FALSE) %>%
     as.matrix()
 
 ## solution to round numbers preserving sum
@@ -38,8 +38,8 @@ smart_round <- function(x) {
 
 ## set up number of initial individuals in each age-class
 N <- 10000
-N <- smart_round(read_csv("inputs/age_seeds.csv", col_names = FALSE)$X2 * N)
-I0 <- smart_round(read_csv("inputs/age_seeds.csv", col_names = FALSE)$X2 * 1)
+N <- smart_round(read_csv("../inputs/age_seeds.csv", col_names = FALSE)$X2 * N)
+I0 <- smart_round(read_csv("../inputs/age_seeds.csv", col_names = FALSE)$X2 * 1)
 S0 <- N - I0
 
 ## set initial counts
@@ -54,7 +54,7 @@ for(k in 6) {
     ## run model with no model discrepancy and throw out sims corresponding to true parameters
     ## if you want to save out some runs, you can only run for a single design point at a time
     ## due to parallelisation - I could fix, but not right now
-    runs_nomd <- PF(pars[k, ], C = contact, data = data, u = u, ndays = 50, npart = 100, MD = FALSE, saveAll = TRUE)
+    runs_nomd <- PF1(pars[k, ], C = contact, data = data, u = u, ndays = 50, npart = 100, MD = FALSE, saveAll = TRUE)
     
     ## plot particle estimates of states (unweighted)
     sims_nomd <- map(runs_nomd$particles[[1]], ~map(., ~as.vector(t(.)))) %>%
@@ -67,7 +67,7 @@ for(k in 6) {
     colnames(sims_nomd) <- c("t", stageNms)
     
     ## repeat but adding some model discrepancy
-    runs_md <- PF(pars[k, ], C = contact, data = data, u = u, ndays = 50, npart = 100, MD = TRUE, a_dis = 0.5, b_dis = 0.5, saveAll = TRUE)
+    runs_md <- PF1(pars[k, ], C = contact, data = data, u = u, ndays = 50, npart = 100, MD = TRUE, a_dis = 0.5, b_dis = 0.5, saveAll = TRUE)
     
     ## plot particle estimates of states (unweighted)
     sims_md <- map(runs_md$particles[[1]], ~map(., ~as.vector(t(.)))) %>%
@@ -120,5 +120,5 @@ for(k in 6) {
         facet_grid(var ~ age, scales = "free") +
         xlab("Days") + 
         ylab("Counts")
-    ggsave(paste0("sims_combined_", k, ".pdf"), p, width = 10, height = 10)
+    ggsave(paste0("sims_combined_", k, "_PF1.pdf"), p, width = 10, height = 10)
 }
