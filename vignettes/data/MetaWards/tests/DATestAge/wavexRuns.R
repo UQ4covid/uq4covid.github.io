@@ -11,7 +11,7 @@ sourceCpp("discreteStochModel.cpp")
 source("trSkellam.R")
 
 ## source function to run PF and return log-likelihood
-source("PF.R")
+source("PF1.R")
 
 ## set wave
 wave <- 1
@@ -51,7 +51,8 @@ u[1, ] <- S0
 u[2, ] <- I0
 
 ## run PF with some model discrepancy
-runs_md <- PF(pars, C = contact, data = data, u = u, ndays = 30, npart = 100, MD = TRUE, a_dis = 0.05, b_dis = 0.05, saveAll = NA)
+runs_md <- PF1(pars, C = contact, data = data, u = u, ndays = 30, npart = 100, MD = TRUE, 
+    a_dis = 0.05, b_dis = 0.05, a1 = 0.01, a2 = 0.2, b = 0.1, saveAll = NA)
 
 ## save outputs
 saveRDS(runs_md, paste0("wave", wave, "/runs_md.rds"))
