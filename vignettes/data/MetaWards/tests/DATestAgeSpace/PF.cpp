@@ -555,7 +555,7 @@ void discreteStochModel(int ipart, arma::vec &pars, int tstart, int tstop,
 // [[Rcpp::export]]
 List PF_cpp (arma::vec pars, arma::mat C, arma::imat data, arma::uword nclasses, arma::uword nages, arma::uword nlads, arma::imat u1_moves, 
          arma::icube u1_comb, arma::uword ndays, arma::uword npart, int MD, double a1, double a2, double b, double a_dis, 
-         double b_dis, int saveAll, int ncores) {
+         double b_dis, int saveAll, int PF, int ncores) {
     
     // set counters
     arma::uword i, j, l, k, t;
@@ -643,11 +643,11 @@ List PF_cpp (arma::vec pars, arma::mat C, arma::imat data, arma::uword nclasses,
         R_CheckUserInterrupt();
         
         // extract data
-        obsInc = data.row(t).t();
+        if(PF == 1) obsInc = data.row(t).t();
         
         // loop over particles
 #ifdef _OPENMP
-#pragma omp parallel for default(none) private(j, l, tempLB) shared(seeds, npart, u1_moves, nages, nclasses, nlads, data, C, N_night, N_day, u1, u1_new, t, pars, weights, MD, a_dis, b_dis, a1, a2, b, obsInc)
+#pragma omp parallel for default(none) private(j, l, tempLB) shared(seeds, npart, u1_moves, nages, nclasses, nlads, data, C, N_night, N_day, u1, u1_new, t, pars, weights, MD, a_dis, b_dis, a1, a2, b, obsInc, PF)
 #endif
         for(i = 0; i < npart; i++) {
     
@@ -944,76 +944,85 @@ List PF_cpp (arma::vec pars, arma::mat C, arma::imat data, arma::uword nclasses,
                     }
                 }
             } else {
-                // DH incidence
-                for(j = 0; j < nages; j++) {
-                    for(l = 0; l < u1_moves.n_rows; l++) {
-                        DHinc(j, l) = u1_new[i](11, j, l) - u1[i](11, j, l);
-                        if(DHinc(j, l) < 0) Rprintf("DHinc = %d j = %d l = %d\n", DHinc(j, l), j, l);
+                if(PF == 1) {
+                    // DH incidence
+                    for(j = 0; j < nages; j++) {
+                        for(l = 0; l < u1_moves.n_rows; l++) {
+                            DHinc(j, l) = u1_new[i](11, j, l) - u1[i](11, j, l);
+                            if(DHinc(j, l) < 0) Rprintf("DHinc = %d j = %d l = %d\n", DHinc(j, l), j, l);
+                        }
+                    }
+                    
+                    // DI incidence
+                    for(j = 0; j < nages; j++) {
+                        for(l = 0; l < u1_moves.n_rows; l++) {
+                            DIinc(j, l) = u1_new[i](6, j, l) - u1[i](6, j, l);
+                            if(DIinc(j, l) < 0) Rprintf("DIinc = %d j = %d l = %d\n", DIinc(j, l), j, l);
+                        }
+                    }
+                }
+            }
+            
+            if(PF == 1) {
+                // generate data in correct format for observation error weights
+                Dtempinc.zeros();
+                for(l = 0; l < u1_moves.n_rows; l++) {
+                    for(j = 0; j < nages; j++) {
+                        Dtempinc((arma::uword) j * nlads + u1_moves(l, 0) - 1) += DIinc(j, l);
+                        Dtempinc((arma::uword) nlads * nages + j * nlads + u1_moves(l, 0) - 1) += DHinc(j, l);
                     }
                 }
                 
-                // DI incidence
-                for(j = 0; j < nages; j++) {
-                    for(l = 0; l < u1_moves.n_rows; l++) {
-                        DIinc(j, l) = u1_new[i](6, j, l) - u1[i](6, j, l);
-                        if(DIinc(j, l) < 0) Rprintf("DIinc = %d j = %d l = %d\n", DIinc(j, l), j, l);
-                    }
+                // calculate log observation error weights
+                for(l = 0; l < Dtempinc.n_elem; l++) {
+                    tempdens(l) = ldtskellam_cpp(
+                        obsInc(l) - Dtempinc(l),
+                        a1 + b * Dtempinc(l),
+                        a2 + b * Dtempinc(l),
+                        str1,
+                        -Dtempinc(l),
+                        obsInc(l),
+                        0
+                    );
                 }
+                weights(i) += sum(tempdens);
             }
-            
-            // generate data in correct format for observation error weights
-            Dtempinc.zeros();
-            for(l = 0; l < u1_moves.n_rows; l++) {
-                for(j = 0; j < nages; j++) {
-                    Dtempinc((arma::uword) j * nlads + u1_moves(l, 0) - 1) += DIinc(j, l);
-                    Dtempinc((arma::uword) nlads * nages + j * nlads + u1_moves(l, 0) - 1) += DHinc(j, l);
-                }
-            }
-            
-            // calculate log observation error weights
-            for(l = 0; l < Dtempinc.n_elem; l++) {
-                tempdens(l) = ldtskellam_cpp(
-                    obsInc(l) - Dtempinc(l),
-                    a1 + b * Dtempinc(l),
-                    a2 + b * Dtempinc(l),
-                    str1,
-                    -Dtempinc(l),
-                    obsInc(l),
-                    0
-                );
-            }
-            weights(i) += sum(tempdens);
             
             // advance seed
             seeds((arma::uword) omp_get_thread_num()) = eng();
         }
         
-        // calculate log-likelihood contribution
-        ll += log_sum_exp(weights, 1);
-        
-        // if zero likelihood then return
-        if(!arma::is_finite(ll)) {
-            if(saveAll == 0) {
-                return List::create(Named("ll") = ll);
-            } else {
-                return List::create(Named("ll") = ll, _["particles"] = out);
+        if(PF == 1) {
+            // calculate log-likelihood contribution
+            ll += log_sum_exp(weights, 1);
+            
+            // if zero likelihood then return
+            if(!arma::is_finite(ll)) {
+                if(saveAll == 0) {
+                    return List::create(Named("ll") = ll);
+                } else {
+                    return List::create(Named("ll") = ll, _["particles"] = out);
+                }
             }
-        }
-        
-        // normalise weights
-        wnorm = log_sum_exp(weights, 0);
-        weights = exp(weights - wnorm);
-        weights = weights / sum(weights);
-        
-        // resample
-        for(i = 0; i < npart; i++) {
-            l = (arma::uword) rmultinom_cpp(weights, engSerial);
-            u1[i] = u1_new[l];
-        }
-        
-        // copy in order to pass by reference
-        for(i = 0; i < npart; i++) {
-            u1_new[i] = u1[i];
+            
+            // normalise weights
+            wnorm = log_sum_exp(weights, 0);
+            weights = exp(weights - wnorm);
+            weights = weights / sum(weights);
+            
+            // resample
+            for(i = 0; i < npart; i++) {
+                l = (arma::uword) rmultinom_cpp(weights, engSerial);
+                u1[i] = u1_new[l];
+            }
+            // copy in order to pass by reference
+            for(i = 0; i < npart; i++) {
+                u1_new[i] = u1[i];
+            }
+        } else {
+            for(i = 0; i < npart; i++) {
+                u1[i] = u1_new[i];
+            }
         }
         
         // save particles if necessary
@@ -1058,6 +1067,10 @@ List PF_cpp (arma::vec pars, arma::mat C, arma::imat data, arma::uword nclasses,
     if(saveAll == 0) {
         return List::create(Named("ll") = ll);
     } else {
-        return List::create(Named("ll") = ll, _["particles"] = out);
+        if(PF == 1) {
+            return List::create(Named("ll") = ll, _["particles"] = out);
+        } else {
+            return List::create(Named("particles") = out);
+        }
     }
 }

@@ -1,11 +1,13 @@
 ## load libraries
 library(tidyverse)
 library(Rcpp)
+library(RcppArmadillo)
+library(parallel)
+library(abind)
+library(sitmo)
 library(sf)
 library(gganimate)
 library(viridis)
-library(parallel)
-library(abind)
 library(patchwork)
 
 ## set seed
@@ -13,6 +15,13 @@ set.seed(4578)
 
 ## create output directory
 dir.create("outputs")
+
+## source simulation function
+sourceCpp("PF.cpp")
+source("PF.R")
+
+## source Skellam function for obsrvation error
+source("trSkellam.R")
 
 ## read in parameters, remove guff and reorder
 pars <- readRDS("wave1/disease.rds") %>%
@@ -25,8 +34,7 @@ contact <- read_csv("inputs/POLYMOD_matrix.csv", col_names = FALSE) %>%
     as.matrix()
 
 ## extract parameters for simulation   
-pars <- select(slice(pars, 150), !output) %>%
-    unlist()
+pars <- select(slice(pars, 150), !output)
 
 ## solution to round numbers preserving sum
 ## adapted from:
@@ -71,19 +79,32 @@ u1_moves <- as.matrix(EW19[, 1:2])
 saveRDS(u1, "outputs/u1.rds")
 saveRDS(u1_moves, "outputs/u1_moves.rds")
 
-## try discrete-time model
-sourceCpp("discreteStochModel.cpp")
-disSims <- mclapply(1:24, function(i, pars, u1_moves, u1, contact) {
-    discreteStochModel(pars, 0, 100, u1_moves, u1, contact)$out
-}, pars = pars, u1_moves = u1_moves, u1 = u1, contact = contact, mc.cores = detectCores())
+## set up stage names
 stageNms <- map(c("S", "E", "A", "RA", "P", "Ione", "DI", "Itwo", "RI", "H", "RH", "DH"), ~paste0(., "_", 1:8)) %>%
     map(~map(., ~paste0(., "_", 1:max(EW19[, 1])))) %>%
     reduce(c) %>%
     reduce(c)
-disSims <- map(disSims, ~as_tibble(.)) %>%
-    bind_rows(.id = "rep") %>%
-    set_names(c("rep", "t", stageNms)) %>%
-    mutate(t = t + 1)
+
+## simulate discrete-time model
+disSims <- PF(pars, C = contact, data = data, u1_moves = u1_moves,
+    u1 = u1, ndays = 100, npart = 8, MD = TRUE, PF = FALSE,
+    a_dis = 5e-10, b_dis = 0)
+        
+## collapse to data frame
+disSims <- map(1:length(disSims$particles[[1]]), function(i, x) {
+        ## loop over particles
+        map(1:length(x[[i]]), function(i, x) {
+            ## collapse to vector in order: stage, age, LAD
+            aperm(x[[i]], 3:1) %>%
+            as.vector() %>%
+            c(i)
+        }, x = x[[i]]) %>%
+        {do.call("rbind", .)} %>%
+        cbind(rep(i, nrow(.)))
+    }, x = disSims$particles[[1]]) %>%
+    {do.call("rbind", .)}
+colnames(disSims) <- c(stageNms, "rep", "t")
+disSims <- as_tibble(disSims)
 
 ## extract simulation closest to median
 medRep <- pivot_longer(disSims, !c(rep, t), names_to = "var", values_to = "n") %>%
@@ -100,26 +121,26 @@ medRep <- pivot_longer(disSims, !c(rep, t), names_to = "var", values_to = "n") %
     group_by(rep) %>%
     summarise(diff = sum(diff), .groups = "drop") %>%
     arrange(diff) %>%
-    slice(2) %>%
+    slice(1) %>%
     inner_join(disSims, by = "rep") %>%
     select(!c(diff, rep))
 
-## apply underdispersion model to counts
-obsScale <- 0.8
-scaleFn <- function(count, obsScale) {
+## Skellam noise model for observations
+a1 <- 0.01
+a2 <- 0.2
+b <- 0.1
+skelNoise <- function(count, a1, a2, b1, b2) {
     ## create incidence over time
     inc <- diff(c(0, count))
-    inc <- rep(1:length(count), times = inc)
-    if(length(inc) > 1) {
-        inc <- sample(inc, round(length(inc) * obsScale))
+    ## add observation noise
+    for(i in 1:length(inc)) {
+        inc[i] <- inc[i] + rtskellam(1, a1 + b1 * inc[i], a2 + b2 * inc[i], -inc[i])
     }
-    inc <- table(inc)
-    count <- numeric(length(count))
-    count[as.numeric(names(inc))] <- inc
-    cumsum(count)
+    ## return cumulative counts
+    cumsum(inc)
 }
-medRep <- mutate(medRep, across(starts_with("DI"), scaleFn, obsScale = obsScale, .names = "{.col}obs")) %>%
-    mutate(across(starts_with("DH"), scaleFn, obsScale = obsScale, .names = "{.col}obs"))
+medRep <- mutate(medRep, across(starts_with("DI"), skelNoise, a1 = a1, a2 = a2, b1 = b, b2 = b, .names = "{.col}obs")) %>%
+    mutate(across(starts_with("DH"), skelNoise, a1 = a1, a2 = a2, b1 = b, b2 = b, .names = "{.col}obs"))
 
 ## plot replicates at national level
 p <- pivot_longer(disSims, !c(rep, t), names_to = "var", values_to = "n") %>%
