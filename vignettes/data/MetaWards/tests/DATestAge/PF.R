@@ -55,10 +55,10 @@ checkCounts <- function(u, cu, N) {
 ## saveAll: a logical specifying whether to return all states (if NA then returns just
 ##          log-likelihood estimate, if TRUE then returns all states, if FALSE then 
 ##          returns just observed states))
-## pF:      a logical, if TRUE then does particle filtering, else just simulates
+## PF:      a logical, if TRUE then does particle filtering, else just simulates
 ##          from model
 
-PF <- function(pars, C, data, u, ndays, npart = 10, MD = TRUE, a1 = 0.01, a2 = 0.2, b = 0.1, a_dis = 0.05, b_dis = 0.05, saveAll = NA, PF = TRUE) {
+PF <- function(pars, C, data, u, ndays, npart = 10, MD = TRUE, a1 = 0.01, a2 = 0.2, b = 0.1, a_dis = 0.05, b_dis = 0.05, saveAll = NA, PF = TRUE, ncores = detectCores()) {
     runs <- mclapply(1:nrow(pars), function(k, pars, C, u, npart, ndays, data, MD, a1, a2, b, a_dis, b_dis, saveAll, PF) {
         
         ## set initial log-likelihood
@@ -301,7 +301,7 @@ PF <- function(pars, C, data, u, ndays, npart = 10, MD = TRUE, a1 = 0.01, a2 = 0
             return(ll)
         }
     }, pars = pars, C = C, u = u, npart = npart, ndays = ndays, data = data, MD = MD, 
-       a1 = a1, a2 = a2, b = b, a_dis = a_dis, b_dis = b_dis, saveAll = saveAll, PF = PF, mc.cores = detectCores())
+       a1 = a1, a2 = a2, b = b, a_dis = a_dis, b_dis = b_dis, saveAll = saveAll, PF = PF, mc.cores = ncores)
     if(!is.na(saveAll)) {
         if(PF) {
             ll <- map(runs, "ll")
