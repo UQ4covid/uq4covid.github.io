@@ -11,7 +11,7 @@ library(viridis)
 library(patchwork)
 
 ## set seed
-set.seed(4578)
+set.seed(666)
 
 ## create output directory
 dir.create("outputs")
@@ -87,8 +87,8 @@ stageNms <- map(c("S", "E", "A", "RA", "P", "Ione", "DI", "Itwo", "RI", "H", "RH
 
 ## simulate discrete-time model
 disSims <- PF(pars, C = contact, data = data, u1_moves = u1_moves,
-    u1 = u1, ndays = 100, npart = 8, MD = TRUE, PF = FALSE,
-    a_dis = 5e-10, b_dis = 0)
+    u1 = u1, ndays = 100, npart = 24, MD = TRUE, PF = FALSE,
+    a_dis = 0.05, b_dis = 0.05)
         
 ## collapse to data frame
 disSims <- map(1:length(disSims$particles[[1]]), function(i, x) {
@@ -128,7 +128,7 @@ medRep <- pivot_longer(disSims, !c(rep, t), names_to = "var", values_to = "n") %
 ## Skellam noise model for observations
 a1 <- 0.01
 a2 <- 0.2
-b <- 0.1
+b <- 0.001
 skelNoise <- function(count, a1, a2, b1, b2) {
     ## create incidence over time
     inc <- diff(c(0, count))
