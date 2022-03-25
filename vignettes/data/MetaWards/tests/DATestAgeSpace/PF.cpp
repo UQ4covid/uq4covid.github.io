@@ -187,9 +187,9 @@ double ldtskellam_cpp(int x, double lambda1, double lambda2, char *str, int LB =
             }
         }
     }
-    if(!arma::is_finite(ldens)) {
-        Rprintf("Non-finite density in ldtskellam = %f x = %d l1 = %f l2 = %f LB = %d UB = %d\n", ldens, x, lambda1, lambda2, LB, UB);
-    }
+//    if(!arma::is_finite(ldens)) {
+//        Rprintf("Non-finite density in ldtskellam = %f x = %d l1 = %f l2 = %f LB = %d UB = %d\n", ldens, x, lambda1, lambda2, LB, UB);
+//    }
     return ldens;
 }
 
@@ -230,9 +230,11 @@ int rtskellam_cpp(double lambda1, double lambda2, char *str, sitmo::prng &eng, i
                 double u = eng() / mx;
                 k = 0;
                 double xdens = exp(ldtskellam_cpp(LB + k, lambda1, lambda2, str, LB, UB, 0));
+                if(!arma::is_finite(xdens)) xdens = 0.0;
                 while(u > xdens && k < (UB - LB)) {
                     k++;
                     xdens += exp(ldtskellam_cpp(LB + k, lambda1, lambda2, str, LB, UB, 0));
+                    if(!arma::is_finite(xdens)) xdens += 0.0;
                 }
                 if(k == (UB - LB + 1) && u > xdens) {
                     stop("Something wrong in truncated Skellam sampling\n");
@@ -987,6 +989,7 @@ List PF_cpp (arma::vec pars, arma::mat C, arma::imat data, arma::uword nclasses,
                         obsInc(l),
                         0
                     );
+                    if(!arma::is_finite(tempdens(l)) && tempdens(l) >= 0.0) stop("Error in OE\n");
                 }
                 weights(i) += sum(tempdens);
             }
