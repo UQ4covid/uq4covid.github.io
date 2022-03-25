@@ -88,7 +88,7 @@ medRep <- pivot_longer(disSims, !c(rep, t), names_to = "var", values_to = "n") %
     group_by(rep) %>%
     summarise(diff = sum(diff), .groups = "drop") %>%
     arrange(diff) %>%
-    slice(2) %>%
+    slice(1) %>%
     inner_join(disSims, by = "rep") %>%
     dplyr::select(!c(diff, rep))
 
@@ -107,8 +107,7 @@ skelNoise <- function(count, a1, a2, b1, b2) {
     cumsum(inc)
 }
 medRep <- mutate(medRep, across(starts_with("DI"), skelNoise, a1 = a1, a2 = a2, b1 = b, b2 = b, .names = "{.col}obs")) %>%
-  mutate(across(starts_with("DH"), skelNoise, a1 = a1, a2 = a2, b1 = b, b2 = b, .names = "{.col}obs"))
-###########################################################
+    mutate(across(starts_with("DH"), skelNoise, a1 = a1, a2 = a2, b1 = b, b2 = b, .names = "{.col}obs"))
 
 ## plot replicates
 p <- pivot_longer(disSims, !c(rep, t), names_to = "var", values_to = "n") %>%
