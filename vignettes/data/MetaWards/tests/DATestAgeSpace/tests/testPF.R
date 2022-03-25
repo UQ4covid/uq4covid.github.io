@@ -95,9 +95,9 @@ for(k in 150) {
             as_tibble(x) %>%
             mutate(var = c("S", "E", "A", "RA", "P", "Ione", "DI", "Itwo", "RI", "H", "RH", "DH"))
         }) %>%
-        bind_rows(.id = "t")
+        bind_rows(.id = "particle")
     }) %>%
-    bind_rows(.id = "particle") %>%
+    bind_rows(.id = "t") %>%
     pivot_longer(!c(particle, t, var), names_to = "age", values_to = "n") %>%
     mutate(age = as.numeric(gsub("age", "", age))) %>%
     mutate(t = as.numeric(t) - 1) %>%
@@ -154,7 +154,8 @@ for(k in 150) {
     
     ## repeat but adding some model discrepancy
     runs_md <- PF(pars[k, ], C = contact, data = data, u1_moves = u1_moves,
-        u1 = u1, ndays = 50, npart = 10, MD = TRUE, a_dis = 5e-10, b_dis = 0, saveAll = TRUE)
+        u1 = u1, ndays = 50, npart = 10, MD = TRUE, a_dis = 0.05, b_dis = 0.05, 
+        a1 = 0.01, a2 = 0.2, b = 0.001, saveAll = TRUE)
     
     ## plot particle estimates of states (unweighted)
     sims_md <- map(runs_md$particles[[1]], ~{
@@ -164,9 +165,9 @@ for(k in 150) {
             as_tibble(x) %>%
             mutate(var = c("S", "E", "A", "RA", "P", "Ione", "DI", "Itwo", "RI", "H", "RH", "DH"))
         }) %>%
-        bind_rows(.id = "t")
+        bind_rows(.id = "particle")
     }) %>%
-    bind_rows(.id = "particle") %>%
+    bind_rows(.id = "t") %>%
     pivot_longer(!c(particle, t, var), names_to = "age", values_to = "n") %>%
     mutate(age = as.numeric(gsub("age", "", age))) %>%
     mutate(t = as.numeric(t) - 1) %>%
