@@ -43,28 +43,28 @@ checkCounts <- function(u, cu, N) {
 }
 
 ## source Rcpp PF code
-sourceCpp("PF.cpp")
+sourceCpp("../PF.cpp")
 
 ## source function to run PF and return log-likelihood
-source("PF.R")
+source("../PF.R")
 
 ## read in simulated data and generate incidence curves
-data <- readRDS("outputs/disSims.rds")
+data <- readRDS("../outputs/disSims.rds")
 
 ## read in parameters, remove guff and reorder
-pars <- readRDS("wave1/disease.rds") %>%
+pars <- readRDS("../wave1/disease.rds") %>%
     rename(nu = `beta[1]`, nuA = `beta[6]`) %>%
     select(!c(starts_with("beta"), repeats)) %>%
     select(nu, nuA, !output) %>%
     as.data.frame()
 
 ## read in contact matrix
-contact <- read_csv("inputs/POLYMOD_matrix.csv", col_names = FALSE) %>%
+contact <- read_csv("../inputs/POLYMOD_matrix.csv", col_names = FALSE) %>%
     as.matrix()
 
 ## read in initial conditions
-u1 <- readRDS("outputs/u1.rds")
-u1_moves <- readRDS("outputs/u1_moves.rds")
+u1 <- readRDS("../outputs/u1.rds")
+u1_moves <- readRDS("../outputs/u1_moves.rds")
 
 ## set seed for reproducibility
 set.seed(666)
@@ -83,9 +83,7 @@ plot_data <- pivot_longer(filter(data, t <= 50), !t, names_to = "var", values_to
     mutate(age = gsub("obs", "", age))
  
 for(k in 150) {
-    ## run model with no model discrepancy and throw out sims corresponding to true parameters
-    ## if you want to save out some runs, you can only run for a single design point at a time
-    ## due to parallelisation - I could fix, but not right now
+    ## run model with no model discrepancy
     runs_nomd <- PF(pars[k, ], C = contact, data = data, u1_moves = u1_moves,
         u1 = u1, ndays = 50, npart = 10, MD = FALSE, saveAll = TRUE)
     
