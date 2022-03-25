@@ -581,6 +581,9 @@ List PF_cpp (arma::vec pars, arma::mat C, arma::imat data, arma::uword nclasses,
         u1_new[i] = u1_comb;
     }
     
+    // adjust discrepancy parameters to match cohort to national
+    a_dis = a_dis / ((double) u1_moves.n_rows);
+    
     // set up weight vector
     arma::vec weights (npart);
     arma::ivec inds(npart);
