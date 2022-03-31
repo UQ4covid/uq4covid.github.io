@@ -28,6 +28,7 @@ if(any(is.na(ll))) {
     print(which(is.na(ll)))
     stop("Stopped")
 }
+#write.table(data.frame(ind = which(is.na(ll))), "job_lookup.txt", row.names = FALSE, col.names = FALSE)
 
 ## cleanup
 map(1:nrow(pars), function(i, wave) {
