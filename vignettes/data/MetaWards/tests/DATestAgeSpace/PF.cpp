@@ -88,7 +88,7 @@ int rbinom_cpp (int n, double p, sitmo::prng &eng) {
 // Multinomial RNG for n = 1 using inverse transform method
 // (to try to circumvent non thread-safe RNG in R)
 int rmultinom_cpp (arma::vec &p, sitmo::prng &eng) {
-    if(fabs(sum(p) - 1.0) > 1e-15) {
+    if(fabs(sum(p) - 1.0) > 1e-10) {
         Rprintf("sum(p) = %e\n", sum(p));
         stop("Must have sum(p) == 1 in rmultinom\n");
     }
@@ -402,17 +402,20 @@ void discreteStochModel(int ipart, arma::vec &pars, int tstart, int tstop,
             mprobsH(0) = probH(j) * (1.0 - probHD(j));
             mprobsH(1) = probH(j) * probHD(j);
             mprobsH(2) = 1.0 - probH(j);
+            mprobsH = mprobsH / sum(mprobsH);
             
             // transition probs out of I1
             mprobsI1(0) = probI1(j) * probI1H(j);
             mprobsI1(1) = probI1(j) * (1.0 - probI1D(j) - probI1H(j));
             mprobsI1(2) = probI1(j) * probI1D(j);
             mprobsI1(3) = 1.0 - probI1(j);
-            
+            mprobsI1 = mprobsI1 / sum(mprobsI1);
+          
             // transition probs out of E
             mprobsE(0) = probE(j) * (1.0 - probEP(j));
             mprobsE(1) = probE(j) * probEP(j);
             mprobsE(2) = 1.0 - probE(j);
+            mprobsE = mprobsE / sum(mprobsE);
             
             // loop over network
             for(i = 0; i < u1_moves.n_rows; i++) {
