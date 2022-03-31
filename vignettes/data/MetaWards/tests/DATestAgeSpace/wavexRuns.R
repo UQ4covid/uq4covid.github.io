@@ -5,10 +5,8 @@ library(RcppArmadillo)
 library(sitmo)
 
 ## check if being run in batch mode
-args <- commandArgs()
-args <- args[grep("--interactive", args)]
-
-if(length(args) == 0) {
+args <- commandArgs(TRUE)
+if(length(args) != 0) {
     ## extract command line arguments
     args <- commandArgs(TRUE)
     if(length(args) > 0) {
