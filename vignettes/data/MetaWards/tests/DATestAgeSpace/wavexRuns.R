@@ -48,13 +48,13 @@ u1_moves <- readRDS("outputs/u1_moves.rds")
 if(exists("hash")) {
     runs_md <- PF(pars[hash, ], C = contact, data = data, u1_moves = u1_moves,
         u1 = u1, ndays = 50, npart = 50, MD = TRUE, a_dis = 0.05, b_dis = 0.05, 
-	a1 = 0.01, a2 = 0.2, b = 0.001, saveAll = NA, ncores = 1)
+	    a1 = 0.01, a2 = 0.2, b = 0.001, saveAll = NA, ncores = 1)
     ## save outputs
     saveRDS(runs_md, paste0("wave", wave, "/runs_md_", hash, ".rds"))
 } else {
     runs_md <- PF(pars, C = contact, data = data, u1_moves = u1_moves,
         u1 = u1, ndays = 50, npart = 50, MD = TRUE, a_dis = 0.05, b_dis = 0.05, 
-	a1 = 0.01, a2 = 0.2, b = 0.001, saveAll = NA)
+	    a1 = 0.01, a2 = 0.2, b = 0.001, saveAll = NA)
     ## save outputs
     saveRDS(runs_md, paste0("wave", wave, "/runs_md.rds"))
 }
