@@ -24,6 +24,8 @@ data/ward11toWard19Mapping/Local*
 data/ward11toWard19Mapping/*.csv
 data/ward11toWard19Mapping/*.pdf
 data/ward11toWard19Mapping/*.png
+data/wardToLADConversion/Local*
+data/wardToLADConversion/LAD*
 data/pathways/*.pdf
 data/pathways/*.svg
 data/pathways/*.png
@@ -42,7 +44,7 @@ vignette/*.log
 vignette/*.gz
 vignette/*.pdf
 vignette/*.svg
-vignette/age1.db
+vignette/age3.db
 MetaWards.Rproj
 
 literature
@@ -50,3 +52,5 @@ newData
 
 metawardsCatalyst.zip
 
+dataAssimilation/
+tests/edits/

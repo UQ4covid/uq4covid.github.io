@@ -7,8 +7,8 @@ print("HAVE YOU LOADED jaspy?")
 ## set name of directory to append to save outputs to and startdate
 ## (directory appended to "/gws/nopw/j04/covid19/public")
 filedir <- "wave0"
-startdate <- "09/02/2020"
-ndays <- 41
+startdate <- "06/03/2020"
+ndays <- 15
 
 ## check filedir and reformat if necessary
 filedir <- gsub("^/", "", filedir)
@@ -37,9 +37,9 @@ week_lookup <- data.frame(day = as.numeric(dates - startdate), date = dates, wee
 week_lookup <- filter(week_lookup, week %in% WEEKS)
 write.table(week_lookup, "week_lookup.csv", row.names = FALSE, col.names = FALSE, sep = ",")
 
-## create ward lookup table
-ward_lookup <- expand.grid(ward = 1:8071, week = unique(week_lookup$week))
-write.table(ward_lookup, "ward_lookup.csv", row.names = FALSE, col.names = FALSE, sep = ",")
+## create LAD lookup table
+LAD_lookup <- expand.grid(LAD = 1:339, week = unique(week_lookup$week))
+write.table(LAD_lookup, "LAD_lookup.csv", row.names = FALSE, col.names = FALSE, sep = ",")
 
 ## read in inputs
 inputs <- readRDS("../inputs/inputs.rds")
@@ -50,9 +50,8 @@ system(paste0("mkdir -p ", filedir, "inputs"))
 write_csv(inputs, paste0(filedir, "inputs/inputs.csv"))
 write_csv(parRanges, paste0(filedir, "inputs/parRanges.csv"))
 
-## copy trust / ward lookups to inputs folder
-system(paste0("cp ../inputs/trust19Lookup.csv ", filedir, "inputs/"))
-system(paste0("cp ../inputs/Ward19_Lookup.csv ", filedir, "inputs/"))
+## copy trust / LAD lookups to inputs folder
+system(paste0("cp ../inputs/LAD19_Lookup.csv ", filedir, "inputs/"))
 
 ## this next part creates the script file to pass to SLURM
 

@@ -1,0 +1,441 @@
+┌──────────────────────────────────────────────────────────────────────┐
+│                                                                      │
+│   ╔══════════════════════════════════════════════════════════════╗   │
+│   ║             MetaWards version 1.5.1+50.g2865293e             ║   │
+│   ╚══════════════════════════════════════════════════════════════╝   │
+│                                                                      │
+│   ╔══════════════════════════════════════════════════════════════╗   │
+│   ║                    https://metawards.org                     ║   │
+│   ╚══════════════════════════════════════════════════════════════╝   │
+│                                                                      │
+│   ╔══════════════════════════════════════════════════════════════╗   │
+│   ║                      Source information                      ║   │
+│   ╚══════════════════════════════════════════════════════════════╝   │
+│                                                                      │
+│    • repository: https://github.com/tjmckinley/MetaWards.git         │
+│    • branch: devel                                                   │
+│    • revision: 2865293ef4551542f96bd00616ac88feaab5a5ec              │
+│    • last modified: 2021-05-28T18:18:19+0100                         │
+│                                                                      │
+│   ╔══════════════════════════════════════════════════════════════╗   │
+│   ║                  MetaWardsData information                   ║   │
+│   ╚══════════════════════════════════════════════════════════════╝   │
+│                                                                      │
+│    • version: 1.0.0                                                  │
+│    • repository: https://github.com/metawards/MetaWardsData          │
+│    • branch: master                                                  │
+│                                                                      │
+│   ╔══════════════════════════════════════════════════════════════╗   │
+│   ║                    Additional information                    ║   │
+│   ╚══════════════════════════════════════════════════════════════╝   │
+│                                                                      │
+│   Visit https://metawards.org for more information about             │
+│   metawards, its authors and its license                             │
+│                                                                      │
+└──────────────────────────────────────────────────────────────────────┘
+
+────────────────────────────────── Initialise ──────────────────────────────────
+
+ • Using parameters from all lines of disease.dat                               
+
+ • Performing a single run of each set of parameters                            
+
+ • Naming output subdirectories using a run's fingerprint                       
+
+ • Number of threads to use for each model run is 1                             
+
+ • Day zero is Tuesday December 31 2019                                         
+
+ • Using MetaWardsData at /home/tj/Documents/covid/MetaWardsData                
+
+─────────────────────────────── Souce of inputs ────────────────────────────────
+Command Line Args:   --nproc 1 --nthreads 1 -m single -P 100000 -d ncov_age.json
+-D demographics_age.json --mixer ../../model_code/mix_pathways --input 
+disease.dat --iterator ../../model_code/iterator -u user_inputs.txt -o 
+raw_outputs --force-overwrite-output --extractor ../../model_code/ward_extractor
+--start-date 2019/12/31 --theme simple --nsteps 40
+Environment Variables:
+  METAWARDSDATA:     /home/tj/Documents/covid/MetaWardsData
+
+
+────────────────────────────── Repeating this run ──────────────────────────────
+To repeat this job use the command;
+┌──────────────────────────────────────────────────────────────────────────────┐
+│  metawards --input disease.dat --repeats 1 --seed 94185241 --output          │
+│  raw_outputs --disease ncov_age.json --model single --demographics           │
+│  demographics_age.json --start-date 2019-12-31 --repository                  │
+│  /home/tj/Documents/covid/MetaWardsData --population 100000 --nsteps 40      │
+│  --user-variables user_inputs.txt --iterator ../../model_code/iterator       │
+│  --extractor ../../model_code/ward_extractor --mixer                         │
+│  ../../model_code/mix_pathways --theme simple --nthreads 1 --nprocs 1        │
+│  --force-overwrite-output                                                    │
+└──────────────────────────────────────────────────────────────────────────────┘
+Or alternatively use the config.yaml file that will be written to the output 
+directory and use the command;
+┌──────────────────────────────────────────────────────────────────────────────┐
+│  metawards -c config.yaml                                                    │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+────────────────────────────────── Parameters ──────────────────────────────────
+
+───────────────────────── Custom parameters and seeds ──────────────────────────
+Adjusting variables to (.can_work[0]=False, .can_work[1]=False, 
+.can_work[2]=False, .lockdown_date_1_year=2020, .lockdown_date_1_month=3, 
+.lockdown_date_1_day=21, .lockdown_date_2_year=2020, .lockdown_date_2_month=5, 
+.lockdown_date_2_day=13, .nage=8, .ward_seed_filename=ward_seeds.csv, 
+.age_seed_filename=age_seeds.csv, .time_seed_filename=time_seeds.csv, 
+.contact_matrix1_filename=contact_matrix.csv, 
+.contact_matrix2_filename=contact_matrix.csv)[repeat 1]
+Setting the * state as an additional R state.
+
+ • repository: https://github.com/metawards/MetaWardsData                       
+ • repository_branch: master                                                    
+ • repository_version: 1.0.0                                                    
+ • length_day: 0.7                                                              
+ • initial_inf: 5                                                               
+ • static_play_at_home: 0                                                       
+ • dyn_play_at_home: 0.0                                                        
+ • dyn_dist_cutoff: 0.0                                                         
+ • play_to_work: 0                                                              
+ • work_to_play: 0                                                              
+ • daily_imports: 0.0                                                           
+ • UV: 0.0                                                                      
+ • UV_max: 2019-01-01                                                           
+ • scale_uv: 1.0                                                                
+ • bg_foi: 0.0                                                                  
+ • stage_0: R                                                                   
+
+────────────────────── Building the demographic networks ───────────────────────
+[
+  Demographic(name='age1', work_ratio=0.06, play_ratio=0.06, 
+disease=Disease(name=SARS-Cov-2 (genpop), stage=['E', 'P', 'I1', 'I2', 'RI', 
+'DI', 'A', 'RA', 'H', 'RH', 'DH'], beta=[0, 1, 1, 0, 0, 0, 1, 0, 0, 0, 0], 
+progress=[0.3, 0.3, 0.3, 0, 0, 0, 0, 0, 0, 0, 0], too_ill_to_move=[0, 0, 0, 0, 
+0, 0, 0, 0, 0, 0, 0]))
+  Demographic(name='age2', work_ratio=0.154, play_ratio=0.154, 
+disease=Disease(name=SARS-Cov-2 (genpop), stage=['E', 'P', 'I1', 'I2', 'RI', 
+'DI', 'A', 'RA', 'H', 'RH', 'DH'], beta=[0, 1, 1, 0, 0, 0, 1, 0, 0, 0, 0], 
+progress=[0.3, 0.3, 0.3, 0, 0, 0, 0, 0, 0, 0, 0], too_ill_to_move=[0, 0, 0, 0, 
+0, 0, 0, 0, 0, 0, 0]))
+  Demographic(name='age3', work_ratio=0.154, play_ratio=0.154, 
+disease=Disease(name=SARS-Cov-2 (genpop), stage=['E', 'P', 'I1', 'I2', 'RI', 
+'DI', 'A', 'RA', 'H', 'RH', 'DH'], beta=[0, 1, 1, 0, 0, 0, 1, 0, 0, 0, 0], 
+progress=[0.3, 0.3, 0.3, 0, 0, 0, 0, 0, 0, 0, 0], too_ill_to_move=[0, 0, 0, 0, 
+0, 0, 0, 0, 0, 0, 0]))
+  Demographic(name='age4', work_ratio=0.134, play_ratio=0.134, 
+disease=Disease(name=SARS-Cov-2 (genpop), stage=['E', 'P', 'I1', 'I2', 'RI', 
+'DI', 'A', 'RA', 'H', 'RH', 'DH'], beta=[0, 1, 1, 0, 0, 0, 1, 0, 0, 0, 0], 
+progress=[0.3, 0.3, 0.3, 0, 0, 0, 0, 0, 0, 0, 0], too_ill_to_move=[0, 0, 0, 0, 
+0, 0, 0, 0, 0, 0, 0]))
+  Demographic(name='age5', work_ratio=0.128, play_ratio=0.128, 
+disease=Disease(name=SARS-Cov-2 (genpop), stage=['E', 'P', 'I1', 'I2', 'RI', 
+'DI', 'A', 'RA', 'H', 'RH', 'DH'], beta=[0, 1, 1, 0, 0, 0, 1, 0, 0, 0, 0], 
+progress=[0.3, 0.3, 0.3, 0, 0, 0, 0, 0, 0, 0, 0], too_ill_to_move=[0, 0, 0, 0, 
+0, 0, 0, 0, 0, 0, 0]))
+  Demographic(name='age6', work_ratio=0.134, play_ratio=0.134, 
+disease=Disease(name=SARS-Cov-2 (genpop), stage=['E', 'P', 'I1', 'I2', 'RI', 
+'DI', 'A', 'RA', 'H', 'RH', 'DH'], beta=[0, 1, 1, 0, 0, 0, 1, 0, 0, 0, 0], 
+progress=[0.3, 0.3, 0.3, 0, 0, 0, 0, 0, 0, 0, 0], too_ill_to_move=[0, 0, 0, 0, 
+0, 0, 0, 0, 0, 0, 0]))
+  Demographic(name='age7', work_ratio=0.105, play_ratio=0.105, 
+disease=Disease(name=SARS-Cov-2 (genpop), stage=['E', 'P', 'I1', 'I2', 'RI', 
+'DI', 'A', 'RA', 'H', 'RH', 'DH'], beta=[0, 1, 1, 0, 0, 0, 1, 0, 0, 0, 0], 
+progress=[0.3, 0.3, 0.3, 0, 0, 0, 0, 0, 0, 0, 0], too_ill_to_move=[0, 0, 0, 0, 
+0, 0, 0, 0, 0, 0, 0]))
+  Demographic(name='age8', work_ratio=0.131, play_ratio=0.131, 
+disease=Disease(name=SARS-Cov-2 (genpop), stage=['E', 'P', 'I1', 'I2', 'RI', 
+'DI', 'A', 'RA', 'H', 'RH', 'DH'], beta=[0, 1, 1, 0, 0, 0, 1, 0, 0, 0, 0], 
+progress=[0.3, 0.3, 0.3, 0, 0, 0, 0, 0, 0, 0, 0], too_ill_to_move=[0, 0, 0, 0, 
+0, 0, 0, 0, 0, 0, 0]))
+]
+Creating a single ward Network with a population of 100000
+Network loaded. Population: 100000, Workers: 0, Players: 100000
+
+──────────────────────── Specialising into demographics ────────────────────────
+Seeding generator used for demographics with seed 4751828
+Number of differences is 0 + 0
+Specialising network - population: 100000, workers: 0, players: 100000
+  age1 - population: 6000, workers: 0, players: 6000
+  age2 - population: 15400, workers: 0, players: 15400
+  age3 - population: 15400, workers: 0, players: 15400
+  age4 - population: 13400, workers: 0, players: 13400
+  age5 - population: 12800, workers: 0, players: 12800
+  age6 - population: 13400, workers: 0, players: 13400
+  age7 - population: 10500, workers: 0, players: 10500
+  age8 - population: 13100, workers: 0, players: 13100
+
+──────────────────────── Preparing the output directory ────────────────────────
+Removing all files in /home/tj/Documents/covid/uq4covid.github.io/vignettes/data
+/MetaWards/tests/test7/raw_outputs
+removing directory /home/tj/Documents/covid/uq4covid.github.io/vignettes/data/Me
+taWards/tests/test7/raw_outputs
+
+─────────────────────────────── Preparing to run ───────────────────────────────
+Running 10 jobs using 1 process(es)                                             
+
+─────────────────────────── Running models in serial ───────────────────────────
+Running parameter set 1 of 10 using seed 25545995
+All output written to /home/tj/Documents/covid/uq4covid.github.io/vignettes/data
+/MetaWards/tests/test7/raw_outputs/testx001
+┌──────────────────────────────────────────────────────────────────────────────┐
+│                                                                              │
+│   Completed job 1 of 10                                                      │
+│   (.pE_1=0.3, .pE_2=0.3, .pE_3=0.3, .pE_4=0.3, .pE_5=0.3, .pE_6=0.3,         │
+│   .pE_7=0.3, .pE_8=0.3, .pEP_1=1, .pEP_2=1, .pEP_3=1, .pEP_4=1, .pEP_5=1,    │
+│   .pEP_6=1, .pEP_7=1, .pEP_8=1, .pP_1=0.3, .pP_2=0.3, .pP_3=0.3,             │
+│   .pP_4=0.3, .pP_5=0.3, .pP_6=0.3, .pP_7=0.3, .pP_8=0.3, .pA_1=0, .pA_2=0,   │
+│   .pA_3=0, .pA_4=0, .pA_5=0, .pA_6=0, .pA_7=0, .pA_8=0, .pI1_1=0.3,          │
+│   .pI1_2=0.3, .pI1_3=0.3, .pI1_4=0.3, .pI1_5=0.3, .pI1_6=0.3, .pI1_7=0.3,    │
+│   .pI1_8=0.3, .pI1H_1=0, .pI1H_2=0, .pI1H_3=0, .pI1H_4=0, .pI1H_5=0,         │
+│   .pI1H_6=0, .pI1H_7=0, .pI1H_8=0, .pI1D_1=1, .pI1D_2=1, .pI1D_3=1,          │
+│   .pI1D_4=1, .pI1D_5=1, .pI1D_6=1, .pI1D_7=1, .pI1D_8=1, .pI2_1=0,           │
+│   .pI2_2=0, .pI2_3=0, .pI2_4=0, .pI2_5=0, .pI2_6=0, .pI2_7=0, .pI2_8=0,      │
+│   .pH_1=0, .pH_2=0, .pH_3=0, .pH_4=0, .pH_5=0, .pH_6=0, .pH_7=0, .pH_8=0,    │
+│   .pHD_1=1, .pHD_2=1, .pHD_3=1, .pHD_4=1, .pHD_5=1, .pHD_6=1, .pHD_7=1,      │
+│   .pHD_8=1, .lock_1_restrict=1, .lock_2_release=1, beta[1]=0, beta[2]=0,     │
+│   beta[3]=0, beta[6]=0, .ns=1, .p_home_weekend=0)[repeat 1]                  │
+│   2020-02-09: DAY: 40  S: 99979  E: 2  I: 13  P: 6  RI: 0  DI: 0  A: 0       │
+│   RA: 0  H: 0  RH: 0  DH: 0  IW: 1  TOTAL POPULATION 100000                  │
+│                                                                              │
+└──────────────────────────────────────────────────────────────────────────────┘
+Running parameter set 2 of 10 using seed 94849082
+All output written to /home/tj/Documents/covid/uq4covid.github.io/vignettes/data
+/MetaWards/tests/test7/raw_outputs/testx002
+┌──────────────────────────────────────────────────────────────────────────────┐
+│                                                                              │
+│   Completed job 2 of 10                                                      │
+│   (.pE_1=0.3, .pE_2=0.3, .pE_3=0.3, .pE_4=0.3, .pE_5=0.3, .pE_6=0.3,         │
+│   .pE_7=0.3, .pE_8=0.3, .pEP_1=1, .pEP_2=1, .pEP_3=1, .pEP_4=1, .pEP_5=1,    │
+│   .pEP_6=1, .pEP_7=1, .pEP_8=1, .pP_1=0.3, .pP_2=0.3, .pP_3=0.3,             │
+│   .pP_4=0.3, .pP_5=0.3, .pP_6=0.3, .pP_7=0.3, .pP_8=0.3, .pA_1=0, .pA_2=0,   │
+│   .pA_3=0, .pA_4=0, .pA_5=0, .pA_6=0, .pA_7=0, .pA_8=0, .pI1_1=0.3,          │
+│   .pI1_2=0.3, .pI1_3=0.3, .pI1_4=0.3, .pI1_5=0.3, .pI1_6=0.3, .pI1_7=0.3,    │
+│   .pI1_8=0.3, .pI1H_1=0, .pI1H_2=0, .pI1H_3=0, .pI1H_4=0, .pI1H_5=0,         │
+│   .pI1H_6=0, .pI1H_7=0, .pI1H_8=0, .pI1D_1=1, .pI1D_2=1, .pI1D_3=1,          │
+│   .pI1D_4=1, .pI1D_5=1, .pI1D_6=1, .pI1D_7=1, .pI1D_8=1, .pI2_1=0,           │
+│   .pI2_2=0, .pI2_3=0, .pI2_4=0, .pI2_5=0, .pI2_6=0, .pI2_7=0, .pI2_8=0,      │
+│   .pH_1=0, .pH_2=0, .pH_3=0, .pH_4=0, .pH_5=0, .pH_6=0, .pH_7=0, .pH_8=0,    │
+│   .pHD_1=1, .pHD_2=1, .pHD_3=1, .pHD_4=1, .pHD_5=1, .pHD_6=1, .pHD_7=1,      │
+│   .pHD_8=1, .lock_1_restrict=1, .lock_2_release=1, beta[1]=0, beta[2]=0,     │
+│   beta[3]=0, beta[6]=0, .ns=1, .p_home_weekend=0)[repeat 2]                  │
+│   2020-02-09: DAY: 40  S: 99979  E: 2  I: 16  P: 3  RI: 0  DI: 0  A: 0       │
+│   RA: 0  H: 0  RH: 0  DH: 0  IW: 1  TOTAL POPULATION 100000                  │
+│                                                                              │
+└──────────────────────────────────────────────────────────────────────────────┘
+Running parameter set 3 of 10 using seed 14716623
+All output written to /home/tj/Documents/covid/uq4covid.github.io/vignettes/data
+/MetaWards/tests/test7/raw_outputs/testx003
+┌──────────────────────────────────────────────────────────────────────────────┐
+│                                                                              │
+│   Completed job 3 of 10                                                      │
+│   (.pE_1=0.3, .pE_2=0.3, .pE_3=0.3, .pE_4=0.3, .pE_5=0.3, .pE_6=0.3,         │
+│   .pE_7=0.3, .pE_8=0.3, .pEP_1=1, .pEP_2=1, .pEP_3=1, .pEP_4=1, .pEP_5=1,    │
+│   .pEP_6=1, .pEP_7=1, .pEP_8=1, .pP_1=0.3, .pP_2=0.3, .pP_3=0.3,             │
+│   .pP_4=0.3, .pP_5=0.3, .pP_6=0.3, .pP_7=0.3, .pP_8=0.3, .pA_1=0, .pA_2=0,   │
+│   .pA_3=0, .pA_4=0, .pA_5=0, .pA_6=0, .pA_7=0, .pA_8=0, .pI1_1=0.3,          │
+│   .pI1_2=0.3, .pI1_3=0.3, .pI1_4=0.3, .pI1_5=0.3, .pI1_6=0.3, .pI1_7=0.3,    │
+│   .pI1_8=0.3, .pI1H_1=0, .pI1H_2=0, .pI1H_3=0, .pI1H_4=0, .pI1H_5=0,         │
+│   .pI1H_6=0, .pI1H_7=0, .pI1H_8=0, .pI1D_1=1, .pI1D_2=1, .pI1D_3=1,          │
+│   .pI1D_4=1, .pI1D_5=1, .pI1D_6=1, .pI1D_7=1, .pI1D_8=1, .pI2_1=0,           │
+│   .pI2_2=0, .pI2_3=0, .pI2_4=0, .pI2_5=0, .pI2_6=0, .pI2_7=0, .pI2_8=0,      │
+│   .pH_1=0, .pH_2=0, .pH_3=0, .pH_4=0, .pH_5=0, .pH_6=0, .pH_7=0, .pH_8=0,    │
+│   .pHD_1=1, .pHD_2=1, .pHD_3=1, .pHD_4=1, .pHD_5=1, .pHD_6=1, .pHD_7=1,      │
+│   .pHD_8=1, .lock_1_restrict=1, .lock_2_release=1, beta[1]=0, beta[2]=0,     │
+│   beta[3]=0, beta[6]=0, .ns=1, .p_home_weekend=0)[repeat 3]                  │
+│   2020-02-09: DAY: 40  S: 99979  E: 1  I: 17  P: 3  RI: 0  DI: 0  A: 0       │
+│   RA: 0  H: 0  RH: 0  DH: 0  IW: 1  TOTAL POPULATION 100000                  │
+│                                                                              │
+└──────────────────────────────────────────────────────────────────────────────┘
+Running parameter set 4 of 10 using seed 25032092
+All output written to /home/tj/Documents/covid/uq4covid.github.io/vignettes/data
+/MetaWards/tests/test7/raw_outputs/testx004
+┌──────────────────────────────────────────────────────────────────────────────┐
+│                                                                              │
+│   Completed job 4 of 10                                                      │
+│   (.pE_1=0.3, .pE_2=0.3, .pE_3=0.3, .pE_4=0.3, .pE_5=0.3, .pE_6=0.3,         │
+│   .pE_7=0.3, .pE_8=0.3, .pEP_1=1, .pEP_2=1, .pEP_3=1, .pEP_4=1, .pEP_5=1,    │
+│   .pEP_6=1, .pEP_7=1, .pEP_8=1, .pP_1=0.3, .pP_2=0.3, .pP_3=0.3,             │
+│   .pP_4=0.3, .pP_5=0.3, .pP_6=0.3, .pP_7=0.3, .pP_8=0.3, .pA_1=0, .pA_2=0,   │
+│   .pA_3=0, .pA_4=0, .pA_5=0, .pA_6=0, .pA_7=0, .pA_8=0, .pI1_1=0.3,          │
+│   .pI1_2=0.3, .pI1_3=0.3, .pI1_4=0.3, .pI1_5=0.3, .pI1_6=0.3, .pI1_7=0.3,    │
+│   .pI1_8=0.3, .pI1H_1=0, .pI1H_2=0, .pI1H_3=0, .pI1H_4=0, .pI1H_5=0,         │
+│   .pI1H_6=0, .pI1H_7=0, .pI1H_8=0, .pI1D_1=1, .pI1D_2=1, .pI1D_3=1,          │
+│   .pI1D_4=1, .pI1D_5=1, .pI1D_6=1, .pI1D_7=1, .pI1D_8=1, .pI2_1=0,           │
+│   .pI2_2=0, .pI2_3=0, .pI2_4=0, .pI2_5=0, .pI2_6=0, .pI2_7=0, .pI2_8=0,      │
+│   .pH_1=0, .pH_2=0, .pH_3=0, .pH_4=0, .pH_5=0, .pH_6=0, .pH_7=0, .pH_8=0,    │
+│   .pHD_1=1, .pHD_2=1, .pHD_3=1, .pHD_4=1, .pHD_5=1, .pHD_6=1, .pHD_7=1,      │
+│   .pHD_8=1, .lock_1_restrict=1, .lock_2_release=1, beta[1]=0, beta[2]=0,     │
+│   beta[3]=0, beta[6]=0, .ns=1, .p_home_weekend=0)[repeat 4]                  │
+│   2020-02-09: DAY: 40  S: 99979  E: 3  I: 15  P: 3  RI: 0  DI: 0  A: 0       │
+│   RA: 0  H: 0  RH: 0  DH: 0  IW: 1  TOTAL POPULATION 100000                  │
+│                                                                              │
+└──────────────────────────────────────────────────────────────────────────────┘
+Running parameter set 5 of 10 using seed 20769621
+All output written to /home/tj/Documents/covid/uq4covid.github.io/vignettes/data
+/MetaWards/tests/test7/raw_outputs/testx005
+┌──────────────────────────────────────────────────────────────────────────────┐
+│                                                                              │
+│   Completed job 5 of 10                                                      │
+│   (.pE_1=0.3, .pE_2=0.3, .pE_3=0.3, .pE_4=0.3, .pE_5=0.3, .pE_6=0.3,         │
+│   .pE_7=0.3, .pE_8=0.3, .pEP_1=1, .pEP_2=1, .pEP_3=1, .pEP_4=1, .pEP_5=1,    │
+│   .pEP_6=1, .pEP_7=1, .pEP_8=1, .pP_1=0.3, .pP_2=0.3, .pP_3=0.3,             │
+│   .pP_4=0.3, .pP_5=0.3, .pP_6=0.3, .pP_7=0.3, .pP_8=0.3, .pA_1=0, .pA_2=0,   │
+│   .pA_3=0, .pA_4=0, .pA_5=0, .pA_6=0, .pA_7=0, .pA_8=0, .pI1_1=0.3,          │
+│   .pI1_2=0.3, .pI1_3=0.3, .pI1_4=0.3, .pI1_5=0.3, .pI1_6=0.3, .pI1_7=0.3,    │
+│   .pI1_8=0.3, .pI1H_1=0, .pI1H_2=0, .pI1H_3=0, .pI1H_4=0, .pI1H_5=0,         │
+│   .pI1H_6=0, .pI1H_7=0, .pI1H_8=0, .pI1D_1=1, .pI1D_2=1, .pI1D_3=1,          │
+│   .pI1D_4=1, .pI1D_5=1, .pI1D_6=1, .pI1D_7=1, .pI1D_8=1, .pI2_1=0,           │
+│   .pI2_2=0, .pI2_3=0, .pI2_4=0, .pI2_5=0, .pI2_6=0, .pI2_7=0, .pI2_8=0,      │
+│   .pH_1=0, .pH_2=0, .pH_3=0, .pH_4=0, .pH_5=0, .pH_6=0, .pH_7=0, .pH_8=0,    │
+│   .pHD_1=1, .pHD_2=1, .pHD_3=1, .pHD_4=1, .pHD_5=1, .pHD_6=1, .pHD_7=1,      │
+│   .pHD_8=1, .lock_1_restrict=1, .lock_2_release=1, beta[1]=0, beta[2]=0,     │
+│   beta[3]=0, beta[6]=0, .ns=1, .p_home_weekend=0)[repeat 5]                  │
+│   2020-02-09: DAY: 40  S: 99979  E: 3  I: 16  P: 2  RI: 0  DI: 0  A: 0       │
+│   RA: 0  H: 0  RH: 0  DH: 0  IW: 1  TOTAL POPULATION 100000                  │
+│                                                                              │
+└──────────────────────────────────────────────────────────────────────────────┘
+Running parameter set 6 of 10 using seed 22009538
+All output written to /home/tj/Documents/covid/uq4covid.github.io/vignettes/data
+/MetaWards/tests/test7/raw_outputs/testx006
+┌──────────────────────────────────────────────────────────────────────────────┐
+│                                                                              │
+│   Completed job 6 of 10                                                      │
+│   (.pE_1=0.3, .pE_2=0.3, .pE_3=0.3, .pE_4=0.3, .pE_5=0.3, .pE_6=0.3,         │
+│   .pE_7=0.3, .pE_8=0.3, .pEP_1=1, .pEP_2=1, .pEP_3=1, .pEP_4=1, .pEP_5=1,    │
+│   .pEP_6=1, .pEP_7=1, .pEP_8=1, .pP_1=0.3, .pP_2=0.3, .pP_3=0.3,             │
+│   .pP_4=0.3, .pP_5=0.3, .pP_6=0.3, .pP_7=0.3, .pP_8=0.3, .pA_1=0, .pA_2=0,   │
+│   .pA_3=0, .pA_4=0, .pA_5=0, .pA_6=0, .pA_7=0, .pA_8=0, .pI1_1=0.3,          │
+│   .pI1_2=0.3, .pI1_3=0.3, .pI1_4=0.3, .pI1_5=0.3, .pI1_6=0.3, .pI1_7=0.3,    │
+│   .pI1_8=0.3, .pI1H_1=0, .pI1H_2=0, .pI1H_3=0, .pI1H_4=0, .pI1H_5=0,         │
+│   .pI1H_6=0, .pI1H_7=0, .pI1H_8=0, .pI1D_1=1, .pI1D_2=1, .pI1D_3=1,          │
+│   .pI1D_4=1, .pI1D_5=1, .pI1D_6=1, .pI1D_7=1, .pI1D_8=1, .pI2_1=0,           │
+│   .pI2_2=0, .pI2_3=0, .pI2_4=0, .pI2_5=0, .pI2_6=0, .pI2_7=0, .pI2_8=0,      │
+│   .pH_1=0, .pH_2=0, .pH_3=0, .pH_4=0, .pH_5=0, .pH_6=0, .pH_7=0, .pH_8=0,    │
+│   .pHD_1=1, .pHD_2=1, .pHD_3=1, .pHD_4=1, .pHD_5=1, .pHD_6=1, .pHD_7=1,      │
+│   .pHD_8=1, .lock_1_restrict=1, .lock_2_release=1, beta[1]=0, beta[2]=0,     │
+│   beta[3]=0, beta[6]=0, .ns=1, .p_home_weekend=0)[repeat 6]                  │
+│   2020-02-09: DAY: 40  S: 99979  E: 5  I: 12  P: 4  RI: 0  DI: 0  A: 0       │
+│   RA: 0  H: 0  RH: 0  DH: 0  IW: 1  TOTAL POPULATION 100000                  │
+│                                                                              │
+└──────────────────────────────────────────────────────────────────────────────┘
+Running parameter set 7 of 10 using seed 99469286
+All output written to /home/tj/Documents/covid/uq4covid.github.io/vignettes/data
+/MetaWards/tests/test7/raw_outputs/testx007
+┌──────────────────────────────────────────────────────────────────────────────┐
+│                                                                              │
+│   Completed job 7 of 10                                                      │
+│   (.pE_1=0.3, .pE_2=0.3, .pE_3=0.3, .pE_4=0.3, .pE_5=0.3, .pE_6=0.3,         │
+│   .pE_7=0.3, .pE_8=0.3, .pEP_1=1, .pEP_2=1, .pEP_3=1, .pEP_4=1, .pEP_5=1,    │
+│   .pEP_6=1, .pEP_7=1, .pEP_8=1, .pP_1=0.3, .pP_2=0.3, .pP_3=0.3,             │
+│   .pP_4=0.3, .pP_5=0.3, .pP_6=0.3, .pP_7=0.3, .pP_8=0.3, .pA_1=0, .pA_2=0,   │
+│   .pA_3=0, .pA_4=0, .pA_5=0, .pA_6=0, .pA_7=0, .pA_8=0, .pI1_1=0.3,          │
+│   .pI1_2=0.3, .pI1_3=0.3, .pI1_4=0.3, .pI1_5=0.3, .pI1_6=0.3, .pI1_7=0.3,    │
+│   .pI1_8=0.3, .pI1H_1=0, .pI1H_2=0, .pI1H_3=0, .pI1H_4=0, .pI1H_5=0,         │
+│   .pI1H_6=0, .pI1H_7=0, .pI1H_8=0, .pI1D_1=1, .pI1D_2=1, .pI1D_3=1,          │
+│   .pI1D_4=1, .pI1D_5=1, .pI1D_6=1, .pI1D_7=1, .pI1D_8=1, .pI2_1=0,           │
+│   .pI2_2=0, .pI2_3=0, .pI2_4=0, .pI2_5=0, .pI2_6=0, .pI2_7=0, .pI2_8=0,      │
+│   .pH_1=0, .pH_2=0, .pH_3=0, .pH_4=0, .pH_5=0, .pH_6=0, .pH_7=0, .pH_8=0,    │
+│   .pHD_1=1, .pHD_2=1, .pHD_3=1, .pHD_4=1, .pHD_5=1, .pHD_6=1, .pHD_7=1,      │
+│   .pHD_8=1, .lock_1_restrict=1, .lock_2_release=1, beta[1]=0, beta[2]=0,     │
+│   beta[3]=0, beta[6]=0, .ns=1, .p_home_weekend=0)[repeat 7]                  │
+│   2020-02-09: DAY: 40  S: 99979  E: 4  I: 13  P: 4  RI: 0  DI: 0  A: 0       │
+│   RA: 0  H: 0  RH: 0  DH: 0  IW: 1  TOTAL POPULATION 100000                  │
+│                                                                              │
+└──────────────────────────────────────────────────────────────────────────────┘
+Running parameter set 8 of 10 using seed 6763909
+All output written to /home/tj/Documents/covid/uq4covid.github.io/vignettes/data
+/MetaWards/tests/test7/raw_outputs/testx008
+┌──────────────────────────────────────────────────────────────────────────────┐
+│                                                                              │
+│   Completed job 8 of 10                                                      │
+│   (.pE_1=0.3, .pE_2=0.3, .pE_3=0.3, .pE_4=0.3, .pE_5=0.3, .pE_6=0.3,         │
+│   .pE_7=0.3, .pE_8=0.3, .pEP_1=1, .pEP_2=1, .pEP_3=1, .pEP_4=1, .pEP_5=1,    │
+│   .pEP_6=1, .pEP_7=1, .pEP_8=1, .pP_1=0.3, .pP_2=0.3, .pP_3=0.3,             │
+│   .pP_4=0.3, .pP_5=0.3, .pP_6=0.3, .pP_7=0.3, .pP_8=0.3, .pA_1=0, .pA_2=0,   │
+│   .pA_3=0, .pA_4=0, .pA_5=0, .pA_6=0, .pA_7=0, .pA_8=0, .pI1_1=0.3,          │
+│   .pI1_2=0.3, .pI1_3=0.3, .pI1_4=0.3, .pI1_5=0.3, .pI1_6=0.3, .pI1_7=0.3,    │
+│   .pI1_8=0.3, .pI1H_1=0, .pI1H_2=0, .pI1H_3=0, .pI1H_4=0, .pI1H_5=0,         │
+│   .pI1H_6=0, .pI1H_7=0, .pI1H_8=0, .pI1D_1=1, .pI1D_2=1, .pI1D_3=1,          │
+│   .pI1D_4=1, .pI1D_5=1, .pI1D_6=1, .pI1D_7=1, .pI1D_8=1, .pI2_1=0,           │
+│   .pI2_2=0, .pI2_3=0, .pI2_4=0, .pI2_5=0, .pI2_6=0, .pI2_7=0, .pI2_8=0,      │
+│   .pH_1=0, .pH_2=0, .pH_3=0, .pH_4=0, .pH_5=0, .pH_6=0, .pH_7=0, .pH_8=0,    │
+│   .pHD_1=1, .pHD_2=1, .pHD_3=1, .pHD_4=1, .pHD_5=1, .pHD_6=1, .pHD_7=1,      │
+│   .pHD_8=1, .lock_1_restrict=1, .lock_2_release=1, beta[1]=0, beta[2]=0,     │
+│   beta[3]=0, beta[6]=0, .ns=1, .p_home_weekend=0)[repeat 8]                  │
+│   2020-02-09: DAY: 40  S: 99979  E: 4  I: 14  P: 3  RI: 0  DI: 0  A: 0       │
+│   RA: 0  H: 0  RH: 0  DH: 0  IW: 1  TOTAL POPULATION 100000                  │
+│                                                                              │
+└──────────────────────────────────────────────────────────────────────────────┘
+Running parameter set 9 of 10 using seed 92989350
+All output written to /home/tj/Documents/covid/uq4covid.github.io/vignettes/data
+/MetaWards/tests/test7/raw_outputs/testx009
+┌──────────────────────────────────────────────────────────────────────────────┐
+│                                                                              │
+│   Completed job 9 of 10                                                      │
+│   (.pE_1=0.3, .pE_2=0.3, .pE_3=0.3, .pE_4=0.3, .pE_5=0.3, .pE_6=0.3,         │
+│   .pE_7=0.3, .pE_8=0.3, .pEP_1=1, .pEP_2=1, .pEP_3=1, .pEP_4=1, .pEP_5=1,    │
+│   .pEP_6=1, .pEP_7=1, .pEP_8=1, .pP_1=0.3, .pP_2=0.3, .pP_3=0.3,             │
+│   .pP_4=0.3, .pP_5=0.3, .pP_6=0.3, .pP_7=0.3, .pP_8=0.3, .pA_1=0, .pA_2=0,   │
+│   .pA_3=0, .pA_4=0, .pA_5=0, .pA_6=0, .pA_7=0, .pA_8=0, .pI1_1=0.3,          │
+│   .pI1_2=0.3, .pI1_3=0.3, .pI1_4=0.3, .pI1_5=0.3, .pI1_6=0.3, .pI1_7=0.3,    │
+│   .pI1_8=0.3, .pI1H_1=0, .pI1H_2=0, .pI1H_3=0, .pI1H_4=0, .pI1H_5=0,         │
+│   .pI1H_6=0, .pI1H_7=0, .pI1H_8=0, .pI1D_1=1, .pI1D_2=1, .pI1D_3=1,          │
+│   .pI1D_4=1, .pI1D_5=1, .pI1D_6=1, .pI1D_7=1, .pI1D_8=1, .pI2_1=0,           │
+│   .pI2_2=0, .pI2_3=0, .pI2_4=0, .pI2_5=0, .pI2_6=0, .pI2_7=0, .pI2_8=0,      │
+│   .pH_1=0, .pH_2=0, .pH_3=0, .pH_4=0, .pH_5=0, .pH_6=0, .pH_7=0, .pH_8=0,    │
+│   .pHD_1=1, .pHD_2=1, .pHD_3=1, .pHD_4=1, .pHD_5=1, .pHD_6=1, .pHD_7=1,      │
+│   .pHD_8=1, .lock_1_restrict=1, .lock_2_release=1, beta[1]=0, beta[2]=0,     │
+│   beta[3]=0, beta[6]=0, .ns=1, .p_home_weekend=0)[repeat 9]                  │
+│   2020-02-09: DAY: 40  S: 99979  E: 5  I: 14  P: 2  RI: 0  DI: 0  A: 0       │
+│   RA: 0  H: 0  RH: 0  DH: 0  IW: 1  TOTAL POPULATION 100000                  │
+│                                                                              │
+└──────────────────────────────────────────────────────────────────────────────┘
+Running parameter set 10 of 10 using seed 71707304
+All output written to /home/tj/Documents/covid/uq4covid.github.io/vignettes/data
+/MetaWards/tests/test7/raw_outputs/testx010
+┌──────────────────────────────────────────────────────────────────────────────┐
+│                                                                              │
+│   Completed job 10 of 10                                                     │
+│   (.pE_1=0.3, .pE_2=0.3, .pE_3=0.3, .pE_4=0.3, .pE_5=0.3, .pE_6=0.3,         │
+│   .pE_7=0.3, .pE_8=0.3, .pEP_1=1, .pEP_2=1, .pEP_3=1, .pEP_4=1, .pEP_5=1,    │
+│   .pEP_6=1, .pEP_7=1, .pEP_8=1, .pP_1=0.3, .pP_2=0.3, .pP_3=0.3,             │
+│   .pP_4=0.3, .pP_5=0.3, .pP_6=0.3, .pP_7=0.3, .pP_8=0.3, .pA_1=0, .pA_2=0,   │
+│   .pA_3=0, .pA_4=0, .pA_5=0, .pA_6=0, .pA_7=0, .pA_8=0, .pI1_1=0.3,          │
+│   .pI1_2=0.3, .pI1_3=0.3, .pI1_4=0.3, .pI1_5=0.3, .pI1_6=0.3, .pI1_7=0.3,    │
+│   .pI1_8=0.3, .pI1H_1=0, .pI1H_2=0, .pI1H_3=0, .pI1H_4=0, .pI1H_5=0,         │
+│   .pI1H_6=0, .pI1H_7=0, .pI1H_8=0, .pI1D_1=1, .pI1D_2=1, .pI1D_3=1,          │
+│   .pI1D_4=1, .pI1D_5=1, .pI1D_6=1, .pI1D_7=1, .pI1D_8=1, .pI2_1=0,           │
+│   .pI2_2=0, .pI2_3=0, .pI2_4=0, .pI2_5=0, .pI2_6=0, .pI2_7=0, .pI2_8=0,      │
+│   .pH_1=0, .pH_2=0, .pH_3=0, .pH_4=0, .pH_5=0, .pH_6=0, .pH_7=0, .pH_8=0,    │
+│   .pHD_1=1, .pHD_2=1, .pHD_3=1, .pHD_4=1, .pHD_5=1, .pHD_6=1, .pHD_7=1,      │
+│   .pHD_8=1, .lock_1_restrict=1, .lock_2_release=1, beta[1]=0, beta[2]=0,     │
+│   beta[3]=0, beta[6]=0, .ns=1, .p_home_weekend=0)[repeat 10]                 │
+│   2020-02-09: DAY: 40  S: 99979  E: 2  I: 12  P: 7  RI: 0  DI: 0  A: 0       │
+│   RA: 0  H: 0  RH: 0  DH: 0  IW: 1  TOTAL POPULATION 100000                  │
+│                                                                              │
+└──────────────────────────────────────────────────────────────────────────────┘
+../../model_code/ward_extractor
+Importing a custom extractor from ../../model_code/ward_extractor
+Add /home/tj/.local/lib to LD_LIBRARY_PATH
+LD_LIBRARY_PATH = /home/tj/.local/lib:/home/tj/.local/lib:/home/tj/.local/lib:/h
+ome/tj/.local/lib:/home/tj/.local/lib:/home/tj/.local/lib:/home/tj/.local/lib:/h
+ome/tj/.local/lib:/home/tj/.local/lib:/home/tj/.local/lib:/home/tj/.local/lib:/h
+ome/tj/.local/lib:/home/tj/.local/lib:/home/tj/.local/lib:/home/tj/.local/lib:/h
+ome/tj/.local/lib:/home/tj/.local/lib:/home/tj/.local/lib:/home/tj/.local/lib:/h
+ome/tj/.local/lib:/home/tj/.local/lib:/home/tj/.local/lib:/home/tj/.local/lib:/h
+ome/tj/.local/lib:/home/tj/.local/lib:/home/tj/.local/lib:/home/tj/.local/lib:/h
+ome/tj/.local/lib:/home/tj/.local/lib:/home/tj/.local/lib:/home/tj/.local/lib
+Loaded ward_extractor from ../../model_code/ward_extractor.py
+IMPORT <module 'ward_extractor' from '../../model_code/ward_extractor.py'>
+<function extract_db at 0x7f386ab3d310>
+Building a custom extractor for <function extract_db at 0x7f386ab3d310>
+┌──────────────────────────────────────────────────────────────────────────────┐
+│                                                                              │
+│   Writing a summary of all results into the csv file /home/tj/Documents/co   │
+│   vid/uq4covid.github.io/vignettes/data/MetaWards/tests/test7/raw_outputs/   │
+│   results.csv.bz2. You can use this to quickly look at statistics across     │
+│   all runs using e.g. R or pandas                                            │
+│                                                                              │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+──────────────────────────────── End of the run ────────────────────────────────

@@ -6,34 +6,14 @@ from metawards.iterators import advance_foi
 from metawards.iterators import advance_recovery
 from metawards.iterators import advance_foi_work_to_play
 from metawards.iterators import advance_work_to_play
+from metawards.movers import MoveGenerator, go_ward
 from datetime import datetime
 import numpy as np
 import sys
+import re
 
 # use caching to store matrix read in from filename
 seed_file_cache = {}
-
-# functions to read seeding probabilities from file and/or return from cache
-def read_seed_file(filename):
-    global seed_file_cache
-    if filename not in seed_file_cache:
-        with open(filename, "r") as FILE:
-            ward_probs = [[num for num in line.split(',')] for line in FILE]
-        Console.debug("Ward-level seeding probabilities:", variables = [ward_probs])
-        
-        # convert to correct format
-        ward_probs = np.array(ward_probs)
-        ward_probs_ind = ward_probs[:, 0].astype(int)
-        ward_probs_LAD = ward_probs[:, 1].astype(int)
-        ward_probs = ward_probs[:, 2].astype(float)
-        
-        # save in cache        
-        seed_file_cache[filename] = "STORED"
-        seed_file_cache["ward_probs_ind"] = ward_probs_ind
-        seed_file_cache["ward_probs_LAD"] = ward_probs_LAD
-        seed_file_cache["ward_probs"] = ward_probs
-        
-    return seed_file_cache["ward_probs_ind"], seed_file_cache["ward_probs_LAD"], seed_file_cache["ward_probs"]
 
 # read in age lookup
 def read_age_file(filename):
@@ -54,31 +34,28 @@ def read_age_file(filename):
         seed_file_cache["age_probs"] = age_probs
         
     return seed_file_cache["age_probs_ind"], seed_file_cache["age_probs"]
-    
-def read_time_file(filename, nseedMult):
+
+# functions to read seeding probabilities from file and/or return from cache
+def read_states_file(filename):
     global seed_file_cache
     if filename not in seed_file_cache:
         with open(filename, "r") as FILE:
-            time_seeds = [[num for num in line.split(',')] for line in FILE]
-        Console.debug("Times of seeding:", variables = [time_seeds])
+            ini_states = [[num for num in line.split(',')] for line in FILE]
+        Console.debug("Initial states:", variables = [ini_states])
         
-        # convert to dates and counts
-        time_seeds = np.array(time_seeds)
-        time_seeds_LAD = time_seeds[:, 1].astype(int)
-        time_seeds_count = time_seeds[:, 2].astype(int)
-        time_seeds_count = time_seeds_count * nseedMult
+        # convert to correct format
+        ini_states = np.array(ini_states)
+        ini_states_output = ini_states[:, 0]
+        ini_states_LAD = ini_states[:, 1].astype(int)
+        ini_states = ini_states[:, 2:].astype(int)
         
-        time_seeds_date = [[i.split('-')] for i in time_seeds[:, 0]]
-        time_seeds_date = [[int(i[0][0]), int(i[0][1]), int(i[0][2])] for i in time_seeds_date]
-        time_seeds_date = [datetime(i[0], i[1], i[2]).date() for i in time_seeds_date]
-
-        # store outputs
+        # save in cache        
         seed_file_cache[filename] = "STORED"
-        seed_file_cache["time_seeds_date"] = time_seeds_date
-        seed_file_cache["time_seeds_LAD"] = time_seeds_LAD
-        seed_file_cache["time_seeds_count"] = time_seeds_count
-    
-    return seed_file_cache["time_seeds_date"], seed_file_cache["time_seeds_LAD"], seed_file_cache["time_seeds_count"]
+        seed_file_cache["ini_states_output"] = ini_states_output
+        seed_file_cache["ini_states_LAD"] = ini_states_LAD
+        seed_file_cache["ini_states"] = ini_states
+        
+    return seed_file_cache["ini_states_output"], seed_file_cache["ini_states_LAD"], seed_file_cache["ini_states"]
     
 # determine the lock-down status based on the population and current network
 def get_lock_down_vars(network, population):
@@ -154,104 +131,92 @@ def advance_foi_work_to_play_weekend(network, population, **kwargs):
         network.subnets[i].params.dyn_play_at_home = dyn_play_at_home[i]
 
 # set custom advance function
-def advance_initial_seeds(network, population, infections, profiler, rngs, **kwargs):
+def advance_initial_seeds(output_dir, network, population, infections, profiler, rngs, **kwargs):
     
     # extract user parameters
     params = network.params
     
     # extract files name for initial seeding probabilities
-    ward_seed_filename = params.user_params["ward_seed_filename"]
     age_seed_filename = params.user_params["age_seed_filename"]
-    time_seed_filename = params.user_params["time_seed_filename"]
-    ns = int(params.user_params["ns"])
+    ini_states_filename = params.user_params["ini_states_filename"]
     
     # start profiler
     p = profiler.start("additional_seeds")
     
     # set up lookups or read from cache
     age_probs_ind, age_probs = read_age_file(age_seed_filename)
-    ward_probs_ind, ward_probs_LAD, ward_probs = read_seed_file(ward_seed_filename)
-    time_seed_date, time_seed_LAD, time_seed_count = read_time_file(time_seed_filename, ns) 
+    ini_states_output, ini_states_LAD, ini_states = read_states_file(ini_states_filename)
     
-    # extract current date    
-    date = population.date
-        
-    # filter to extract number of seeds
-    filter_time_seed = [i == date for i in time_seed_date]
-    time_seed_count = time_seed_count[filter_time_seed]
+    # get output identifier for this run of MetaWards
+    output = re.search(r"Ens([0-9a-z]*)", output_dir.output_dir())
+    output = output.group(0)
     
-    if len(time_seed_count) > 0:
-        
-        # loop over LADs
-        time_seed_LAD = time_seed_LAD[filter_time_seed]
-        
-        for j in range(len(time_seed_LAD)):
-        
-            # extract LAD
-            LAD = time_seed_LAD[j]
-            
-            # extract wards
-            filter_wards = [i == LAD for i in ward_probs_LAD]
-            tward_probs = ward_probs[filter_wards]
-            tward_probs_ind = ward_probs_ind[filter_wards]
+    # set up vector of state names
+    state_names = ["E", "P", "I1", "I2", "RI", "DI", "A", "RA", "H", "RH", "DH"]
+    state_names = np.array(state_names)
+    state_nums = range(len(state_names))
+    state_nums = np.array(state_nums)
     
-            # extract number of seeds
-            nseeds = time_seed_count[j]
+    # extract states for this run
+    filter_states = [i == output for i in ini_states_output]
+    if(sum(filter_states) == 0):
+        raise Exception(f"Cannot find {output} seeding information.")
+    
+    # filter seeding information relating to this run
+    ini_states_LAD = ini_states_LAD[filter_states]
+    ini_states = ini_states[filter_states, :]
+    
+    # loop over LADs
+    for k in range(len(ini_states_LAD)):
+        
+        # check for any seeds
+        filter_LAD = [i == ini_states_LAD[k] for i in ini_states_LAD]
+        ini_states_curr = ini_states[filter_LAD, :][0]
+    
+        # loop over states
+        for j in range(len(ini_states_curr)):
+    
+            # extract number of affected individuals
+            nind = ini_states_curr.sum()
             
-            # select seeds in age-classes at random according to initial probabilities
-            age_seeds = np.random.multinomial(nseeds, age_probs)
-            
-            # run over each age demographic
-            for demographic in range(len(age_seeds)):
+            if nind > 0:
                 
-                # check if any seeding done in demographic
-                if age_seeds[demographic] > 0:
+                # select seeds in age-classes at random according to initial probabilities
+                age_seeds = np.random.multinomial(nind, age_probs)
+                
+                # run over each age demographic
+                for demographic in range(len(age_seeds)):
                     
-                    # select seeds in wards at random according to initial probabilities
-                    seeds = np.random.multinomial(age_seeds[demographic], tward_probs)
+                    # check if any seeding done in demographic
+                    while age_seeds[demographic] > 0:
                         
-                    # now seed infections
-                    for i in range(len(seeds)):
-                        ward = tward_probs_ind[i]
-                        num = seeds[i]
+                        # select states for given seeds
+                        state_probs = ini_states_curr / ini_states_curr.sum()
                         
-                        if num > 0:
-                            seed_network = network.subnets[demographic]
-                            seed_wards = seed_network.nodes
-                            seed_infections = infections.subinfs[demographic].play
+                        # select states
+                        states = np.random.multinomial(1, state_probs)
+                        filter_state = [i == 1 for i in states]
+                        state = state_names[filter_state]
+                        staten = state_nums[filter_state]
+                        
+                        # remove selected state from states
+                        ini_states_curr[staten] -= 1
+                        
+                        # generate move
+                        move = MoveGenerator(from_demographic = f'age{demographic + 1}',
+                            to_demographic = f'age{demographic + 1}',
+                            from_ward = ini_states_LAD[k],
+                            to_ward = ini_states_LAD[k],
+                            from_stage = "S",
+                            to_stage = state[0],
+                            number = 1)
+
+                        go_ward(generator = move, output_dir = output_dir, network = network, 
+                                population = population, infections = infections, 
+                                profiler = profiler, rngs = rngs, **kwargs)
                             
-                            try:
-                                ward = seed_network.get_node_index(ward)
-                
-                                if seed_wards.play_suscept[ward] == 0:
-                                    Console.warning(
-                                        f"Cannot seed {num} infection(s) in ward {ward} "
-                                        f"as there are no susceptibles remaining")
-                                    continue
-                
-                                elif seed_wards.play_suscept[ward] < num:
-                                    Console.warning(
-                                        f"Not enough susceptibles in ward to see all {num}")
-                                    num = seed_wards.play_suscept[ward]
-                
-                                seed_wards.play_suscept[ward] -= num
-                                if demographic is not None:
-                                    Console.print(
-                                        f"seeding demographic {demographic} "
-                                        f"play_infections[0][{ward}] += {num}")
-                                else:
-                                    Console.print(
-                                        f"seeding play_infections[0][{ward}] += {num}")
-                
-                                seed_infections[0][ward] += num
-                
-                            except Exception as e:
-                                Console.error(
-                                    f"Unable to seed the infection using {seed}. The "
-                                    f"error was {e.__class__}: {e}. Please double-check "
-                                    f"that you are trying to seed a node that exists "
-                                    f"in this network.")
-                                raise e
+                        # update counter
+                        age_seeds[demographic] -= 1
 
     # end profiler
     p.stop()
@@ -273,17 +238,23 @@ def iterate_lockdown(stage: str, population, **kwargs):
     # need custom advance functions to scale rates after lockdown
     # in period before lockdown this treats workers as players at
     # weekends
-    if stage == "foi":
-        if is_weekend:
-            return [advance_foi_work_to_play_weekend, advance_recovery]
+    if population.day == 1:
+        if stage == "setup":
+            return [advance_initial_seeds]
         else:
-            return [advance_foi, advance_recovery]
-    elif stage == "infect":
-        if is_weekend:
-            return [advance_initial_seeds, advance_lockdown_weekend]
-        else:
-            return [advance_initial_seeds, advance_lockdown_week]
+            return []
     else:
-        # we don't do anything at the "analyse" or "finalise" stages
-        return []
+        if stage == "foi":
+            if is_weekend:
+                return [advance_foi_work_to_play_weekend, advance_recovery]
+            else:
+                return [advance_foi, advance_recovery]
+        elif stage == "infect":
+            if is_weekend:
+                return [advance_lockdown_weekend]
+            else:
+                return [advance_lockdown_week]
+        else:
+            # we don't do anything at the "analyse" or "finalise" stages
+            return []
 

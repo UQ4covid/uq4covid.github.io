@@ -20,16 +20,16 @@
       \node [comp] (RH) at ([shift=({7:8.12cm})]H) {$R_H$};
       \node [comp] (DH) at ([shift=({-7:8.12cm})]H) {$D_H$};
 	    \draw [->, shorten >=2pt] (S) -- (E);	
-      \draw [->, shorten >=2pt] (E) -- node [below, xshift = -0.2cm, yshift = -0.2cm] {$p_{EP}^j \gamma_E$} (P);
-      \draw [->, shorten >=2pt] (E) -- node [above, xshift = -1cm] {$\left(1 - p_{EP}^j\right) \gamma_E$} (A);
-      \draw [->, shorten >=2pt] (A) -- node [above] {$\gamma_A$} (RA);
-      \draw [->, shorten >=2pt] (P) -- node [above] {$\gamma_P$} (I1);
-      \draw [->, shorten >=2pt] (I1) -- node [above, xshift = -0.8cm] {$\left(1 - p_{I_1H}^j - p_{I_1D}^j\right)\gamma_{I_1}$} (I2);
-      \draw [->, shorten >=2pt] (I1) -- node [above, xshift = -1cm] {$p_{I_1H}^j\gamma_{I_1}$} (H);
-      \draw [->, shorten >=2pt] (I2) -- node [above] {$\gamma_{I_2}$} (RI);
-      \draw [->, shorten >=2pt] (I1) -- node [below, yshift = -0.5cm] {$p_{I_1D}^j\gamma_{I_1}$} (DI);
-      \draw [->, shorten >=2pt] (H) -- node [above] {$\left(1 - p_{HD}^j\right)\gamma_{H}$} (RH);
-      \draw [->, shorten >=2pt] (H) -- node [below] {$p_{HD}^j\gamma_{H}$} (DH);
+      \draw [->, shorten >=2pt] (E) -- node [below, xshift = -0.2cm, yshift = -0.2cm] {$p_{EP}^j p_E$} (P);
+      \draw [->, shorten >=2pt] (E) -- node [above, xshift = -1cm] {$\left(1 - p_{EP}^j\right) p_E$} (A);
+      \draw [->, shorten >=2pt] (A) -- node [above] {$p_A$} (RA);
+      \draw [->, shorten >=2pt] (P) -- node [above] {$p_P$} (I1);
+      \draw [->, shorten >=2pt] (I1) -- node [above, xshift = -0.8cm] {$\left(1 - p_{I_1H}^j - p_{I_1D}^j\right)p_{I_1}$} (I2);
+      \draw [->, shorten >=2pt] (I1) -- node [above, xshift = -1cm] {$p_{I_1H}^jp_{I_1}$} (H);
+      \draw [->, shorten >=2pt] (I2) -- node [above] {$p_{I_2}$} (RI);
+      \draw [->, shorten >=2pt] (I1) -- node [below, yshift = -0.5cm] {$p_{I_1D}^jp_{I_1}$} (DI);
+      \draw [->, shorten >=2pt] (H) -- node [above] {$\left(1 - p_{HD}^j\right)p_{H}$} (RH);
+      \draw [->, shorten >=2pt] (H) -- node [below] {$p_{HD}^jp_{H}$} (DH);
       \scoped[on background layer]{\node [fit=(A)(P)(I1)(I2), fill = black!20] {};}
       \scoped[on background layer]{\node [fit=(A)(P)(I1)(I2),yshift=0.5cm] {Infectious Classes};}
     \end{scope}

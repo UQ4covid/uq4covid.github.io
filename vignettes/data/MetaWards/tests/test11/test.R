@@ -4,57 +4,62 @@ library(patchwork)
 ## source reconstruct function
 source("../../R_tools/dataTools.R")
 
-## loop over models
+## loop over age classes
 rec <- list()
-models <- c("raw_outputs", "raw_outputs1")
-for(m in 1:length(models)) {
-    ## loop over age classes
-    rec[[m]] <- list()
-    for(j in 1:10) {
-        rec[[m]][[j]] <- list()
-        for(i in 1:8) {
-            ## establish connection
-            system(paste0("bzip2 -dkf ", models[m], "/testx", str_pad(j, 3, pad = "0"), "/age", i, ".db.bz2"))
-            con <- DBI::dbConnect(RSQLite::SQLite(), paste0(models[m], "/testx", str_pad(j, 3, pad = "0"), "/age", i, ".db"))
+for(i in 1:8) {
+    ## set up list for runs
+    rec[[i]] <- list()
+    ## loop over repeats
+    for(j in 1:3) {
+        ## establish connection
+        system(paste0("bzip2 -dkf raw_outputs/Ens0000x", str_pad(j, 3, pad = "0"), "/age", i, ".db.bz2"))
+        con <- DBI::dbConnect(RSQLite::SQLite(), paste0("raw_outputs/Ens0000x", str_pad(j, 3, pad = "0"), "/age", i, ".db"))
 
-            ## extract data
-            compact <- tbl(con, "compact") %>%
-                collect()
+        ## extract data
+        compact <- tbl(con, "compact") %>%
+            collect()
+        compact_ini <- tbl(con, "compact_ini") %>%
+            collect() %>%
+            set_names(colnames(compact))
             
-            DBI::dbDisconnect(con)
+        DBI::dbDisconnect(con)
             
-            system(paste0("rm ", models[m], "/testx", str_pad(j, 3, pad = "0"), "/age", i, ".db"))
+        if(nrow(compact) > 0 | nrow(compact_ini) > 0) {
+            ## remove wards with no events
+            colnames(compact_ini) <- colnames(compact)
+            compact <- rbind(compact_ini, compact) %>%
+                complete(day = 1, ward)
+            compact[is.na(compact)] <- 0
+            compact <- arrange(compact, ward, day)
             
             ## reconstruct counts from incidence
-            rec[[m]][[j]][[i]] <- select(compact, day, Einc) %>%
-                group_by(day) %>%
-                summarise(Einc = sum(Einc)) %>%
-                ungroup() %>%
-                arrange(day) %>%
-                mutate(Ecum = cumsum(Einc))
+            rec[[i]][[j]] <- group_by(compact, ward) %>%
+                summarise(data = reconstruct(Einc, Pinc, I1inc, I2inc, RIinc, DIinc, Ainc, RAinc, Hinc, RHinc, DHinc) %>%
+                magrittr::set_colnames(c(
+                    "Einc", "E", "Pinc", "P", "I1inc", "I1", "I2inc", "I2", 
+                    "RI", "DI",
+                    "Ainc", "A", "RA",
+                    "Hinc", "H", "RH", "DH"
+                )) %>%
+                as_tibble() %>%
+                mutate(day = day) %>%
+                list()
+            ) %>%
+            unnest(cols = data) %>%
+            select(day, ward, everything()) %>%
+            arrange(day, ward) %>%
+            {filter(., rowSums(.[, -c(1, 2)]) != 0)} %>%
+            as.data.frame()
+        } else {
+            rec[[i]][[j]] <- "No infection"
         }
-        
-        ## collapse to mean and CIs
-        rec[[m]][[j]] <- bind_rows(rec[[m]][[j]], .id = "age") %>%
-            complete(age, day = 1:max(.$day)) %>%
-            group_by(age) %>%
-            mutate_at(-c(1, 2), ~ifelse(day == 1 & is.na(.), 0, .)) %>%
-            fill(names(.)) %>%
-            ungroup()
     }
-    rec[[m]] <- bind_rows(rec[[m]], .id = "rep") %>%
-        group_by(age, day) %>%
-        summarise(LCI = quantile(Ecum, probs = 0.025), UCI = quantile(Ecum, probs = 0.975), Ecum = mean(Ecum)) %>%
-        ungroup()
 }
-names(rec) <- c("pweekend = 0", "pweekend = 1")
-rec <- bind_rows(rec, .id = "model")
 
-pdf("test.pdf", width = 10, height = 5)
-p <- ggplot(rec, aes(x = day, y = Ecum)) +
-    geom_ribbon(aes(ymin = LCI, ymax = UCI, fill = model), alpha = 0.5) +
-    geom_line(aes(colour = model)) +
-    facet_wrap(~age)
-print(p)
-dev.off()
+for(i in 1:3) {
+    for(j in 1:8) {
+        print(paste("i = ", i, ", j = ", j))
+        print(rec[[j]][[i]])
+     }
+ }
 

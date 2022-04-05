@@ -10,7 +10,7 @@ output:
 
 <center>
 
-**Requires MetaWards `devel` branch install currently**
+**Requires MetaWards development branch currently**
 
 Please download files for running the model from **[here](../metawards.zip)**.
 
@@ -58,8 +58,8 @@ warningFlag <- FALSE
 messageFlag <- FALSE
 
 ## read in commuter data
-players <- sum(read_delim("~/Documents/covid/MetaWardsData/model_data/2011to2019Data/PlaySize19.dat", " ", col_names = FALSE)$X2)
-workers <- sum(read_delim("~/Documents/covid/MetaWardsData/model_data/2011to2019Data/WorkSize19.dat", " ", col_names = FALSE)$X2)
+players <- sum(read_delim("~/Documents/covid/MetaWardsData/model_data/2019LADData/PlaySize19.dat", " ", col_names = FALSE)$X2)
+workers <- sum(read_delim("~/Documents/covid/MetaWardsData/model_data/2019LADData/WorkSize19.dat", " ", col_names = FALSE)$X2)
 ```
 
 <button data-toggle="collapse" data-target="#workplay">Click for worker / player generation</button>
@@ -67,7 +67,7 @@ workers <- sum(read_delim("~/Documents/covid/MetaWardsData/model_data/2011to2019
 
 Note that the total number of individuals in the table below is different to the number of individuals in the commuter data that is used in MetaWards, since the commuter data come from the 2011 census, whereas the age-distributions above come from more recent population counts. Hence we use the more recent data to figure out the proportions of individuals in each age-category, which we pass to the MetaWards model.
 
-However, we also need to specify the proportions of the workers and players that are in each age category. In this case we make the assumption that all individuals $<18$ years old or $\geq 70$ years old are players only, and furthermore we assume that school-age children don't move from their home wards---essentially assuming that most children go to school in their home wards. (Note the play movements of the $<5$ year olds reflects the movements of the parents/carers). To implement this in MetaWards we can set the proportions of workers/players in each age-class as described below, and then set an age-specific parameter `static_play_at_home` for each age-class that we wish to restrict movements for. This latter part is done in the user input file [here](#user).
+However, we also need to specify the proportions of the workers and players that are in each age category. In this case we make the assumption that all individuals $<18$ years old or $\geq 70$ years old are players only, and furthermore we assume that school-age children don't move from their home LADs---essentially assuming that most children go to school in their home LADs. (Note the play movements of the $<5$ year olds reflects the movements of the parents/carers). To implement this in MetaWards we can set the proportions of workers/players in each age-class as described below, and then set an age-specific parameter `static_play_at_home` for each age-class that we wish to restrict movements for. This latter part is done in the user input file [here](#user).
 
 For the worker/player proportions, consider that if $p_j$ is the proportion of individuals in age-class $j$ in the population, then the proportion of workers in age-class $j$ is:
 $$
@@ -174,9 +174,8 @@ user <- "# Normal status" %>%
   c(paste0(".nage = ", nrow(ages))) %>%
   c("") %>%
   c("# names of input files for seeding") %>%
-  c(".ward_seed_filename = \"inputs/ward_seeds.csv\"") %>%
   c(".age_seed_filename = \"inputs/age_seeds.csv\"") %>%
-  c(".time_seed_filename = \"inputs/time_seeds.csv\"") %>%
+  c(".ini_states_filename = \"inputs/seeds.csv\"") %>%
   c("") %>%
   c("# turn off movements in school-age children") %>%
   c("age2:static_play_at_home = 1.0")
@@ -206,13 +205,17 @@ write_csv(age_seed, "../inputs/age_seeds.csv", col_names = FALSE)
 ```{js, code = readLines("../inputs/age_seeds.csv"), eval = FALSE}
 ```
 
-Here the first column is the age demographic and the second is the probability of seeding into that age-demographic. We take the number of deaths observed on each day up to the 14th March 2020, and seed the same number of individuals exactly three weeks earlier. To do this we take a multinomial sample to decide how many individuals are seeded into each age-class, and then we split these across wards as described below. These are stored in the file `inputs/time_seeds.csv`, the first column of which is the date of the seeding, and the second is a baseline for how many individuals are seeded on that day. In practice we multiply these baseline values by a scaling factor `nseedMult`, which is included as a variable input in the model code below.
+Here the first column is the age demographic and the second is the probability of seeding into that age-demographic. Since we do not know where initial importations of infections happened, or where these infections happened, we need some way to inform this. We want to avoid treating the number/timing of initial importations as additional unknown parameters in the model, since this vastly increases the volume of parameter space to search. Instead we have developed a **data driven prior** for the states of the system at a given point in time, which depends on some data and also the parameters of the model.
 
-We take all recorded deaths up to and including the 14th March, recorded at the LAD-level, and for each we seed an infection three weeks before in a random ward that is mapped to the LAD (proportionately to the population size in each ward). Details and instructions can be found in `data/seedDeaths/README.md`. This creates a file `inputs/ward_seeds.csv` that contains the necessary probabilities for ward seeding. This file has the same form as the `age_seeds.csv` file described above, but the first column is the ward ID, the second is a LAD grouping ID, and the third contains the probabilities of seeding. It also creates a file `inputs/time_seeds.csv`, which has a column of dates, a column of LAD grouping IDs and a column for the baseline number of seeds on each date in each LAD.
+The general approach is to take deaths observed in each Lower Tier Local Authority (LTLA) region on each day up to some fixed time point early on in the epidemic. Here we choose the 13th March 2020. We then fit a simplified version of the MetaWards model to each LTLA independently, where we assume a single population of individuals in each LTLA, and we remove age-structure from the model (taking a weighted average of the transition parameters across all the age-classes as inputs).
 
-We start simulations on 9th February 2020 with the first seed added on the 10th February.
+In addition to the transmission process, we also introduce a fixed parameter $p_{\text{ini}}$, which corresponds to the probability of an introduction of infection on a given day, that is independent of the transmission process. For a fixed set of parameters, we fit the model from 1st January 2020--13th March 2020 using an individual forwards-filtering backwards sampling (iFFBS) algorithm^[[Touloupou *et al.* (2020)](https://www.tandfonline.com/doi/full/10.1080/10618600.2019.1654880)]. Here the unknowns are the states of the system and the model is calibrated to the observed number of deaths in each LTLA. This provide a posterior distribution for the states of the system at each time point between 1st January 2020--13th March 2020, that is conditional on data. We take random samples from this distribution to provide initial states for our MetaWards model runs. We use truncated sampling to ensure that there is at least one individual that is either infectious, or can progress to infectiousness, to ensure that there is a non-zero probability of an outbreak in a given LTLA region. By separating out the data used to generate the seeds, and the data used to calibrate the model, we try to avoid too many of the pitfalls of using the data twice.
 
-> **Note**: the user inputs file must contain the relative path names to the age and ward seed files---see [here](#user).
+We then take multinomial samples to decide how individuals are seeded into each age-class. Details and instructions can be found in `data/seedDeaths/README.md`. This creates a file `inputs/seedInfo.rds`, which contains the data necessary to fit the iFFBS model for a given set of parameters. The file `R_tools/simulateSeedStates.R` will fit the iFFBS models according to each set of design points and generate a file called `inputs/seeds.csv` that contains initial states for use in MetaWards. The iFFBS code is contained in the `R_tool/iFFBS.cpp` file.
+
+> **Note**: we have made a few extensions to the standard iFFBS algorithm to make it more efficient for large populations with low numbers of infections.
+
+> **Note**: the user inputs file must contain the relative path names to the age and seed files---see [here](#user).
 
 To implement this probabilistic seeding, we need a custom `iterator` function, which can be viewed below. 
 
@@ -246,7 +249,7 @@ For generic states $X$ and $Y$ say, the progress of an individual in age-class $
 * Similarly to before, we model: $\log\left(p^j_{HD}\right) = \alpha_{HD} + \eta \mbox{age}_j$. 
 * We also model: $\log\left(T_H^j\right) = \alpha_{T_H} + \eta_{T_H} \mbox{age}_j$ where $\eta_{T_H} > 0$. 
 
-We also require inputs for $R_0$, a parameter $\nu_A$ which scales the force-of-infection between asymptomatics and the general population, and further scaling parameters that we use to model various lockdown measures (described [below](#lockdown)). We also need the scaling parameter for the number of seeds, $n_s$, and a parameter $p_{\text{home/weekend}}$ which scales the number of movements at weekends.
+We also require inputs for $R_0$, a parameter $\nu_A$ which scales the force-of-infection between asymptomatics and the general population, and further scaling parameters that we use to model various lockdown measures (described [below](#lockdown)). We also need a parameter $p_{\text{home/weekend}}$ which scales the number of movements at weekends.
 
 <a name="translink"></a>
 <button data-toggle="collapse" data-target="#trans">Click for details on transmission terms</button>
@@ -363,7 +366,6 @@ We have derived plausible parameter bounds from data and the literature. **We no
     \alpha_{EP}, \alpha_{I_1H}, \alpha_{I_1D}, \alpha_{HD}, \eta&: \mbox{drawn from distribution as described below}\\
     \alpha_{T_H}, \eta_{T_H}&: \mbox{drawn from distribution as described below}\\
     \nu_A&: (0, 1)\\
-    n_s&: (10, 100)\\
     p_{\text{home/weekend}}&: (0, 1)
 \end{align}
 
@@ -590,23 +592,23 @@ Each database for a given run contains a single table called `compact`. For effi
 * only store time points where an event happens within that age-class;
 * only store the *incidence* data (i.e. new cases), and not the time-series counts.
 
-This also means that wards and/or age-classes that are not infected do not return any results. 
+This also means that LADs and/or age-classes that are not infected do not return any results. 
 
 This trick **hugely** reduces the size of the output data, but means that we have to do some **post-processing** in order to extract quantities of interest. Since the data are stored as an SQL database, we can either query the database directly, or use some of the tools in e.g. R (see [below](#recon)) to interface with it and to reconstruct time-series counts if required. 
 
 So, to clarify, the `stages*.db` databases each contain a table called `compact` with entries:
 
-* `day`, `ward`
+* `day`, `LAD`
 * `Einc`, `Pinc`, `I1inc`, `I2inc`, `RIinc`, `DIinc`
 * `Ainc`, `RAinc`
 * `Hinc`, `RHinc`, `DHinc`
 
-We save this custom `extractor` function in the file `ward_extractor.py`.
+We save this custom `extractor` function in the file `extractor.py`.
 
 <button data-toggle="collapse" data-target="#ext">Click for MetaWards <code>extractor</code> file</button>
 <div id="ext" class="collapse boxed">
 
-```{python, code = readLines("../model_code/ward_extractor.py"), eval = FALSE}
+```{python, code = readLines("../model_code/extractor.py"), eval = FALSE}
 ```
 
 </div>
@@ -629,9 +631,9 @@ In R we can set up the *input* parameter ranges as follows:
 ## set up parameter ranges for uniform ranges
 parRanges <- data.frame(
     parameter = c("R0", "TE", "TP", "TI1", "TI2", 
-                  "nuA", "lock_1_restrict", "lock_2_release", "ns", "p_home_weekend"),
-    lower = c(2, 0.1, 1.2, 2.8, 0.0001, 0, 0, 0, 10, 0),
-    upper = c(4.5, 2, 3, 4.5, 0.5, 1, 1, 1, 100, 1),
+                  "nuA", "lock_1_restrict", "lock_2_release", "p_home_weekend"),
+    lower = c(2, 0.1, 1.2, 2.8, 0.0001, 0, 0, 0, 0),
+    upper = c(4.5, 2, 3, 4.5, 0.5, 1, 1, 1, 1),
     stringsAsFactors = FALSE
 ) 
 ```
@@ -714,21 +716,21 @@ wave
 | +-- ...
 ```
 
-The `age*.db` files are the unzipped raw outputs for that design point (described above). The `weeksums_*.csv` files are weekly summaries of mean hospital prevalence (`Hprev` column) and total deaths (`Deaths` column) on a weekly basis for each ward and week within each age-class. For a given ensemble ID (`Ens0000` say), replicates are appended with the replicate number e.g. `Ens0000x001`, `Ens0000x002` and so on. 
+The `age*.db` files are the unzipped raw outputs for that design point (described above). The `weeksums_*.csv` files are weekly summaries of mean hospital prevalence (`Hprev` column) and total deaths (`Deaths` column) on a weekly basis for each LAD and week within each age-class. For a given ensemble ID (`Ens0000` say), replicates are appended with the replicate number e.g. `Ens0000x001`, `Ens0000x002` and so on. 
 
 #### More detail on manipulating model outputs {#recon}
 
-If you've run the model yourselves, or want to use the data differently, then as an example of how to manipulate the raw outputs, migrate to an output folder containing e.g. `age1.db.bz2` (or download one from the repo above). If this is a zipped file, then you will have to unzip it. In Linux this can be done on the command line e.g.
+If you've run the model yourselves, or want to use the data differently, then as an example of how to manipulate the raw outputs, migrate to an output folder containing e.g. `age3.db.bz2` (or download one from the repo above). If this is a zipped file, then you will have to unzip it. In Linux this can be done on the command line e.g.
 
 ```{bash}
-bzip2 -dkf age1.db.bz2
+bzip2 -dkf age3.db.bz2
 ```
 
-You will notice that the unzipped `age1.db` file is larger than the compressed version. As such, you might need to remove `age1.db` at the end if you have limited hard drive space (to this end, the `bzip -dkf` flag used above ensures that the original compressed file is not deleted when uncompressed). 
+You will notice that the unzipped `age3.db` file is larger than the compressed version. As such, you might need to remove `age3.db` at the end if you have limited hard drive space (to this end, the `bzip -dkf` flag used above ensures that the original compressed file is not deleted when uncompressed). 
 
 The database contains a single table called `compact`. To store the outputs efficiently, we have introduced various tricks, described [above](#extractor). To clarify, each `age*.db` database contains a table called `compact` with entries:
 
-* `day`, `ward`
+* `day`, `LAD`
 * `Einc`, `Pinc`, `I1inc`, `I2inc`, `RIinc`, `DIinc`
 * `Ainc`, `RAinc`
 * `Hinc`, `RHinc`, `DHinc`
@@ -746,7 +748,7 @@ If required, the script `R_tools/dataTools.R`, that provides a function called `
 
 </div>
 
-As a quick example, imagine that we want to extract the **cumulative hospital cases** on say day 20 from R for the lowest age-class. (**Note that we do not need the time-series counts for this, only the incidence data.**) Here we will need to extract the **new hospital cases** from day 1--20, and then sum them up for each ward. Therefore we need to extract `day`, `ward` and `Hinc` from the `compact` table.
+As a quick example, imagine that we want to extract the **cumulative hospital cases** on say day 20 from R for the third age-class. (**Note that we do not need the time-series counts for this, only the incidence data.**) Here we will need to extract the **new hospital cases** from day 1--20, and then sum them up for each LAD. Therefore we need to extract `day`, `LAD` and `Hinc` from the `compact` table.
 
 ```{r, message = messageFlag, warning = warningFlag}
 ## load library
@@ -755,7 +757,7 @@ As a quick example, imagine that we want to extract the **cumulative hospital ca
 library(dplyr)
 
 ## establish connection to database
-con <- DBI::dbConnect(RSQLite::SQLite(), "age1.db")
+con <- DBI::dbConnect(RSQLite::SQLite(), "age3.db")
 
 ## connect to the 'compact' table
 compact <- tbl(con, "compact")
@@ -770,14 +772,14 @@ By default, the package only pulls enough data from the database to produce a su
 
 ***Querying databases***
 
-As an example of this latter approach, we will set up a query that sums the **new** hospital cases over the first 20 days in each ward. **Remember**: for each ward the database only contains days when some event happens. For cumulative *incidence* counts this is fine, since the missing data will be zero in each case, so we just need to filter first to remove all time points $> 20$. To set up the query:
+As an example of this latter approach, we will set up a query that sums the **new** hospital cases over the first 20 days in each LAD. **Remember**: for each LAD the database only contains days when some event happens. For cumulative *incidence* counts this is fine, since the missing data will be zero in each case, so we just need to filter first to remove all time points $> 20$. To set up the query:
 
 ```{r}
 ## Hinc contains the new cases, so sum these
-## over each ward for days 1--100
+## over each LAD for days 1--100
 hosp_db <- filter(compact, day <= 20) %>%
-    select(ward, Hinc) %>%
-    group_by(ward) %>%
+    select(LAD, Hinc) %>%
+    group_by(LAD) %>%
     summarise(Hcum = sum(Hinc))
 ```
 
@@ -798,14 +800,14 @@ hosp <- collect(hosp_db)
 hosp
 ```
 
-Now you can play with `hosp` as much as you like. **Note** that `hosp` here only contains information about wards that have some infections, and only from the time since initial infection. Hence for calibration you might need to expand to fill in the missing wards. Fortunately, R (especially `tidyverse`) has lots of tools for doing this, and an example is given in the next section.
+Now you can play with `hosp` as much as you like. **Note** that `hosp` here only contains information about LADs that have some infections, and only from the time since initial infection. Hence for calibration you might need to expand to fill in the missing LADs. Fortunately, R (especially `tidyverse`) has lots of tools for doing this, and an example is given in the next section.
 
 <a name="collect"></a>
 ***Collecting and reconstructing counts in R*** 
 
-Imagine now that we wish to extract the number of asymptomatic infections on each of the first 20 days in each ward. **Remember**: for each ward the database only contains days when some event happens, and only contains *incidence* counts, so we will have collect the data into R, and then run the `reconstruct()` function provided [above](#reconstruct) in each ward. 
+Imagine now that we wish to extract the number of asymptomatic infections on each of the first 20 days in each LAD. **Remember**: for each LAD the database only contains days when some event happens, and only contains *incidence* counts, so we will have collect the data into R, and then run the `reconstruct()` function provided [above](#reconstruct) in each LAD. 
 
-> **Note**: the `reconstruct()` function requires that the data are in time order, but do not require time points to be expanded (since no events happen on days that are not present in the data set). For multiple wards the reconstruct function has to run on each ward separately, and hence the code below first orders the data, and then nests it by ward, before running the reconstruct function on each ward separately. It then removes the nesting.
+> **Note**: the `reconstruct()` function requires that the data are in time order, but do not require time points to be expanded (since no events happen on days that are not present in the data set). For multiple LADs the reconstruct function has to run on each LAD separately, and hence the code below first orders the data, and then nests it by LAD, before running the reconstruct function on each LAD separately. It then removes the nesting.
 
 To set up the query:
 
@@ -814,9 +816,9 @@ To set up the query:
 output <- filter(compact, day <= 20) %>%
     collect()
 
-## now sort by day, group by ward and run reconstruct()
+## now sort by day, group by LAD and run reconstruct()
 output <- arrange(output, day) %>%
-    group_by(ward) %>%
+    group_by(LAD) %>%
     nest() %>%
     mutate(data = map(data, ~{
         output <- reconstruct(
@@ -836,32 +838,32 @@ output <- arrange(output, day) %>%
     })) %>%
     unnest(cols = data) %>%
     ungroup() %>%
-    select(day, ward, everything())
+    select(day, LAD, everything())
 
 ## examine data frame (reordered to put A columns first for later comparison)
-select(output, day, ward, Ainc, A, RA, everything()) %>%
-    filter(ward == 459) %>%
+select(output, day, LAD, Ainc, A, RA, everything()) %>%
+    filter(LAD == 317) %>%
     print(n = Inf)
 ```
 
-At this point we have a set of time-series counts, which we will now expand to fill in the missing ward / day combinations. (This can be done with `complete()`, but we've found it's generally faster by joining to a lookup table as below.)
+At this point we have a set of time-series counts, which we will now expand to fill in the missing LAD / day combinations. (This can be done with `complete()`, but we've found it's generally faster by joining to a lookup table as below.)
 
 ```{r}
-## create lookup to expand ward / time combinations
-lookup <- expand.grid(ward = 1:8071, day = 0:20) %>%
+## create lookup to expand LAD / time combinations
+lookup <- expand.grid(LAD = 1:339, day = 0:20) %>%
     as_tibble()
 
 ## joint to lookup, and fill in missing information correctly
-asymp <- select(output, day, ward, A) %>%
-    full_join(lookup, by = c("day", "ward")) %>%
-    arrange(ward, day) %>%
+asymp <- select(output, day, LAD, A) %>%
+    full_join(lookup, by = c("day", "LAD")) %>%
+    arrange(LAD, day) %>%
     mutate(A = ifelse(day == 0 & is.na(A), 0, A)) %>%
-    group_by(ward) %>%
+    group_by(LAD) %>%
     fill(A) %>%
     ungroup()
 
 ## examine output
-filter(asymp, ward == 459) %>%
+filter(asymp, LAD == 317) %>%
     print(n = Inf)
 ```
 
@@ -879,7 +881,7 @@ You can very easily wrap these ideas into an R function that can scroll through 
 tempdir <- getwd()
 setwd("..")
 system("rm metawards.zip")
-system("zip metawards.zip convertDesign.R runscript.sh model_code/*.py model_code/*.json R_tools/* vignette/ModelDescription.html inputs/*_matrix.csv inputs/user_inputs.txt inputs/hospStays.rds inputs/pathways.rds inputs/*Lookup.csv")
+system("zip metawards.zip convertDesign.R runscript.sh model_code/*.py model_code/*.json R_tools/* vignette/ModelDescription.html inputs/*_matrix.csv inputs/user_inputs.txt inputs/hospStays.rds inputs/pathways.rds inputs/*Lookup.csv inputs/seedsInfo.rds --exclude inputs/seeds.csv")
 system("zip -d metawards.zip inputs/Pop\\ by\\ CTRY.csv")
 setwd(tempdir)
 ```
@@ -889,7 +891,7 @@ setwd(tempdir)
 tempdir <- getwd()
 setwd("..")
 system("rm metawardsCatalyst.zip")
-system("zip metawardsCatalyst.zip *.sh convertDesign.R JASMIN*/* model_code/*.py model_code/*.json R_tools/* vignette/ModelDescription.html inputs/*.csv inputs/user_inputs.txt inputs/hospStays.rds inputs/pathways.rds inputs/*Lookup.csv README.md")
+system("zip metawardsCatalyst.zip *.sh convertDesign.R JASMIN*/* model_code/*.py model_code/*.json R_tools/* vignette/ModelDescription.html inputs/*.csv inputs/user_inputs.txt inputs/hospStays.rds inputs/pathways.rds inputs/*Lookup.csv README.md inputs/seedsInfo.rds --exclude inputs/seeds.csv")
 system("zip -d metawardsCatalyst.zip runscript.sh inputs/Pop\\ by\\ CTRY.csv")
 setwd(tempdir)
 ```
